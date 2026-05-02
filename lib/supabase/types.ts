@@ -1,7 +1,12 @@
-// Tipi del DB. Da rigenerare con `supabase gen types typescript` quando cambia lo schema.
+// Tipi del DB nel formato compatibile con `@supabase/postgrest-js` v2.
+// Da rigenerare con `supabase gen types typescript` quando cambia lo schema.
+
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
 export type Role = "superadmin" | "artist" | "user";
 export type ArtistStatus = "pending" | "approved" | "rejected";
 export type LeadStatus = "new" | "contacted" | "closed";
+export type AvailabilityStatus = "available" | "busy";
 export type EventCategory =
   | "music"
   | "clubs"
@@ -14,7 +19,7 @@ export type EventCategory =
   | "comedy"
   | "business";
 
-export type Database = {
+export interface Database {
   public: {
     Tables: {
       profiles: {
@@ -25,8 +30,21 @@ export type Database = {
           avatar_url: string | null;
           created_at: string;
         };
-        Insert: { id: string; role?: Role; full_name?: string | null; avatar_url?: string | null };
-        Update: Partial<{ role: Role; full_name: string | null; avatar_url: string | null }>;
+        Insert: {
+          id: string;
+          role?: Role;
+          full_name?: string | null;
+          avatar_url?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          role?: Role;
+          full_name?: string | null;
+          avatar_url?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
       };
       artists: {
         Row: {
@@ -39,22 +57,63 @@ export type Database = {
           city: string | null;
           cover_image: string | null;
           gallery: string[];
-          social_links: Record<string, string>;
+          social_links: Json;
           base_fee: number | null;
           status: ArtistStatus;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["artists"]["Row"], "id" | "created_at"> & {
+        Insert: {
           id?: string;
+          user_id?: string | null;
+          stage_name: string;
+          slug: string;
+          bio?: string | null;
+          genre?: string[];
+          city?: string | null;
+          cover_image?: string | null;
+          gallery?: string[];
+          social_links?: Json;
+          base_fee?: number | null;
+          status?: ArtistStatus;
+          created_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["artists"]["Insert"]>;
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          stage_name?: string;
+          slug?: string;
+          bio?: string | null;
+          genre?: string[];
+          city?: string | null;
+          cover_image?: string | null;
+          gallery?: string[];
+          social_links?: Json;
+          base_fee?: number | null;
+          status?: ArtistStatus;
+          created_at?: string;
+        };
+        Relationships: [];
       };
       artist_availability: {
-        Row: { id: string; artist_id: string; date: string; status: "available" | "busy" };
-        Insert: Omit<Database["public"]["Tables"]["artist_availability"]["Row"], "id"> & {
-          id?: string;
+        Row: {
+          id: string;
+          artist_id: string;
+          date: string;
+          status: AvailabilityStatus;
         };
-        Update: Partial<Database["public"]["Tables"]["artist_availability"]["Insert"]>;
+        Insert: {
+          id?: string;
+          artist_id: string;
+          date: string;
+          status?: AvailabilityStatus;
+        };
+        Update: {
+          id?: string;
+          artist_id?: string;
+          date?: string;
+          status?: AvailabilityStatus;
+        };
+        Relationships: [];
       };
       events: {
         Row: {
@@ -72,10 +131,37 @@ export type Database = {
           created_by: string | null;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["events"]["Row"], "id" | "created_at"> & {
+        Insert: {
           id?: string;
+          title: string;
+          slug: string;
+          category: EventCategory;
+          date: string;
+          city: string;
+          venue?: string | null;
+          price?: number | null;
+          cover_image?: string | null;
+          description?: string | null;
+          featured?: boolean;
+          created_by?: string | null;
+          created_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["events"]["Insert"]>;
+        Update: {
+          id?: string;
+          title?: string;
+          slug?: string;
+          category?: EventCategory;
+          date?: string;
+          city?: string;
+          venue?: string | null;
+          price?: number | null;
+          cover_image?: string | null;
+          description?: string | null;
+          featured?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
       };
       leads: {
         Row: {
@@ -91,11 +177,33 @@ export type Database = {
           status: LeadStatus;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["leads"]["Row"], "id" | "created_at" | "status"> & {
+        Insert: {
           id?: string;
+          artist_id: string;
+          requester_user_id?: string | null;
+          event_date: string;
+          event_location: string;
+          budget?: number | null;
+          message: string;
+          contact_email: string;
+          contact_phone?: string | null;
           status?: LeadStatus;
+          created_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["leads"]["Insert"]>;
+        Update: {
+          id?: string;
+          artist_id?: string;
+          requester_user_id?: string | null;
+          event_date?: string;
+          event_location?: string;
+          budget?: number | null;
+          message?: string;
+          contact_email?: string;
+          contact_phone?: string | null;
+          status?: LeadStatus;
+          created_at?: string;
+        };
+        Relationships: [];
       };
       artist_applications: {
         Row: {
@@ -105,15 +213,33 @@ export type Database = {
           stage_name: string;
           genre: string[];
           bio: string | null;
-          links: Record<string, string>;
+          links: Json;
           status: ArtistStatus;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["artist_applications"]["Row"], "id" | "created_at" | "status"> & {
+        Insert: {
           id?: string;
+          name: string;
+          email: string;
+          stage_name: string;
+          genre?: string[];
+          bio?: string | null;
+          links?: Json;
           status?: ArtistStatus;
+          created_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["artist_applications"]["Insert"]>;
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string;
+          stage_name?: string;
+          genre?: string[];
+          bio?: string | null;
+          links?: Json;
+          status?: ArtistStatus;
+          created_at?: string;
+        };
+        Relationships: [];
       };
       contact_messages: {
         Row: {
@@ -124,10 +250,23 @@ export type Database = {
           message: string;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["contact_messages"]["Row"], "id" | "created_at"> & {
+        Insert: {
           id?: string;
+          name: string;
+          email: string;
+          subject?: string | null;
+          message: string;
+          created_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["contact_messages"]["Insert"]>;
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string;
+          subject?: string | null;
+          message?: string;
+          created_at?: string;
+        };
+        Relationships: [];
       };
       collaborations: {
         Row: {
@@ -138,9 +277,34 @@ export type Database = {
           description: string | null;
           order_index: number;
         };
-        Insert: Omit<Database["public"]["Tables"]["collaborations"]["Row"], "id"> & { id?: string };
-        Update: Partial<Database["public"]["Tables"]["collaborations"]["Insert"]>;
+        Insert: {
+          id?: string;
+          name: string;
+          logo_url?: string | null;
+          link?: string | null;
+          description?: string | null;
+          order_index?: number;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          logo_url?: string | null;
+          link?: string | null;
+          description?: string | null;
+          order_index?: number;
+        };
+        Relationships: [];
       };
     };
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
+    Enums: {
+      role_enum: Role;
+      artist_status_enum: ArtistStatus;
+      lead_status_enum: LeadStatus;
+      availability_status_enum: AvailabilityStatus;
+      event_category_enum: EventCategory;
+    };
+    CompositeTypes: { [_ in never]: never };
   };
-};
+}

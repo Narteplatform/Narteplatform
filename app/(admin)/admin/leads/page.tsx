@@ -8,11 +8,18 @@ export default async function AdminLeadsPage({
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
+  const ALLOWED_STATUS = ["new", "contacted", "closed"] as const;
+  type LeadStatusFilter = (typeof ALLOWED_STATUS)[number];
+  const statusFilter: LeadStatusFilter | null =
+    sp?.status && (ALLOWED_STATUS as readonly string[]).includes(sp.status)
+      ? (sp.status as LeadStatusFilter)
+      : null;
+
   let q = supabase
     .from("leads")
     .select("*, artists!inner(stage_name, slug)")
     .order("created_at", { ascending: false });
-  if (sp?.status) q = q.eq("status", sp.status);
+  if (statusFilter) q = q.eq("status", statusFilter);
   const { data: leads } = await q;
 
   return (

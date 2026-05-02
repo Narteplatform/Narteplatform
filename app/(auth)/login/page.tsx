@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { LoginForm } from "@/components/forms/LoginForm";
 import Link from "next/link";
 
@@ -16,7 +17,9 @@ export default function LoginPage() {
             Bentornato. Accedi per gestire i tuoi eventi e i tuoi lead.
           </p>
           <div className="mt-8">
-            <LoginForm />
+            <Suspense fallback={<div className="h-32" />}>
+              <LoginForm />
+            </Suspense>
           </div>
           <p className="mt-6 text-sm text-muted-foreground">
             Non hai un account?{" "}

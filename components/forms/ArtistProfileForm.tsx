@@ -14,8 +14,16 @@ type Artist = {
   city: string | null;
   cover_image: string | null;
   base_fee: number | null;
-  social_links: Record<string, string>;
+  social_links: unknown;
 };
+
+function readLink(links: unknown, key: string): string {
+  if (links && typeof links === "object" && !Array.isArray(links)) {
+    const v = (links as Record<string, unknown>)[key];
+    return typeof v === "string" ? v : "";
+  }
+  return "";
+}
 
 type FormValues = {
   stage_name: string;
@@ -40,9 +48,9 @@ export function ArtistProfileForm({ artist }: { artist: Artist }) {
       city: artist.city ?? "",
       cover_image: artist.cover_image ?? "",
       base_fee: artist.base_fee?.toString() ?? "",
-      instagram: artist.social_links?.instagram ?? "",
-      spotify: artist.social_links?.spotify ?? "",
-      website: artist.social_links?.website ?? "",
+      instagram: readLink(artist.social_links, "instagram"),
+      spotify: readLink(artist.social_links, "spotify"),
+      website: readLink(artist.social_links, "website"),
     },
   });
 
