@@ -66,6 +66,18 @@ export function EventMediaGallery({ gallery, videos }: Props) {
     setLightbox((lightbox - 1 + gallery.length) % gallery.length);
   }
 
+  const isEmpty = gallery.length === 0 && videos.length === 0;
+
+  if (isEmpty) {
+    return (
+      <div className="border border-dashed border-border bg-muted/40 p-8 text-center">
+        <p className="text-sm text-muted-foreground">
+          Nessuna foto o video pubblicata per questo evento.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {gallery.length > 0 && (

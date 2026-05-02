@@ -86,17 +86,18 @@ export default async function EventDetailPage({
         </Reveal>
       )}
 
-      {/* Gallery (foto + video) */}
-      {(gallery.length > 0 || videos.length > 0) && (
-        <Reveal delay={0.4}>
-          <section className="mt-14">
-            <h2 className="font-display text-xl uppercase">Galleria</h2>
-            <div className="mt-4">
-              <EventMediaGallery gallery={gallery} videos={videos} />
-            </div>
-          </section>
-        </Reveal>
-      )}
+      {/* Gallery (foto + video) — sempre presente */}
+      <Reveal delay={0.4}>
+        <section className="mt-14">
+          <h2 className="font-display text-xl uppercase">Galleria</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Foto e video dell&apos;evento.
+          </p>
+          <div className="mt-4">
+            <EventMediaGallery gallery={gallery} videos={videos} />
+          </div>
+        </section>
+      </Reveal>
     </article>
   );
 }
