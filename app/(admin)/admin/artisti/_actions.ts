@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
+import { getSiteUrl } from "@/lib/site-url";
 
 async function ensureAdmin() {
   const supabase = await createClient();
@@ -25,7 +26,7 @@ export async function approveApplication(applicationId: string) {
     .single();
   if (appErr || !app) return { ok: false as const, error: "Candidatura non trovata" };
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/login`;
+  const redirectTo = `${getSiteUrl()}/login`;
   const { data: invite, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(app.email, {
     redirectTo,
     data: { full_name: app.name },
@@ -102,7 +103,7 @@ export async function createArtistManual(input: {
 
   let userId: string | null = null;
   if (input.email) {
-    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/login`;
+    const redirectTo = `${getSiteUrl()}/login`;
     const { data: invite } = await admin.auth.admin.inviteUserByEmail(input.email, {
       redirectTo,
       data: { full_name: input.stage_name },
