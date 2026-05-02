@@ -33,10 +33,20 @@ export default async function ArtistDetailPage({
 
   if (!artist) notFound();
 
-  const { data: availability } = await supabase
-    .from("artist_availability")
-    .select("date, status")
-    .eq("artist_id", artist.id);
+  const [{ data: availability }, { data: defaultSlots }, { data: dateSlots }] =
+    await Promise.all([
+      supabase.from("artist_availability").select("date, status").eq("artist_id", artist.id),
+      supabase
+        .from("artist_default_slots")
+        .select("id, label, start_time, end_time")
+        .eq("artist_id", artist.id)
+        .order("start_time"),
+      supabase
+        .from("artist_date_slots")
+        .select("id, date, label, start_time, end_time")
+        .eq("artist_id", artist.id)
+        .order("start_time"),
+    ]);
 
   const busyDates = (availability ?? [])
     .filter((a) => a.status === "busy")
@@ -196,6 +206,19 @@ export default async function ArtistDetailPage({
                   artistId={artist.id}
                   artistName={artist.stage_name}
                   busyDates={busyDates}
+                  defaultSlots={(defaultSlots ?? []).map((s) => ({
+                    id: s.id,
+                    label: s.label,
+                    start_time: s.start_time,
+                    end_time: s.end_time,
+                  }))}
+                  dateSlots={(dateSlots ?? []).map((s) => ({
+                    id: s.id,
+                    date: s.date,
+                    label: s.label,
+                    start_time: s.start_time,
+                    end_time: s.end_time,
+                  }))}
                 />
               </div>
             </section>

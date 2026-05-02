@@ -149,10 +149,13 @@ export interface Database {
           slug: string;
           category: EventCategory;
           date: string;
+          end_at: string | null;
           city: string;
           venue: string | null;
           price: number | null;
           cover_image: string | null;
+          gallery: string[];
+          videos: string[];
           description: string | null;
           featured: boolean;
           ticket_url: string | null;
@@ -165,10 +168,13 @@ export interface Database {
           slug: string;
           category: EventCategory;
           date: string;
+          end_at?: string | null;
           city: string;
           venue?: string | null;
           price?: number | null;
           cover_image?: string | null;
+          gallery?: string[];
+          videos?: string[];
           description?: string | null;
           featured?: boolean;
           ticket_url?: string | null;
@@ -181,14 +187,74 @@ export interface Database {
           slug?: string;
           category?: EventCategory;
           date?: string;
+          end_at?: string | null;
           city?: string;
           venue?: string | null;
           price?: number | null;
           cover_image?: string | null;
+          gallery?: string[];
+          videos?: string[];
           description?: string | null;
           featured?: boolean;
           ticket_url?: string | null;
           created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      artist_default_slots: {
+        Row: {
+          id: string;
+          artist_id: string;
+          label: string | null;
+          start_time: string;
+          end_time: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          artist_id: string;
+          label?: string | null;
+          start_time: string;
+          end_time: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          artist_id?: string;
+          label?: string | null;
+          start_time?: string;
+          end_time?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      artist_date_slots: {
+        Row: {
+          id: string;
+          artist_id: string;
+          date: string;
+          label: string | null;
+          start_time: string;
+          end_time: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          artist_id: string;
+          date: string;
+          label?: string | null;
+          start_time: string;
+          end_time: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          artist_id?: string;
+          date?: string;
+          label?: string | null;
+          start_time?: string;
+          end_time?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -206,6 +272,7 @@ export interface Database {
           contact_phone: string | null;
           status: LeadStatus;
           tags: string[];
+          event_time: string | null;
           created_at: string;
         };
         Insert: {
@@ -220,6 +287,7 @@ export interface Database {
           contact_phone?: string | null;
           status?: LeadStatus;
           tags?: string[];
+          event_time?: string | null;
           created_at?: string;
         };
         Update: {
@@ -234,6 +302,7 @@ export interface Database {
           contact_phone?: string | null;
           status?: LeadStatus;
           tags?: string[];
+          event_time?: string | null;
           created_at?: string;
         };
         Relationships: [];

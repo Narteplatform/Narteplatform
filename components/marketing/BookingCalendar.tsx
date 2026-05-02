@@ -1,21 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { DayPicker } from "react-day-picker";
+import { it } from "date-fns/locale";
 import "react-day-picker/style.css";
-import { X } from "lucide-react";
+import { Clock, X } from "lucide-react";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { formatSlot, normalizeTime, resolveSlotsForDate, type Slot } from "@/lib/slots";
 import {
   submitArtistInterest,
   type ArtistInterestInput,
 } from "@/app/(user)/artisti/[slug]/_actions";
 
+type DefaultSlot = {
+  id: string;
+  label: string | null;
+  start_time: string;
+  end_time: string;
+};
+
+type DateSlot = {
+  id: string;
+  date: string;
+  label: string | null;
+  start_time: string;
+  end_time: string;
+};
+
 type Props = {
   artistId: string;
   artistName: string;
-  busyDates: string[]; // ISO yyyy-mm-dd
+  busyDates: string[];
+  defaultSlots?: DefaultSlot[];
+  dateSlots?: DateSlot[];
 };
 
 function toIsoDate(d: Date): string {
@@ -42,14 +61,46 @@ type FormValues = {
   message: string;
 };
 
-export function BookingCalendar({ artistId, artistName, busyDates }: Props) {
+export function BookingCalendar({
+  artistId,
+  artistName,
+  busyDates,
+  defaultSlots = [],
+  dateSlots = [],
+}: Props) {
   const [selectedISO, setSelectedISO] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const busy = busyDates.map((d) => new Date(d));
+  const busySet = useMemo(() => new Set(busyDates), [busyDates]);
+
+  const dateSlotsByDate = useMemo(() => {
+    const m = new Map<string, Slot[]>();
+    for (const s of dateSlots) {
+      const list = m.get(s.date) ?? [];
+      list.push({ id: s.id, label: s.label, start_time: s.start_time, end_time: s.end_time });
+      m.set(s.date, list);
+    }
+    return m;
+  }, [dateSlots]);
+
+  const availableSlots: Slot[] = useMemo(() => {
+    if (!selectedISO) return [];
+    return resolveSlotsForDate({
+      isBusyDay: busySet.has(selectedISO),
+      dateSlots: dateSlotsByDate.get(selectedISO) ?? [],
+      defaultSlots: defaultSlots.map((s) => ({
+        id: s.id,
+        label: s.label,
+        start_time: s.start_time,
+        end_time: s.end_time,
+      })),
+    });
+  }, [selectedISO, busySet, dateSlotsByDate, defaultSlots]);
 
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<FormValues>({
     defaultValues: { name: "", email: "", phone: "", location: "", message: "" },
@@ -59,22 +110,28 @@ export function BookingCalendar({ artistId, artistName, busyDates }: Props) {
     if (selectedISO) {
       setSuccess(false);
       setError(null);
+      setSelectedSlot(null);
     }
   }, [selectedISO]);
 
   function onDayClick(day: Date) {
     if (day < today) return;
     const iso = toIsoDate(day);
-    if (busyDates.includes(iso)) return;
+    if (busySet.has(iso)) return;
     setSelectedISO(iso);
   }
 
   async function onSubmit(values: FormValues) {
     if (!selectedISO) return;
+    if (availableSlots.length > 0 && !selectedSlot) {
+      setError("Seleziona uno slot orario");
+      return;
+    }
     setError(null);
     const payload: ArtistInterestInput = {
       artistId,
       date: selectedISO,
+      timeSlot: selectedSlot ?? undefined,
       name: values.name,
       email: values.email,
       phone: values.phone || undefined,
@@ -92,6 +149,7 @@ export function BookingCalendar({ artistId, artistName, busyDates }: Props) {
 
   function close() {
     setSelectedISO(null);
+    setSelectedSlot(null);
     setSuccess(false);
     setError(null);
   }
@@ -100,6 +158,8 @@ export function BookingCalendar({ artistId, artistName, busyDates }: Props) {
     <div>
       <DayPicker
         mode="single"
+        locale={it}
+        weekStartsOn={1}
         disabled={[{ before: today }, ...busy]}
         modifiers={{ busy }}
         modifiersClassNames={{
@@ -157,7 +217,40 @@ export function BookingCalendar({ artistId, artistName, busyDates }: Props) {
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2 text-xs">
+                    <Clock className="size-3" /> Slot orario
+                  </Label>
+                  {availableSlots.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      Nessuno slot configurato per questo giorno: indica l&apos;orario nei dettagli.
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {availableSlots.map((s, i) => {
+                        const value = `${normalizeTime(s.start_time)}–${normalizeTime(s.end_time)}${s.label ? ` (${s.label})` : ""}`;
+                        const active = selectedSlot === value;
+                        return (
+                          <button
+                            key={s.id ?? `${s.start_time}-${i}`}
+                            type="button"
+                            onClick={() => setSelectedSlot(active ? null : value)}
+                            className={`rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors ${
+                              active
+                                ? "border-foreground bg-foreground text-background"
+                                : "border-foreground/30 hover:border-foreground"
+                            }`}
+                            aria-pressed={active}
+                          >
+                            {formatSlot(s)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field label="Nome">
                     <Input {...register("name", { required: true, minLength: 2 })} />
@@ -175,7 +268,7 @@ export function BookingCalendar({ artistId, artistName, busyDates }: Props) {
                 <Field label="Dettagli">
                   <Textarea
                     rows={4}
-                    placeholder="Tipo di evento, orario, pubblico, qualunque dettaglio utile…"
+                    placeholder="Tipo di evento, pubblico, qualunque dettaglio utile…"
                     {...register("message", { required: true, minLength: 5 })}
                   />
                 </Field>

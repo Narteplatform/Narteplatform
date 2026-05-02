@@ -26,6 +26,7 @@ if (!dbUrl || dbUrl.includes("YOUR_DB_PASSWORD")) {
   console.log("    - supabase/migrations/0003_fix_rls_recursion.sql");
   console.log("    - supabase/migrations/0004_admin_artist_extras.sql");
   console.log("    - supabase/migrations/0005_genres_instruments_socials.sql");
+  console.log("    - supabase/migrations/0006_slots_and_event_extras.sql");
   console.log(" 3. Premi Run.");
   console.log("");
   console.log("In alternativa: Settings → Database → copia la password DB,");

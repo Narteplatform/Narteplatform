@@ -46,6 +46,7 @@ export const eventSchema = z.object({
     "business",
   ]),
   date: z.string().min(1),
+  endAt: z.string().optional().or(z.literal("").transform(() => undefined)),
   city: z.string().min(2),
   venue: z.string().max(160).optional(),
   price: z.coerce.number().nonnegative().optional(),
@@ -53,6 +54,8 @@ export const eventSchema = z.object({
   ticketUrl: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   description: z.string().max(4000).optional(),
   featured: z.boolean().optional(),
+  gallery: z.array(z.string().url()).max(40).optional(),
+  videos: z.array(z.string().url()).max(20).optional(),
 });
 export type EventInput = z.infer<typeof eventSchema>;
 

@@ -14,6 +14,7 @@ import BookingRequestEmail from "@/lib/emails/templates/BookingRequestEmail";
 export const artistInterestSchema = z.object({
   artistId: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
+  timeSlot: z.string().max(80).optional().or(z.literal("").transform(() => undefined)),
   name: z.string().min(2).max(80),
   email: z.string().email(),
   phone: z.string().max(30).optional().or(z.literal("").transform(() => undefined)),
@@ -36,11 +37,13 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
   if (!artist || artist.status !== "approved")
     return { ok: false as const, error: "Artista non disponibile" };
 
+  const slotLine = data.timeSlot ? `\nSlot orario: ${data.timeSlot}` : "";
   const { error } = await admin.from("leads").insert({
     artist_id: artist.id,
     event_date: data.date,
+    event_time: data.timeSlot ?? null,
     event_location: data.location ?? "Da definire",
-    message: `Richiesta dalla pagina artista per il ${data.date}.\nNome: ${data.name}\n\n${data.message}`,
+    message: `Richiesta dalla pagina artista per il ${data.date}.${slotLine}\nNome: ${data.name}\n\n${data.message}`,
     contact_email: data.email,
     contact_phone: data.phone ?? null,
   });

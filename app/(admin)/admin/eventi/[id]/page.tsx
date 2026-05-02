@@ -20,6 +20,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
           title: event.title,
           category: event.category,
           date: new Date(event.date).toISOString().slice(0, 16),
+          endAt: event.end_at ? new Date(event.end_at).toISOString().slice(0, 16) : "",
           city: event.city,
           venue: event.venue ?? "",
           price: event.price?.toString() ?? "",
@@ -27,6 +28,8 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
           ticketUrl: event.ticket_url ?? "",
           description: event.description ?? "",
           featured: event.featured,
+          gallery: event.gallery ?? [],
+          videos: (event.videos ?? []).join("\n"),
         }}
         eventId={event.id}
       />

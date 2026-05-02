@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { AvailabilityCalendar } from "@/components/forms/AvailabilityCalendar";
+import { DefaultSlotsEditor } from "@/components/forms/DefaultSlotsEditor";
 
 export default async function CalendarioPage() {
   const user = await requireRole(["artist", "superadmin"]);
@@ -16,10 +17,21 @@ export default async function CalendarioPage() {
     return <p className="text-muted-foreground">Nessun profilo artista collegato.</p>;
   }
 
-  const { data: availability } = await supabase
-    .from("artist_availability")
-    .select("date, status")
-    .eq("artist_id", artist.id);
+  const [{ data: availability }, { data: defaultSlots }, { data: dateSlots }] =
+    await Promise.all([
+      supabase.from("artist_availability").select("date, status").eq("artist_id", artist.id),
+      supabase
+        .from("artist_default_slots")
+        .select("id, label, start_time, end_time")
+        .eq("artist_id", artist.id)
+        .order("start_time"),
+      supabase
+        .from("artist_date_slots")
+        .select("id, date, label, start_time, end_time")
+        .eq("artist_id", artist.id)
+        .order("date")
+        .order("start_time"),
+    ]);
 
   const today = new Date();
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -31,20 +43,49 @@ export default async function CalendarioPage() {
   const pastBusy = busyDates.filter((d) => d < todayIso);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div>
         <h1 className="display-xl text-4xl">Calendario disponibilità</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Tutti i giorni futuri sono <strong>disponibili</strong> di default (pallino verde).
-          Clicca un giorno per segnarlo come <strong>occupato</strong> (pallino rosso) e
-          escluderlo dalle date disponibili. Le date passate occupate restano in storico.
+          Definisci gli <strong>slot orari generali</strong> validi tutti i giorni; i
+          giorni futuri appaiono in verde. Clicca un giorno per aprire la gestione slot
+          specifici (override) e per segnarlo come occupato. Le date passate restano in
+          storico.
         </p>
       </div>
-      <AvailabilityCalendar
-        artistId={artist.id}
-        initialBusy={busyDates}
-        pastBusy={pastBusy}
-      />
+
+      <section className="space-y-3">
+        <h2 className="font-display text-xl uppercase">Slot orari generali</h2>
+        <p className="text-sm text-muted-foreground">
+          Validi su tutti i giorni disponibili. Esempio: &quot;Aperitivo&quot; 18:30–21:00,
+          &quot;Sera&quot; 21:30–00:30.
+        </p>
+        <DefaultSlotsEditor
+          artistId={artist.id}
+          slots={(defaultSlots ?? []).map((s) => ({
+            id: s.id,
+            label: s.label,
+            start_time: s.start_time,
+            end_time: s.end_time,
+          }))}
+        />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-display text-xl uppercase">Calendario</h2>
+        <AvailabilityCalendar
+          artistId={artist.id}
+          initialBusy={busyDates}
+          pastBusy={pastBusy}
+          dateSlots={(dateSlots ?? []).map((s) => ({
+            id: s.id,
+            date: s.date,
+            label: s.label,
+            start_time: s.start_time,
+            end_time: s.end_time,
+          }))}
+        />
+      </section>
     </div>
   );
 }

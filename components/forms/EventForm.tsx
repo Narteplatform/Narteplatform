@@ -6,6 +6,7 @@ import { useForm, Controller } from "react-hook-form";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ImageUpload } from "@/components/forms/ImageUpload";
+import { GalleryUpload } from "@/components/forms/GalleryUpload";
 import { createEvent, updateEvent } from "@/app/(admin)/admin/eventi/_actions";
 
 const CATEGORIES = [
@@ -16,6 +17,7 @@ type Values = {
   title: string;
   category: (typeof CATEGORIES)[number];
   date: string;
+  endAt: string;
   city: string;
   venue: string;
   price: string;
@@ -23,7 +25,13 @@ type Values = {
   ticketUrl: string;
   description: string;
   featured: boolean;
+  gallery: string[];
+  videos: string;
 };
+
+function splitLines(t: string): string[] {
+  return t.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+}
 
 export function EventForm({
   defaultValues,
@@ -39,6 +47,7 @@ export function EventForm({
       title: "",
       category: "music",
       date: "",
+      endAt: "",
       city: "",
       venue: "",
       price: "",
@@ -46,6 +55,8 @@ export function EventForm({
       ticketUrl: "",
       description: "",
       featured: false,
+      gallery: [],
+      videos: "",
       ...defaultValues,
     },
   });
@@ -56,6 +67,7 @@ export function EventForm({
       title: values.title,
       category: values.category,
       date: values.date,
+      endAt: values.endAt || undefined,
       city: values.city,
       venue: values.venue || undefined,
       price: values.price ? Number(values.price) : undefined,
@@ -63,6 +75,8 @@ export function EventForm({
       ticketUrl: values.ticketUrl || undefined,
       description: values.description || undefined,
       featured: values.featured,
+      gallery: values.gallery,
+      videos: splitLines(values.videos),
     };
     const res = eventId ? await updateEvent(eventId, payload) : await createEvent(payload);
     if (!res.ok) {
@@ -74,7 +88,7 @@ export function EventForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <Field label="Titolo"><Input {...register("title", { required: true })} /></Field>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Categoria">
@@ -87,14 +101,18 @@ export function EventForm({
             ))}
           </select>
         </Field>
-        <Field label="Data e ora">
+        <Field label="Inizio">
           <Input type="datetime-local" {...register("date", { required: true })} />
+        </Field>
+        <Field label="Fine (opzionale)">
+          <Input type="datetime-local" {...register("endAt")} />
         </Field>
         <Field label="Città"><Input {...register("city", { required: true })} /></Field>
         <Field label="Venue"><Input {...register("venue")} /></Field>
         <Field label="Prezzo (€)"><Input type="number" min="0" step="0.01" {...register("price")} /></Field>
         <Field label="Link biglietti"><Input type="url" placeholder="https://…" {...register("ticketUrl")} /></Field>
       </div>
+
       <Controller
         control={control}
         name="coverImage"
@@ -107,7 +125,35 @@ export function EventForm({
           />
         )}
       />
+
       <Field label="Descrizione"><Textarea rows={6} {...register("description")} /></Field>
+
+      <fieldset className="space-y-4 border-t border-border pt-6">
+        <legend className="font-display text-lg uppercase">Galleria</legend>
+        <Controller
+          control={control}
+          name="gallery"
+          render={({ field }) => (
+            <GalleryUpload
+              label="Foto evento (caricamento diretto)"
+              value={field.value ?? []}
+              onChange={field.onChange}
+            />
+          )}
+        />
+      </fieldset>
+
+      <fieldset className="space-y-4 border-t border-border pt-6">
+        <legend className="font-display text-lg uppercase">Video</legend>
+        <Field label="URL video YouTube/Vimeo, una per riga">
+          <Textarea
+            rows={3}
+            placeholder={"https://youtube.com/watch?v=...\nhttps://vimeo.com/..."}
+            {...register("videos")}
+          />
+        </Field>
+      </fieldset>
+
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" {...register("featured")} />
         In evidenza in home
