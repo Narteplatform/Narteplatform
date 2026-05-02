@@ -1,9 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 
 export default async function ArtistLeadsPage() {
   const user = await requireRole(["artist", "superadmin"]);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: artist } = await supabase
     .from("artists")

@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 import { ApplicationActions } from "@/components/admin/ApplicationActions";
 import { DeleteArtistButton } from "@/components/admin/DeleteArtistButton";
 
 export default async function AdminArtistsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const [{ data: applications }, { data: artists }] = await Promise.all([
     supabase
       .from("artist_applications")

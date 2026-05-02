@@ -19,6 +19,7 @@ type Values = {
   venue: string;
   price: string;
   coverImage: string;
+  ticketUrl: string;
   description: string;
   featured: boolean;
 };
@@ -41,6 +42,7 @@ export function EventForm({
       venue: "",
       price: "",
       coverImage: "",
+      ticketUrl: "",
       description: "",
       featured: false,
       ...defaultValues,
@@ -57,6 +59,7 @@ export function EventForm({
       venue: values.venue || undefined,
       price: values.price ? Number(values.price) : undefined,
       coverImage: values.coverImage || undefined,
+      ticketUrl: values.ticketUrl || undefined,
       description: values.description || undefined,
       featured: values.featured,
     };
@@ -89,8 +92,11 @@ export function EventForm({
         <Field label="Città"><Input {...register("city", { required: true })} /></Field>
         <Field label="Venue"><Input {...register("venue")} /></Field>
         <Field label="Prezzo (€)"><Input type="number" min="0" step="0.01" {...register("price")} /></Field>
-        <Field label="URL cover"><Input type="url" {...register("coverImage")} /></Field>
+        <Field label="URL cover"><Input type="url" placeholder="https://…" {...register("coverImage")} /></Field>
       </div>
+      <Field label="Link biglietti">
+        <Input type="url" placeholder="https://…" {...register("ticketUrl")} />
+      </Field>
       <Field label="Descrizione"><Textarea rows={6} {...register("description")} /></Field>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" {...register("featured")} />

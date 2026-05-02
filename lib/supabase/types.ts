@@ -57,6 +57,7 @@ export interface Database {
           city: string | null;
           cover_image: string | null;
           gallery: string[];
+          videos: string[];
           social_links: Json;
           base_fee: number | null;
           status: ArtistStatus;
@@ -72,6 +73,7 @@ export interface Database {
           city?: string | null;
           cover_image?: string | null;
           gallery?: string[];
+          videos?: string[];
           social_links?: Json;
           base_fee?: number | null;
           status?: ArtistStatus;
@@ -87,6 +89,7 @@ export interface Database {
           city?: string | null;
           cover_image?: string | null;
           gallery?: string[];
+          videos?: string[];
           social_links?: Json;
           base_fee?: number | null;
           status?: ArtistStatus;
@@ -128,6 +131,7 @@ export interface Database {
           cover_image: string | null;
           description: string | null;
           featured: boolean;
+          ticket_url: string | null;
           created_by: string | null;
           created_at: string;
         };
@@ -143,6 +147,7 @@ export interface Database {
           cover_image?: string | null;
           description?: string | null;
           featured?: boolean;
+          ticket_url?: string | null;
           created_by?: string | null;
           created_at?: string;
         };
@@ -158,6 +163,7 @@ export interface Database {
           cover_image?: string | null;
           description?: string | null;
           featured?: boolean;
+          ticket_url?: string | null;
           created_by?: string | null;
           created_at?: string;
         };
@@ -175,6 +181,7 @@ export interface Database {
           contact_email: string;
           contact_phone: string | null;
           status: LeadStatus;
+          tags: string[];
           created_at: string;
         };
         Insert: {
@@ -188,6 +195,7 @@ export interface Database {
           contact_email: string;
           contact_phone?: string | null;
           status?: LeadStatus;
+          tags?: string[];
           created_at?: string;
         };
         Update: {
@@ -201,6 +209,7 @@ export interface Database {
           contact_email?: string;
           contact_phone?: string | null;
           status?: LeadStatus;
+          tags?: string[];
           created_at?: string;
         };
         Relationships: [];

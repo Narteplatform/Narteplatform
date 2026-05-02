@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { ArtistStatusToggle } from "@/components/admin/ArtistStatusToggle";
 import { ArtistEditForm } from "@/components/admin/ArtistEditForm";
 import { DeleteArtistButton } from "@/components/admin/DeleteArtistButton";
@@ -13,7 +13,7 @@ export default async function AdminArtistDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: artist } = await supabase.from("artists").select("*").eq("id", id).single();
   if (!artist) notFound();
 

@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
 export default async function AdminOverviewPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const [eventsRes, artistsRes, leadsRes, applicationsRes] = await Promise.all([
     supabase.from("events").select("id", { count: "exact", head: true }),
     supabase.from("artists").select("id", { count: "exact", head: true }).eq("status", "approved"),

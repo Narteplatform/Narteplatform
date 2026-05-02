@@ -1,7 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { Ticket } from "lucide-react";
+import { createAdminClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { formatEventDate, formatPrice } from "@/lib/utils";
 import { Reveal } from "@/components/animations/Reveal";
+import { Button } from "@/components/ui/Button";
 
 export default async function EventDetailPage({
   params,
@@ -9,7 +12,7 @@ export default async function EventDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: event } = await supabase
     .from("events")
     .select("*")
@@ -38,7 +41,20 @@ export default async function EventDetailPage({
       {event.cover_image && (
         <Reveal delay={0.3}>
           <div className="mt-8 aspect-[16/9] w-full overflow-hidden bg-muted">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={event.cover_image} alt={event.title} className="h-full w-full object-cover" />
+          </div>
+        </Reveal>
+      )}
+
+      {event.ticket_url && (
+        <Reveal delay={0.35}>
+          <div className="mt-8">
+            <Button asChild variant="accent" size="lg">
+              <Link href={event.ticket_url} target="_blank" rel="noopener noreferrer">
+                <Ticket className="size-4" /> Acquista biglietti
+              </Link>
+            </Button>
           </div>
         </Reveal>
       )}

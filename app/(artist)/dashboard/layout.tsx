@@ -1,5 +1,13 @@
-import Link from "next/link";
+import { Sparkles, CalendarDays, UserCog, Inbox } from "lucide-react";
 import { requireRole } from "@/lib/auth/guards";
+import { DashboardShell, type SidebarItem } from "@/components/layout/DashboardShell";
+
+const items: SidebarItem[] = [
+  { href: "/dashboard", label: "Profilo artista", icon: <Sparkles className="size-4" />, exact: true },
+  { href: "/dashboard/calendario", label: "Calendario", icon: <CalendarDays className="size-4" /> },
+  { href: "/dashboard/leads", label: "Richieste", icon: <Inbox className="size-4" /> },
+  { href: "/dashboard/profilo", label: "Profilo account", icon: <UserCog className="size-4" /> },
+];
 
 export default async function ArtistDashboardLayout({
   children,
@@ -7,26 +15,14 @@ export default async function ArtistDashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requireRole(["artist", "superadmin"]);
-
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-foreground text-background">
-        <div className="container-narte flex h-16 items-center justify-between">
-          <Link href="/" className="font-display text-lg">
-            N&apos;ARTE / ARTIST
-          </Link>
-          <nav className="flex items-center gap-6 text-sm">
-            <Link href="/dashboard" className="hover:underline">Profilo</Link>
-            <Link href="/dashboard/calendario" className="hover:underline">Calendario</Link>
-            <Link href="/dashboard/leads" className="hover:underline">Richieste</Link>
-            <span className="opacity-60">{user.email}</span>
-            <form action="/logout" method="post">
-              <button type="submit" className="hover:underline">Esci</button>
-            </form>
-          </nav>
-        </div>
-      </header>
-      <main className="container-narte py-12">{children}</main>
-    </div>
+    <DashboardShell
+      brand="N'ARTE / ARTIST"
+      brandHref="/dashboard"
+      items={items}
+      email={user.email ?? null}
+    >
+      {children}
+    </DashboardShell>
   );
 }

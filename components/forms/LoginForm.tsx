@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next");
   const [error, setError] = useState<string | null>(null);
   const {
     register,
@@ -31,7 +31,10 @@ export function LoginForm() {
       setError(error.message);
       return;
     }
-    router.push(next);
+    // Instrada server-side in base al ruolo del profilo (admin → /admin,
+    // artist → /dashboard, user → next o /).
+    const dest = `/post-login${next ? `?next=${encodeURIComponent(next)}` : ""}`;
+    router.push(dest);
     router.refresh();
   }
 

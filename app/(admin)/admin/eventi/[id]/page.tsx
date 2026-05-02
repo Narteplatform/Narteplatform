@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { EventForm } from "@/components/forms/EventForm";
 import { DeleteEventButton } from "@/components/forms/DeleteEventButton";
 
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: event } = await supabase.from("events").select("*").eq("id", id).single();
   if (!event) notFound();
 
@@ -24,6 +24,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
           venue: event.venue ?? "",
           price: event.price?.toString() ?? "",
           coverImage: event.cover_image ?? "",
+          ticketUrl: event.ticket_url ?? "",
           description: event.description ?? "",
           featured: event.featured,
         }}

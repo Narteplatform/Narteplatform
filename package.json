@@ -12,6 +12,7 @@
     "db:promote-admin": "node --env-file=.env.local scripts/promote-superadmin.mjs",
     "db:seed-accounts": "node --env-file=.env.local scripts/seed-accounts.mjs",
     "db:seed-content": "node --env-file=.env.local scripts/seed-content.mjs",
+    "db:apply": "node --env-file=.env.local scripts/apply-migrations.mjs",
     "vercel:sync-env": "node scripts/sync-vercel-env.mjs"
   },
   "dependencies": {

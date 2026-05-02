@@ -50,6 +50,7 @@ export const eventSchema = z.object({
   venue: z.string().max(160).optional(),
   price: z.coerce.number().nonnegative().optional(),
   coverImage: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  ticketUrl: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   description: z.string().max(4000).optional(),
   featured: z.boolean().optional(),
 });
@@ -65,8 +66,22 @@ export const artistSchema = z.object({
   instagram: z.string().max(160).optional().or(z.literal("").transform(() => undefined)),
   spotify: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
   website: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  // Stringhe multi-line: una URL per riga
+  gallery: z.string().max(4000).optional().or(z.literal("").transform(() => undefined)),
+  videos: z.string().max(4000).optional().or(z.literal("").transform(() => undefined)),
 });
 export type ArtistInput = z.infer<typeof artistSchema>;
+
+export const accountProfileSchema = z.object({
+  fullName: z.string().min(2).max(80),
+  avatarUrl: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+});
+export type AccountProfileInput = z.infer<typeof accountProfileSchema>;
+
+export const passwordChangeSchema = z.object({
+  password: z.string().min(8, "Almeno 8 caratteri").max(72),
+});
+export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
 
 export const authSchema = z.object({
   email: z.string().email(),

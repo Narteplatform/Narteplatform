@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 
 export default async function AdminEventiPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: events } = await supabase
     .from("events")
     .select("id, slug, title, category, date, city, featured")

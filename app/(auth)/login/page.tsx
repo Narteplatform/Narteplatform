@@ -10,7 +10,7 @@ export default function LoginPage() {
       <div className="container-narte flex min-h-screen flex-col items-center justify-center py-12">
         <div className="w-full max-w-md">
           <Link href="/" className="font-display text-xl">
-            HAP<br />PEEN
+            N&apos;AR<br />TE
           </Link>
           <h1 className="display-xl mt-8 text-4xl">Accedi</h1>
           <p className="mt-2 text-sm text-muted-foreground">
