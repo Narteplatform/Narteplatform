@@ -1,11 +1,18 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Instagram, Globe, Music } from "lucide-react";
+import { Instagram, Globe, Music, Facebook, Youtube } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Reveal } from "@/components/animations/Reveal";
 import { BookingCalendar } from "@/components/marketing/BookingCalendar";
 
-type SocialLinks = { instagram?: string | null; spotify?: string | null; website?: string | null };
+type SocialLinks = {
+  instagram?: string | null;
+  facebook?: string | null;
+  tiktok?: string | null;
+  youtube?: string | null;
+  spotify?: string | null;
+  website?: string | null;
+};
 
 export default async function ArtistDetailPage({
   params,
@@ -18,7 +25,7 @@ export default async function ArtistDetailPage({
   const { data: artist } = await supabase
     .from("artists")
     .select(
-      "id, slug, stage_name, bio, genre, city, cover_image, gallery, videos, social_links, base_fee, status"
+      "id, slug, stage_name, bio, genre, instruments, city, cover_image, gallery, videos, social_links, status"
     )
     .eq("slug", slug)
     .eq("status", "approved")
@@ -81,7 +88,7 @@ export default async function ArtistDetailPage({
             </Reveal>
           )}
 
-          {(social.instagram || social.spotify || social.website) && (
+          {(social.instagram || social.facebook || social.tiktok || social.youtube || social.spotify || social.website) && (
             <Reveal delay={0.45}>
               <ul className="mt-6 flex flex-wrap gap-3 text-sm">
                 {social.instagram && (
@@ -93,6 +100,32 @@ export default async function ArtistDetailPage({
                       className="inline-flex items-center gap-2 rounded-full border border-foreground/30 px-3 py-1 hover:border-foreground"
                     >
                       <Instagram className="size-4" /> Instagram
+                    </a>
+                  </li>
+                )}
+                {social.facebook && (
+                  <li>
+                    <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-foreground/30 px-3 py-1 hover:border-foreground">
+                      <Facebook className="size-4" /> Facebook
+                    </a>
+                  </li>
+                )}
+                {social.tiktok && (
+                  <li>
+                    <a
+                      href={social.tiktok.startsWith("http") ? social.tiktok : `https://tiktok.com/@${social.tiktok.replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full border border-foreground/30 px-3 py-1 hover:border-foreground"
+                    >
+                      <Music className="size-4" /> TikTok
+                    </a>
+                  </li>
+                )}
+                {social.youtube && (
+                  <li>
+                    <a href={social.youtube} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-foreground/30 px-3 py-1 hover:border-foreground">
+                      <Youtube className="size-4" /> YouTube
                     </a>
                   </li>
                 )}
@@ -165,11 +198,6 @@ export default async function ArtistDetailPage({
                   busyDates={busyDates}
                 />
               </div>
-              {artist.base_fee != null && (
-                <p className="mt-4 border-t border-border pt-4 text-xs uppercase tracking-wide text-muted-foreground">
-                  Tariffa indicativa: <strong className="text-foreground">€{Number(artist.base_fee).toFixed(0)}</strong>
-                </p>
-              )}
             </section>
           </Reveal>
 

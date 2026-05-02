@@ -98,11 +98,13 @@ export async function updateArtist(artistId: string, input: ArtistInput) {
   if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
   const data = parsed.data;
 
-  const social_links = {
-    instagram: data.instagram ?? null,
-    spotify: data.spotify ?? null,
-    website: data.website ?? null,
-  };
+  const social_links: Record<string, string> = {};
+  if (data.instagram) social_links.instagram = data.instagram;
+  if (data.facebook) social_links.facebook = data.facebook;
+  if (data.tiktok) social_links.tiktok = data.tiktok;
+  if (data.youtube) social_links.youtube = data.youtube;
+  if (data.spotify) social_links.spotify = data.spotify;
+  if (data.website) social_links.website = data.website;
 
   const admin = createAdminClient();
   const { error } = await admin
@@ -113,9 +115,11 @@ export async function updateArtist(artistId: string, input: ArtistInput) {
       genre: data.genre
         ? data.genre.split(",").map((g) => g.trim()).filter(Boolean)
         : [],
+      instruments: data.instruments
+        ? data.instruments.split(",").map((g) => g.trim()).filter(Boolean)
+        : [],
       bio: data.bio ?? null,
       cover_image: data.cover_image ?? null,
-      base_fee: data.base_fee ?? null,
       social_links,
     })
     .eq("id", artistId);

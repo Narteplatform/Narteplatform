@@ -59,14 +59,17 @@ export type EventInput = z.infer<typeof eventSchema>;
 export const artistSchema = z.object({
   stage_name: z.string().min(2).max(80),
   city: z.string().max(80).optional().or(z.literal("").transform(() => undefined)),
-  genre: z.string().max(160).optional().or(z.literal("").transform(() => undefined)),
+  // Generi: stringa CSV (compat input form admin)
+  genre: z.string().max(400).optional().or(z.literal("").transform(() => undefined)),
+  instruments: z.string().max(400).optional().or(z.literal("").transform(() => undefined)),
   bio: z.string().max(4000).optional().or(z.literal("").transform(() => undefined)),
   cover_image: z.string().url().optional().or(z.literal("").transform(() => undefined)),
-  base_fee: z.coerce.number().nonnegative().optional().or(z.literal("").transform(() => undefined)),
-  instagram: z.string().max(160).optional().or(z.literal("").transform(() => undefined)),
+  instagram: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
+  facebook: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
+  tiktok: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
+  youtube: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
   spotify: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
-  website: z.string().url().optional().or(z.literal("").transform(() => undefined)),
-  // Stringhe multi-line: una URL per riga
+  website: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
   gallery: z.string().max(4000).optional().or(z.literal("").transform(() => undefined)),
   videos: z.string().max(4000).optional().or(z.literal("").transform(() => undefined)),
 });

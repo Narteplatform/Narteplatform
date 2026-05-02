@@ -28,13 +28,17 @@ export default async function ArtistDashboardPage() {
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const { data: dates } = await supabase
-    .from("artist_availability")
-    .select("date, status")
-    .eq("artist_id", artist.id)
-    .gte("date", today)
-    .order("date", { ascending: true })
-    .limit(8);
+  const [{ data: dates }, { data: genresData }] = await Promise.all([
+    supabase
+      .from("artist_availability")
+      .select("date, status")
+      .eq("artist_id", artist.id)
+      .gte("date", today)
+      .order("date", { ascending: true })
+      .limit(8),
+    supabase.from("genres").select("name").order("order_index"),
+  ]);
+  const genreOptions = (genresData ?? []).map((g) => g.name as string);
 
   const gallery = artist.gallery ?? [];
   const videos = artist.videos ?? [];
@@ -162,7 +166,7 @@ export default async function ArtistDashboardPage() {
             pubblica e nella sezione &quot;Gli artisti&quot; della home.
           </p>
         </header>
-        <ArtistProfileForm artist={artist} />
+        <ArtistProfileForm artist={artist} genreOptions={genreOptions} />
       </section>
     </div>
   );

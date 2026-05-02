@@ -7,9 +7,9 @@ type ProfileUpdate = {
   stage_name: string;
   bio: string | null;
   genre: string[];
+  instruments: string[];
   city: string | null;
   cover_image: string | null;
-  base_fee: number | null;
   social_links: Record<string, string>;
   gallery: string[];
   videos: string[];

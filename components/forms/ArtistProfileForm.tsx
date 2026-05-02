@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { MultiSelect } from "@/components/ui/MultiSelect";
 import { ImageUpload } from "@/components/forms/ImageUpload";
+import { GalleryUpload } from "@/components/forms/GalleryUpload";
+import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
 import { updateArtistProfile } from "@/app/(artist)/dashboard/_actions";
 
 type Artist = {
@@ -12,9 +15,9 @@ type Artist = {
   stage_name: string;
   bio: string | null;
   genre: string[];
+  instruments?: string[] | null;
   city: string | null;
   cover_image: string | null;
-  base_fee: number | null;
   social_links: unknown;
   gallery: string[];
   videos: string[];
@@ -31,14 +34,17 @@ function readLink(links: unknown, key: string): string {
 type FormValues = {
   stage_name: string;
   bio: string;
-  genre: string;
+  genre: string[];
+  instruments: string[];
   city: string;
   cover_image: string;
-  base_fee: string;
   instagram: string;
+  facebook: string;
+  tiktok: string;
+  youtube: string;
   spotify: string;
   website: string;
-  gallery: string;
+  gallery: string[];
   videos: string;
 };
 
@@ -49,40 +55,55 @@ function splitLines(text: string): string[] {
     .filter(Boolean);
 }
 
-export function ArtistProfileForm({ artist }: { artist: Artist }) {
+export function ArtistProfileForm({
+  artist,
+  genreOptions,
+}: {
+  artist: Artist;
+  genreOptions: string[];
+}) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<FormValues>({
     defaultValues: {
       stage_name: artist.stage_name,
       bio: artist.bio ?? "",
-      genre: artist.genre.join(", "),
+      genre: artist.genre ?? [],
+      instruments: artist.instruments ?? [],
       city: artist.city ?? "",
       cover_image: artist.cover_image ?? "",
-      base_fee: artist.base_fee?.toString() ?? "",
       instagram: readLink(artist.social_links, "instagram"),
+      facebook: readLink(artist.social_links, "facebook"),
+      tiktok: readLink(artist.social_links, "tiktok"),
+      youtube: readLink(artist.social_links, "youtube"),
       spotify: readLink(artist.social_links, "spotify"),
       website: readLink(artist.social_links, "website"),
-      gallery: (artist.gallery ?? []).join("\n"),
+      gallery: artist.gallery ?? [],
       videos: (artist.videos ?? []).join("\n"),
     },
   });
+
+  const genreOpts = genreOptions.map((g) => ({ value: g, label: g }));
+  const instrumentOpts = INSTRUMENT_OPTIONS.map((i) => ({ value: i, label: i }));
 
   async function onSubmit(values: FormValues) {
     setError(null);
     const res = await updateArtistProfile(artist.id, {
       stage_name: values.stage_name,
       bio: values.bio || null,
-      genre: values.genre.split(",").map((g) => g.trim()).filter(Boolean),
+      genre: values.genre,
+      instruments: values.instruments,
       city: values.city || null,
       cover_image: values.cover_image || null,
-      base_fee: values.base_fee ? Number(values.base_fee) : null,
       social_links: {
         ...(values.instagram ? { instagram: values.instagram } : {}),
+        ...(values.facebook ? { facebook: values.facebook } : {}),
+        ...(values.tiktok ? { tiktok: values.tiktok } : {}),
+        ...(values.youtube ? { youtube: values.youtube } : {}),
         ...(values.spotify ? { spotify: values.spotify } : {}),
         ...(values.website ? { website: values.website } : {}),
       },
-      gallery: splitLines(values.gallery),
+      gallery: values.gallery,
       videos: splitLines(values.videos),
     });
     if (!res.ok) setError(res.error ?? "Errore");
@@ -100,7 +121,38 @@ export function ArtistProfileForm({ artist }: { artist: Artist }) {
           <Field label="Nome d'arte"><Input {...register("stage_name", { required: true })} /></Field>
           <Field label="Città"><Input {...register("city")} /></Field>
         </div>
-        <Field label="Generi (separati da virgola)"><Input {...register("genre")} /></Field>
+        <Field label="Generi musicali">
+          <Controller
+            control={control}
+            name="genre"
+            render={({ field }) => (
+              <MultiSelect
+                options={genreOpts}
+                value={field.value ?? []}
+                onChange={field.onChange}
+                placeholder="Seleziona uno o più generi…"
+                searchPlaceholder="Cerca genere…"
+                emptyText="Nessun genere trovato"
+              />
+            )}
+          />
+        </Field>
+        <Field label="Strumenti suonati live">
+          <Controller
+            control={control}
+            name="instruments"
+            render={({ field }) => (
+              <MultiSelect
+                options={instrumentOpts}
+                value={field.value ?? []}
+                onChange={field.onChange}
+                placeholder="Seleziona gli strumenti che suoni dal vivo…"
+                searchPlaceholder="Cerca strumento…"
+                emptyText="Nessuno strumento trovato"
+              />
+            )}
+          />
+        </Field>
         <Field label="Bio">
           <Textarea rows={5} {...register("bio")} />
         </Field>
@@ -120,20 +172,21 @@ export function ArtistProfileForm({ artist }: { artist: Artist }) {
             />
           )}
         />
-        <Field label="Tariffa base (€)">
-          <Input type="number" min="0" step="50" {...register("base_fee")} />
-        </Field>
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
         <legend className="font-display text-lg uppercase">Galleria foto</legend>
-        <Field label="URL foto, una per riga">
-          <Textarea
-            rows={4}
-            placeholder={"https://...jpg\nhttps://...jpg"}
-            {...register("gallery")}
-          />
-        </Field>
+        <Controller
+          control={control}
+          name="gallery"
+          render={({ field }) => (
+            <GalleryUpload
+              label="Carica foto direttamente da computer o cellulare"
+              value={field.value ?? []}
+              onChange={field.onChange}
+            />
+          )}
+        />
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
@@ -149,8 +202,11 @@ export function ArtistProfileForm({ artist }: { artist: Artist }) {
 
       <fieldset className="space-y-4 border-t border-border pt-6">
         <legend className="font-display text-lg uppercase">Social</legend>
-        <div className="grid gap-4 md:grid-cols-3">
-          <Field label="Instagram"><Input placeholder="@handle" {...register("instagram")} /></Field>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Instagram"><Input placeholder="@handle o link" {...register("instagram")} /></Field>
+          <Field label="Facebook"><Input placeholder="link Facebook" {...register("facebook")} /></Field>
+          <Field label="TikTok"><Input placeholder="@handle o link" {...register("tiktok")} /></Field>
+          <Field label="YouTube"><Input placeholder="link canale YouTube" {...register("youtube")} /></Field>
           <Field label="Spotify"><Input placeholder="link Spotify" {...register("spotify")} /></Field>
           <Field label="Sito web"><Input type="url" placeholder="https://" {...register("website")} /></Field>
         </div>

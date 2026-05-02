@@ -5,7 +5,14 @@ import { ArtistStatusToggle } from "@/components/admin/ArtistStatusToggle";
 import { ArtistEditForm } from "@/components/admin/ArtistEditForm";
 import { DeleteArtistButton } from "@/components/admin/DeleteArtistButton";
 
-type SocialLinks = { instagram?: string | null; spotify?: string | null; website?: string | null };
+type SocialLinks = {
+  instagram?: string | null;
+  facebook?: string | null;
+  tiktok?: string | null;
+  youtube?: string | null;
+  spotify?: string | null;
+  website?: string | null;
+};
 
 export default async function AdminArtistDetailPage({
   params,
@@ -14,10 +21,14 @@ export default async function AdminArtistDetailPage({
 }) {
   const { id } = await params;
   const supabase = createAdminClient();
-  const { data: artist } = await supabase.from("artists").select("*").eq("id", id).single();
+  const [{ data: artist }, { data: genresData }] = await Promise.all([
+    supabase.from("artists").select("*").eq("id", id).single(),
+    supabase.from("genres").select("name").order("order_index"),
+  ]);
   if (!artist) notFound();
 
   const social = (artist.social_links ?? {}) as SocialLinks;
+  const genreOptions = (genresData ?? []).map((g) => g.name as string);
 
   return (
     <div className="max-w-3xl space-y-8">
@@ -43,14 +54,18 @@ export default async function AdminArtistDetailPage({
         <h2 className="font-display text-lg uppercase">Anagrafica</h2>
         <ArtistEditForm
           artistId={artist.id}
+          genreOptions={genreOptions}
           defaults={{
             stage_name: artist.stage_name,
             city: artist.city ?? "",
-            genre: artist.genre.join(", "),
+            genre: artist.genre ?? [],
+            instruments: artist.instruments ?? [],
             bio: artist.bio ?? "",
             cover_image: artist.cover_image ?? "",
-            base_fee: artist.base_fee != null ? String(artist.base_fee) : "",
             instagram: social.instagram ?? "",
+            facebook: social.facebook ?? "",
+            tiktok: social.tiktok ?? "",
+            youtube: social.youtube ?? "",
             spotify: social.spotify ?? "",
             website: social.website ?? "",
           }}

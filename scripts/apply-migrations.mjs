@@ -22,9 +22,10 @@ if (!dbUrl || dbUrl.includes("YOUR_DB_PASSWORD")) {
   console.log("");
   console.log("Per applicare le migration esegui questi step (1 minuto):");
   console.log(" 1. Vai su https://supabase.com/dashboard/project/nppzchkgzltcokvxcpji/sql/new");
-  console.log(" 2. Copia-incolla il contenuto di:");
+  console.log(" 2. Copia-incolla il contenuto di (in ordine):");
   console.log("    - supabase/migrations/0003_fix_rls_recursion.sql");
   console.log("    - supabase/migrations/0004_admin_artist_extras.sql");
+  console.log("    - supabase/migrations/0005_genres_instruments_socials.sql");
   console.log(" 3. Premi Run.");
   console.log("");
   console.log("In alternativa: Settings → Database → copia la password DB,");

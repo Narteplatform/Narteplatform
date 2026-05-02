@@ -54,6 +54,7 @@ export interface Database {
           slug: string;
           bio: string | null;
           genre: string[];
+          instruments: string[];
           city: string | null;
           cover_image: string | null;
           gallery: string[];
@@ -70,6 +71,7 @@ export interface Database {
           slug: string;
           bio?: string | null;
           genre?: string[];
+          instruments?: string[];
           city?: string | null;
           cover_image?: string | null;
           gallery?: string[];
@@ -86,6 +88,7 @@ export interface Database {
           slug?: string;
           bio?: string | null;
           genre?: string[];
+          instruments?: string[];
           city?: string | null;
           cover_image?: string | null;
           gallery?: string[];
@@ -93,6 +96,27 @@ export interface Database {
           social_links?: Json;
           base_fee?: number | null;
           status?: ArtistStatus;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      genres: {
+        Row: {
+          id: string;
+          name: string;
+          order_index: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          order_index?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          order_index?: number;
           created_at?: string;
         };
         Relationships: [];
