@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 import { ApplicationActions } from "@/components/admin/ApplicationActions";
+import { DeleteArtistButton } from "@/components/admin/DeleteArtistButton";
 
 export default async function AdminArtistsPage() {
   const supabase = await createClient();
@@ -63,8 +64,11 @@ export default async function AdminArtistsPage() {
                   <td className="p-3 font-medium">{a.stage_name}</td>
                   <td className="p-3">{a.city ?? "—"}</td>
                   <td className="p-3 uppercase text-xs">{a.status}</td>
-                  <td className="p-3 text-right">
-                    <Link href={`/admin/artisti/${a.id}`} className="underline">Modifica</Link>
+                  <td className="p-3">
+                    <div className="flex items-center justify-end gap-3">
+                      <Link href={`/admin/artisti/${a.id}`} className="underline">Modifica</Link>
+                      <DeleteArtistButton artistId={a.id} artistName={a.stage_name} />
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -1,8 +1,9 @@
-import { HeroEventGuide } from "@/components/marketing/HeroEventGuide";
+import { HeroNarte } from "@/components/marketing/HeroNarte";
 import { AboutBlock } from "@/components/marketing/AboutBlock";
 import { LocationPicker } from "@/components/marketing/LocationPicker";
 import { CategoryRail } from "@/components/marketing/CategoryRail";
 import { EventGrid } from "@/components/marketing/EventGrid";
+import { StarsSection } from "@/components/marketing/StarsSection";
 import { createClient } from "@/lib/supabase/server";
 import type { EventCardProps } from "@/components/marketing/EventCard";
 
@@ -37,11 +38,12 @@ export default async function HomePage() {
 
   return (
     <>
-      <HeroEventGuide />
+      <HeroNarte />
       <AboutBlock />
       <LocationPicker />
       <CategoryRail />
       <EventGrid title="Music" events={music} seeAllHref="/eventi?cat=music" />
+      <StarsSection />
       <EventGrid title="Festivals" events={festivals} seeAllHref="/eventi?cat=festivals" />
       <EventGrid title="Art" events={art} seeAllHref="/eventi?cat=art" />
     </>

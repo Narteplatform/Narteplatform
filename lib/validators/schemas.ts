@@ -55,6 +55,19 @@ export const eventSchema = z.object({
 });
 export type EventInput = z.infer<typeof eventSchema>;
 
+export const artistSchema = z.object({
+  stage_name: z.string().min(2).max(80),
+  city: z.string().max(80).optional().or(z.literal("").transform(() => undefined)),
+  genre: z.string().max(160).optional().or(z.literal("").transform(() => undefined)),
+  bio: z.string().max(4000).optional().or(z.literal("").transform(() => undefined)),
+  cover_image: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  base_fee: z.coerce.number().nonnegative().optional().or(z.literal("").transform(() => undefined)),
+  instagram: z.string().max(160).optional().or(z.literal("").transform(() => undefined)),
+  spotify: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
+  website: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+});
+export type ArtistInput = z.infer<typeof artistSchema>;
+
 export const authSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, "Almeno 8 caratteri"),

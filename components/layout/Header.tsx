@@ -10,8 +10,8 @@ export async function Header() {
   return (
     <header className="border-b border-border bg-background">
       <div className="container-narte flex h-20 items-center justify-between gap-6">
-        <Link href="/" className="font-display text-xl leading-none">
-          HAP<br />PEEN
+        <Link href="/" className="font-display text-xl leading-none" aria-label="Home N'arte">
+          N&apos;AR<br />TE
         </Link>
 
         <div className="hidden flex-1 max-w-md items-center md:flex">
@@ -27,6 +27,7 @@ export async function Header() {
 
         <nav className="hidden items-center gap-6 text-sm lg:flex">
           <Link href="/eventi" className="hover:underline">Eventi</Link>
+          <Link href="/artisti" className="hover:underline">Artisti</Link>
           <Link href="/chi-siamo" className="hover:underline">Chi siamo</Link>
           <Link href="/collaborazioni" className="hover:underline">Collaborazioni</Link>
           <Link href="/contatti" className="hover:underline">Contatti</Link>

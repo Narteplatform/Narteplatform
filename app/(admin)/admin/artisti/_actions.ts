@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 import { getSiteUrl } from "@/lib/site-url";
+import { artistSchema, type ArtistInput } from "@/lib/validators/schemas";
 
 async function ensureAdmin() {
   const supabase = await createClient();
@@ -87,6 +89,54 @@ export async function updateArtistStatus(artistId: string, status: "pending" | "
   revalidatePath("/admin/artisti");
   revalidatePath("/artisti");
   return { ok: true as const };
+}
+
+export async function updateArtist(artistId: string, input: ArtistInput) {
+  const ctx = await ensureAdmin();
+  if (!ctx.ok) return ctx;
+  const parsed = artistSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
+  const data = parsed.data;
+
+  const social_links = {
+    instagram: data.instagram ?? null,
+    spotify: data.spotify ?? null,
+    website: data.website ?? null,
+  };
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("artists")
+    .update({
+      stage_name: data.stage_name,
+      city: data.city ?? null,
+      genre: data.genre
+        ? data.genre.split(",").map((g) => g.trim()).filter(Boolean)
+        : [],
+      bio: data.bio ?? null,
+      cover_image: data.cover_image ?? null,
+      base_fee: data.base_fee ?? null,
+      social_links,
+    })
+    .eq("id", artistId);
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/admin/artisti");
+  revalidatePath("/artisti");
+  revalidatePath("/");
+  return { ok: true as const };
+}
+
+export async function deleteArtist(artistId: string) {
+  const ctx = await ensureAdmin();
+  if (!ctx.ok) return ctx;
+  const admin = createAdminClient();
+  const { error } = await admin.from("artists").delete().eq("id", artistId);
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath("/admin/artisti");
+  revalidatePath("/artisti");
+  revalidatePath("/");
+  redirect("/admin/artisti");
 }
 
 export async function createArtistManual(input: {

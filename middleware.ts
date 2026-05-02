@@ -33,7 +33,9 @@ export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const path = url.pathname;
 
-  const protectedPrefixes = ["/admin", "/dashboard", "/artisti"];
+  // /artisti è pubblica come vetrina; il dettaglio richiede auth internamente
+  // perché contiene il form di booking. /admin e /dashboard restano dietro auth.
+  const protectedPrefixes = ["/admin", "/dashboard"];
   const requiresAuth = protectedPrefixes.some((p) => path.startsWith(p));
 
   if (requiresAuth && !user) {

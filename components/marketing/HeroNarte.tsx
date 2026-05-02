@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 
 const easing = [0.22, 1, 0.36, 1] as const;
 
-export function HeroEventGuide() {
+export function HeroNarte() {
   const reduce = useReducedMotion();
   const initial = reduce ? false : { clipPath: "inset(0 100% 0 0)", opacity: 0 };
   const animate = reduce ? undefined : { clipPath: "inset(0 0% 0 0)", opacity: 1 };
@@ -15,7 +15,7 @@ export function HeroEventGuide() {
         initial={initial}
         animate={animate}
         transition={{ duration: 1.1, ease: easing }}
-        className="display-xl text-[18vw] leading-[0.9] md:text-[14vw]"
+        className="display-xl text-[22vw] leading-[0.9] md:text-[18vw]"
         style={{
           backgroundImage:
             "url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=2000&q=70')",
@@ -26,10 +26,19 @@ export function HeroEventGuide() {
           color: "transparent",
           filter: "contrast(1.05)",
         }}
-        aria-label="Event Guide"
+        aria-label="N'arte"
       >
-        EVENT GUIDE
+        N&apos;ARTE
       </motion.h1>
+
+      <motion.p
+        initial={reduce ? false : { opacity: 0, y: 12 }}
+        animate={reduce ? undefined : { opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.3, ease: easing }}
+        className="mt-6 max-w-xl font-display text-lg uppercase tracking-tight md:text-2xl"
+      >
+        La tua musica dal vivo.
+      </motion.p>
 
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 20 }}
@@ -39,7 +48,7 @@ export function HeroEventGuide() {
       >
         <img
           src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=2000&q=70"
-          alt="Crowd at a music event"
+          alt="Pubblico a un concerto N'arte"
           className="h-full w-full object-cover"
           loading="eager"
         />

@@ -57,8 +57,16 @@ npm run lint
 
 ## Setup iniziale
 
-1. `cp .env.local.example .env.local` e compilare le chiavi
+1. `cp .env.local.example .env.local` e compilare le chiavi (incluse `SEED_SUPERADMIN_PASSWORD` e `SEED_ARTIST_PASSWORD`)
 2. Creare progetto Supabase (consigliato via Vercel Marketplace)
 3. Eseguire `supabase/migrations/0001_init.sql` sul DB
-4. Login con `SUPERADMIN_EMAIL` → trigger promuove automaticamente
-5. Configurare Resend con dominio verificato
+4. Sul DB Supabase, abilitare la promozione automatica al superadmin via GUC (una sola volta):
+   ```sql
+   alter database postgres set app.superadmin_email = 'boostcreativeai@gmail.com';
+   ```
+5. Eseguire `supabase/migrations/0002_seed_narte.sql` per popolare contenuti reali
+   (eventi storici N'arte, 8 artisti italiani di prova, 3 collaborazioni)
+6. `npm run db:seed-accounts` per creare/promuovere gli account fissi:
+   - `boostcreativeai@gmail.com` → superadmin (`/admin`)
+   - `luigimarzaticodigital@gmail.com` → artist (`/dashboard`, con record collegato in `artists`)
+7. Configurare Resend con dominio verificato
