@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import type { Role } from "@/lib/supabase/types";
 
 export async function getCurrentUser() {
@@ -8,7 +8,12 @@ export async function getCurrentUser() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: profile } = await supabase
+
+  // Admin client per la lettura del profilo: bypassa RLS in modo sicuro
+  // (l'id è già verificato da auth.getUser server-side) ed evita la
+  // ricorsione infinita causata dalle policy "is superadmin" su profiles.
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("profiles")
     .select("id, role, full_name, avatar_url")
     .eq("id", user.id)

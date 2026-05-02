@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/supabase/types";
 
@@ -50,7 +51,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && (path.startsWith("/admin") || path.startsWith("/dashboard"))) {
-    const { data: profile } = await supabase
+    // Lettura ruolo via service role (bypassa RLS, evita ricorsione delle policy
+    // "is superadmin" che si auto-referenziano su profiles).
+    const admin = createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    const { data: profile } = await admin
       .from("profiles")
       .select("role")
       .eq("id", user.id)

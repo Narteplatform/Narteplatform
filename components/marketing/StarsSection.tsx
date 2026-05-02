@@ -2,11 +2,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { ArtistCard, type ArtistCardProps } from "./ArtistCard";
 import { StaggerList } from "@/components/animations/Reveal";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 async function getStars(limit = 8): Promise<ArtistCardProps[]> {
   try {
-    const supabase = await createClient();
+    // Admin client server-side: bypassa RLS (lettura di dati pubblici approved).
+    const supabase = createAdminClient();
     const { data } = await supabase
       .from("artists")
       .select("slug, stage_name, city, cover_image")

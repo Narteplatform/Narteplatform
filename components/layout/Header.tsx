@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { Search, User } from "lucide-react";
+import { Search, User, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/guards";
 
 export async function Header() {
   const user = await getCurrentUser();
   const role = user?.profile?.role;
+  const dashHref = role === "superadmin" ? "/admin" : role === "artist" ? "/dashboard" : "/artisti";
+  const dashLabel = role === "superadmin" ? "Admin" : role === "artist" ? "Dashboard" : "Area Riservata";
 
   return (
     <header className="border-b border-border bg-background">
@@ -40,15 +42,27 @@ export async function Header() {
 
           {!user ? (
             <>
-              <Link href="/login" className="text-sm hover:underline">sign in</Link>
-              <Link href="/register" className="text-sm hover:underline">register</Link>
+              <Link href="/login" className="text-sm hover:underline">Accedi</Link>
+              <Link href="/register" className="text-sm hover:underline">Registrati</Link>
             </>
           ) : (
-            <Button asChild variant="default" size="sm">
-              <Link href={role === "superadmin" ? "/admin" : role === "artist" ? "/dashboard" : "/artisti"}>
-                <User className="size-4" /> Area Riservata
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button asChild variant="default" size="sm">
+                <Link href={dashHref} title={user.email ?? undefined}>
+                  {role === "superadmin" ? (
+                    <LayoutDashboard className="size-4" />
+                  ) : (
+                    <User className="size-4" />
+                  )}
+                  <span className="hidden sm:inline">{dashLabel}</span>
+                </Link>
+              </Button>
+              <form action="/logout" method="post">
+                <Button type="submit" variant="ghost" size="sm" className="text-sm">
+                  Esci
+                </Button>
+              </form>
+            </div>
           )}
         </div>
       </div>

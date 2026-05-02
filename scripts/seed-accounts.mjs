@@ -83,7 +83,17 @@ for (const acc of accounts) {
     user = data.user;
     console.log(`  ✅ Utente creato (id ${user.id})`);
   } else {
-    console.log(`  ℹ️  Utente esistente (id ${user.id})`);
+    console.log(`  ℹ️  Utente esistente (id ${user.id}) — riallineo password`);
+    const { error: updErr } = await admin.auth.admin.updateUserById(user.id, {
+      password: acc.password,
+      email_confirm: true,
+      user_metadata: { full_name: acc.fullName },
+    });
+    if (updErr) {
+      console.error(`  ⚠️  Reset password fallito: ${updErr.message}`);
+    } else {
+      console.log(`  ✅ Password riallineata da SEED_*_PASSWORD`);
+    }
   }
 
   // Riallinea il profilo (il trigger dovrebbe averlo creato in automatico)

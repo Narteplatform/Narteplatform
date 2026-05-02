@@ -1,11 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { StaggerList, Reveal } from "@/components/animations/Reveal";
 import { ArtistCard } from "@/components/marketing/ArtistCard";
 
 export const metadata = { title: "Artisti — N'arte" };
 
 export default async function ArtistiPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from("artists")
     .select("id, slug, stage_name, city, genre, cover_image")

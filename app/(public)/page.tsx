@@ -4,12 +4,14 @@ import { LocationPicker } from "@/components/marketing/LocationPicker";
 import { CategoryRail } from "@/components/marketing/CategoryRail";
 import { EventGrid } from "@/components/marketing/EventGrid";
 import { StarsSection } from "@/components/marketing/StarsSection";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import type { EventCardProps } from "@/components/marketing/EventCard";
 
 async function getEventsByCategory(category: string, limit = 4): Promise<EventCardProps[]> {
   try {
-    const supabase = await createClient();
+    // Admin client server-side: evita la ricorsione RLS sulle policy che
+    // referenziano profiles. Restituisce solo dati pubblici comunque.
+    const supabase = createAdminClient();
     const { data } = await supabase
       .from("events")
       .select("slug, title, city, date, price, cover_image")
