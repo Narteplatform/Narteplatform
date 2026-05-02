@@ -1,11 +1,11 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Instagram, Globe, Music } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth/guards";
 import { Reveal } from "@/components/animations/Reveal";
-import { ArtistAvailability } from "@/components/marketing/ArtistAvailability";
-import { ArtistRequestForm } from "@/components/forms/ArtistRequestForm";
-import { Button } from "@/components/ui/Button";
+import { BookingCalendar } from "@/components/marketing/BookingCalendar";
+
+type SocialLinks = { instagram?: string | null; spotify?: string | null; website?: string | null };
 
 export default async function ArtistDetailPage({
   params,
@@ -13,12 +13,13 @@ export default async function ArtistDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const user = await getCurrentUser();
   const supabase = createAdminClient();
 
   const { data: artist } = await supabase
     .from("artists")
-    .select("id, slug, stage_name, bio, genre, city, cover_image, gallery, videos, social_links, base_fee, status")
+    .select(
+      "id, slug, stage_name, bio, genre, city, cover_image, gallery, videos, social_links, base_fee, status"
+    )
     .eq("slug", slug)
     .eq("status", "approved")
     .single();
@@ -30,6 +31,11 @@ export default async function ArtistDetailPage({
     .select("date, status")
     .eq("artist_id", artist.id);
 
+  const busyDates = (availability ?? [])
+    .filter((a) => a.status === "busy")
+    .map((a) => a.date);
+
+  const social = (artist.social_links ?? {}) as SocialLinks;
   const gallery = artist.gallery ?? [];
   const videos = artist.videos ?? [];
 
@@ -44,10 +50,22 @@ export default async function ArtistDetailPage({
             <h1 className="display-xl text-5xl md:text-7xl">{artist.stage_name}</h1>
           </Reveal>
           <Reveal delay={0.2}>
-            <p className="mt-4 text-sm uppercase tracking-wide">
-              {artist.city ?? "—"} · {artist.genre.join(" / ")}
-            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm uppercase tracking-wide">
+              <span>{artist.city ?? "—"}</span>
+              <span aria-hidden>·</span>
+              <ul className="flex flex-wrap gap-1">
+                {artist.genre.map((g) => (
+                  <li
+                    key={g}
+                    className="rounded-full border border-foreground/30 bg-muted px-2 py-0.5 text-xs lowercase"
+                  >
+                    {g}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Reveal>
+
           {artist.cover_image && (
             <Reveal delay={0.3}>
               <div className="mt-8 aspect-[4/5] w-full overflow-hidden bg-muted">
@@ -56,9 +74,43 @@ export default async function ArtistDetailPage({
               </div>
             </Reveal>
           )}
+
           {artist.bio && (
             <Reveal delay={0.4}>
               <p className="mt-6 whitespace-pre-wrap text-base leading-relaxed">{artist.bio}</p>
+            </Reveal>
+          )}
+
+          {(social.instagram || social.spotify || social.website) && (
+            <Reveal delay={0.45}>
+              <ul className="mt-6 flex flex-wrap gap-3 text-sm">
+                {social.instagram && (
+                  <li>
+                    <a
+                      href={social.instagram.startsWith("http") ? social.instagram : `https://instagram.com/${social.instagram.replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full border border-foreground/30 px-3 py-1 hover:border-foreground"
+                    >
+                      <Instagram className="size-4" /> Instagram
+                    </a>
+                  </li>
+                )}
+                {social.spotify && (
+                  <li>
+                    <a href={social.spotify} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-foreground/30 px-3 py-1 hover:border-foreground">
+                      <Music className="size-4" /> Spotify
+                    </a>
+                  </li>
+                )}
+                {social.website && (
+                  <li>
+                    <a href={social.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-foreground/30 px-3 py-1 hover:border-foreground">
+                      <Globe className="size-4" /> Sito
+                    </a>
+                  </li>
+                )}
+              </ul>
             </Reveal>
           )}
 
@@ -88,12 +140,7 @@ export default async function ArtistDetailPage({
                 <ul className="mt-3 space-y-2 text-sm">
                   {videos.map((v) => (
                     <li key={v}>
-                      <a
-                        href={v}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline-offset-2 hover:underline"
-                      >
+                      <a href={v} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
                         ▶︎ {v}
                       </a>
                     </li>
@@ -104,45 +151,32 @@ export default async function ArtistDetailPage({
           )}
         </div>
 
-        <div className="space-y-10">
+        <div className="space-y-10 md:sticky md:top-8 md:self-start">
           <Reveal>
-            <section>
-              <h2 className="font-display text-2xl uppercase">Disponibilità</h2>
-              <ArtistAvailability availability={availability ?? []} />
+            <section className="border border-border p-6">
+              <h2 className="font-display text-2xl uppercase">Calendario disponibilità</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Clicca un giorno libero per richiedere {artist.stage_name} per il tuo evento.
+              </p>
+              <div className="mt-4">
+                <BookingCalendar
+                  artistId={artist.id}
+                  artistName={artist.stage_name}
+                  busyDates={busyDates}
+                />
+              </div>
+              {artist.base_fee != null && (
+                <p className="mt-4 border-t border-border pt-4 text-xs uppercase tracking-wide text-muted-foreground">
+                  Tariffa indicativa: <strong className="text-foreground">€{Number(artist.base_fee).toFixed(0)}</strong>
+                </p>
+              )}
             </section>
           </Reveal>
 
           <Reveal delay={0.1}>
-            <section className="border border-border p-6">
-              <h2 className="font-display text-2xl uppercase">Richiedi un booking</h2>
-              {user ? (
-                <>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Compila il modulo: l&apos;artista riceverà i dettagli via email.
-                  </p>
-                  <div className="mt-4">
-                    <ArtistRequestForm
-                      artistId={artist.id}
-                      defaultEmail={user.email ?? ""}
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Per inviare una richiesta devi avere un account.
-                  </p>
-                  <div className="mt-4 flex gap-3">
-                    <Button asChild>
-                      <Link href={`/login?next=/artisti/${artist.slug}`}>Accedi</Link>
-                    </Button>
-                    <Button asChild variant="outline">
-                      <Link href="/register">Registrati</Link>
-                    </Button>
-                  </div>
-                </>
-              )}
-            </section>
+            <p className="text-xs text-muted-foreground">
+              <Link href="/artisti" className="underline-offset-2 hover:underline">← Torna a tutti gli artisti</Link>
+            </p>
           </Reveal>
         </div>
       </div>

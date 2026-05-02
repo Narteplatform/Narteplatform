@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { ImageUpload } from "@/components/forms/ImageUpload";
 import { updateArtist } from "@/app/(admin)/admin/artisti/_actions";
 
 type Values = {
@@ -28,7 +29,7 @@ export function ArtistEditForm({ artistId, defaults }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm<Values>({
+  const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<Values>({
     defaultValues: {
       stage_name: defaults.stage_name ?? "",
       city: defaults.city ?? "",
@@ -73,7 +74,18 @@ export function ArtistEditForm({ artistId, defaults }: Props) {
           <Input placeholder="indie, trap" {...register("genre")} />
         </Field>
       </div>
-      <Field label="URL cover"><Input type="url" {...register("cover_image")} /></Field>
+      <Controller
+        control={control}
+        name="cover_image"
+        render={({ field }) => (
+          <ImageUpload
+            label="Cover artista (3:4)"
+            value={field.value ?? ""}
+            onChange={field.onChange}
+            kind="artist"
+          />
+        )}
+      />
       <Field label="Cachet base (€)">
         <Input type="number" min={0} step="0.01" {...register("base_fee")} />
       </Field>

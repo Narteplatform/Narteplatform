@@ -183,19 +183,43 @@ const collabs = [
     name: "Edenlandia",
     link: "https://www.edenlandia.it",
     description: "Parco divertimenti storico di Napoli, partner di Oktoberland.",
+    logo_url: "https://placehold.co/240x100/0b0b0b/ffffff?text=EDENLANDIA",
     order_index: 1,
   },
   {
     name: "Brusco Restaurant",
     link: null,
     description: "Location della rassegna Sunday N'arte.",
+    logo_url: "https://placehold.co/240x100/0b0b0b/ffffff?text=BRUSCO",
     order_index: 2,
   },
   {
     name: "Comune di Capri",
-    link: null,
+    link: "https://www.cittadicapri.it",
     description: "Patrocinio dei Capri Music Awards.",
+    logo_url: "https://placehold.co/240x100/0b0b0b/ffffff?text=CAPRI",
     order_index: 3,
+  },
+  {
+    name: "Teatro Augusteo",
+    link: null,
+    description: "Storico teatro di Napoli, partner del Memorial Pino Daniele.",
+    logo_url: "https://placehold.co/240x100/0b0b0b/ffffff?text=AUGUSTEO",
+    order_index: 4,
+  },
+  {
+    name: "Comune di Napoli",
+    link: null,
+    description: "Patrocinio degli eventi pubblici N'arte.",
+    logo_url: "https://placehold.co/240x100/0b0b0b/ffffff?text=NAPOLI",
+    order_index: 5,
+  },
+  {
+    name: "Radio Kiss Kiss",
+    link: null,
+    description: "Media partner ufficiale.",
+    logo_url: "https://placehold.co/240x100/0b0b0b/ffffff?text=KISS+KISS",
+    order_index: 6,
   },
 ];
 
@@ -251,7 +275,17 @@ for (const c of collabs) {
     .eq("name", c.name)
     .maybeSingle();
   if (existing) {
-    console.log(`  ℹ️  ${c.name} già presente`);
+    const { error } = await admin
+      .from("collaborations")
+      .update({
+        logo_url: c.logo_url,
+        link: c.link,
+        description: c.description,
+        order_index: c.order_index,
+      })
+      .eq("id", existing.id);
+    if (error) console.error(`  ❌ ${c.name}: ${error.message}`);
+    else console.log(`  ↻ ${c.name} (aggiornato)`);
     continue;
   }
   const { error } = await admin.from("collaborations").insert(c);

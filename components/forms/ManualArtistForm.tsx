@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { ImageUpload } from "@/components/forms/ImageUpload";
 import { createArtistManual } from "@/app/(admin)/admin/artisti/_actions";
 
 type Values = {
@@ -19,7 +20,7 @@ type Values = {
 export function ManualArtistForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm<Values>();
+  const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<Values>();
 
   async function onSubmit(values: Values) {
     setError(null);
@@ -47,7 +48,18 @@ export function ManualArtistForm() {
         <Field label="Città"><Input {...register("city")} /></Field>
         <Field label="Generi"><Input placeholder="Indie, Trap" {...register("genre")} /></Field>
       </div>
-      <Field label="URL cover"><Input type="url" {...register("cover_image")} /></Field>
+      <Controller
+        control={control}
+        name="cover_image"
+        render={({ field }) => (
+          <ImageUpload
+            label="Cover artista (3:4)"
+            value={field.value ?? ""}
+            onChange={field.onChange}
+            kind="artist"
+          />
+        )}
+      />
       <Field label="Bio"><Textarea rows={5} {...register("bio")} /></Field>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Creazione..." : "Crea"}</Button>

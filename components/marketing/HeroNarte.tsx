@@ -31,20 +31,11 @@ export function HeroNarte() {
         N&apos;ARTE
       </motion.h1>
 
-      <motion.p
-        initial={reduce ? false : { opacity: 0, y: 12 }}
-        animate={reduce ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.3, ease: easing }}
-        className="mt-6 max-w-xl font-display text-lg uppercase tracking-tight md:text-2xl"
-      >
-        La tua musica dal vivo.
-      </motion.p>
-
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 20 }}
         animate={reduce ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.4, ease: easing }}
-        className="mt-6 h-32 w-full overflow-hidden md:h-44"
+        transition={{ duration: 0.8, delay: 0.3, ease: easing }}
+        className="mt-6 h-40 w-full overflow-hidden md:h-56"
       >
         <img
           src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=2000&q=70"

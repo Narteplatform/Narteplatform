@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { ArtistCard, type ArtistCardProps } from "./ArtistCard";
-import { StaggerList } from "@/components/animations/Reveal";
+import { StaggerList, Reveal } from "@/components/animations/Reveal";
 import { createAdminClient } from "@/lib/supabase/server";
 
 async function getStars(limit = 8): Promise<ArtistCardProps[]> {
@@ -10,7 +10,7 @@ async function getStars(limit = 8): Promise<ArtistCardProps[]> {
     const supabase = createAdminClient();
     const { data } = await supabase
       .from("artists")
-      .select("slug, stage_name, city, cover_image")
+      .select("slug, stage_name, city, cover_image, genre")
       .eq("status", "approved")
       .order("created_at", { ascending: false })
       .limit(limit);
@@ -19,6 +19,7 @@ async function getStars(limit = 8): Promise<ArtistCardProps[]> {
       stageName: a.stage_name,
       city: a.city,
       coverImage: a.cover_image,
+      genres: a.genre,
     }));
   } catch {
     return [];
@@ -29,18 +30,22 @@ export async function StarsSection() {
   const artists = await getStars();
 
   return (
-    <section className="bg-foreground py-16 text-background md:py-24">
+    <section className="bg-foreground py-20 text-background md:py-28">
       <div className="container-narte">
+        <Reveal>
+          <p className="accent-label mb-3">gli artisti</p>
+        </Reveal>
         <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <h2 className="display-xl text-5xl md:text-7xl">Gli artisti</h2>
-          <div className="flex flex-col items-start gap-4 md:items-end">
-            <p className="max-w-xs text-sm uppercase tracking-wide text-background/70 md:text-right">
-              Più di 100 artisti emergenti sul nostro palco
-            </p>
+          <Reveal delay={0.1}>
+            <h2 className="display-xl text-4xl md:text-6xl">
+              Scegli l&apos;artista per le tue esigenze
+            </h2>
+          </Reveal>
+          <Reveal delay={0.2}>
             <Button asChild variant="accent" size="md">
               <Link href="/artisti">Vedi tutti gli artisti</Link>
             </Button>
-          </div>
+          </Reveal>
         </div>
 
         {artists.length === 0 ? (

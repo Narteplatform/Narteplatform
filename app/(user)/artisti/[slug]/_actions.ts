@@ -1,9 +1,53 @@
 "use server";
 
+import { z } from "zod";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { leadSchema, type LeadInput } from "@/lib/validators/schemas";
 import { sendEmail } from "@/lib/emails/send";
 import BookingRequestEmail from "@/lib/emails/templates/BookingRequestEmail";
+
+// =========================================
+// submitArtistInterest — pubblico (no auth)
+// Usato dal BookingCalendar nella pagina artista: l'utente clicca una
+// data libera, lascia i propri dati e crea un lead.
+// =========================================
+export const artistInterestSchema = z.object({
+  artistId: z.string().uuid(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
+  name: z.string().min(2).max(80),
+  email: z.string().email(),
+  phone: z.string().max(30).optional().or(z.literal("").transform(() => undefined)),
+  location: z.string().max(160).optional().or(z.literal("").transform(() => undefined)),
+  message: z.string().min(5).max(2000),
+});
+export type ArtistInterestInput = z.infer<typeof artistInterestSchema>;
+
+export async function submitArtistInterest(input: ArtistInterestInput) {
+  const parsed = artistInterestSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
+  const data = parsed.data;
+
+  const admin = createAdminClient();
+  const { data: artist } = await admin
+    .from("artists")
+    .select("id, stage_name, status")
+    .eq("id", data.artistId)
+    .maybeSingle();
+  if (!artist || artist.status !== "approved")
+    return { ok: false as const, error: "Artista non disponibile" };
+
+  const { error } = await admin.from("leads").insert({
+    artist_id: artist.id,
+    event_date: data.date,
+    event_location: data.location ?? "Da definire",
+    message: `Richiesta dalla pagina artista per il ${data.date}.\nNome: ${data.name}\n\n${data.message}`,
+    contact_email: data.email,
+    contact_phone: data.phone ?? null,
+  });
+  if (error) return { ok: false as const, error: error.message };
+
+  return { ok: true as const };
+}
 
 export async function submitLead(input: LeadInput) {
   const parsed = leadSchema.safeParse(input);

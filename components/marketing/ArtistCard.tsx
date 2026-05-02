@@ -5,15 +5,17 @@ export type ArtistCardProps = {
   stageName: string;
   city: string | null;
   coverImage: string | null;
+  genres?: string[];
 };
 
-export function ArtistCard({ slug, stageName, city, coverImage }: ArtistCardProps) {
+export function ArtistCard({ slug, stageName, city, coverImage, genres = [] }: ArtistCardProps) {
   return (
     <Link
       href={`/artisti/${slug}`}
       className="group relative block aspect-[3/4] w-full overflow-hidden bg-foreground"
     >
       {coverImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={coverImage}
           alt={stageName}
@@ -26,18 +28,32 @@ export function ArtistCard({ slug, stageName, city, coverImage }: ArtistCardProp
         </div>
       )}
 
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-foreground via-foreground/30 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-foreground via-foreground/40 to-transparent" />
 
       {city ? (
-        <span className="absolute left-4 top-4 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-background">
+        <span className="absolute left-3 top-3 inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-background">
           <span className="size-2 rounded-full bg-background/80" />
           {city}
         </span>
       ) : null}
 
-      <h3 className="absolute bottom-4 left-4 right-4 font-display text-2xl uppercase leading-none text-background">
-        {stageName}
-      </h3>
+      <div className="absolute inset-x-3 bottom-3 space-y-2">
+        {genres.length > 0 && (
+          <ul className="flex flex-wrap gap-1">
+            {genres.slice(0, 3).map((g) => (
+              <li
+                key={g}
+                className="rounded-full border border-background/30 bg-background/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-background backdrop-blur-sm"
+              >
+                {g}
+              </li>
+            ))}
+          </ul>
+        )}
+        <h3 className="font-display text-2xl uppercase leading-none text-background">
+          {stageName}
+        </h3>
+      </div>
     </Link>
   );
 }

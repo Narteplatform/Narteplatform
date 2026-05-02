@@ -1,53 +1,19 @@
 import { HeroNarte } from "@/components/marketing/HeroNarte";
 import { AboutBlock } from "@/components/marketing/AboutBlock";
-import { LocationPicker } from "@/components/marketing/LocationPicker";
-import { CategoryRail } from "@/components/marketing/CategoryRail";
-import { EventGrid } from "@/components/marketing/EventGrid";
 import { StarsSection } from "@/components/marketing/StarsSection";
-import { createAdminClient } from "@/lib/supabase/server";
-import type { EventCardProps } from "@/components/marketing/EventCard";
+import { EventsSection } from "@/components/marketing/EventsSection";
+import { CollaborationsSection } from "@/components/marketing/CollaborationsSection";
+import { EventRequestSection } from "@/components/marketing/EventRequestSection";
 
-async function getEventsByCategory(category: string, limit = 4): Promise<EventCardProps[]> {
-  try {
-    // Admin client server-side: evita la ricorsione RLS sulle policy che
-    // referenziano profiles. Restituisce solo dati pubblici comunque.
-    const supabase = createAdminClient();
-    const { data } = await supabase
-      .from("events")
-      .select("slug, title, city, date, price, cover_image")
-      .eq("category", category as never)
-      .order("date", { ascending: true })
-      .limit(limit);
-    return (data ?? []).map((e) => ({
-      slug: e.slug,
-      title: e.title,
-      city: e.city,
-      date: e.date,
-      price: e.price,
-      coverImage: e.cover_image,
-    }));
-  } catch {
-    return [];
-  }
-}
-
-export default async function HomePage() {
-  const [music, festivals, art] = await Promise.all([
-    getEventsByCategory("music"),
-    getEventsByCategory("festivals"),
-    getEventsByCategory("art"),
-  ]);
-
+export default function HomePage() {
   return (
     <>
       <HeroNarte />
       <AboutBlock />
-      <LocationPicker />
-      <CategoryRail />
-      <EventGrid title="Music" events={music} seeAllHref="/eventi?cat=music" />
       <StarsSection />
-      <EventGrid title="Festivals" events={festivals} seeAllHref="/eventi?cat=festivals" />
-      <EventGrid title="Art" events={art} seeAllHref="/eventi?cat=art" />
+      <EventsSection />
+      <CollaborationsSection />
+      <EventRequestSection />
     </>
   );
 }

@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Search, User, LayoutDashboard } from "lucide-react";
+import { User, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/guards";
+import { SearchBar } from "@/components/layout/SearchBar";
 
 export async function Header() {
   const user = await getCurrentUser();
@@ -17,14 +18,7 @@ export async function Header() {
         </Link>
 
         <div className="hidden flex-1 max-w-md items-center md:flex">
-          <div className="relative w-full">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="cerca"
-              className="h-10 w-full rounded-full border border-border bg-background pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-foreground"
-            />
-          </div>
+          <SearchBar />
         </div>
 
         <nav className="hidden items-center gap-6 text-sm lg:flex">

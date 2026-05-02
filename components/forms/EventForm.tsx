@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { ImageUpload } from "@/components/forms/ImageUpload";
 import { createEvent, updateEvent } from "@/app/(admin)/admin/eventi/_actions";
 
 const CATEGORIES = [
@@ -33,7 +34,7 @@ export function EventForm({
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm<Values>({
+  const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<Values>({
     defaultValues: {
       title: "",
       category: "music",
@@ -92,11 +93,20 @@ export function EventForm({
         <Field label="Città"><Input {...register("city", { required: true })} /></Field>
         <Field label="Venue"><Input {...register("venue")} /></Field>
         <Field label="Prezzo (€)"><Input type="number" min="0" step="0.01" {...register("price")} /></Field>
-        <Field label="URL cover"><Input type="url" placeholder="https://…" {...register("coverImage")} /></Field>
+        <Field label="Link biglietti"><Input type="url" placeholder="https://…" {...register("ticketUrl")} /></Field>
       </div>
-      <Field label="Link biglietti">
-        <Input type="url" placeholder="https://…" {...register("ticketUrl")} />
-      </Field>
+      <Controller
+        control={control}
+        name="coverImage"
+        render={({ field }) => (
+          <ImageUpload
+            label="Immagine cover evento (16:9)"
+            value={field.value ?? ""}
+            onChange={field.onChange}
+            kind="event"
+          />
+        )}
+      />
       <Field label="Descrizione"><Textarea rows={6} {...register("description")} /></Field>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" {...register("featured")} />

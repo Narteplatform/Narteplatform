@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { ImageUpload } from "@/components/forms/ImageUpload";
 import { updateArtistProfile } from "@/app/(artist)/dashboard/_actions";
 
 type Artist = {
@@ -51,7 +52,7 @@ function splitLines(text: string): string[] {
 export function ArtistProfileForm({ artist }: { artist: Artist }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<FormValues>({
     defaultValues: {
       stage_name: artist.stage_name,
       bio: artist.bio ?? "",
@@ -107,9 +108,18 @@ export function ArtistProfileForm({ artist }: { artist: Artist }) {
 
       <fieldset className="space-y-4 border-t border-border pt-6">
         <legend className="font-display text-lg uppercase">Immagine principale</legend>
-        <Field label="URL immagine cover (verrà usata come copertina del profilo)">
-          <Input type="url" placeholder="https://…" {...register("cover_image")} />
-        </Field>
+        <Controller
+          control={control}
+          name="cover_image"
+          render={({ field }) => (
+            <ImageUpload
+              label="Cover (3:4) — verrà usata come copertina del profilo"
+              value={field.value ?? ""}
+              onChange={field.onChange}
+              kind="artist"
+            />
+          )}
+        />
         <Field label="Tariffa base (€)">
           <Input type="number" min="0" step="50" {...register("base_fee")} />
         </Field>
