@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, MapPin, Clock, Euro, ChevronDown } from "lucide-react";
+import { Calendar, MapPin, Clock, Euro, X } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 type Props = {
@@ -21,6 +21,15 @@ function formatDateLong(iso: string) {
   });
 }
 
+function formatDateShort(iso: string) {
+  return new Date(iso).toLocaleDateString("it-IT", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("it-IT", {
     hour: "2-digit",
@@ -28,31 +37,27 @@ function formatTime(iso: string) {
   });
 }
 
-type Card = {
+type Pill = {
   key: string;
   icon: React.ReactNode;
-  title: string;
-  summary: string;
+  label: string;
+  detailTitle: string;
   detail: React.ReactNode;
 };
 
 export function EventInfoCards({ date, endAt, city, venue, price }: Props) {
-  const [open, setOpen] = useState<string | null>("date");
+  const [open, setOpen] = useState<string | null>(null);
 
   const startTime = formatTime(date);
   const endTime = endAt ? formatTime(endAt) : null;
-  const orarioSummary = endTime ? `${startTime} – ${endTime}` : startTime;
+  const orarioLabel = endTime ? `${startTime} – ${endTime}` : startTime;
 
-  const cards: Card[] = [
+  const pills: Pill[] = [
     {
       key: "date",
       icon: <Calendar className="size-4" />,
-      title: "Data",
-      summary: new Date(date).toLocaleDateString("it-IT", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
+      label: formatDateShort(date),
+      detailTitle: "Data",
       detail: (
         <p className="text-sm">
           {formatDateLong(date)}
@@ -65,19 +70,18 @@ export function EventInfoCards({ date, endAt, city, venue, price }: Props) {
     {
       key: "orario",
       icon: <Clock className="size-4" />,
-      title: "Orario",
-      summary: orarioSummary,
+      label: orarioLabel,
+      detailTitle: "Orario",
       detail: (
         <div className="space-y-1 text-sm">
           <p>
             <span className="text-muted-foreground">Inizio:</span> {startTime}
           </p>
-          {endTime && (
+          {endTime ? (
             <p>
               <span className="text-muted-foreground">Fine:</span> {endTime}
             </p>
-          )}
-          {!endTime && (
+          ) : (
             <p className="text-xs text-muted-foreground">
               Orario di fine non comunicato.
             </p>
@@ -88,8 +92,8 @@ export function EventInfoCards({ date, endAt, city, venue, price }: Props) {
     {
       key: "location",
       icon: <MapPin className="size-4" />,
-      title: "Location",
-      summary: venue ? `${venue}, ${city}` : city,
+      label: venue ? `${venue}, ${city}` : city,
+      detailTitle: "Location",
       detail: (
         <div className="space-y-1 text-sm">
           <p>
@@ -106,13 +110,13 @@ export function EventInfoCards({ date, endAt, city, venue, price }: Props) {
     {
       key: "price",
       icon: <Euro className="size-4" />,
-      title: "Prezzo",
-      summary: formatPrice(price),
+      label: formatPrice(price),
+      detailTitle: "Prezzo",
       detail: (
         <p className="text-sm">
           {price == null
             ? "Prezzo non comunicato."
-            : price === 0
+            : Number(price) === 0
               ? "Ingresso gratuito."
               : `Biglietto a partire da € ${Number(price).toFixed(2)}`}
         </p>
@@ -120,41 +124,54 @@ export function EventInfoCards({ date, endAt, city, venue, price }: Props) {
     },
   ];
 
+  const active = pills.find((p) => p.key === open);
+
   return (
-    <ul className="divide-y divide-border border border-border">
-      {cards.map((c) => {
-        const isOpen = open === c.key;
-        return (
-          <li key={c.key}>
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {pills.map((p) => {
+          const isActive = open === p.key;
+          return (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => setOpen(isActive ? null : p.key)}
+              aria-pressed={isActive}
+              className={[
+                "inline-flex items-center gap-2 rounded-full px-4 h-11 text-sm font-medium transition-all",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2",
+                isActive
+                  ? "bg-foreground text-background border border-foreground"
+                  : "border border-foreground/40 text-foreground hover:bg-foreground hover:text-background",
+              ].join(" ")}
+            >
+              <span aria-hidden>{p.icon}</span>
+              <span>{p.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {active && (
+        <div className="relative border border-border bg-muted/40 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                {active.detailTitle}
+              </p>
+              <div className="mt-1">{active.detail}</div>
+            </div>
             <button
               type="button"
-              onClick={() => setOpen(isOpen ? null : c.key)}
-              aria-expanded={isOpen}
-              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted"
+              onClick={() => setOpen(null)}
+              aria-label="Chiudi dettaglio"
+              className="-mr-2 -mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground">
-                  {c.icon}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                    {c.title}
-                  </p>
-                  <p className="truncate text-sm font-medium">{c.summary}</p>
-                </div>
-              </div>
-              <ChevronDown
-                className={`size-4 shrink-0 text-muted-foreground transition-transform ${
-                  isOpen ? "rotate-180" : ""
-                }`}
-              />
+              <X className="size-4" />
             </button>
-            {isOpen && (
-              <div className="border-t border-border bg-muted/40 px-4 py-3">{c.detail}</div>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
