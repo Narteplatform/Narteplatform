@@ -1,10 +1,18 @@
 import Link from "next/link";
-import { ExternalLink, ImageIcon, Video } from "lucide-react";
+import { CalendarDays, ExternalLink, Image as ImageIcon, Inbox, Video } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { ArtistProfileForm } from "@/components/forms/ArtistProfileForm";
+import { HeroGreeting } from "@/components/dashboard/HeroGreeting";
+import { ActivityList } from "@/components/dashboard/ActivityFeed";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { KpiCard } from "@/components/ui/KpiCard";
+import { ScrollArea } from "@/components/ui/ScrollArea";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 
 export const metadata = { title: "Profilo artista — N'arte" };
+export const dynamic = "force-dynamic";
 
 export default async function ArtistDashboardPage() {
   const user = await requireRole(["artist", "superadmin"]);
@@ -18,17 +26,36 @@ export default async function ArtistDashboardPage() {
 
   if (!artist) {
     return (
-      <div className="space-y-4">
-        <h1 className="display-xl text-4xl">Profilo artista</h1>
-        <p className="text-muted-foreground">
-          Nessun profilo artista collegato al tuo account. Contatta l&apos;amministratore.
-        </p>
+      <div className="space-y-6">
+        <HeroGreeting
+          name={user.profile?.full_name ?? user.email?.split("@")[0]}
+          description="Nessun profilo artista collegato al tuo account. Contatta l'amministratore per attivarlo."
+        />
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            Una volta collegato l&apos;account artista, tornerà tutto qui: profilo, galleria,
+            calendario, richieste.
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const [{ data: dates }, { data: genresData }] = await Promise.all([
+  const horizon = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const [
+    { data: dates },
+    { data: genresData },
+    { count: availableCount },
+    { count: newLeadsCount },
+    { data: recentLeads },
+  ] = await Promise.all([
     supabase
       .from("artist_availability")
       .select("date, status")
@@ -37,157 +64,189 @@ export default async function ArtistDashboardPage() {
       .order("date", { ascending: true })
       .limit(8),
     supabase.from("genres").select("name").order("order_index"),
+    supabase
+      .from("artist_availability")
+      .select("id", { count: "exact", head: true })
+      .eq("artist_id", artist.id)
+      .eq("status", "available")
+      .gte("date", today)
+      .lte("date", horizon),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("artist_id", artist.id)
+      .eq("status", "new"),
+    supabase
+      .from("leads")
+      .select("id, contact_email, event_location, message, created_at")
+      .eq("artist_id", artist.id)
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
   const genreOptions = (genresData ?? []).map((g) => g.name as string);
 
   const gallery = artist.gallery ?? [];
   const videos = artist.videos ?? [];
 
+  const heroDescription = (() => {
+    const parts: string[] = [];
+    const ln = newLeadsCount ?? 0;
+    const av = availableCount ?? 0;
+    if (ln > 0) parts.push(`${ln} nuov${ln === 1 ? "a richiesta" : "e richieste"}`);
+    if (av > 0) parts.push(`${av} dat${av === 1 ? "a" : "e"} disponibil${av === 1 ? "e" : "i"} nei prossimi 30 giorni`);
+    if (parts.length === 0) return "Mantieni aggiornato il tuo profilo per ricevere nuove richieste.";
+    return `Hai ${parts.join(" e ")}.`;
+  })();
+
+  const activityItems = (recentLeads ?? []).map((l) => ({
+    kind: "lead" as const,
+    id: l.id,
+    primaryName: l.event_location || l.contact_email,
+    detail: l.message?.slice(0, 100) ?? "",
+    createdAt: l.created_at,
+  }));
+
   return (
-    <div className="space-y-10">
-      {/* Hero preview */}
-      <section className="relative overflow-hidden border border-border bg-foreground text-background">
-        <div className="grid gap-0 md:grid-cols-[2fr_3fr]">
-          <div className="aspect-[4/5] w-full overflow-hidden bg-foreground">
-            {artist.cover_image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={artist.cover_image}
-                alt={artist.stage_name}
-                className="h-full w-full object-cover grayscale"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center font-display text-5xl text-background/30">
-                {artist.stage_name.slice(0, 2).toUpperCase()}
-              </div>
-            )}
-          </div>
-          <div className="space-y-4 p-6 md:p-10">
-            <p className="text-xs uppercase tracking-wider text-background/60">
-              Anteprima profilo pubblico
-            </p>
-            <h1 className="font-display text-4xl uppercase leading-none md:text-6xl">
-              {artist.stage_name}
-            </h1>
-            <p className="text-sm uppercase tracking-wide text-background/70">
-              {artist.city ?? "—"} · {artist.genre.join(" / ") || "—"}
-            </p>
-            {artist.bio && (
-              <p className="max-w-prose whitespace-pre-wrap text-sm text-background/80">
-                {artist.bio}
+    <div className="space-y-8">
+      <HeroGreeting
+        name={artist.stage_name}
+        description={heroDescription}
+        primary={{
+          label: "Pagina pubblica",
+          href: `/artisti/${artist.slug}`,
+          icon: <ExternalLink className="size-4" />,
+        }}
+        secondary={{ label: "Modifica profilo", href: "#profilo" }}
+      />
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
+          label="Galleria foto"
+          value={gallery.length}
+          icon={<ImageIcon className="size-4" />}
+          sublabel={gallery.length > 0 ? "Visibili sulla pagina pubblica" : "Aggiungi le prime foto"}
+        />
+        <KpiCard
+          label="Video"
+          value={videos.length}
+          icon={<Video className="size-4" />}
+          sublabel={videos.length > 0 ? "Embed e link" : "Aggiungi link YouTube/Vimeo"}
+        />
+        <KpiCard
+          label="Date libere 30gg"
+          value={availableCount ?? 0}
+          icon={<CalendarDays className="size-4" />}
+          href="/dashboard/calendario"
+        />
+        <KpiCard
+          label="Nuove richieste"
+          value={newLeadsCount ?? 0}
+          icon={<Inbox className="size-4" />}
+          href="/dashboard/leads?status=new"
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex-row items-center justify-between gap-3">
+            <CardTitle>Galleria recente</CardTitle>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="#profilo">Aggiorna galleria</Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {gallery.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nessuna foto ancora. Aggiungi qualche scatto dal form qui sotto.
               </p>
+            ) : (
+              <ScrollArea snap className="-mx-2 px-2">
+                <div className="flex gap-3 pb-2">
+                  {gallery.slice(0, 12).map((src, i) => (
+                    <div
+                      key={`${src}-${i}`}
+                      className="relative h-44 w-44 shrink-0 overflow-hidden rounded-2xl border border-border bg-muted snap-start"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt="" className="h-full w-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
             )}
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Link
-                href={`/artisti/${artist.slug}`}
-                target="_blank"
-                className="inline-flex items-center gap-2 rounded-full border border-background/40 px-4 py-2 text-xs uppercase hover:bg-background hover:text-foreground"
-              >
-                Vedi pagina pubblica <ExternalLink className="size-3" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Galleria + Video + Prossime date in 3 cards */}
-      <section className="grid gap-6 md:grid-cols-3">
-        <Card icon={<ImageIcon className="size-4" />} title={`Galleria foto · ${gallery.length}`}>
-          {gallery.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nessuna foto ancora.</p>
-          ) : (
-            <div className="grid grid-cols-3 gap-1.5">
-              {gallery.slice(0, 6).map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={`${src}-${i}`}
-                  src={src}
-                  alt=""
-                  className="aspect-square w-full object-cover"
-                />
-              ))}
-            </div>
-          )}
+          </CardContent>
         </Card>
 
-        <Card icon={<Video className="size-4" />} title={`Video · ${videos.length}`}>
-          {videos.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nessun video ancora.</p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {videos.slice(0, 4).map((v) => (
-                <li key={v} className="truncate">
-                  <a
-                    href={v}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline-offset-2 hover:underline"
-                  >
-                    {v}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
+        <Card>
+          <CardHeader className="flex-row items-center justify-between gap-3">
+            <CardTitle>Richieste recenti</CardTitle>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/dashboard/leads">Tutte</Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <ActivityList
+              items={activityItems}
+              emptyText="Nessuna richiesta ricevuta finora."
+            />
+          </CardContent>
         </Card>
+      </div>
 
-        <Card title="Prossime date">
+      <Card>
+        <CardHeader className="flex-row items-center justify-between gap-3">
+          <CardTitle>Prossime date</CardTitle>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/dashboard/calendario">Calendario completo</Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
           {!dates || dates.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nessuna data nei prossimi giorni. Vai su <Link href="/dashboard/calendario" className="underline">Calendario</Link>.
+              Nessuna data nei prossimi giorni.{" "}
+              <Link href="/dashboard/calendario" className="underline">
+                Apri il calendario
+              </Link>{" "}
+              per inserire disponibilità.
             </p>
           ) : (
-            <ul className="space-y-1.5 text-sm">
+            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {dates.map((d) => (
-                <li key={d.date} className="flex items-center justify-between">
-                  <span>{new Date(d.date).toLocaleDateString("it-IT", { weekday: "short", day: "2-digit", month: "short" })}</span>
-                  <span
-                    className={
-                      d.status === "available"
-                        ? "rounded-full bg-green-500/10 px-2 py-0.5 text-xs uppercase text-green-700"
-                        : "rounded-full bg-red-500/10 px-2 py-0.5 text-xs uppercase text-red-700"
-                    }
-                  >
-                    {d.status === "available" ? "libero" : "occupato"}
+                <li
+                  key={d.date}
+                  className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2"
+                >
+                  <span className="text-sm">
+                    {new Date(d.date).toLocaleDateString("it-IT", {
+                      weekday: "short",
+                      day: "2-digit",
+                      month: "short",
+                    })}
                   </span>
+                  <Badge variant={d.status === "available" ? "success" : "danger"} dot>
+                    {d.status === "available" ? "Libero" : "Occupato"}
+                  </Badge>
                 </li>
               ))}
             </ul>
           )}
-        </Card>
-      </section>
+        </CardContent>
+      </Card>
 
-      {/* Form completo */}
-      <section className="space-y-4">
+      <section id="profilo" className="space-y-3">
         <header>
-          <h2 className="font-display text-2xl uppercase">Modifica profilo</h2>
+          <h2 className="font-display text-xl tracking-tight">Modifica profilo</h2>
           <p className="text-sm text-muted-foreground">
-            Tutto quello che salvi qui viene aggiornato in automatico nella tua pagina
-            pubblica e nella sezione &quot;Gli artisti&quot; della home.
+            Tutto quello che salvi qui viene aggiornato in automatico nella tua pagina pubblica e
+            nella sezione &quot;Gli artisti&quot; della home.
           </p>
         </header>
-        <ArtistProfileForm artist={artist} genreOptions={genreOptions} />
+        <Card>
+          <CardContent>
+            <ArtistProfileForm artist={artist} genreOptions={genreOptions} />
+          </CardContent>
+        </Card>
       </section>
-    </div>
-  );
-}
-
-function Card({
-  title,
-  icon,
-  children,
-}: {
-  title: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-3 border border-border p-5">
-      <header className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-        {icon}
-        <span>{title}</span>
-      </header>
-      {children}
     </div>
   );
 }

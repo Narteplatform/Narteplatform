@@ -1,6 +1,11 @@
+import { Mail } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { Avatar } from "@/components/ui/Avatar";
+import { Badge } from "@/components/ui/Badge";
 
 export const metadata = { title: "Messaggi — N'arte Admin" };
+export const dynamic = "force-dynamic";
 
 export default async function AdminMessaggiPage() {
   const supabase = createAdminClient();
@@ -9,42 +14,60 @@ export default async function AdminMessaggiPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
+  const items = messages ?? [];
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="display-xl text-4xl">Messaggi</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Tutte le richieste arrivate dal form &quot;Vuoi realizzare un evento?&quot; e dai
-          contatti pubblici.
+      <header>
+        <h1 className="font-display text-2xl tracking-tight">Messaggi</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Tutte le richieste arrivate dal form &quot;Vuoi realizzare un evento?&quot; e dai contatti
+          pubblici.
         </p>
-      </div>
+      </header>
 
-      {!messages || messages.length === 0 ? (
-        <p className="text-muted-foreground">Nessun messaggio.</p>
+      {items.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            Nessun messaggio ricevuto.
+          </CardContent>
+        </Card>
       ) : (
-        <ul className="space-y-4">
-          {messages.map((m) => (
-            <li key={m.id} className="border border-border p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    {new Date(m.created_at).toLocaleString("it-IT")}
-                  </p>
-                  <h3 className="mt-1 font-display text-xl uppercase">
-                    {m.subject ?? "Messaggio"}
-                  </h3>
-                  <p className="text-sm">
-                    Da <strong>{m.name}</strong> ·{" "}
-                    <a href={`mailto:${m.email}`} className="underline">
-                      {m.email}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {items.map((m) => (
+            <Card key={m.id} className="flex flex-col">
+              <CardHeader className="gap-3">
+                <div className="flex items-start gap-3">
+                  <Avatar name={m.name} size="md" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-base leading-tight tracking-tight truncate">
+                      {m.name}
+                    </p>
+                    <a
+                      href={`mailto:${m.email}`}
+                      className="text-xs text-muted-foreground hover:text-foreground truncate inline-flex items-center gap-1"
+                    >
+                      <Mail className="size-3" /> {m.email}
                     </a>
-                  </p>
+                  </div>
                 </div>
-              </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm">{m.message}</p>
-            </li>
+                {m.subject && (
+                  <Badge variant="muted" className="self-start">
+                    {m.subject}
+                  </Badge>
+                )}
+              </CardHeader>
+              <CardContent className="flex-1 pt-0">
+                <p className="whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed line-clamp-6">
+                  {m.message}
+                </p>
+                <p className="mt-3 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  {new Date(m.created_at).toLocaleString("it-IT")}
+                </p>
+              </CardContent>
+            </Card>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

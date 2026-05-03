@@ -1,25 +1,55 @@
 import { requireRole } from "@/lib/auth/guards";
 import { AccountSettingsForm } from "@/components/forms/AccountSettingsForm";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Avatar } from "@/components/ui/Avatar";
+import { Badge } from "@/components/ui/Badge";
 
 export const metadata = { title: "Profilo — N'arte Admin" };
 
 export default async function AdminProfiloPage() {
   const user = await requireRole("superadmin");
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="display-xl text-4xl">Profilo</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+    <div className="max-w-3xl space-y-6">
+      <header>
+        <h1 className="font-display text-2xl tracking-tight">Profilo</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Aggiorna i dati del tuo account amministratore.
         </p>
-      </div>
-      <AccountSettingsForm
-        email={user.email ?? ""}
-        defaults={{
-          fullName: user.profile?.full_name ?? "",
-          avatarUrl: user.profile?.avatar_url ?? "",
-        }}
-      />
+      </header>
+
+      <Card>
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <Avatar
+            src={user.profile?.avatar_url ?? null}
+            name={user.profile?.full_name ?? user.email}
+            size="xl"
+          />
+          <div className="min-w-0">
+            <p className="font-display text-xl tracking-tight truncate">
+              {user.profile?.full_name || user.email}
+            </p>
+            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+            <div className="mt-2">
+              <Badge variant="dark">Superadmin</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Impostazioni account</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AccountSettingsForm
+            email={user.email ?? ""}
+            defaults={{
+              fullName: user.profile?.full_name ?? "",
+              avatarUrl: user.profile?.avatar_url ?? "",
+            }}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

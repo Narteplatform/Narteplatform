@@ -1,13 +1,38 @@
 import Link from "next/link";
+import { ExternalLink, Pencil, Plus, UserPlus } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { Avatar } from "@/components/ui/Avatar";
+import { ScrollArea } from "@/components/ui/ScrollArea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/Table";
 import { ApplicationActions } from "@/components/admin/ApplicationActions";
 import { DeleteArtistButton } from "@/components/admin/DeleteArtistButton";
+import { cn } from "@/lib/utils";
 
-const STATUS_BADGE: Record<string, string> = {
-  approved: "bg-green-500/15 text-green-700 border-green-600/30",
-  pending: "bg-yellow-500/15 text-yellow-700 border-yellow-600/30",
-  rejected: "bg-red-500/15 text-red-700 border-red-600/30",
+type Filter = "all" | "approved" | "pending" | "rejected";
+
+const TABS: { value: Filter; label: string }[] = [
+  { value: "all", label: "Tutti" },
+  { value: "approved", label: "Approvati" },
+  { value: "pending", label: "In attesa" },
+  { value: "rejected", label: "Rifiutati" },
+];
+
+const STATUS_VARIANT: Record<string, "success" | "warning" | "danger"> = {
+  approved: "success",
+  pending: "warning",
+  rejected: "danger",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -16,7 +41,17 @@ const STATUS_LABEL: Record<string, string> = {
   rejected: "Rifiutato",
 };
 
-export default async function AdminArtistsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminArtistsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string; q?: string }>;
+}) {
+  const params = await searchParams;
+  const filter: Filter = (TABS.find((t) => t.value === params.filter)?.value ?? "all") as Filter;
+  const q = (params.q ?? "").trim().toLowerCase();
+
   const supabase = createAdminClient();
   const [{ data: applications }, { data: artists }] = await Promise.all([
     supabase
@@ -26,116 +61,205 @@ export default async function AdminArtistsPage() {
       .order("created_at", { ascending: false }),
     supabase
       .from("artists")
-      .select("id, slug, stage_name, status, city, cover_image")
+      .select("id, slug, stage_name, status, city, cover_image, genre")
       .order("stage_name"),
   ]);
 
+  const filteredArtists = (artists ?? [])
+    .filter((a) => (filter === "all" ? true : a.status === filter))
+    .filter((a) =>
+      q ? `${a.stage_name} ${a.city ?? ""} ${a.genre.join(" ")}`.toLowerCase().includes(q) : true
+    );
+
   return (
-    <div className="space-y-12">
-      <div className="flex items-center justify-between">
-        <h1 className="display-xl text-4xl">Artisti</h1>
-        <Button asChild><Link href="/admin/artisti/new">+ Nuovo artista</Link></Button>
-      </div>
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl tracking-tight">Artisti</h1>
+          <p className="text-sm text-muted-foreground">
+            Gestisci candidature e roster artisti del sito.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/admin/artisti/new">
+            <Plus className="size-4" /> Nuovo artista
+          </Link>
+        </Button>
+      </header>
 
-      <section className="space-y-4">
-        <h2 className="font-display text-2xl uppercase">Candidature in attesa</h2>
-        {!applications || applications.length === 0 ? (
-          <p className="text-muted-foreground">Nessuna candidatura in attesa.</p>
-        ) : (
-          <ul className="space-y-3">
-            {applications.map((a) => (
-              <li key={a.id} className="border border-border p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-display text-lg uppercase">{a.stage_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {a.name} · {a.email} · {a.genre.join(", ")}
-                    </p>
-                    {a.bio && <p className="mt-2 text-sm">{a.bio}</p>}
-                  </div>
-                  <ApplicationActions applicationId={a.id} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="font-display text-2xl uppercase">Roster</h2>
-        <div className="overflow-x-auto border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted text-left">
-              <tr>
-                <th className="w-16 p-3"></th>
-                <th className="p-3">Nome d&apos;arte</th>
-                <th className="p-3">Città</th>
-                <th className="p-3">Stato</th>
-                <th className="p-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {(artists ?? []).map((a) => {
-                const initials = a.stage_name
-                  .split(/\s+/)
-                  .map((p) => p[0])
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .join("")
-                  .toUpperCase();
-                const badge = STATUS_BADGE[a.status] ?? STATUS_BADGE.pending;
-                return (
-                  <tr key={a.id} className="border-t border-border align-middle">
-                    <td className="p-3">
-                      <div className="relative size-12 overflow-hidden rounded-full border border-border bg-muted">
-                        {a.cover_image ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={a.cover_image}
-                            alt={a.stage_name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center font-display text-xs uppercase text-muted-foreground">
-                            {initials || "?"}
-                          </div>
-                        )}
+      {applications && applications.length > 0 && (
+        <Card>
+          <CardHeader className="flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base">Candidature in attesa</CardTitle>
+              <Badge variant="accent">{applications.length}</Badge>
+            </div>
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              Approva o rifiuta dalle card.
+            </p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <ScrollArea snap className="-mx-2 px-2">
+              <div className="flex gap-3 pb-2">
+                {applications.map((a) => (
+                  <article
+                    key={a.id}
+                    className="flex w-[320px] shrink-0 flex-col gap-3 rounded-2xl border border-border bg-background p-4 snap-start"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Avatar name={a.stage_name} size="md" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display text-base leading-tight tracking-tight truncate">
+                          {a.stage_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {a.name} · {a.email}
+                        </p>
                       </div>
-                    </td>
-                    <td className="p-3 font-medium">{a.stage_name}</td>
-                    <td className="p-3">{a.city ?? "—"}</td>
-                    <td className="p-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${badge}`}
-                      >
-                        <span
-                          className={`size-1.5 rounded-full ${
-                            a.status === "approved"
-                              ? "bg-green-600"
-                              : a.status === "pending"
-                                ? "bg-yellow-600"
-                                : "bg-red-600"
-                          }`}
-                        />
+                    </div>
+                    {a.genre.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {a.genre.slice(0, 4).map((g) => (
+                          <Badge key={g} variant="muted">
+                            {g}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {a.bio && (
+                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                        {a.bio}
+                      </p>
+                    )}
+                    <div className="mt-auto pt-2 border-t border-border">
+                      <ApplicationActions applicationId={a.id} />
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader className="flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">Roster artisti</CardTitle>
+            <Badge variant="muted">{filteredArtists.length}</Badge>
+          </div>
+          <form action="/admin/artisti" className="flex w-full max-w-sm items-center gap-2">
+            <input type="hidden" name="filter" value={filter} />
+            <SearchInput
+              name="q"
+              defaultValue={q}
+              placeholder="Cerca per nome, città, genere…"
+              variant="compact"
+            />
+          </form>
+        </CardHeader>
+
+        <div className="border-b border-border px-4 py-3">
+          <div className="flex flex-wrap items-center gap-1 rounded-full bg-muted p-1">
+            {TABS.map((tab) => {
+              const sp = new URLSearchParams();
+              if (tab.value !== "all") sp.set("filter", tab.value);
+              if (q) sp.set("q", q);
+              const href = `/admin/artisti${sp.size > 0 ? `?${sp}` : ""}`;
+              const active = filter === tab.value;
+              return (
+                <Link
+                  key={tab.value}
+                  href={href}
+                  className={cn(
+                    "inline-flex h-8 items-center rounded-full px-3 text-sm font-medium transition",
+                    active
+                      ? "bg-foreground text-background shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40%]">Artista</TableHead>
+                <TableHead>Città</TableHead>
+                <TableHead>Generi</TableHead>
+                <TableHead>Stato</TableHead>
+                <TableHead className="text-right">Azioni</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredArtists.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                    Nessun artista trovato.{" "}
+                    <Link href="/admin/artisti/new" className="underline">
+                      Aggiungi il primo
+                    </Link>
+                    .
+                    <UserPlus className="sr-only" />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredArtists.map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar src={a.cover_image} name={a.stage_name} size="md" />
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground line-clamp-1">{a.stage_name}</p>
+                          <p className="text-xs text-muted-foreground">/artisti/{a.slug}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{a.city ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {a.genre.length > 0 ? (
+                        <span className="line-clamp-1">{a.genre.slice(0, 2).join(", ")}</span>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={STATUS_VARIANT[a.status] ?? "muted"} dot>
                         {STATUS_LABEL[a.status] ?? a.status}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center justify-end gap-3">
-                        <Link href={`/admin/artisti/${a.id}`} className="underline">Modifica</Link>
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <IconButton aria-label="Modifica artista" variant="ghost" size="sm" asChild>
+                          <Link href={`/admin/artisti/${a.id}`}>
+                            <Pencil className="size-4" />
+                          </Link>
+                        </IconButton>
+                        <IconButton
+                          aria-label="Apri profilo pubblico"
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                        >
+                          <Link href={`/artisti/${a.slug}`} target="_blank" rel="noreferrer">
+                            <ExternalLink className="size-4" />
+                          </Link>
+                        </IconButton>
                         <DeleteArtistButton artistId={a.id} artistName={a.stage_name} />
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {(!artists || artists.length === 0) && (
-                <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Nessun artista nel roster.</td></tr>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -64,6 +64,27 @@
     background-size: cover;
     background-position: center;
   }
+  .narte-scrollbar::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+  .narte-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .narte-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 999px;
+  }
+  .narte-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted-foreground);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

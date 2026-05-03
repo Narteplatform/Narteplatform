@@ -1,27 +1,18 @@
-import { LayoutDashboard, CalendarDays, Users, Inbox, MessageSquare, UserCog, Tags } from "lucide-react";
 import { requireRole } from "@/lib/auth/guards";
-import { DashboardShell, type SidebarItem } from "@/components/layout/DashboardShell";
-
-const items: SidebarItem[] = [
-  { href: "/admin", label: "Overview", icon: <LayoutDashboard className="size-4" />, exact: true },
-  { href: "/admin/eventi", label: "Eventi", icon: <CalendarDays className="size-4" /> },
-  { href: "/admin/artisti", label: "Artisti", icon: <Users className="size-4" /> },
-  { href: "/admin/generi", label: "Generi", icon: <Tags className="size-4" /> },
-  { href: "/admin/leads", label: "Lead", icon: <Inbox className="size-4" /> },
-  { href: "/admin/messaggi", label: "Messaggi", icon: <MessageSquare className="size-4" /> },
-  { href: "/admin/profilo", label: "Profilo", icon: <UserCog className="size-4" /> },
-];
+import { AdminAppShell } from "@/components/dashboard/AppShellData";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireRole("superadmin");
   return (
-    <DashboardShell
-      brand="N'ARTE / ADMIN"
-      brandHref="/admin"
-      items={items}
-      email={user.email ?? null}
+    <AdminAppShell
+      user={{
+        id: user.id,
+        email: user.email ?? "",
+        name: user.profile?.full_name ?? null,
+        avatarUrl: user.profile?.avatar_url ?? null,
+      }}
     >
       {children}
-    </DashboardShell>
+    </AdminAppShell>
   );
 }
