@@ -30,7 +30,7 @@ export async function StarsSection() {
   const artists = await getStars();
 
   return (
-    <section className="bg-foreground py-20 text-background md:py-28">
+    <section className="bg-muted py-20 text-foreground md:py-28">
       <div className="container-narte">
         <Reveal>
           <p className="accent-label mb-3">gli artisti</p>
@@ -49,7 +49,7 @@ export async function StarsSection() {
         </div>
 
         {artists.length === 0 ? (
-          <p className="text-sm text-background/60">
+          <p className="text-sm text-muted-foreground">
             Stiamo aggiornando il roster. Torna a trovarci a breve.
           </p>
         ) : (

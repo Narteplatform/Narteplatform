@@ -3,16 +3,16 @@ import { Instagram, Facebook, Phone } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="mt-32 border-t border-border bg-foreground text-background">
+    <footer className="mt-32 border-t border-white/10 bg-[#080808] text-white">
       <div className="container-narte py-16">
         <div className="grid gap-12 md:grid-cols-4">
           <div>
             <div className="font-display text-2xl leading-none">N&apos;ARTE</div>
-            <p className="mt-4 text-sm text-background/70">
+            <p className="mt-4 text-sm text-white/60">
               La tua musica dal vivo. Eventi musicali, artisti emergenti e cultura nel cuore di
               Napoli dal 2018.
             </p>
-            <div className="mt-6 flex items-center gap-4 text-background/80">
+            <div className="mt-6 flex items-center gap-4 text-white/80">
               <a
                 href="https://instagram.com/narte.official"
                 target="_blank"
@@ -41,7 +41,7 @@ export function Footer() {
             </div>
           </div>
           <div>
-            <h4 className="text-xs uppercase tracking-wider text-background/60">Sito</h4>
+            <h4 className="text-xs uppercase tracking-wider text-white/50">Sito</h4>
             <ul className="mt-4 space-y-2 text-sm">
               <li><Link href="/eventi" className="hover:underline">Eventi</Link></li>
               <li><Link href="/artisti" className="hover:underline">Artisti</Link></li>
@@ -51,21 +51,21 @@ export function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="text-xs uppercase tracking-wider text-background/60">Per gli artisti</h4>
+            <h4 className="text-xs uppercase tracking-wider text-white/50">Per gli artisti</h4>
             <ul className="mt-4 space-y-2 text-sm">
               <li><Link href="/candidatura-artista" className="hover:underline">Candidati</Link></li>
               <li><Link href="/login" className="hover:underline">Area artista</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="text-xs uppercase tracking-wider text-background/60">Account</h4>
+            <h4 className="text-xs uppercase tracking-wider text-white/50">Account</h4>
             <ul className="mt-4 space-y-2 text-sm">
               <li><Link href="/login" className="hover:underline">Sign in</Link></li>
               <li><Link href="/register" className="hover:underline">Register</Link></li>
             </ul>
           </div>
         </div>
-        <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-background/20 pt-6 text-xs text-background/60 md:flex-row md:items-center">
+        <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-6 text-xs text-white/50 md:flex-row md:items-center">
           <span>© {new Date().getFullYear()} N&apos;arte — Tutti i diritti riservati.</span>
           <span>Made with passion in Napoli.</span>
         </div>

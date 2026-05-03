@@ -11,33 +11,43 @@ export async function Header() {
   const dashLabel = role === "superadmin" ? "Admin" : role === "artist" ? "Dashboard" : "Area Riservata";
 
   return (
-    <header className="border-b border-border bg-background">
+    <header className="absolute inset-x-0 top-0 z-30 bg-transparent">
       <div className="container-narte flex h-20 items-center justify-between gap-6">
-        <Link href="/" className="font-display text-xl leading-none" aria-label="Home N'arte">
-          N&apos;AR<br />TE
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-display text-xl leading-none"
+          aria-label="Home N'arte"
+        >
+          <span className="inline-flex size-8 items-center justify-center rounded-full bg-accent text-accent-foreground font-display text-sm">
+            N
+          </span>
+          <span className="text-foreground">N&apos;arte</span>
         </Link>
 
         <div className="hidden flex-1 max-w-md items-center md:flex">
           <SearchBar />
         </div>
 
-        <nav className="hidden items-center gap-6 text-sm lg:flex">
-          <Link href="/eventi" className="hover:underline">Eventi</Link>
-          <Link href="/artisti" className="hover:underline">Artisti</Link>
-          <Link href="/chi-siamo" className="hover:underline">Chi siamo</Link>
-          <Link href="/collaborazioni" className="hover:underline">Collaborazioni</Link>
-          <Link href="/contatti" className="hover:underline">Contatti</Link>
+        <nav className="hidden items-center gap-6 text-sm text-foreground/80 lg:flex">
+          <Link href="/eventi" className="hover:text-foreground">Eventi</Link>
+          <Link href="/artisti" className="hover:text-foreground">Artisti</Link>
+          <Link href="/chi-siamo" className="hover:text-foreground">Chi siamo</Link>
+          <Link href="/collaborazioni" className="hover:text-foreground">Collaborazioni</Link>
+          <Link href="/contatti" className="hover:text-foreground">Contatti</Link>
         </nav>
 
         <div className="flex items-center gap-3">
-          <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-            <Link href="/candidatura-artista">Sei un artista?</Link>
-          </Button>
-
           {!user ? (
             <>
-              <Link href="/login" className="text-sm hover:underline">Accedi</Link>
-              <Link href="/register" className="text-sm hover:underline">Registrati</Link>
+              <Link
+                href="/login"
+                className="hidden text-sm text-foreground/80 hover:text-foreground sm:inline"
+              >
+                Accedi
+              </Link>
+              <Button asChild variant="accent" size="sm" className="rounded-full">
+                <Link href="/candidatura-artista">Diventa artista</Link>
+              </Button>
             </>
           ) : (
             <div className="flex items-center gap-2">

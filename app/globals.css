@@ -23,6 +23,17 @@
   :root {
     color-scheme: light;
   }
+  [data-theme="dark"] {
+    --color-background: #0a0a0a;
+    --color-foreground: #ffffff;
+    --color-muted: #161616;
+    --color-muted-foreground: #a1a1a1;
+    --color-border: #262626;
+    --color-accent: #d4ff5e;
+    --color-accent-foreground: #0a0a0a;
+    --color-ink: #ffffff;
+    color-scheme: dark;
+  }
   html, body {
     background: var(--color-background);
     color: var(--color-foreground);
@@ -84,6 +95,38 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+  /* Hero glow effects (dark theme) */
+  .hero-glow-ring {
+    background: radial-gradient(
+      ellipse 70% 40% at center,
+      rgba(196, 255, 90, 0.18) 0%,
+      rgba(168, 85, 247, 0.15) 35%,
+      rgba(168, 85, 247, 0.05) 60%,
+      transparent 75%
+    );
+    filter: blur(40px);
+  }
+  .hero-glow-arc {
+    background:
+      radial-gradient(ellipse 65% 12% at 50% 78%, rgba(212, 255, 94, 0.55) 0%, rgba(212, 255, 94, 0) 70%),
+      radial-gradient(ellipse 80% 14% at 50% 78%, rgba(168, 85, 247, 0.35) 0%, rgba(168, 85, 247, 0) 70%);
+    filter: blur(20px);
+  }
+  .hero-text-stroke {
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.08);
+    color: transparent;
+  }
+  /* Float animation per le card fluttuanti dell'hero */
+  @keyframes hero-float {
+    0%, 100% { transform: translate(var(--fx, 0), var(--fy, 0)) rotate(var(--fr, 0deg)); }
+    50% { transform: translate(calc(var(--fx, 0) + 6px), calc(var(--fy, 0) - 8px)) rotate(calc(var(--fr, 0deg) + 1deg)); }
+  }
+  .hero-float-anim {
+    animation: hero-float 6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-float-anim { animation: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     *,
