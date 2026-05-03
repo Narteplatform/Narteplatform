@@ -34,12 +34,32 @@ function plus30daysIso() {
   return d.toISOString().slice(0, 10);
 }
 
+function safe<T>(p: PromiseLike<T>): Promise<T | null> {
+  return Promise.resolve(p).then(
+    (v) => v,
+    (err) => {
+      console.error("[AppShellData] supabase query failed:", err);
+      return null;
+    }
+  );
+}
+
 async function loadAdminShell(): Promise<{
   navSections: NavSection[];
   storage: AppShellStorage;
   recentActivity: AppShellRecent[];
 }> {
-  const admin = createAdminClient();
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (err) {
+    console.error("[AppShellData] createAdminClient failed:", err);
+    return {
+      navSections: defaultAdminNav(),
+      storage: defaultAdminStorage(0),
+      recentActivity: [],
+    };
+  }
   const today = todayIso();
 
   const [
@@ -54,21 +74,23 @@ async function loadAdminShell(): Promise<{
     contactMessages,
     recentArtists,
   ] = await Promise.all([
-    admin.from("events").select("id", { count: "exact", head: true }).gte("date", today),
-    admin.from("events").select("id", { count: "exact", head: true }).lt("date", today),
-    admin.from("events").select("id", { count: "exact", head: true }),
-    admin.from("artist_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    admin.from("artists").select("id", { count: "exact", head: true }).eq("status", "approved"),
-    admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "new"),
-    admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "contacted"),
-    admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "closed"),
-    admin.from("contact_messages").select("id", { count: "exact", head: true }),
-    admin
-      .from("artists")
-      .select("stage_name, cover_image, status, created_at")
-      .eq("status", "approved")
-      .order("created_at", { ascending: false })
-      .limit(4),
+    safe(admin.from("events").select("id", { count: "exact", head: true }).gte("date", today)),
+    safe(admin.from("events").select("id", { count: "exact", head: true }).lt("date", today)),
+    safe(admin.from("events").select("id", { count: "exact", head: true })),
+    safe(admin.from("artist_applications").select("id", { count: "exact", head: true }).eq("status", "pending")),
+    safe(admin.from("artists").select("id", { count: "exact", head: true }).eq("status", "approved")),
+    safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "new")),
+    safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "contacted")),
+    safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "closed")),
+    safe(admin.from("contact_messages").select("id", { count: "exact", head: true })),
+    safe(
+      admin
+        .from("artists")
+        .select("stage_name, cover_image, status, created_at")
+        .eq("status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(4)
+    ),
   ]);
 
   const c = (n: { count: number | null } | null) => n?.count ?? 0;
@@ -140,7 +162,7 @@ async function loadAdminShell(): Promise<{
     ctaHref: "/admin/eventi/new",
   };
 
-  const recentActivity: AppShellRecent[] = (recentArtists.data ?? []).map((a) => ({
+  const recentActivity: AppShellRecent[] = (recentArtists?.data ?? []).map((a) => ({
     src: a.cover_image ?? null,
     name: a.stage_name,
   }));
@@ -153,13 +175,26 @@ async function loadArtistShell(userId: string): Promise<{
   storage: AppShellStorage | undefined;
   recentActivity: AppShellRecent[];
 }> {
-  const admin = createAdminClient();
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (err) {
+    console.error("[AppShellData] createAdminClient failed:", err);
+    return {
+      navSections: defaultArtistNav(),
+      storage: undefined,
+      recentActivity: [],
+    };
+  }
 
-  const { data: artist } = await admin
-    .from("artists")
-    .select("id, stage_name, cover_image, bio, gallery, videos, genre")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const artistRes = await safe(
+    admin
+      .from("artists")
+      .select("id, stage_name, cover_image, bio, gallery, videos, genre")
+      .eq("user_id", userId)
+      .maybeSingle()
+  );
+  const artist = artistRes?.data ?? null;
 
   const today = todayIso();
   const horizon = plus30daysIso();
@@ -173,47 +208,59 @@ async function loadArtistShell(userId: string): Promise<{
 
   if (artist) {
     const [available, busy, leadsNew, leadsContacted, leadsClosed, recent] = await Promise.all([
-      admin
-        .from("artist_availability")
-        .select("id", { count: "exact", head: true })
-        .eq("artist_id", artist.id)
-        .eq("status", "available")
-        .gte("date", today)
-        .lte("date", horizon),
-      admin
-        .from("artist_availability")
-        .select("id", { count: "exact", head: true })
-        .eq("artist_id", artist.id)
-        .eq("status", "busy")
-        .gte("date", today),
-      admin
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .eq("artist_id", artist.id)
-        .eq("status", "new"),
-      admin
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .eq("artist_id", artist.id)
-        .eq("status", "contacted"),
-      admin
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .eq("artist_id", artist.id)
-        .eq("status", "closed"),
-      admin
-        .from("leads")
-        .select("contact_email, event_location, created_at")
-        .eq("artist_id", artist.id)
-        .order("created_at", { ascending: false })
-        .limit(4),
+      safe(
+        admin
+          .from("artist_availability")
+          .select("id", { count: "exact", head: true })
+          .eq("artist_id", artist.id)
+          .eq("status", "available")
+          .gte("date", today)
+          .lte("date", horizon)
+      ),
+      safe(
+        admin
+          .from("artist_availability")
+          .select("id", { count: "exact", head: true })
+          .eq("artist_id", artist.id)
+          .eq("status", "busy")
+          .gte("date", today)
+      ),
+      safe(
+        admin
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .eq("artist_id", artist.id)
+          .eq("status", "new")
+      ),
+      safe(
+        admin
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .eq("artist_id", artist.id)
+          .eq("status", "contacted")
+      ),
+      safe(
+        admin
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .eq("artist_id", artist.id)
+          .eq("status", "closed")
+      ),
+      safe(
+        admin
+          .from("leads")
+          .select("contact_email, event_location, created_at")
+          .eq("artist_id", artist.id)
+          .order("created_at", { ascending: false })
+          .limit(4)
+      ),
     ]);
-    availableCount = available.count ?? 0;
-    busyCount = busy.count ?? 0;
-    newLeads = leadsNew.count ?? 0;
-    contactedLeads = leadsContacted.count ?? 0;
-    closedLeads = leadsClosed.count ?? 0;
-    recentLeads = recent.data ?? [];
+    availableCount = available?.count ?? 0;
+    busyCount = busy?.count ?? 0;
+    newLeads = leadsNew?.count ?? 0;
+    contactedLeads = leadsContacted?.count ?? 0;
+    closedLeads = leadsClosed?.count ?? 0;
+    recentLeads = recent?.data ?? [];
   }
 
   const navSections: NavSection[] = [
@@ -278,6 +325,38 @@ async function loadArtistShell(userId: string): Promise<{
   return { navSections, storage, recentActivity };
 }
 
+function defaultAdminNav(): NavSection[] {
+  return [
+    { href: "/admin", label: "Overview", icon: <LayoutDashboard className="size-4" />, exact: true },
+    { href: "/admin/eventi", label: "Eventi", icon: <CalendarDays className="size-4" /> },
+    { href: "/admin/artisti", label: "Artisti", icon: <Users className="size-4" /> },
+    { href: "/admin/generi", label: "Generi", icon: <Tags className="size-4" /> },
+    { href: "/admin/leads", label: "Lead", icon: <Inbox className="size-4" /> },
+    { href: "/admin/messaggi", label: "Messaggi", icon: <MessageSquare className="size-4" /> },
+    { href: "/admin/profilo", label: "Profilo", icon: <UserCog className="size-4" /> },
+  ];
+}
+
+function defaultArtistNav(): NavSection[] {
+  return [
+    { href: "/dashboard", label: "Profilo artista", icon: <Sparkles className="size-4" />, exact: true },
+    { href: "/dashboard/calendario", label: "Calendario", icon: <CalendarDays className="size-4" /> },
+    { href: "/dashboard/leads", label: "Richieste", icon: <Inbox className="size-4" /> },
+    { href: "/dashboard/profilo", label: "Profilo account", icon: <UserCog className="size-4" /> },
+  ];
+}
+
+function defaultAdminStorage(used: number): AppShellStorage {
+  return {
+    label: "Eventi pubblicati",
+    used,
+    total: ADMIN_EVENT_QUOTA,
+    hint: `${used} di ${ADMIN_EVENT_QUOTA} eventi attivi`,
+    ctaLabel: "Crea evento",
+    ctaHref: "/admin/eventi/new",
+  };
+}
+
 export async function AdminAppShell({
   user,
   children,
@@ -285,7 +364,17 @@ export async function AdminAppShell({
   user: AppShellUser;
   children: ReactNode;
 }) {
-  const { navSections, storage, recentActivity } = await loadAdminShell();
+  let navSections: NavSection[];
+  let storage: AppShellStorage | undefined;
+  let recentActivity: AppShellRecent[];
+  try {
+    ({ navSections, storage, recentActivity } = await loadAdminShell());
+  } catch (err) {
+    console.error("[AppShellData] loadAdminShell crashed:", err);
+    navSections = defaultAdminNav();
+    storage = defaultAdminStorage(0);
+    recentActivity = [];
+  }
   return (
     <AppShell
       brand="N'ARTE / ADMIN"
@@ -313,7 +402,17 @@ export async function ArtistAppShell({
   user: AppShellUser;
   children: ReactNode;
 }) {
-  const { navSections, storage, recentActivity } = await loadArtistShell(user.id);
+  let navSections: NavSection[];
+  let storage: AppShellStorage | undefined;
+  let recentActivity: AppShellRecent[];
+  try {
+    ({ navSections, storage, recentActivity } = await loadArtistShell(user.id));
+  } catch (err) {
+    console.error("[AppShellData] loadArtistShell crashed:", err);
+    navSections = defaultArtistNav();
+    storage = undefined;
+    recentActivity = [];
+  }
   return (
     <AppShell
       brand="N'ARTE / ARTIST"
