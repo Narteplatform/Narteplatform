@@ -253,15 +253,14 @@ function SidebarContent({
         >
           {brand}
         </Link>
-        <Dialog.Close asChild>
-          <button
-            type="button"
-            aria-label="Chiudi menu"
-            className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted lg:hidden"
-          >
-            <X className="size-4" />
-          </button>
-        </Dialog.Close>
+        <button
+          type="button"
+          aria-label="Chiudi menu"
+          onClick={onNavigate}
+          className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted lg:hidden"
+        >
+          <X className="size-4" />
+        </button>
       </div>
 
       <div className="px-4 pt-4">
