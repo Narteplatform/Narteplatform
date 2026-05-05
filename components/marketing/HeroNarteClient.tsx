@@ -12,6 +12,7 @@ export function HeroNarteClient(_props: { images?: HeroArtistImage[] }) {
   const reduce = useReducedMotion();
   const sectionRef = React.useRef<HTMLElement>(null);
 
+  // Parallax limitato alla hero
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end start"],
@@ -32,10 +33,9 @@ export function HeroNarteClient(_props: { images?: HeroArtistImage[] }) {
       ref={sectionRef}
       className="relative w-full overflow-hidden bg-background pb-10 md:min-h-[100svh] md:pt-40 md:pb-12 lg:pt-44 lg:pb-24"
     >
-      {/* MOBILE: banner immagine a tutto schermo, testo sotto */}
+      {/* MOBILE: banner immagine fullscreen + testo sotto */}
       <div className="relative md:hidden">
         <div className="relative h-[70svh] min-h-[480px] w-full overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <Image
             src="/hero-mobile.webp"
             alt="N'arte — la piattaforma degli artisti"
@@ -70,64 +70,64 @@ export function HeroNarteClient(_props: { images?: HeroArtistImage[] }) {
         </div>
       </div>
 
-      {/* DESKTOP: layout esistente con strumenti parallax */}
-      <div className="relative hidden md:block">
-        <div
-          aria-hidden="true"
-          className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 sm:h-[1100px] sm:w-[1100px]"
-        />
-        <div className="container-narte relative z-10">
-          <div className="relative z-20 text-center">
-            <motion.h1
-              {...titleAnim(0.05)}
-              className="font-display tracking-tight"
-              style={{ lineHeight: 0.92 }}
-            >
-              <span className="block text-[7vw] font-normal leading-[0.92] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] lg:text-[7rem] xl:text-[8.5rem]">
-                N&apos;arte.
-              </span>
-            </motion.h1>
-            <motion.h2
-              {...titleAnim(0.18)}
-              className="font-display tracking-tight text-foreground"
-              style={{ lineHeight: 0.95 }}
-            >
-              <span className="block text-[5.5vw] leading-[1] lg:text-[5.5rem] xl:text-[6.5rem]">
-                La piattaforma
-              </span>
-              <span className="mt-1 block text-[5.5vw] leading-[1] lg:text-[5.5rem] xl:text-[6.5rem]">
-                degli artisti.
-              </span>
-            </motion.h2>
-          </div>
-        </div>
+      {/* DESKTOP: layout originale con titoli centrati + strumenti parallax */}
+      <div
+        aria-hidden="true"
+        className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/2 hidden h-[1100px] w-[1100px] -translate-x-1/2 -translate-y-1/2 md:block"
+      />
 
-        <motion.div
-          aria-hidden="true"
-          style={
-            reduce
-              ? undefined
-              : {
-                  y: instrumentsY,
-                  scale: instrumentsScale,
-                  rotate: instrumentsRotate,
-                }
-          }
-          initial={reduce ? false : { opacity: 0, y: 40 }}
-          animate={reduce ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: easing, delay: 0.35 }}
-          className="pointer-events-none absolute inset-x-0 top-24 bottom-0 z-30"
-        >
-          <Image
-            src="/hero-strumenti.png"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="select-none object-cover object-center"
-          />
-        </motion.div>
+      <div className="container-narte relative z-10 hidden md:block">
+        <div className="relative z-20 text-center">
+          <motion.h1
+            {...titleAnim(0.05)}
+            className="font-display tracking-tight"
+            style={{ lineHeight: 0.92 }}
+          >
+            <span className="block text-[7vw] font-normal leading-[0.92] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] lg:text-[7rem] xl:text-[8.5rem]">
+              N&apos;arte.
+            </span>
+          </motion.h1>
+          <motion.h2
+            {...titleAnim(0.18)}
+            className="font-display tracking-tight text-foreground"
+            style={{ lineHeight: 0.95 }}
+          >
+            <span className="block text-[5.5vw] leading-[1] lg:text-[5.5rem] xl:text-[6.5rem]">
+              La piattaforma
+            </span>
+            <span className="mt-1 block text-[5.5vw] leading-[1] lg:text-[5.5rem] xl:text-[6.5rem]">
+              degli artisti.
+            </span>
+          </motion.h2>
+        </div>
       </div>
+
+      {/* Strumenti — desktop only, parallax dentro la hero */}
+      <motion.div
+        aria-hidden="true"
+        style={
+          reduce
+            ? undefined
+            : {
+                y: instrumentsY,
+                scale: instrumentsScale,
+                rotate: instrumentsRotate,
+              }
+        }
+        initial={reduce ? false : { opacity: 0, y: 40 }}
+        animate={reduce ? undefined : { opacity: 1, y: 0 }}
+        transition={{ duration: 1.2, ease: easing, delay: 0.35 }}
+        className="pointer-events-none absolute inset-x-0 bottom-0 top-24 z-30 hidden md:block"
+      >
+        <Image
+          src="/hero-strumenti.png"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="select-none object-cover object-center"
+        />
+      </motion.div>
     </section>
   );
 }
