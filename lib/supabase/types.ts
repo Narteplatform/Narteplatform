@@ -3,7 +3,7 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-export type Role = "superadmin" | "artist" | "user";
+export type Role = "superadmin" | "artist" | "user" | "organizer";
 export type ArtistStatus = "pending" | "approved" | "rejected";
 export type LeadStatus = "new" | "contacted" | "closed";
 export type AvailabilityStatus = "available" | "busy";

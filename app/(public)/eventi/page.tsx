@@ -16,19 +16,36 @@ const CATEGORIES = [
   { slug: "business", label: "Business" },
 ];
 
+type When = "upcoming" | "past";
+const WHEN_TABS: { v: When; label: string }[] = [
+  { v: "upcoming", label: "In arrivo" },
+  { v: "past", label: "Passati" },
+];
+
 export default async function EventiPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cat?: string }>;
+  searchParams: Promise<{ cat?: string; when?: string }>;
 }) {
   const sp = await searchParams;
   const cat = sp?.cat ?? "all";
+  const when: When = sp?.when === "past" ? "past" : "upcoming";
 
   let events: Awaited<ReturnType<typeof loadEvents>> = [];
   try {
-    events = await loadEvents(cat);
+    events = await loadEvents(cat, when);
   } catch {
     events = [];
+  }
+
+  function buildHref(next: { cat?: string; when?: When }) {
+    const params = new URLSearchParams();
+    const c = next.cat ?? cat;
+    const w = next.when ?? when;
+    if (c && c !== "all") params.set("cat", c);
+    if (w && w !== "upcoming") params.set("when", w);
+    const qs = params.toString();
+    return qs ? `/eventi?${qs}` : "/eventi";
   }
 
   return (
@@ -55,6 +72,32 @@ export default async function EventiPage({
         </div>
       </section>
 
+      {/* TABS IN ARRIVO / PASSATI */}
+      <section className="border-b border-border bg-background py-8">
+        <div className="container-narte">
+          <Reveal>
+            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted p-1">
+              {WHEN_TABS.map((t) => {
+                const active = t.v === when;
+                return (
+                  <Link
+                    key={t.v}
+                    href={buildHref({ when: t.v })}
+                    className={`inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors ${
+                      active
+                        ? "bg-foreground text-background shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* CATEGORY FILTERS + GRID */}
       <section className="bg-muted py-16 md:py-20">
         <div className="container-narte">
@@ -65,7 +108,7 @@ export default async function EventiPage({
                 return (
                   <Link
                     key={c.slug}
-                    href={c.slug === "all" ? "/eventi" : `/eventi?cat=${c.slug}`}
+                    href={buildHref({ cat: c.slug })}
                     className={`rounded-full border px-4 py-1.5 text-sm transition ${
                       active
                         ? "border-foreground bg-foreground text-background"
@@ -81,7 +124,11 @@ export default async function EventiPage({
 
           <div className="mt-10">
             {events.length === 0 ? (
-              <p className="text-muted-foreground">Nessun evento in questa categoria.</p>
+              <p className="text-muted-foreground">
+                {when === "past"
+                  ? "Nessun evento passato in questa categoria."
+                  : "Nessun evento in arrivo in questa categoria."}
+              </p>
             ) : (
               <StaggerList className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
                 {events.map((e) => (
@@ -96,13 +143,18 @@ export default async function EventiPage({
   );
 }
 
-async function loadEvents(cat: string) {
+async function loadEvents(cat: string, when: When) {
   const supabase = await createClient();
+  const nowIso = new Date().toISOString();
   let q = supabase
     .from("events")
-    .select("slug, title, city, date, price, cover_image, cover_image_home")
-    .order("date", { ascending: true });
+    .select("slug, title, city, date, price, cover_image, cover_image_home");
   if (cat !== "all") q = q.eq("category", cat as never);
+  if (when === "past") {
+    q = q.lt("date", nowIso).order("date", { ascending: false });
+  } else {
+    q = q.gte("date", nowIso).order("date", { ascending: true });
+  }
   const { data } = await q;
   return (data ?? []).map((e) => ({
     slug: e.slug,

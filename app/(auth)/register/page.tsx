@@ -9,11 +9,12 @@ export default function RegisterPage() {
       <div className="container-narte flex min-h-screen flex-col items-center justify-center py-12">
         <div className="w-full max-w-md">
           <Link href="/" className="font-display text-xl">
-            HAP<br />PEEN
+            N&apos;AR<br />TE
           </Link>
-          <h1 className="display-xl mt-8 text-4xl">Registrati</h1>
+          <h1 className="display-xl mt-8 text-4xl">Iscriviti</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Crea il tuo account per scoprire e ingaggiare artisti.
+            Crea il tuo account come <strong>utente</strong> per scoprire eventi e artisti, o
+            come <strong>organizzatore</strong> per richiedere e ingaggiare artisti.
           </p>
           <div className="mt-8">
             <RegisterForm />

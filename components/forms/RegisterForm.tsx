@@ -9,10 +9,13 @@ import { createClient } from "@/lib/supabase/client";
 import { Input, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
+type AccountKind = "user" | "organizer";
+
 export function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [kind, setKind] = useState<AccountKind>("user");
   const {
     register,
     handleSubmit,
@@ -27,7 +30,13 @@ export function RegisterForm() {
       email: values.email,
       password: values.password,
       options: {
-        data: { full_name: values.fullName ?? null },
+        data: {
+          full_name: values.fullName ?? null,
+          // Letto dalla trigger handle_new_user per impostare il ruolo
+          // del profilo. Solo "organizer" è auto-assegnabile dal client;
+          // qualunque altro valore ricade su default 'user'.
+          role: kind === "organizer" ? "organizer" : "user",
+        },
         emailRedirectTo: `${window.location.origin}/login`,
       },
     });
@@ -45,6 +54,38 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="space-y-2">
+        <Label>Tipo di account</Label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setKind("user")}
+            aria-pressed={kind === "user"}
+            className={`rounded-xl border p-3 text-left transition ${
+              kind === "user"
+                ? "border-accent bg-accent/10 text-foreground"
+                : "border-border bg-background text-muted-foreground hover:border-foreground"
+            }`}
+          >
+            <p className="text-sm font-medium">Utente</p>
+            <p className="text-xs text-muted-foreground">Scopri eventi e artisti.</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setKind("organizer")}
+            aria-pressed={kind === "organizer"}
+            className={`rounded-xl border p-3 text-left transition ${
+              kind === "organizer"
+                ? "border-accent bg-accent/10 text-foreground"
+                : "border-border bg-background text-muted-foreground hover:border-foreground"
+            }`}
+          >
+            <p className="text-sm font-medium">Organizzatore</p>
+            <p className="text-xs text-muted-foreground">Richiedi e ingaggia artisti.</p>
+          </button>
+        </div>
+      </div>
+
       <div className="space-y-1">
         <Label>Nome completo</Label>
         <Input {...register("fullName")} />
@@ -64,6 +105,9 @@ export function RegisterForm() {
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Registrazione..." : "Registrati"}
       </Button>
+      <p className="text-[11px] text-muted-foreground">
+        Sei un artista? <a href="/candidatura-artista" className="underline">Candidati qui</a> per entrare nel roster.
+      </p>
     </form>
   );
 }

@@ -12,9 +12,13 @@ export default function LoginPage() {
           <Link href="/" className="font-display text-xl">
             N&apos;AR<br />TE
           </Link>
-          <h1 className="display-xl mt-8 text-4xl">Accedi</h1>
+          <h1 className="display-xl mt-8 text-4xl">Accedi / Iscriviti</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Bentornato. Accedi per gestire i tuoi eventi e i tuoi lead.
+            Hai già un account? Accedi qui sotto. Altrimenti{" "}
+            <Link href="/register" className="underline">
+              iscriviti
+            </Link>{" "}
+            come utente o organizzatore.
           </p>
           <div className="mt-8">
             <Suspense fallback={<div className="h-32" />}>

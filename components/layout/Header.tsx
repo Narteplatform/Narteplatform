@@ -7,8 +7,22 @@ import { SearchBar } from "@/components/layout/SearchBar";
 export async function Header() {
   const user = await getCurrentUser();
   const role = user?.profile?.role;
-  const dashHref = role === "superadmin" ? "/admin" : role === "artist" ? "/dashboard" : "/artisti";
-  const dashLabel = role === "superadmin" ? "Admin" : role === "artist" ? "Dashboard" : "Area Riservata";
+  const dashHref =
+    role === "superadmin"
+      ? "/admin"
+      : role === "artist"
+      ? "/dashboard"
+      : role === "organizer"
+      ? "/artisti"
+      : "/artisti";
+  const dashLabel =
+    role === "superadmin"
+      ? "Admin"
+      : role === "artist"
+      ? "Dashboard"
+      : role === "organizer"
+      ? "Organizzatore"
+      : "Area Riservata";
 
   return (
     <header className="absolute inset-x-0 top-0 z-30 bg-transparent">
@@ -43,10 +57,10 @@ export async function Header() {
                 href="/login"
                 className="hidden text-sm text-foreground/80 hover:text-foreground sm:inline"
               >
-                Accedi
+                Accedi / Iscriviti
               </Link>
               <Button asChild variant="accent" size="sm" className="rounded-full">
-                <Link href="/candidatura-artista">Diventa artista</Link>
+                <Link href="/candidatura-artista">Sei un artista?</Link>
               </Button>
             </>
           ) : (
