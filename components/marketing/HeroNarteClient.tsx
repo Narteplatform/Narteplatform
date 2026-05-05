@@ -46,50 +46,51 @@ export function HeroNarteClient(_props: { images?: HeroArtistImage[] }) {
             className="font-display tracking-tight"
             style={{ lineHeight: 0.92 }}
           >
-            <span className="block text-[16vw] font-normal leading-[0.92] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] sm:text-[14vw] md:text-[10rem] lg:text-[12rem] xl:text-[14rem]">
-              N&apos;ARTE.
+            <span className="block text-[10vw] font-normal leading-[0.92] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] sm:text-[8.5vw] md:text-[6rem] lg:text-[7rem] xl:text-[8.5rem]">
+              N&apos;arte.
             </span>
           </motion.h1>
           <motion.h2
             {...titleAnim(0.18)}
-            className="mt-2 font-display tracking-tight text-foreground/90"
-            style={{ lineHeight: 0.95 }}
+            className="font-display tracking-tight text-foreground"
+            style={{ lineHeight: 0.92 }}
           >
-            <span className="block text-[5vw] leading-[1] sm:text-[4vw] md:text-[2.75rem] lg:text-[3.25rem] xl:text-[3.75rem]">
-              La piattaforma degli artisti.
+            <span className="block text-[10vw] leading-[0.92] sm:text-[8.5vw] md:text-[6rem] lg:text-[7rem] xl:text-[8.5rem]">
+              La piattaforma
+            </span>
+            <span className="mt-1 block text-[10vw] leading-[0.92] sm:text-[8.5vw] md:text-[6rem] lg:text-[7rem] xl:text-[8.5rem]">
+              degli artisti.
             </span>
           </motion.h2>
         </div>
-
-        {/* Strumenti — sovrappongono il testo */}
-        <motion.div
-          aria-hidden="true"
-          style={
-            reduce
-              ? undefined
-              : {
-                  y: instrumentsY,
-                  scale: instrumentsScale,
-                  rotate: instrumentsRotate,
-                }
-          }
-          initial={reduce ? false : { opacity: 0, y: 60 }}
-          animate={reduce ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: easing, delay: 0.35 }}
-          className="pointer-events-none absolute inset-x-0 top-0 z-30 mx-auto flex h-full w-full max-w-[1400px] items-center justify-center px-4"
-        >
-          <div className="relative h-full w-full">
-            <Image
-              src="/hero-strumenti.png"
-              alt=""
-              fill
-              priority
-              sizes="(min-width: 1280px) 1400px, 100vw"
-              className="object-contain object-center select-none"
-            />
-          </div>
-        </motion.div>
       </div>
+
+      {/* Strumenti — full screen, sovrappongono il testo */}
+      <motion.div
+        aria-hidden="true"
+        style={
+          reduce
+            ? undefined
+            : {
+                y: instrumentsY,
+                scale: instrumentsScale,
+                rotate: instrumentsRotate,
+              }
+        }
+        initial={reduce ? false : { opacity: 0, y: 60 }}
+        animate={reduce ? undefined : { opacity: 1, y: 0 }}
+        transition={{ duration: 1.2, ease: easing, delay: 0.35 }}
+        className="pointer-events-none absolute inset-0 z-30"
+      >
+        <Image
+          src="/hero-strumenti.png"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center select-none"
+        />
+      </motion.div>
     </section>
   );
 }
