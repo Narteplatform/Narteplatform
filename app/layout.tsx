@@ -28,11 +28,35 @@ export const metadata: Metadata = {
   },
 };
 
+// Inline script che azzera ogni Service Worker registrato e svuota le
+// CacheStorage del browser. Risolve il caso di utenti bloccati su una
+// vecchia versione PWA-cached.
+const KILL_SW = `
+try {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      regs.forEach(function (r) { r.unregister(); });
+    });
+  }
+  if (typeof caches !== 'undefined') {
+    caches.keys().then(function (keys) {
+      keys.forEach(function (k) { caches.delete(k); });
+    });
+  }
+} catch (e) {}
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="it" className={`${inter.variable} ${archivoBlack.variable}`}>
+      <head>
+        <meta httpEquiv="cache-control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="pragma" content="no-cache" />
+        <meta httpEquiv="expires" content="0" />
+        <script dangerouslySetInnerHTML={{ __html: KILL_SW }} />
+      </head>
       <body>{children}</body>
     </html>
   );
