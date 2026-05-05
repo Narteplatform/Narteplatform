@@ -147,14 +147,14 @@ export default async function ArtistDetailPage({
 
   return (
     <article>
-      {/* HERO — cover left, title + genres + calendar right */}
-      <section className="relative overflow-hidden border-b border-border pt-28 pb-12 md:pt-36 md:pb-16">
+      {/* HERO — cover sx, title + genres + calendar dx */}
+      <section className="relative overflow-hidden border-b border-border pt-24 pb-12 md:pt-32 md:pb-16">
         <div
           aria-hidden="true"
           className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/3 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"
         />
-        <div className="container-narte relative z-10 grid gap-10 md:grid-cols-[1fr_1.2fr] md:items-start">
-          {/* Cover portrait */}
+        <div className="container-narte relative z-10 grid gap-8 md:grid-cols-[1fr_1.4fr] md:items-start md:gap-10 lg:gap-14">
+          {/* Cover portrait — aspect fisso, sticky su md+ */}
           <Reveal>
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-border bg-muted md:sticky md:top-28">
               {coverImage ? (
@@ -178,72 +178,67 @@ export default async function ArtistDetailPage({
             </div>
           </Reveal>
 
-          {/* Right column: title + genres + calendar */}
-          <div>
+          {/* Right column: title + genres + CALENDAR */}
+          <div className="flex flex-col">
             <Reveal>
               <p className="accent-label mb-3">artista</p>
             </Reveal>
             <Reveal delay={0.1}>
-              <h1 className="display-xl text-5xl md:text-6xl lg:text-7xl">
+              <h1 className="display-xl text-4xl md:text-5xl lg:text-6xl">
                 {artist.stage_name}
               </h1>
             </Reveal>
-            <Reveal delay={0.2}>
-              <ul className="mt-5 flex flex-wrap gap-2">
-                {genres.map((g) => (
-                  <li
-                    key={g}
-                    className="rounded-full border border-border bg-muted px-3 py-1 text-xs lowercase tracking-wide"
-                  >
-                    {g}
-                  </li>
-                ))}
-              </ul>
+            {genres.length > 0 && (
+              <Reveal delay={0.2}>
+                <ul className="mt-5 flex flex-wrap gap-2">
+                  {genres.map((g) => (
+                    <li
+                      key={g}
+                      className="rounded-full border border-border bg-muted px-3 py-1 text-xs lowercase tracking-wide"
+                    >
+                      {g}
+                    </li>
+                  ))}
+                </ul>
+              </Reveal>
+            )}
+
+            {/* Calendar tab */}
+            <Reveal delay={0.3}>
+              <div className="mt-8 rounded-2xl border border-border bg-background p-5 md:p-6">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="accent-label">calendario</p>
+                </div>
+                <h2 className="mt-1 font-display text-xl uppercase md:text-2xl">
+                  Disponibilità &amp; booking
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Clicca un giorno libero per vedere i turni di {artist.stage_name},
+                  poi scegli uno slot per inviare la richiesta.
+                </p>
+                <div className="mt-6">
+                  <BookingCalendar
+                    artistId={artist.id}
+                    artistName={artist.stage_name}
+                    busyDates={busyDates}
+                    defaultSlots={(defaultSlots ?? []).map((s) => ({
+                      id: s.id,
+                      label: s.label,
+                      start_time: s.start_time,
+                      end_time: s.end_time,
+                    }))}
+                    dateSlots={(dateSlots ?? []).map((s) => ({
+                      id: s.id,
+                      date: s.date,
+                      label: s.label,
+                      start_time: s.start_time,
+                      end_time: s.end_time,
+                    }))}
+                  />
+                </div>
+              </div>
             </Reveal>
-
           </div>
-        </div>
-      </section>
-
-      {/* CALENDARIO & BOOKING — sezione full-width per dare spazio al pannello slot */}
-      <section className="border-b border-border bg-background py-12 md:py-16">
-        <div className="container-narte">
-          <Reveal>
-            <p className="accent-label mb-3">calendario</p>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <h2 className="display-xl text-3xl md:text-4xl lg:text-5xl">
-              Disponibilità &amp; booking.
-            </h2>
-          </Reveal>
-          <Reveal delay={0.15}>
-            <p className="mt-4 max-w-2xl text-base text-muted-foreground md:text-lg">
-              Clicca un giorno libero per vedere i turni disponibili di{" "}
-              {artist.stage_name}, poi seleziona uno slot per inviare la richiesta.
-            </p>
-          </Reveal>
-          <Reveal delay={0.2}>
-            <div className="mt-8 rounded-2xl border border-border bg-background p-5 md:p-6">
-              <BookingCalendar
-                artistId={artist.id}
-                artistName={artist.stage_name}
-                busyDates={busyDates}
-                defaultSlots={(defaultSlots ?? []).map((s) => ({
-                  id: s.id,
-                  label: s.label,
-                  start_time: s.start_time,
-                  end_time: s.end_time,
-                }))}
-                dateSlots={(dateSlots ?? []).map((s) => ({
-                  id: s.id,
-                  date: s.date,
-                  label: s.label,
-                  start_time: s.start_time,
-                  end_time: s.end_time,
-                }))}
-              />
-            </div>
-          </Reveal>
         </div>
       </section>
 
