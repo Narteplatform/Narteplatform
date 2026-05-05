@@ -6,7 +6,7 @@ import { DayPicker } from "react-day-picker";
 import { it } from "date-fns/locale";
 import "react-day-picker/style.css";
 import { toast } from "sonner";
-import { Clock, X, CheckCircle2 } from "lucide-react";
+import { Clock, X, CheckCircle2, ArrowRight, CalendarCheck2 } from "lucide-react";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatSlot, normalizeTime, resolveSlotsForDate, type Slot } from "@/lib/slots";
@@ -68,6 +68,7 @@ export function BookingCalendar({
 }: Props) {
   const [selectedISO, setSelectedISO] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const today = new Date();
@@ -105,11 +106,9 @@ export function BookingCalendar({
   });
 
   useEffect(() => {
-    if (selectedISO) {
-      setError(null);
-      setSelectedSlot(null);
-      setSubmitted(false);
-    }
+    setError(null);
+    setSelectedSlot(null);
+    setSubmitted(false);
   }, [selectedISO]);
 
   function onDayClick(day: Date) {
@@ -119,12 +118,14 @@ export function BookingCalendar({
     setSelectedISO(iso);
   }
 
+  function openForm(slot?: string) {
+    if (!selectedISO) return;
+    if (slot !== undefined) setSelectedSlot(slot);
+    setFormOpen(true);
+  }
+
   async function onSubmit(values: FormValues) {
     if (!selectedISO) return;
-    if (availableSlots.length > 0 && !selectedSlot) {
-      setError("Seleziona uno slot orario");
-      return;
-    }
     setError(null);
     const payload: ArtistInterestInput = {
       artistId,
@@ -162,36 +163,130 @@ export function BookingCalendar({
     }
   }
 
-  function close() {
-    setSelectedISO(null);
-    setSelectedSlot(null);
+  function closeForm() {
+    setFormOpen(false);
     setError(null);
     setSubmitted(false);
   }
 
+  function clearSelection() {
+    setSelectedISO(null);
+    setSelectedSlot(null);
+  }
+
   return (
     <div>
-      <DayPicker
-        mode="single"
-        locale={it}
-        weekStartsOn={1}
-        disabled={[{ before: today }, ...busy]}
-        modifiers={{ busy }}
-        modifiersClassNames={{
-          busy: "bg-foreground text-background line-through opacity-60",
-        }}
-        onDayClick={onDayClick}
-      />
-      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-2">
-          <span className="inline-block size-3 border border-foreground" /> Libero — clicca per prenotare
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="inline-block size-3 bg-foreground" /> Occupato
-        </span>
+      <div className="grid gap-6 lg:grid-cols-[auto_1fr] lg:gap-8">
+        {/* CALENDAR */}
+        <div>
+          <DayPicker
+            mode="single"
+            locale={it}
+            weekStartsOn={1}
+            disabled={[{ before: today }, ...busy]}
+            modifiers={{ busy }}
+            modifiersClassNames={{
+              busy: "bg-foreground text-background line-through opacity-60",
+            }}
+            onDayClick={onDayClick}
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-2">
+              <span className="inline-block size-3 border border-foreground" /> Libero — clicca
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="inline-block size-3 bg-foreground" /> Occupato
+            </span>
+          </div>
+        </div>
+
+        {/* SLOT PREVIEW PANEL */}
+        <div className="rounded-2xl border border-border bg-muted p-5 md:p-6">
+          {!selectedISO ? (
+            <div className="flex h-full min-h-[220px] flex-col items-center justify-center text-center">
+              <CalendarCheck2 className="size-8 text-muted-foreground" />
+              <p className="accent-label mt-4">seleziona</p>
+              <p className="mt-2 font-display text-lg uppercase">
+                Scegli un giorno
+              </p>
+              <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+                Clicca un giorno libero sul calendario per vedere gli orari disponibili.
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="accent-label">data scelta</p>
+              <h3 className="mt-1 font-display text-lg uppercase md:text-xl">
+                {formatHuman(selectedISO)}
+              </h3>
+
+              <div className="mt-5">
+                <Label className="flex items-center gap-2 text-xs">
+                  <Clock className="size-3" /> Turni disponibili
+                </Label>
+
+                {availableSlots.length === 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => openForm("")}
+                    className="mt-3 flex w-full items-center justify-between gap-3 rounded-xl border border-foreground/20 bg-background px-4 py-4 text-left transition-colors hover:border-accent hover:bg-accent/5"
+                  >
+                    <span>
+                      <span className="block font-display text-sm uppercase">
+                        Disponibile in qualunque orario
+                      </span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        Nessun turno preimpostato. Indica tu l&apos;orario nel form.
+                      </span>
+                    </span>
+                    <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+                  </button>
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {availableSlots.map((s, i) => {
+                      const value = `${normalizeTime(s.start_time)}–${normalizeTime(s.end_time)}${
+                        s.label ? ` (${s.label})` : ""
+                      }`;
+                      return (
+                        <li key={s.id ?? `${s.start_time}-${i}`}>
+                          <button
+                            type="button"
+                            onClick={() => openForm(value)}
+                            className="flex w-full items-center justify-between gap-3 rounded-xl border border-foreground/20 bg-background px-4 py-3 text-left transition-colors hover:border-accent hover:bg-accent/5"
+                          >
+                            <span>
+                              <span className="block font-display text-sm uppercase">
+                                {normalizeTime(s.start_time)}–{normalizeTime(s.end_time)}
+                              </span>
+                              {s.label && (
+                                <span className="mt-0.5 block text-xs text-muted-foreground">
+                                  {s.label}
+                                </span>
+                              )}
+                            </span>
+                            <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="mt-5 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Cambia giorno
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      {selectedISO && (
+      {/* FORM MODAL */}
+      {formOpen && selectedISO && (
         <div
           className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-0 pt-24 backdrop-blur-sm sm:items-center sm:p-6 sm:pt-28"
           role="dialog"
@@ -201,12 +296,12 @@ export function BookingCalendar({
             type="button"
             aria-label="Chiudi"
             className="absolute inset-0"
-            onClick={close}
+            onClick={closeForm}
           />
           <div className="relative z-10 max-h-[calc(100svh-7rem)] w-full max-w-xl overflow-y-auto rounded-t-2xl border border-border bg-background p-6 shadow-2xl sm:max-h-[calc(100svh-9rem)] sm:rounded-2xl sm:p-8">
             <button
               type="button"
-              onClick={close}
+              onClick={closeForm}
               aria-label="Chiudi"
               className="absolute right-4 top-4 inline-flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
             >
@@ -231,96 +326,67 @@ export function BookingCalendar({
                   variant="accent"
                   size="lg"
                   className="mt-8 min-w-[200px]"
-                  onClick={close}
+                  onClick={() => {
+                    closeForm();
+                    clearSelection();
+                  }}
                 >
                   Chiudi
                 </Button>
               </div>
             ) : (
               <>
-            <p className="accent-label">interessato</p>
-            <h3 className="mt-1 font-display text-2xl uppercase md:text-3xl">
-              {artistName} — {formatHuman(selectedISO)}
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Lascia i tuoi contatti: l&apos;artista e il nostro team valutano la richiesta
-              e ti rispondono entro 48h.
-            </p>
+                <p className="accent-label">interessato</p>
+                <h3 className="mt-1 font-display text-2xl uppercase md:text-3xl">
+                  {artistName} — {formatHuman(selectedISO)}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {selectedSlot
+                    ? `Turno: ${selectedSlot}`
+                    : "Disponibile in qualunque orario — indica i dettagli sotto."}
+                </p>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2 text-xs">
-                    <Clock className="size-3" /> Slot orario
-                  </Label>
-                  {availableSlots.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      Nessuno slot configurato per questo giorno: indica l&apos;orario nei dettagli.
-                    </p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {availableSlots.map((s, i) => {
-                        const value = `${normalizeTime(s.start_time)}–${normalizeTime(s.end_time)}${s.label ? ` (${s.label})` : ""}`;
-                        const active = selectedSlot === value;
-                        return (
-                          <button
-                            key={s.id ?? `${s.start_time}-${i}`}
-                            type="button"
-                            onClick={() => setSelectedSlot(active ? null : value)}
-                            className={`rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors ${
-                              active
-                                ? "border-foreground bg-foreground text-background"
-                                : "border-foreground/30 hover:border-foreground"
-                            }`}
-                            aria-pressed={active}
-                          >
-                            {formatSlot(s)}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Nome" error={errors.name && "Inserisci il nome (min 2 caratteri)"}>
-                    <Input {...register("name", { required: true, minLength: 2 })} />
-                  </Field>
-                  <Field label="Email" error={errors.email && "Email obbligatoria"}>
-                    <Input type="email" {...register("email", { required: true })} />
-                  </Field>
-                  <Field label="Telefono">
-                    <Input type="tel" {...register("phone")} />
-                  </Field>
-                  <Field label="Luogo evento">
-                    <Input placeholder="Città / venue" {...register("location")} />
-                  </Field>
-                </div>
-                <Field
-                  label="Dettagli"
-                  error={errors.message && "Scrivi qualche dettaglio (min 5 caratteri)"}
-                >
-                  <Textarea
-                    rows={4}
-                    placeholder="Tipo di evento, pubblico, qualunque dettaglio utile…"
-                    {...register("message", { required: true, minLength: 5 })}
-                  />
-                </Field>
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button
-                    type="submit"
-                    variant="accent"
-                    size="lg"
-                    className="min-w-[200px]"
-                    disabled={isSubmitting}
+                <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Nome" error={errors.name && "Inserisci il nome (min 2 caratteri)"}>
+                      <Input {...register("name", { required: true, minLength: 2 })} />
+                    </Field>
+                    <Field label="Email" error={errors.email && "Email obbligatoria"}>
+                      <Input type="email" {...register("email", { required: true })} />
+                    </Field>
+                    <Field label="Telefono">
+                      <Input type="tel" {...register("phone")} />
+                    </Field>
+                    <Field label="Luogo evento">
+                      <Input placeholder="Città / venue" {...register("location")} />
+                    </Field>
+                  </div>
+                  <Field
+                    label="Dettagli"
+                    error={errors.message && "Scrivi qualche dettaglio (min 5 caratteri)"}
                   >
-                    {isSubmitting ? "Invio…" : "Invia richiesta"}
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={close}>
-                    Annulla
-                  </Button>
-                </div>
-              </form>
+                    <Textarea
+                      rows={4}
+                      placeholder="Tipo di evento, pubblico, qualunque dettaglio utile…"
+                      {...register("message", { required: true, minLength: 5 })}
+                    />
+                  </Field>
+                  {error && <p className="text-sm text-red-500">{error}</p>}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button
+                      type="submit"
+                      variant="accent"
+                      size="lg"
+                      className="min-w-[200px]"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Invio…" : "Invia richiesta"}
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={closeForm}>
+                      Annulla
+                    </Button>
+                  </div>
+                </form>
               </>
             )}
           </div>

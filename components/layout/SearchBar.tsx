@@ -88,7 +88,7 @@ export function SearchBar() {
       />
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[70vh] overflow-y-auto rounded-md border border-border bg-background shadow-lg">
+        <div className="absolute left-0 right-0 top-full z-[100] mt-2 max-h-[70vh] overflow-y-auto rounded-md border border-border bg-background shadow-2xl">
           {loading && (
             <p className="px-4 py-3 text-xs uppercase tracking-wide text-muted-foreground">
               Cerco…

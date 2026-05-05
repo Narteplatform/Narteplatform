@@ -201,38 +201,49 @@ export default async function ArtistDetailPage({
               </ul>
             </Reveal>
 
-            <Reveal delay={0.3}>
-              <div className="mt-8 rounded-2xl border border-border bg-background p-5 md:p-6">
-                <p className="accent-label mb-3">calendario</p>
-                <h2 className="font-display text-xl uppercase md:text-2xl">
-                  Disponibilità & booking
-                </h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Clicca un giorno libero per richiedere {artist.stage_name} per il tuo evento.
-                </p>
-                <div className="mt-6">
-                  <BookingCalendar
-                    artistId={artist.id}
-                    artistName={artist.stage_name}
-                    busyDates={busyDates}
-                    defaultSlots={(defaultSlots ?? []).map((s) => ({
-                      id: s.id,
-                      label: s.label,
-                      start_time: s.start_time,
-                      end_time: s.end_time,
-                    }))}
-                    dateSlots={(dateSlots ?? []).map((s) => ({
-                      id: s.id,
-                      date: s.date,
-                      label: s.label,
-                      start_time: s.start_time,
-                      end_time: s.end_time,
-                    }))}
-                  />
-                </div>
-              </div>
-            </Reveal>
           </div>
+        </div>
+      </section>
+
+      {/* CALENDARIO & BOOKING — sezione full-width per dare spazio al pannello slot */}
+      <section className="border-b border-border bg-background py-12 md:py-16">
+        <div className="container-narte">
+          <Reveal>
+            <p className="accent-label mb-3">calendario</p>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <h2 className="display-xl text-3xl md:text-4xl lg:text-5xl">
+              Disponibilità &amp; booking.
+            </h2>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <p className="mt-4 max-w-2xl text-base text-muted-foreground md:text-lg">
+              Clicca un giorno libero per vedere i turni disponibili di{" "}
+              {artist.stage_name}, poi seleziona uno slot per inviare la richiesta.
+            </p>
+          </Reveal>
+          <Reveal delay={0.2}>
+            <div className="mt-8 rounded-2xl border border-border bg-background p-5 md:p-6">
+              <BookingCalendar
+                artistId={artist.id}
+                artistName={artist.stage_name}
+                busyDates={busyDates}
+                defaultSlots={(defaultSlots ?? []).map((s) => ({
+                  id: s.id,
+                  label: s.label,
+                  start_time: s.start_time,
+                  end_time: s.end_time,
+                }))}
+                dateSlots={(dateSlots ?? []).map((s) => ({
+                  id: s.id,
+                  date: s.date,
+                  label: s.label,
+                  start_time: s.start_time,
+                  end_time: s.end_time,
+                }))}
+              />
+            </div>
+          </Reveal>
         </div>
       </section>
 

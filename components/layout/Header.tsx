@@ -24,7 +24,7 @@ export async function Header() {
       : "Area Riservata";
 
   return (
-    <header className="absolute inset-x-0 top-0 z-30 bg-transparent">
+    <header className="absolute inset-x-0 top-0 z-50 bg-transparent">
       <div className="container-narte flex h-20 items-center justify-between gap-4 md:gap-6">
         <Link
           href="/"

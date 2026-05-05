@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Search, RotateCcw } from "lucide-react";
 import { ArtistCard } from "@/components/marketing/ArtistCard";
 
 export type ExplorerArtist = {
@@ -27,24 +28,39 @@ const ROLE_GROUPS: { key: string; label: string; match: (instr: string) => boole
 export function ArtistsExplorer({ artists }: { artists: ExplorerArtist[] }) {
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
-  const allGenres = useMemo(() => {
-    const set = new Set<string>();
-    for (const a of artists) for (const g of a.genre ?? []) set.add(g);
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "it"));
+  // Counts per genere e per ruolo (su tutto il dataset, non sui filtrati,
+  // così le label non spariscono mai dopo la prima selezione).
+  const genreCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const a of artists) for (const g of a.genre ?? []) m.set(g, (m.get(g) ?? 0) + 1);
+    return m;
   }, [artists]);
 
-  const availableRoles = useMemo(() => {
-    const set = new Set<string>();
+  const roleCounts = useMemo(() => {
+    const m = new Map<string, number>();
     for (const a of artists) {
+      const matched = new Set<string>();
       for (const i of a.instruments ?? []) {
-        for (const g of ROLE_GROUPS) if (g.match(i)) set.add(g.key);
+        for (const g of ROLE_GROUPS) if (g.match(i)) matched.add(g.key);
       }
+      for (const k of matched) m.set(k, (m.get(k) ?? 0) + 1);
     }
-    return ROLE_GROUPS.filter((g) => set.has(g.key));
+    return m;
   }, [artists]);
+
+  const allGenres = useMemo(
+    () => Array.from(genreCounts.keys()).sort((a, b) => a.localeCompare(b, "it")),
+    [genreCounts]
+  );
+  const availableRoles = useMemo(
+    () => ROLE_GROUPS.filter((g) => roleCounts.has(g.key)),
+    [roleCounts]
+  );
 
   const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
     return artists.filter((a) => {
       if (genreFilter && !(a.genre ?? []).includes(genreFilter)) return false;
       if (roleFilter) {
@@ -53,66 +69,103 @@ export function ArtistsExplorer({ artists }: { artists: ExplorerArtist[] }) {
         const hit = (a.instruments ?? []).some((i) => group.match(i));
         if (!hit) return false;
       }
+      if (q) {
+        const hay = `${a.stage_name} ${a.city ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       return true;
     });
-  }, [artists, genreFilter, roleFilter]);
+  }, [artists, genreFilter, roleFilter, query]);
 
-  const hasFilters = genreFilter !== null || roleFilter !== null;
+  const hasFilters = genreFilter !== null || roleFilter !== null || query.length > 0;
 
   return (
     <div>
-      <div className="space-y-6">
-        {availableRoles.length > 0 && (
-          <FilterRow label="Tipologia">
-            <Chip active={roleFilter === null} onClick={() => setRoleFilter(null)}>
-              Tutti
-            </Chip>
-            {availableRoles.map((r) => (
+      {/* FILTER CARD */}
+      <div className="rounded-2xl border border-border bg-background p-5 md:p-6">
+        {/* Search */}
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Cerca per nome o città…"
+            className="h-11 w-full rounded-full border border-border bg-muted pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/30"
+            aria-label="Cerca artista"
+          />
+        </div>
+
+        <div className="mt-6 space-y-6">
+          {availableRoles.length > 0 && (
+            <FilterGroup
+              label="Tipologia di artista"
+              hint="Cantante, chitarrista, batterista…"
+            >
               <Chip
-                key={r.key}
-                active={roleFilter === r.key}
-                onClick={() => setRoleFilter(roleFilter === r.key ? null : r.key)}
+                active={roleFilter === null}
+                onClick={() => setRoleFilter(null)}
+                count={artists.length}
               >
-                {r.label}
+                Tutti
               </Chip>
-            ))}
-          </FilterRow>
-        )}
-        {allGenres.length > 0 && (
-          <FilterRow label="Genere">
-            <Chip active={genreFilter === null} onClick={() => setGenreFilter(null)}>
-              Tutti
-            </Chip>
-            {allGenres.map((g) => (
+              {availableRoles.map((r) => (
+                <Chip
+                  key={r.key}
+                  active={roleFilter === r.key}
+                  onClick={() => setRoleFilter(roleFilter === r.key ? null : r.key)}
+                  count={roleCounts.get(r.key) ?? 0}
+                >
+                  {r.label}
+                </Chip>
+              ))}
+            </FilterGroup>
+          )}
+
+          {allGenres.length > 0 && (
+            <FilterGroup label="Generi musicali" hint="Stile e suono">
               <Chip
-                key={g}
-                active={genreFilter === g}
-                onClick={() => setGenreFilter(genreFilter === g ? null : g)}
+                active={genreFilter === null}
+                onClick={() => setGenreFilter(null)}
+                count={artists.length}
               >
-                {g}
+                Tutti
               </Chip>
-            ))}
-          </FilterRow>
-        )}
+              {allGenres.map((g) => (
+                <Chip
+                  key={g}
+                  active={genreFilter === g}
+                  onClick={() => setGenreFilter(genreFilter === g ? null : g)}
+                  count={genreCounts.get(g) ?? 0}
+                >
+                  {g}
+                </Chip>
+              ))}
+            </FilterGroup>
+          )}
+        </div>
+
         {hasFilters && (
-          <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground">
-            <span>
-              {filtered.length} {filtered.length === 1 ? "artista" : "artisti"} trovati
+          <div className="mt-6 flex items-center justify-between gap-4 border-t border-border pt-4 text-xs">
+            <span className="text-muted-foreground">
+              {filtered.length} {filtered.length === 1 ? "artista trovato" : "artisti trovati"}
             </span>
             <button
               type="button"
               onClick={() => {
                 setGenreFilter(null);
                 setRoleFilter(null);
+                setQuery("");
               }}
-              className="rounded-full border border-border bg-background px-3 py-1.5 uppercase tracking-wide transition hover:border-accent hover:text-accent"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 uppercase tracking-wide transition hover:border-accent hover:text-accent"
             >
-              Reset filtri
+              <RotateCcw className="size-3" /> Reset filtri
             </button>
           </div>
         )}
       </div>
 
+      {/* GRID */}
       <div className="mt-10">
         {filtered.length === 0 ? (
           <p className="text-center text-muted-foreground">
@@ -137,11 +190,28 @@ export function ArtistsExplorer({ artists }: { artists: ExplorerArtist[] }) {
   );
 }
 
-function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
+function FilterGroup({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-      <span className="accent-label shrink-0 sm:min-w-[88px]">{label}</span>
-      <div className="flex flex-wrap gap-2">{children}</div>
+    <div>
+      <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="font-display text-sm uppercase tracking-tight">{label}</span>
+        {hint ? (
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            {hint}
+          </span>
+        ) : null}
+      </div>
+      <div className="-mx-1 flex flex-wrap gap-2 overflow-x-auto px-1 pb-1 sm:overflow-visible">
+        {children}
+      </div>
     </div>
   );
 }
@@ -149,10 +219,12 @@ function FilterRow({ label, children }: { label: string; children: React.ReactNo
 function Chip({
   active,
   onClick,
+  count,
   children,
 }: {
   active: boolean;
   onClick: () => void;
+  count?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -160,13 +232,22 @@ function Chip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors ${
+      className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors ${
         active
           ? "border-accent bg-accent text-accent-foreground"
           : "border-border bg-background text-foreground hover:border-accent hover:text-accent"
       }`}
     >
-      {children}
+      <span>{children}</span>
+      {typeof count === "number" && (
+        <span
+          className={`inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-semibold ${
+            active ? "bg-accent-foreground/20" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {count}
+        </span>
+      )}
     </button>
   );
 }
