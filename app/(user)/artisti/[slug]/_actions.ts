@@ -31,25 +31,79 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
   const admin = createAdminClient();
   const { data: artist } = await admin
     .from("artists")
-    .select("id, stage_name, status")
+    .select("id, stage_name, status, user_id")
     .eq("id", data.artistId)
     .maybeSingle();
   if (!artist || artist.status !== "approved")
     return { ok: false as const, error: "Artista non disponibile" };
 
   const slotLine = data.timeSlot ? `\nSlot orario: ${data.timeSlot}` : "";
-  const { error } = await admin.from("leads").insert({
-    artist_id: artist.id,
-    event_date: data.date,
-    event_time: data.timeSlot ?? null,
-    event_location: data.location ?? "Da definire",
-    message: `Richiesta dalla pagina artista per il ${data.date}.${slotLine}\nNome: ${data.name}\n\n${data.message}`,
-    contact_email: data.email,
-    contact_phone: data.phone ?? null,
-  });
-  if (error) return { ok: false as const, error: error.message };
+  const composedMessage = `Richiesta dalla pagina artista per il ${data.date}.${slotLine}\nNome: ${data.name}\n\n${data.message}`;
+  const { data: lead, error } = await admin
+    .from("leads")
+    .insert({
+      artist_id: artist.id,
+      event_date: data.date,
+      event_time: data.timeSlot ?? null,
+      event_location: data.location ?? "Da definire",
+      message: composedMessage,
+      contact_email: data.email,
+      contact_phone: data.phone ?? null,
+    })
+    .select("id")
+    .single();
+  if (error || !lead) return { ok: false as const, error: error?.message ?? "Errore salvataggio" };
 
-  return { ok: true as const };
+  // Notifiche email (best-effort: non bloccano il successo della richiesta)
+  let artistEmail: string | null = null;
+  if (artist.user_id) {
+    try {
+      const { data: artistUser } = await admin.auth.admin.getUserById(artist.user_id);
+      artistEmail = artistUser?.user?.email ?? null;
+    } catch {
+      artistEmail = null;
+    }
+  }
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  await Promise.allSettled([
+    artistEmail
+      ? sendEmail({
+          to: artistEmail,
+          subject: `Nuova richiesta booking — ${data.date}`,
+          replyTo: data.email,
+          react: BookingRequestEmail({
+            artistName: artist.stage_name,
+            requesterName: data.name,
+            eventDate: data.date,
+            eventLocation: data.location ?? "Da definire",
+            budget: null,
+            message: composedMessage,
+            contactEmail: data.email,
+            contactPhone: data.phone ?? null,
+          }),
+        })
+      : Promise.resolve(),
+    adminEmail
+      ? sendEmail({
+          to: adminEmail,
+          subject: `[N'arte] Nuovo lead per ${artist.stage_name}`,
+          replyTo: data.email,
+          react: BookingRequestEmail({
+            artistName: artist.stage_name,
+            requesterName: data.name,
+            eventDate: data.date,
+            eventLocation: data.location ?? "Da definire",
+            budget: null,
+            message: composedMessage,
+            contactEmail: data.email,
+            contactPhone: data.phone ?? null,
+            isAdminCopy: true,
+          }),
+        })
+      : Promise.resolve(),
+  ]);
+
+  return { ok: true as const, leadId: lead.id };
 }
 
 export async function submitLead(input: LeadInput) {
