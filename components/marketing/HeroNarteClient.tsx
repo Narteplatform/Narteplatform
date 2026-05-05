@@ -17,9 +17,9 @@ export function HeroNarteClient(_props: { images?: HeroArtistImage[] }) {
     offset: ["start start", "end start"],
   });
 
-  const instrumentsY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-  const instrumentsScale = useTransform(scrollYProgress, [0, 1], [1, 1.08]);
-  const instrumentsRotate = useTransform(scrollYProgress, [0, 1], [0, -3]);
+  const instrumentsY = useTransform(scrollYProgress, [0, 1], ["0%", "55%"]);
+  const instrumentsScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
+  const instrumentsRotate = useTransform(scrollYProgress, [0, 1], [0, -2]);
 
   const titleAnim = (delay: number) => ({
     initial: reduce ? false : { y: 40, opacity: 0 },
@@ -30,7 +30,7 @@ export function HeroNarteClient(_props: { images?: HeroArtistImage[] }) {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[100svh] w-full overflow-hidden bg-background pt-24 pb-16 lg:pt-28 lg:pb-24"
+      className="relative min-h-[100svh] w-full overflow-x-clip bg-background pt-32 pb-16 md:pt-40 lg:pt-44 lg:pb-24"
     >
       {/* Glow di sfondo */}
       <div
@@ -80,7 +80,7 @@ export function HeroNarteClient(_props: { images?: HeroArtistImage[] }) {
         initial={reduce ? false : { opacity: 0, y: 60 }}
         animate={reduce ? undefined : { opacity: 1, y: 0 }}
         transition={{ duration: 1.2, ease: easing, delay: 0.35 }}
-        className="pointer-events-none absolute inset-0 z-30"
+        className="pointer-events-none absolute left-0 right-0 top-24 -bottom-[25vh] z-30 md:top-28 lg:-bottom-[30vh]"
       >
         <Image
           src="/hero-strumenti.png"
