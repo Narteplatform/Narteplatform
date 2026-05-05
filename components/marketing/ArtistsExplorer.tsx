@@ -30,8 +30,6 @@ export function ArtistsExplorer({ artists }: { artists: ExplorerArtist[] }) {
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
-  // Counts per genere e per ruolo (su tutto il dataset, non sui filtrati,
-  // così le label non spariscono mai dopo la prima selezione).
   const genreCounts = useMemo(() => {
     const m = new Map<string, number>();
     for (const a of artists) for (const g of a.genre ?? []) m.set(g, (m.get(g) ?? 0) + 1);
@@ -79,6 +77,12 @@ export function ArtistsExplorer({ artists }: { artists: ExplorerArtist[] }) {
 
   const hasFilters = genreFilter !== null || roleFilter !== null || query.length > 0;
 
+  function reset() {
+    setGenreFilter(null);
+    setRoleFilter(null);
+    setQuery("");
+  }
+
   return (
     <div>
       {/* FILTER CARD */}
@@ -96,12 +100,40 @@ export function ArtistsExplorer({ artists }: { artists: ExplorerArtist[] }) {
           />
         </div>
 
-        <div className="mt-6 space-y-6">
+        {/* MOBILE: dropdown selects */}
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 md:hidden">
           {availableRoles.length > 0 && (
-            <FilterGroup
-              label="Tipologia di artista"
-              hint="Cantante, chitarrista, batterista…"
-            >
+            <FilterSelect
+              label="Tipologia"
+              value={roleFilter ?? ""}
+              onChange={(v) => setRoleFilter(v || null)}
+              total={artists.length}
+              options={availableRoles.map((r) => ({
+                value: r.key,
+                label: r.label,
+                count: roleCounts.get(r.key) ?? 0,
+              }))}
+            />
+          )}
+          {allGenres.length > 0 && (
+            <FilterSelect
+              label="Genere"
+              value={genreFilter ?? ""}
+              onChange={(v) => setGenreFilter(v || null)}
+              total={artists.length}
+              options={allGenres.map((g) => ({
+                value: g,
+                label: g,
+                count: genreCounts.get(g) ?? 0,
+              }))}
+            />
+          )}
+        </div>
+
+        {/* DESKTOP: chip rows */}
+        <div className="mt-6 hidden space-y-6 md:block">
+          {availableRoles.length > 0 && (
+            <FilterGroup label="Tipologia di artista" hint="Cantante, chitarrista, batterista…">
               <Chip
                 active={roleFilter === null}
                 onClick={() => setRoleFilter(null)}
@@ -146,20 +178,16 @@ export function ArtistsExplorer({ artists }: { artists: ExplorerArtist[] }) {
         </div>
 
         {hasFilters && (
-          <div className="mt-6 flex items-center justify-between gap-4 border-t border-border pt-4 text-xs">
+          <div className="mt-5 flex items-center justify-between gap-4 border-t border-border pt-4 text-xs">
             <span className="text-muted-foreground">
               {filtered.length} {filtered.length === 1 ? "artista trovato" : "artisti trovati"}
             </span>
             <button
               type="button"
-              onClick={() => {
-                setGenreFilter(null);
-                setRoleFilter(null);
-                setQuery("");
-              }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 uppercase tracking-wide transition hover:border-accent hover:text-accent"
+              onClick={reset}
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background px-3 py-1.5 uppercase tracking-wide transition hover:border-accent hover:text-accent"
             >
-              <RotateCcw className="size-3" /> Reset filtri
+              <RotateCcw className="size-3" /> Reset
             </button>
           </div>
         )}
@@ -190,6 +218,46 @@ export function ArtistsExplorer({ artists }: { artists: ExplorerArtist[] }) {
   );
 }
 
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+  total,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string; count: number }[];
+  total: number;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-11 w-full appearance-none rounded-full border border-border bg-muted px-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/30"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='currentColor' d='M2 4l4 4 4-4z'/></svg>\")",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "right 14px center",
+        }}
+      >
+        <option value="">Tutti ({total})</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label} ({o.count})
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function FilterGroup({
   label,
   hint,
@@ -209,9 +277,7 @@ function FilterGroup({
           </span>
         ) : null}
       </div>
-      <div className="-mx-1 flex flex-wrap gap-2 overflow-x-auto px-1 pb-1 sm:overflow-visible">
-        {children}
-      </div>
+      <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   );
 }
@@ -232,7 +298,7 @@ function Chip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors ${
+      className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors ${
         active
           ? "border-accent bg-accent text-accent-foreground"
           : "border-border bg-background text-foreground hover:border-accent hover:text-accent"

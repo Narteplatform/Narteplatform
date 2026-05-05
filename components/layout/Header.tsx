@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { SearchBar } from "@/components/layout/SearchBar";
 import { NarteLogo } from "@/components/layout/NarteLogo";
+import { MobileMenu } from "@/components/layout/MobileMenu";
 
 export async function Header() {
   const user = await getCurrentUser();
@@ -25,7 +26,7 @@ export async function Header() {
 
   return (
     <header className="absolute inset-x-0 top-0 z-50 bg-transparent">
-      <div className="container-narte flex h-20 items-center justify-between gap-4 md:gap-6">
+      <div className="container-narte flex h-20 items-center justify-between gap-3 md:gap-6">
         <Link
           href="/"
           aria-label="Home N'arte"
@@ -49,44 +50,27 @@ export async function Header() {
         <div className="flex items-center gap-2">
           {!user ? (
             <>
-              {/* Desktop: testo + icona */}
+              {/* Desktop auth */}
               <Link
                 href="/login"
-                className="hidden items-center gap-1.5 rounded-full border border-foreground/20 px-3.5 py-1.5 text-sm text-foreground/90 transition-colors hover:border-foreground hover:text-foreground sm:inline-flex"
+                className="hidden items-center gap-1.5 whitespace-nowrap rounded-full border border-foreground/20 px-3.5 py-1.5 text-sm text-foreground/90 transition-colors hover:border-foreground hover:text-foreground sm:inline-flex"
               >
                 <LogIn className="size-4" />
                 Accedi
               </Link>
               <Link
                 href="/register"
-                className="hidden items-center gap-1.5 rounded-full border border-foreground/20 px-3.5 py-1.5 text-sm text-foreground/90 transition-colors hover:border-foreground hover:text-foreground sm:inline-flex"
+                className="hidden items-center gap-1.5 whitespace-nowrap rounded-full border border-foreground/20 px-3.5 py-1.5 text-sm text-foreground/90 transition-colors hover:border-foreground hover:text-foreground sm:inline-flex"
               >
                 <UserPlus className="size-4" />
                 Iscriviti
               </Link>
-
-              {/* Mobile: solo icone */}
-              <Link
-                href="/login"
-                aria-label="Accedi"
-                className="inline-flex size-9 items-center justify-center rounded-full border border-foreground/20 text-foreground/90 transition-colors hover:border-foreground hover:text-foreground sm:hidden"
-              >
-                <LogIn className="size-4" />
-              </Link>
-              <Link
-                href="/register"
-                aria-label="Iscriviti"
-                className="inline-flex size-9 items-center justify-center rounded-full border border-foreground/20 text-foreground/90 transition-colors hover:border-foreground hover:text-foreground sm:hidden"
-              >
-                <UserPlus className="size-4" />
-              </Link>
-
               <Button asChild variant="accent" size="sm" className="hidden rounded-full sm:inline-flex">
                 <Link href="/candidatura-artista">Sei un artista?</Link>
               </Button>
             </>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 sm:flex">
               <Button asChild variant="default" size="sm" className="rounded-full">
                 <Link href={dashHref} title={user.email ?? undefined}>
                   {role === "superadmin" ? (
@@ -111,6 +95,12 @@ export async function Header() {
               </form>
             </div>
           )}
+
+          {/* Burger sotto lg */}
+          <MobileMenu
+            isLoggedIn={!!user}
+            role={(role as "superadmin" | "artist" | "user" | "organizer" | undefined) ?? null}
+          />
         </div>
       </div>
     </header>
