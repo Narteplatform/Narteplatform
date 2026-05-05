@@ -20,9 +20,14 @@ export default async function ArtistDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = createAdminClient();
+  let supabase;
+  try {
+    supabase = createAdminClient();
+  } catch (e) {
+    console.error("[ArtistDetailPage] createAdminClient failed", e);
+    notFound();
+  }
 
-  // Select base + tentativo colonne extra che potrebbero non esistere su prod
   type ArtistRow = {
     id: string;
     slug: string;
@@ -35,33 +40,20 @@ export default async function ArtistDetailPage({
     cover_image?: string | null;
     gallery?: string[] | null;
     videos?: string[] | null;
-    social_links?: SocialLinks | null;
+    social_links?: SocialLinks | string | null;
   };
   let artistRaw: ArtistRow | null = null;
-  {
-    const full = await supabase
+  try {
+    const r = await supabase
       .from("artists")
-      .select(
-        "id, slug, stage_name, bio, genre, instruments, city, cover_image, gallery, videos, social_links, status"
-      )
+      .select("*")
       .eq("slug", slug)
       .eq("status", "approved")
       .maybeSingle();
-    if (full.error) {
-      console.error("[ArtistDetailPage] artists full select error", full.error);
-      const minimal = await supabase
-        .from("artists")
-        .select("id, slug, stage_name, bio, genre, city, cover_image, status")
-        .eq("slug", slug)
-        .eq("status", "approved")
-        .maybeSingle();
-      if (minimal.error) {
-        console.error("[ArtistDetailPage] artists minimal select error", minimal.error);
-      }
-      artistRaw = (minimal.data as unknown as ArtistRow) ?? null;
-    } else {
-      artistRaw = (full.data as unknown as ArtistRow) ?? null;
-    }
+    if (r.error) console.error("[ArtistDetailPage] artists select error", r.error);
+    artistRaw = (r.data as unknown as ArtistRow) ?? null;
+  } catch (e) {
+    console.error("[ArtistDetailPage] artists select threw", e);
   }
   if (!artistRaw) notFound();
   const artist = artistRaw;
@@ -107,11 +99,20 @@ export default async function ArtistDetailPage({
     .filter((a) => a.status === "busy")
     .map((a) => a.date);
 
-  const social: SocialLinks = artist.social_links ?? {};
-  const gallery = artist.gallery ?? [];
-  const videos = artist.videos ?? [];
-  const instruments = artist.instruments ?? [];
-  const genres = artist.genre ?? [];
+  let social: SocialLinks = {};
+  try {
+    if (typeof artist.social_links === "string") {
+      social = JSON.parse(artist.social_links) as SocialLinks;
+    } else if (artist.social_links && typeof artist.social_links === "object") {
+      social = artist.social_links as SocialLinks;
+    }
+  } catch {
+    social = {};
+  }
+  const gallery: string[] = Array.isArray(artist.gallery) ? artist.gallery : [];
+  const videos: string[] = Array.isArray(artist.videos) ? artist.videos : [];
+  const instruments: string[] = Array.isArray(artist.instruments) ? artist.instruments : [];
+  const genres: string[] = Array.isArray(artist.genre) ? artist.genre : [];
   const bio = artist.bio ?? null;
   const coverImage = artist.cover_image ?? null;
   const city = artist.city ?? null;
