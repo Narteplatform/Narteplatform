@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
+import { Clock, Mail, Phone } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { LeadStatusSelect } from "@/components/admin/LeadStatusSelect";
 import { LeadTagsEditor } from "@/components/admin/LeadTagsEditor";
@@ -14,6 +14,7 @@ type Lead = {
   id: string;
   artist_id: string;
   event_date: string;
+  event_time: string | null;
   event_location: string;
   budget: number | null;
   message: string;
@@ -151,6 +152,11 @@ export default async function AdminLeadsPage({
                     Data evento: {new Date(l.event_date).toLocaleDateString("it-IT")}
                     {l.budget != null ? ` · Budget €${Number(l.budget).toFixed(2)}` : ""}
                   </p>
+                  {l.event_time && (
+                    <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Clock className="size-3.5" /> {l.event_time}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={STATUS_VARIANT[l.status]} dot>

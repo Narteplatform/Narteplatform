@@ -10,10 +10,8 @@ import { Clock, X, CheckCircle2 } from "lucide-react";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatSlot, normalizeTime, resolveSlotsForDate, type Slot } from "@/lib/slots";
-import {
-  submitArtistInterest,
-  type ArtistInterestInput,
-} from "@/app/(user)/artisti/[slug]/_actions";
+import { submitArtistInterest } from "@/app/(user)/artisti/[slug]/_actions";
+import type { ArtistInterestInput } from "@/app/(user)/artisti/[slug]/_schema";
 
 type DefaultSlot = {
   id: string;
