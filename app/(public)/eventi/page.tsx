@@ -1,7 +1,7 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EventCard } from "@/components/marketing/EventCard";
-import { StaggerList } from "@/components/animations/Reveal";
-import Link from "next/link";
+import { StaggerList, Reveal } from "@/components/animations/Reveal";
 
 const CATEGORIES = [
   { slug: "all", label: "Tutti" },
@@ -32,43 +32,67 @@ export default async function EventiPage({
   }
 
   return (
-    <div className="container-narte py-12">
-      <h1 className="display-xl text-5xl md:text-7xl">Eventi</h1>
-      <p className="mt-4 max-w-xl text-muted-foreground">
-        Tutti gli eventi musicali e culturali organizzati da N&apos;arte o ai quali partecipiamo.
-      </p>
+    <>
+      {/* HERO */}
+      <section className="relative overflow-hidden border-b border-border pt-32 pb-16 md:pt-44 md:pb-20">
+        <div
+          aria-hidden="true"
+          className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"
+        />
+        <div className="container-narte relative z-10 text-center">
+          <Reveal>
+            <p className="accent-label mb-4">cosa succede</p>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <h1 className="display-xl text-5xl md:text-7xl lg:text-8xl">Eventi</h1>
+          </Reveal>
+          <Reveal delay={0.2}>
+            <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground md:text-lg">
+              Tutti gli eventi musicali e culturali organizzati da N&apos;arte o ai quali
+              partecipiamo.
+            </p>
+          </Reveal>
+        </div>
+      </section>
 
-      <nav className="mt-8 flex flex-wrap gap-2">
-        {CATEGORIES.map((c) => {
-          const active = c.slug === cat || (c.slug === "all" && !sp?.cat);
-          return (
-            <Link
-              key={c.slug}
-              href={c.slug === "all" ? "/eventi" : `/eventi?cat=${c.slug}`}
-              className={`rounded-full border px-4 py-1.5 text-sm transition ${
-                active
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border text-foreground hover:border-foreground"
-              }`}
-            >
-              {c.label}
-            </Link>
-          );
-        })}
-      </nav>
+      {/* CATEGORY FILTERS + GRID */}
+      <section className="bg-muted py-16 md:py-20">
+        <div className="container-narte">
+          <Reveal>
+            <nav className="flex flex-wrap gap-2">
+              {CATEGORIES.map((c) => {
+                const active = c.slug === cat || (c.slug === "all" && !sp?.cat);
+                return (
+                  <Link
+                    key={c.slug}
+                    href={c.slug === "all" ? "/eventi" : `/eventi?cat=${c.slug}`}
+                    className={`rounded-full border px-4 py-1.5 text-sm transition ${
+                      active
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-background text-foreground hover:border-foreground"
+                    }`}
+                  >
+                    {c.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </Reveal>
 
-      <div className="mt-10">
-        {events.length === 0 ? (
-          <p className="text-muted-foreground">Nessun evento in questa categoria.</p>
-        ) : (
-          <StaggerList className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
-            {events.map((e) => (
-              <EventCard key={e.slug} {...e} />
-            ))}
-          </StaggerList>
-        )}
-      </div>
-    </div>
+          <div className="mt-10">
+            {events.length === 0 ? (
+              <p className="text-muted-foreground">Nessun evento in questa categoria.</p>
+            ) : (
+              <StaggerList className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
+                {events.map((e) => (
+                  <EventCard key={e.slug} {...e} />
+                ))}
+              </StaggerList>
+            )}
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
 
