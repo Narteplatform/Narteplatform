@@ -10,7 +10,6 @@ import { Clock, X, CheckCircle2 } from "lucide-react";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatSlot, normalizeTime, resolveSlotsForDate, type Slot } from "@/lib/slots";
-import { submitArtistInterest } from "@/app/(user)/artisti/[slug]/_actions";
 import type { ArtistInterestInput } from "@/app/(user)/artisti/[slug]/_schema";
 
 type DefaultSlot = {
@@ -138,11 +137,19 @@ export function BookingCalendar({
       message: values.message,
     };
     try {
-      const res = await submitArtistInterest(payload);
-      if (!res.ok) {
-        const msg = res.error ?? "Errore durante l'invio";
-        setError(msg);
-        toast.error(msg);
+      const r = await fetch("/api/booking", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json: { ok: boolean; rid?: string; error?: string; leadId?: string } = await r
+        .json()
+        .catch(() => ({ ok: false, error: "Risposta non valida dal server" }));
+      if (!json.ok) {
+        const msg = json.error ?? "Errore durante l'invio";
+        const full = json.rid ? `${msg} [${json.rid}]` : msg;
+        setError(full);
+        toast.error(full);
         return;
       }
       toast.success("Richiesta d'interesse inviata correttamente");
