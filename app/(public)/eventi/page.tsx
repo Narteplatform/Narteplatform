@@ -51,7 +51,7 @@ export default async function EventiPage({
   return (
     <>
       {/* HERO */}
-      <section className="relative overflow-hidden border-b border-border pt-32 pb-16 md:pt-44 md:pb-20">
+      <section className="relative overflow-hidden border-b border-border pt-24 pb-10 md:pt-32 md:pb-14">
         <div
           aria-hidden="true"
           className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"

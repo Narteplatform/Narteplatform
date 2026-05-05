@@ -8,7 +8,7 @@ export default function ChiSiamoPage() {
   return (
     <>
       {/* HERO */}
-      <section className="relative overflow-hidden border-b border-border pt-32 pb-20 md:pt-44 md:pb-28">
+      <section className="relative overflow-hidden border-b border-border pt-24 pb-12 md:pt-32 md:pb-16">
         <div
           aria-hidden="true"
           className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/3 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"
