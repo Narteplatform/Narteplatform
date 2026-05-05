@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { DayPicker } from "react-day-picker";
 import { it } from "date-fns/locale";
 import "react-day-picker/style.css";
+import { toast } from "sonner";
 import { Clock, X } from "lucide-react";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -70,7 +71,6 @@ export function BookingCalendar({
 }: Props) {
   const [selectedISO, setSelectedISO] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -108,7 +108,6 @@ export function BookingCalendar({
 
   useEffect(() => {
     if (selectedISO) {
-      setSuccess(false);
       setError(null);
       setSelectedSlot(null);
     }
@@ -140,17 +139,21 @@ export function BookingCalendar({
     };
     const res = await submitArtistInterest(payload);
     if (!res.ok) {
-      setError(res.error ?? "Errore");
+      const msg = res.error ?? "Errore durante l'invio";
+      setError(msg);
+      toast.error(msg);
       return;
     }
-    setSuccess(true);
+    toast.success("Richiesta inviata correttamente", {
+      description: `Abbiamo ricevuto la tua richiesta per ${artistName}. Ti ricontattiamo entro 48h.`,
+    });
     reset();
+    close();
   }
 
   function close() {
     setSelectedISO(null);
     setSelectedSlot(null);
-    setSuccess(false);
     setError(null);
   }
 
@@ -178,7 +181,7 @@ export function BookingCalendar({
 
       {selectedISO && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6"
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-0 pt-24 backdrop-blur-sm sm:items-center sm:p-6 sm:pt-28"
           role="dialog"
           aria-modal="true"
         >
@@ -188,7 +191,7 @@ export function BookingCalendar({
             className="absolute inset-0"
             onClick={close}
           />
-          <div className="relative z-10 max-h-[90vh] w-full max-w-xl overflow-y-auto bg-background p-6 shadow-2xl sm:rounded-lg sm:p-8">
+          <div className="relative z-10 max-h-[calc(100svh-7rem)] w-full max-w-xl overflow-y-auto rounded-t-2xl border border-border bg-background p-6 shadow-2xl sm:max-h-[calc(100svh-9rem)] sm:rounded-2xl sm:p-8">
             <button
               type="button"
               onClick={close}
@@ -206,18 +209,7 @@ export function BookingCalendar({
               e ti rispondono entro 48h.
             </p>
 
-            {success ? (
-              <div className="mt-6 border border-foreground/20 bg-muted p-6 text-center">
-                <p className="font-display text-xl uppercase">Grazie!</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Abbiamo ricevuto la tua richiesta. Ti ricontattiamo presto.
-                </p>
-                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={close}>
-                  Chiudi
-                </Button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-xs">
                     <Clock className="size-3" /> Slot orario
@@ -282,7 +274,6 @@ export function BookingCalendar({
                   </Button>
                 </div>
               </form>
-            )}
           </div>
         </div>
       )}

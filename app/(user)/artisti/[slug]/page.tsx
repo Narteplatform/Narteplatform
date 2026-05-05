@@ -194,7 +194,7 @@ export default async function ArtistDetailPage({
           )}
         </div>
 
-        <div className="space-y-10 md:sticky md:top-8 md:self-start">
+        <div className="space-y-10 md:sticky md:top-28 md:self-start">
           <Reveal>
             <section className="border border-border p-6">
               <h2 className="font-display text-2xl uppercase">Calendario disponibilità</h2>

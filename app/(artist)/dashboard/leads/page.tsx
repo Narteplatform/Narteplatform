@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
+import { Clock, Mail, Phone } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -114,6 +114,11 @@ export default async function ArtistLeadsPage({
                     {l.event_location} <span className="text-muted-foreground font-normal">·</span>{" "}
                     {new Date(l.event_date).toLocaleDateString("it-IT")}
                   </CardTitle>
+                  {l.event_time && (
+                    <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Clock className="size-3.5" /> {l.event_time}
+                    </p>
+                  )}
                   {l.budget != null && (
                     <p className="text-sm text-muted-foreground">
                       Budget €{Number(l.budget).toFixed(2)}

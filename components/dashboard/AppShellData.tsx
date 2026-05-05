@@ -265,10 +265,15 @@ async function loadArtistShell(userId: string): Promise<{
 
   const navSections: NavSection[] = [
     {
-      href: "/dashboard",
+      href: "/dashboard/overview",
+      label: "Overview",
+      icon: <LayoutDashboard className="size-4" />,
+      exact: true,
+    },
+    {
+      href: "/dashboard/profilo-artista",
       label: "Profilo artista",
       icon: <Sparkles className="size-4" />,
-      exact: true,
     },
     {
       href: "/dashboard/calendario",
@@ -313,7 +318,7 @@ async function loadArtistShell(userId: string): Promise<{
       total: checks.length,
       hint: `Galleria ${artist.gallery?.length ?? 0} foto · Video ${artist.videos?.length ?? 0}`,
       ctaLabel: "Completa profilo",
-      ctaHref: "/dashboard",
+      ctaHref: "/dashboard/profilo-artista",
       variant: filled === checks.length ? "default" : "accent",
     };
   }
@@ -339,7 +344,8 @@ function defaultAdminNav(): NavSection[] {
 
 function defaultArtistNav(): NavSection[] {
   return [
-    { href: "/dashboard", label: "Profilo artista", icon: <Sparkles className="size-4" />, exact: true },
+    { href: "/dashboard/overview", label: "Overview", icon: <LayoutDashboard className="size-4" />, exact: true },
+    { href: "/dashboard/profilo-artista", label: "Profilo artista", icon: <Sparkles className="size-4" /> },
     { href: "/dashboard/calendario", label: "Calendario", icon: <CalendarDays className="size-4" /> },
     { href: "/dashboard/leads", label: "Richieste", icon: <Inbox className="size-4" /> },
     { href: "/dashboard/profilo", label: "Profilo account", icon: <UserCog className="size-4" /> },

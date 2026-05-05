@@ -32,10 +32,10 @@ export function AboutBlock() {
       <Reveal delay={0.3}>
         <div className="mt-10 flex justify-center gap-3">
           <Button asChild variant="default" size="lg">
-            <Link href="/eventi">trova un evento</Link>
+            <Link href="/eventi">Trova un evento</Link>
           </Button>
           <Button asChild variant="outline" size="lg">
-            <Link href="/chi-siamo">scopri di più</Link>
+            <Link href="/chi-siamo">Scopri di più</Link>
           </Button>
         </div>
       </Reveal>
