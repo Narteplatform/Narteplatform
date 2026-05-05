@@ -139,16 +139,22 @@ export function BookingCalendar({
       location: values.location || undefined,
       message: values.message,
     };
-    const res = await submitArtistInterest(payload);
-    if (!res.ok) {
-      const msg = res.error ?? "Errore durante l'invio";
+    try {
+      const res = await submitArtistInterest(payload);
+      if (!res.ok) {
+        const msg = res.error ?? "Errore durante l'invio";
+        setError(msg);
+        toast.error(msg);
+        return;
+      }
+      toast.success("Richiesta d'interesse inviata correttamente");
+      reset();
+      setSubmitted(true);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Errore di rete";
       setError(msg);
       toast.error(msg);
-      return;
     }
-    toast.success("Richiesta d'interesse inviata correttamente");
-    reset();
-    setSubmitted(true);
   }
 
   function close() {

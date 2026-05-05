@@ -24,86 +24,148 @@ export const artistInterestSchema = z.object({
 export type ArtistInterestInput = z.infer<typeof artistInterestSchema>;
 
 export async function submitArtistInterest(input: ArtistInterestInput) {
-  const parsed = artistInterestSchema.safeParse(input);
-  if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
-  const data = parsed.data;
+  try {
+    const parsed = artistInterestSchema.safeParse(input);
+    if (!parsed.success) {
+      console.error("[submitArtistInterest] zod fail", parsed.error.flatten());
+      return { ok: false as const, error: "Dati non validi" };
+    }
+    const data = parsed.data;
 
-  const admin = createAdminClient();
-  const { data: artist } = await admin
-    .from("artists")
-    .select("id, stage_name, status, user_id")
-    .eq("id", data.artistId)
-    .maybeSingle();
-  if (!artist || artist.status !== "approved")
-    return { ok: false as const, error: "Artista non disponibile" };
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("[submitArtistInterest] SUPABASE_SERVICE_ROLE_KEY mancante");
+      return { ok: false as const, error: "Configurazione server mancante (service role)" };
+    }
 
-  const slotLine = data.timeSlot ? `\nSlot orario: ${data.timeSlot}` : "";
-  const composedMessage = `Richiesta dalla pagina artista per il ${data.date}.${slotLine}\nNome: ${data.name}\n\n${data.message}`;
-  const { data: lead, error } = await admin
-    .from("leads")
-    .insert({
+    const admin = createAdminClient();
+    const { data: artist, error: artistErr } = await admin
+      .from("artists")
+      .select("id, stage_name, status, user_id")
+      .eq("id", data.artistId)
+      .maybeSingle();
+    if (artistErr) {
+      console.error("[submitArtistInterest] artist lookup error", artistErr);
+      return { ok: false as const, error: artistErr.message };
+    }
+    if (!artist || artist.status !== "approved")
+      return { ok: false as const, error: "Artista non disponibile" };
+
+    const slotLine = data.timeSlot ? `\nSlot orario: ${data.timeSlot}` : "";
+    const composedMessage = `Richiesta dalla pagina artista per il ${data.date}.${slotLine}\nNome: ${data.name}\n\n${data.message}`;
+    const eventLocation = data.location ?? "Da definire";
+
+    type LeadInsertRow = {
+      artist_id: string;
+      event_date: string;
+      event_location: string;
+      message: string;
+      contact_email: string;
+      contact_phone: string | null;
+      event_time?: string | null;
+    };
+    const basePayload: LeadInsertRow = {
       artist_id: artist.id,
       event_date: data.date,
-      event_time: data.timeSlot ?? null,
-      event_location: data.location ?? "Da definire",
+      event_location: eventLocation,
       message: composedMessage,
       contact_email: data.email,
       contact_phone: data.phone ?? null,
-    })
-    .select("id")
-    .single();
-  if (error || !lead) return { ok: false as const, error: error?.message ?? "Errore salvataggio" };
+    };
+    const fullPayload: LeadInsertRow = {
+      ...basePayload,
+      event_time: data.timeSlot ?? null,
+    };
 
-  // Notifiche email (best-effort: non bloccano il successo della richiesta)
-  let artistEmail: string | null = null;
-  if (artist.user_id) {
-    try {
-      const { data: artistUser } = await admin.auth.admin.getUserById(artist.user_id);
-      artistEmail = artistUser?.user?.email ?? null;
-    } catch {
-      artistEmail = null;
+    let lead: { id: string } | null = null;
+    let lastError: { message: string; code?: string } | null = null;
+    {
+      const { data: row, error } = await admin
+        .from("leads")
+        .insert(fullPayload)
+        .select("id")
+        .single();
+      if (error) {
+        console.error("[submitArtistInterest] insert (full) error", error);
+        lastError = { message: error.message, code: error.code };
+        // Retry senza event_time se la colonna non esiste sul DB di prod
+        if (error.code === "42703" || /event_time/i.test(error.message)) {
+          const retry = await admin
+            .from("leads")
+            .insert(basePayload)
+            .select("id")
+            .single();
+          if (retry.error) {
+            console.error("[submitArtistInterest] insert (retry) error", retry.error);
+            lastError = { message: retry.error.message, code: retry.error.code };
+          } else {
+            lead = retry.data;
+            lastError = null;
+          }
+        }
+      } else {
+        lead = row;
+      }
     }
-  }
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-  await Promise.allSettled([
-    artistEmail
-      ? sendEmail({
-          to: artistEmail,
-          subject: `Nuova richiesta booking — ${data.date}`,
-          replyTo: data.email,
-          react: BookingRequestEmail({
-            artistName: artist.stage_name,
-            requesterName: data.name,
-            eventDate: data.date,
-            eventLocation: data.location ?? "Da definire",
-            budget: null,
-            message: composedMessage,
-            contactEmail: data.email,
-            contactPhone: data.phone ?? null,
-          }),
-        })
-      : Promise.resolve(),
-    adminEmail
-      ? sendEmail({
-          to: adminEmail,
-          subject: `[N'arte] Nuovo lead per ${artist.stage_name}`,
-          replyTo: data.email,
-          react: BookingRequestEmail({
-            artistName: artist.stage_name,
-            requesterName: data.name,
-            eventDate: data.date,
-            eventLocation: data.location ?? "Da definire",
-            budget: null,
-            message: composedMessage,
-            contactEmail: data.email,
-            contactPhone: data.phone ?? null,
-            isAdminCopy: true,
-          }),
-        })
-      : Promise.resolve(),
-  ]);
+    if (!lead) {
+      return { ok: false as const, error: lastError?.message ?? "Errore salvataggio" };
+    }
 
-  return { ok: true as const, leadId: lead.id };
+    // Notifiche email best-effort (non bloccano)
+    let artistEmail: string | null = null;
+    if (artist.user_id) {
+      try {
+        const { data: artistUser } = await admin.auth.admin.getUserById(artist.user_id);
+        artistEmail = artistUser?.user?.email ?? null;
+      } catch (e) {
+        console.error("[submitArtistInterest] getUserById error", e);
+        artistEmail = null;
+      }
+    }
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+    await Promise.allSettled([
+      artistEmail
+        ? sendEmail({
+            to: artistEmail,
+            subject: `Nuova richiesta booking — ${data.date}`,
+            replyTo: data.email,
+            react: BookingRequestEmail({
+              artistName: artist.stage_name,
+              requesterName: data.name,
+              eventDate: data.date,
+              eventLocation,
+              budget: null,
+              message: composedMessage,
+              contactEmail: data.email,
+              contactPhone: data.phone ?? null,
+            }),
+          })
+        : Promise.resolve(),
+      adminEmail
+        ? sendEmail({
+            to: adminEmail,
+            subject: `[N'arte] Nuovo lead per ${artist.stage_name}`,
+            replyTo: data.email,
+            react: BookingRequestEmail({
+              artistName: artist.stage_name,
+              requesterName: data.name,
+              eventDate: data.date,
+              eventLocation,
+              budget: null,
+              message: composedMessage,
+              contactEmail: data.email,
+              contactPhone: data.phone ?? null,
+              isAdminCopy: true,
+            }),
+          })
+        : Promise.resolve(),
+    ]);
+
+    return { ok: true as const, leadId: lead.id };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Errore inatteso";
+    console.error("[submitArtistInterest] unhandled", e);
+    return { ok: false as const, error: msg };
+  }
 }
 
 export async function submitLead(input: LeadInput) {
