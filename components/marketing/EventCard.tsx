@@ -8,18 +8,28 @@ export type EventCardProps = {
   date: string | Date;
   price: number | null;
   coverImage: string | null;
+  coverImageHome?: string | null;
 };
 
-export function EventCard({ slug, title, city, date, price, coverImage }: EventCardProps) {
+export function EventCard({
+  slug,
+  title,
+  city,
+  date,
+  price,
+  coverImage,
+  coverImageHome,
+}: EventCardProps) {
+  const cardImg = coverImageHome || coverImage;
   return (
     <Link
       href={`/eventi/${slug}`}
       className="group block transition-transform duration-300 hover:-translate-y-1"
     >
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
-        {coverImage ? (
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-muted">
+        {cardImg ? (
           <img
-            src={coverImage}
+            src={cardImg}
             alt={title}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"

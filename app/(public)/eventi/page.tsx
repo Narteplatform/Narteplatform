@@ -76,7 +76,7 @@ async function loadEvents(cat: string) {
   const supabase = await createClient();
   let q = supabase
     .from("events")
-    .select("slug, title, city, date, price, cover_image")
+    .select("slug, title, city, date, price, cover_image, cover_image_home")
     .order("date", { ascending: true });
   if (cat !== "all") q = q.eq("category", cat as never);
   const { data } = await q;
@@ -87,5 +87,6 @@ async function loadEvents(cat: string) {
     date: e.date,
     price: e.price,
     coverImage: e.cover_image,
+    coverImageHome: e.cover_image_home,
   }));
 }

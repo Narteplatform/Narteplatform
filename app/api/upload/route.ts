@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 const BUCKETS = {
   artist: "artist-images",
   event: "event-covers",
+  event_home: "event-covers",
   avatar: "artist-images",
 } as const;
 

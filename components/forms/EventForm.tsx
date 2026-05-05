@@ -22,6 +22,7 @@ type Values = {
   venue: string;
   price: string;
   coverImage: string;
+  coverImageHome: string;
   ticketUrl: string;
   description: string;
   featured: boolean;
@@ -52,6 +53,7 @@ export function EventForm({
       venue: "",
       price: "",
       coverImage: "",
+      coverImageHome: "",
       ticketUrl: "",
       description: "",
       featured: false,
@@ -72,6 +74,7 @@ export function EventForm({
       venue: values.venue || undefined,
       price: values.price ? Number(values.price) : undefined,
       coverImage: values.coverImage || undefined,
+      coverImageHome: values.coverImageHome || undefined,
       ticketUrl: values.ticketUrl || undefined,
       description: values.description || undefined,
       featured: values.featured,
@@ -113,18 +116,41 @@ export function EventForm({
         <Field label="Link biglietti"><Input type="url" placeholder="https://…" {...register("ticketUrl")} /></Field>
       </div>
 
-      <Controller
-        control={control}
-        name="coverImage"
-        render={({ field }) => (
-          <ImageUpload
-            label="Immagine cover evento (16:9)"
-            value={field.value ?? ""}
-            onChange={field.onChange}
-            kind="event"
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4">
+        <legend className="px-2 font-display text-sm uppercase tracking-wide">
+          Immagini evento
+        </legend>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Controller
+            control={control}
+            name="coverImageHome"
+            render={({ field }) => (
+              <ImageUpload
+                label="Immagine card home (3:4 portrait)"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                kind="event_home"
+              />
+            )}
           />
-        )}
-      />
+          <Controller
+            control={control}
+            name="coverImage"
+            render={({ field }) => (
+              <ImageUpload
+                label="Immagine pagina evento (16:9 orizzontale)"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                kind="event"
+              />
+            )}
+          />
+        </div>
+        <p className="px-1 text-xs text-muted-foreground">
+          Le immagini vengono ritagliate al volo prima dell&apos;upload. La portrait è ottimizzata
+          per la card della home/listing, l&apos;orizzontale per l&apos;hero della pagina singola.
+        </p>
+      </fieldset>
 
       <Field label="Descrizione"><Textarea rows={6} {...register("description")} /></Field>
 

@@ -154,6 +154,7 @@ export interface Database {
           venue: string | null;
           price: number | null;
           cover_image: string | null;
+          cover_image_home: string | null;
           gallery: string[];
           videos: string[];
           description: string | null;
@@ -173,6 +174,7 @@ export interface Database {
           venue?: string | null;
           price?: number | null;
           cover_image?: string | null;
+          cover_image_home?: string | null;
           gallery?: string[];
           videos?: string[];
           description?: string | null;
@@ -192,6 +194,7 @@ export interface Database {
           venue?: string | null;
           price?: number | null;
           cover_image?: string | null;
+          cover_image_home?: string | null;
           gallery?: string[];
           videos?: string[];
           description?: string | null;

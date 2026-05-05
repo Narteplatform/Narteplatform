@@ -102,7 +102,7 @@ export function BookingCalendar({
     });
   }, [selectedISO, busySet, dateSlotsByDate, defaultSlots]);
 
-  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, formState: { isSubmitting, errors } } = useForm<FormValues>({
     defaultValues: { name: "", email: "", phone: "", location: "", message: "" },
   });
 
@@ -244,10 +244,10 @@ export function BookingCalendar({
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Nome">
+                  <Field label="Nome" error={errors.name && "Inserisci il nome (min 2 caratteri)"}>
                     <Input {...register("name", { required: true, minLength: 2 })} />
                   </Field>
-                  <Field label="Email">
+                  <Field label="Email" error={errors.email && "Email obbligatoria"}>
                     <Input type="email" {...register("email", { required: true })} />
                   </Field>
                   <Field label="Telefono">
@@ -257,16 +257,25 @@ export function BookingCalendar({
                     <Input placeholder="Città / venue" {...register("location")} />
                   </Field>
                 </div>
-                <Field label="Dettagli">
+                <Field
+                  label="Dettagli"
+                  error={errors.message && "Scrivi qualche dettaglio (min 5 caratteri)"}
+                >
                   <Textarea
                     rows={4}
                     placeholder="Tipo di evento, pubblico, qualunque dettaglio utile…"
                     {...register("message", { required: true, minLength: 5 })}
                   />
                 </Field>
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {error && <p className="text-sm text-red-500">{error}</p>}
                 <div className="flex flex-wrap items-center gap-3">
-                  <Button type="submit" variant="accent" disabled={isSubmitting}>
+                  <Button
+                    type="submit"
+                    variant="accent"
+                    size="lg"
+                    className="min-w-[200px]"
+                    disabled={isSubmitting}
+                  >
                     {isSubmitting ? "Invio…" : "Invia richiesta"}
                   </Button>
                   <Button type="button" variant="ghost" onClick={close}>
@@ -281,11 +290,20 @@ export function BookingCalendar({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+  error,
+}: {
+  label: string;
+  children: React.ReactNode;
+  error?: string | false;
+}) {
   return (
     <div className="space-y-1">
       <Label>{label}</Label>
       {children}
+      {error ? <p className="text-xs text-red-500">{error}</p> : null}
     </div>
   );
 }
