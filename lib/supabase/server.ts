@@ -30,9 +30,15 @@ export async function createClient() {
 }
 
 export function createAdminClient() {
-  return createServiceClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    const missing = [!url && "NEXT_PUBLIC_SUPABASE_URL", !key && "SUPABASE_SERVICE_ROLE_KEY"]
+      .filter(Boolean)
+      .join(", ");
+    throw new Error(`[supabase] env mancanti: ${missing}`);
+  }
+  return createServiceClient<Database>(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }
