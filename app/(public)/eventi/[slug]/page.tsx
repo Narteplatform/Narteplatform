@@ -105,24 +105,22 @@ export default async function EventDetailPage({
         </div>
       </section>
 
-      {/* GALLERY + VIDEO */}
-      {(gallery.length > 0 || videos.length > 0) && (
-        <section className="bg-muted py-16 md:py-24">
-          <div className="container-narte">
-            <Reveal>
-              <p className="accent-label mb-3">galleria</p>
-            </Reveal>
-            <Reveal delay={0.1}>
-              <h2 className="display-xl text-3xl md:text-5xl">Foto e video.</h2>
-            </Reveal>
-            <Reveal delay={0.2}>
-              <div className="mt-8">
-                <EventMediaGallery gallery={gallery} videos={videos} />
-              </div>
-            </Reveal>
-          </div>
-        </section>
-      )}
+      {/* GALLERY + VIDEO — sempre visibile, l'empty state lo gestisce EventMediaGallery */}
+      <section className="bg-muted py-16 md:py-24">
+        <div className="container-narte">
+          <Reveal>
+            <p className="accent-label mb-3">galleria</p>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <h2 className="display-xl text-3xl md:text-5xl">Foto e video.</h2>
+          </Reveal>
+          <Reveal delay={0.2}>
+            <div className="mt-8">
+              <EventMediaGallery gallery={gallery} videos={videos} />
+            </div>
+          </Reveal>
+        </div>
+      </section>
 
       <div className="container-narte py-10">
         <Link
