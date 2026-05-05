@@ -66,7 +66,7 @@ export type AppShellRecent = {
 };
 
 export interface AppShellProps {
-  brand: string;
+  brand: React.ReactNode;
   brandHref: string;
   user: AppShellUser;
   navSections: NavSection[];
@@ -181,7 +181,7 @@ export function AppShell({
   );
 }
 
-function Breadcrumb({ pathname, brand }: { pathname: string; brand: string }) {
+function Breadcrumb({ pathname, brand }: { pathname: string; brand: React.ReactNode }) {
   const segments = pathname.split("/").filter(Boolean);
   const items: { label: string; href: string }[] = [];
   let acc = "";
@@ -235,7 +235,7 @@ function SidebarContent({
   storage,
   onNavigate,
 }: {
-  brand: string;
+  brand: React.ReactNode;
   brandHref: string;
   user: AppShellUser;
   navSections: NavSection[];

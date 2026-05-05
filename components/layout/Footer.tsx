@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Instagram, Facebook, Phone } from "lucide-react";
+import { NarteLogo } from "@/components/layout/NarteLogo";
 
 export function Footer() {
   return (
@@ -7,7 +8,9 @@ export function Footer() {
       <div className="container-narte py-16">
         <div className="grid gap-12 md:grid-cols-4">
           <div>
-            <div className="font-display text-2xl leading-none">N&apos;ARTE</div>
+            <Link href="/" aria-label="Home N'arte" className="inline-flex">
+              <NarteLogo variant="dark" width={140} className="h-11 w-auto" />
+            </Link>
             <p className="mt-4 text-sm text-white/60">
               La tua musica dal vivo. Eventi musicali, artisti emergenti e cultura nel cuore di
               Napoli dal 2018.

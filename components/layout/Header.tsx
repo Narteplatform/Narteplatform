@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { User, LayoutDashboard } from "lucide-react";
+import { LogIn, UserPlus, User, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { SearchBar } from "@/components/layout/SearchBar";
+import { NarteLogo } from "@/components/layout/NarteLogo";
 
 export async function Header() {
   const user = await getCurrentUser();
@@ -12,8 +13,6 @@ export async function Header() {
       ? "/admin"
       : role === "artist"
       ? "/dashboard"
-      : role === "organizer"
-      ? "/artisti"
       : "/artisti";
   const dashLabel =
     role === "superadmin"
@@ -26,16 +25,13 @@ export async function Header() {
 
   return (
     <header className="absolute inset-x-0 top-0 z-30 bg-transparent">
-      <div className="container-narte flex h-20 items-center justify-between gap-6">
+      <div className="container-narte flex h-20 items-center justify-between gap-4 md:gap-6">
         <Link
           href="/"
-          className="flex items-center gap-2 font-display text-xl leading-none"
           aria-label="Home N'arte"
+          className="flex shrink-0 items-center"
         >
-          <span className="inline-flex size-8 items-center justify-center rounded-full bg-accent text-accent-foreground font-display text-sm">
-            N
-          </span>
-          <span className="text-foreground">N&apos;arte</span>
+          <NarteLogo variant="dark" width={110} priority className="h-9 w-auto md:h-10" />
         </Link>
 
         <div className="hidden flex-1 max-w-md items-center md:flex">
@@ -50,22 +46,48 @@ export async function Header() {
           <Link href="/contatti" className="hover:text-foreground">Contatti</Link>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {!user ? (
             <>
+              {/* Desktop: testo + icona */}
               <Link
                 href="/login"
-                className="hidden text-sm text-foreground/80 hover:text-foreground sm:inline"
+                className="hidden items-center gap-1.5 rounded-full border border-foreground/20 px-3.5 py-1.5 text-sm text-foreground/90 transition-colors hover:border-foreground hover:text-foreground sm:inline-flex"
               >
-                Accedi / Iscriviti
+                <LogIn className="size-4" />
+                Accedi
               </Link>
-              <Button asChild variant="accent" size="sm" className="rounded-full">
+              <Link
+                href="/register"
+                className="hidden items-center gap-1.5 rounded-full border border-foreground/20 px-3.5 py-1.5 text-sm text-foreground/90 transition-colors hover:border-foreground hover:text-foreground sm:inline-flex"
+              >
+                <UserPlus className="size-4" />
+                Iscriviti
+              </Link>
+
+              {/* Mobile: solo icone */}
+              <Link
+                href="/login"
+                aria-label="Accedi"
+                className="inline-flex size-9 items-center justify-center rounded-full border border-foreground/20 text-foreground/90 transition-colors hover:border-foreground hover:text-foreground sm:hidden"
+              >
+                <LogIn className="size-4" />
+              </Link>
+              <Link
+                href="/register"
+                aria-label="Iscriviti"
+                className="inline-flex size-9 items-center justify-center rounded-full border border-foreground/20 text-foreground/90 transition-colors hover:border-foreground hover:text-foreground sm:hidden"
+              >
+                <UserPlus className="size-4" />
+              </Link>
+
+              <Button asChild variant="accent" size="sm" className="hidden rounded-full sm:inline-flex">
                 <Link href="/candidatura-artista">Sei un artista?</Link>
               </Button>
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <Button asChild variant="default" size="sm">
+              <Button asChild variant="default" size="sm" className="rounded-full">
                 <Link href={dashHref} title={user.email ?? undefined}>
                   {role === "superadmin" ? (
                     <LayoutDashboard className="size-4" />
@@ -76,8 +98,15 @@ export async function Header() {
                 </Link>
               </Button>
               <form action="/logout" method="post">
-                <Button type="submit" variant="ghost" size="sm" className="text-sm">
-                  Esci
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Esci"
+                  className="rounded-full"
+                >
+                  <LogOut className="size-4" />
+                  <span className="hidden sm:inline">Esci</span>
                 </Button>
               </form>
             </div>

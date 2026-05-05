@@ -10,7 +10,21 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { AppShell, type AppShellRecent, type AppShellStorage, type NavSection } from "@/components/layout/AppShell";
+import { NarteLogo } from "@/components/layout/NarteLogo";
 import { createAdminClient } from "@/lib/supabase/server";
+
+function ShellBrand({ suffix }: { suffix?: string }) {
+  return (
+    <span className="flex items-center gap-2">
+      <NarteLogo variant="light" width={92} className="h-7 w-auto" />
+      {suffix ? (
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          / {suffix}
+        </span>
+      ) : null}
+    </span>
+  );
+}
 
 const ADMIN_EVENT_QUOTA = 25;
 
@@ -383,7 +397,7 @@ export async function AdminAppShell({
   }
   return (
     <AppShell
-      brand="N'ARTE / ADMIN"
+      brand={<ShellBrand suffix="Admin" />}
       brandHref="/admin"
       user={{
         name: user.name ?? null,
@@ -421,7 +435,7 @@ export async function ArtistAppShell({
   }
   return (
     <AppShell
-      brand="N'ARTE / ARTIST"
+      brand={<ShellBrand suffix="Artist" />}
       brandHref="/dashboard"
       user={{
         name: user.name ?? null,
