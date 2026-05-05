@@ -87,16 +87,16 @@ export default async function ArtistDetailPage({
 
   return (
     <article>
-      {/* HERO */}
+      {/* HERO — cover left, title + genres + calendar right */}
       <section className="relative overflow-hidden border-b border-border pt-28 pb-12 md:pt-36 md:pb-16">
         <div
           aria-hidden="true"
           className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/3 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"
         />
-        <div className="container-narte relative z-10 grid gap-10 md:grid-cols-[1fr_1.1fr] md:items-end">
+        <div className="container-narte relative z-10 grid gap-10 md:grid-cols-[1fr_1.2fr] md:items-start">
           {/* Cover portrait */}
           <Reveal>
-            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-border bg-muted">
+            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-border bg-muted md:sticky md:top-28">
               {artist.cover_image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -118,18 +118,18 @@ export default async function ArtistDetailPage({
             </div>
           </Reveal>
 
-          {/* Title block */}
+          {/* Right column: title + genres + calendar */}
           <div>
             <Reveal>
               <p className="accent-label mb-3">artista</p>
             </Reveal>
             <Reveal delay={0.1}>
-              <h1 className="display-xl text-5xl md:text-7xl lg:text-8xl">
+              <h1 className="display-xl text-5xl md:text-6xl lg:text-7xl">
                 {artist.stage_name}
               </h1>
             </Reveal>
             <Reveal delay={0.2}>
-              <ul className="mt-6 flex flex-wrap gap-2">
+              <ul className="mt-5 flex flex-wrap gap-2">
                 {artist.genre.map((g) => (
                   <li
                     key={g}
@@ -141,50 +141,66 @@ export default async function ArtistDetailPage({
               </ul>
             </Reveal>
 
-            {socials.length > 0 && (
-              <Reveal delay={0.3}>
-                <ul className="mt-6 flex flex-wrap gap-2 text-sm">
-                  {socials.map((s) => (
-                    <li key={s.key}>
-                      <a
-                        href={s.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1.5 transition hover:border-accent hover:text-accent"
-                      >
-                        {s.icon} {s.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </Reveal>
-            )}
+            <Reveal delay={0.3}>
+              <div className="mt-8 rounded-2xl border border-border bg-background p-5 md:p-6">
+                <p className="accent-label mb-3">calendario</p>
+                <h2 className="font-display text-xl uppercase md:text-2xl">
+                  Disponibilità & booking
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Clicca un giorno libero per richiedere {artist.stage_name} per il tuo evento.
+                </p>
+                <div className="mt-6">
+                  <BookingCalendar
+                    artistId={artist.id}
+                    artistName={artist.stage_name}
+                    busyDates={busyDates}
+                    defaultSlots={(defaultSlots ?? []).map((s) => ({
+                      id: s.id,
+                      label: s.label,
+                      start_time: s.start_time,
+                      end_time: s.end_time,
+                    }))}
+                    dateSlots={(dateSlots ?? []).map((s) => ({
+                      id: s.id,
+                      date: s.date,
+                      label: s.label,
+                      start_time: s.start_time,
+                      end_time: s.end_time,
+                    }))}
+                  />
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* CONTENT */}
+      {/* BIO + SOCIAL */}
       <section className="bg-muted py-16 md:py-24">
-        <div className="container-narte grid gap-10 lg:grid-cols-[1.2fr_1fr]">
-          {/* Left: bio + instruments */}
+        <div className="container-narte grid gap-10 lg:grid-cols-[1.4fr_1fr]">
           <div className="space-y-10">
-            {artist.bio && (
-              <Reveal>
-                <div className="rounded-2xl border border-border bg-background p-6 md:p-8">
-                  <p className="accent-label mb-3">bio</p>
-                  <h2 className="font-display text-2xl uppercase">Storia & sound.</h2>
-                  <p className="mt-4 whitespace-pre-wrap text-base leading-relaxed text-muted-foreground">
+            <Reveal>
+              <div>
+                <p className="accent-label mb-3">bio</p>
+                <h2 className="display-xl text-3xl md:text-5xl">Storia & sound.</h2>
+                {artist.bio ? (
+                  <p className="mt-6 whitespace-pre-wrap text-base leading-relaxed text-muted-foreground">
                     {artist.bio}
                   </p>
-                </div>
-              </Reveal>
-            )}
+                ) : (
+                  <p className="mt-6 text-base text-muted-foreground">
+                    Bio in arrivo.
+                  </p>
+                )}
+              </div>
+            </Reveal>
 
             {instruments.length > 0 && (
               <Reveal delay={0.1}>
                 <div className="rounded-2xl border border-border bg-background p-6 md:p-8">
                   <p className="accent-label mb-3">strumenti</p>
-                  <h2 className="font-display text-2xl uppercase">Setup live.</h2>
+                  <h3 className="font-display text-xl uppercase md:text-2xl">Setup live.</h3>
                   <ul className="mt-4 flex flex-wrap gap-2">
                     {instruments.map((i) => (
                       <li
@@ -200,38 +216,32 @@ export default async function ArtistDetailPage({
             )}
           </div>
 
-          {/* Right: booking calendar */}
-          <Reveal delay={0.15}>
-            <div className="rounded-2xl border border-border bg-background p-6 md:p-8 lg:sticky lg:top-28 lg:self-start">
-              <p className="accent-label mb-3">calendario</p>
-              <h2 className="font-display text-2xl uppercase">
-                Disponibilità & booking
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Clicca un giorno libero per richiedere {artist.stage_name} per il tuo evento.
-              </p>
-              <div className="mt-6">
-                <BookingCalendar
-                  artistId={artist.id}
-                  artistName={artist.stage_name}
-                  busyDates={busyDates}
-                  defaultSlots={(defaultSlots ?? []).map((s) => ({
-                    id: s.id,
-                    label: s.label,
-                    start_time: s.start_time,
-                    end_time: s.end_time,
-                  }))}
-                  dateSlots={(dateSlots ?? []).map((s) => ({
-                    id: s.id,
-                    date: s.date,
-                    label: s.label,
-                    start_time: s.start_time,
-                    end_time: s.end_time,
-                  }))}
-                />
+          {socials.length > 0 && (
+            <Reveal delay={0.15}>
+              <div className="rounded-2xl border border-border bg-background p-6 md:p-8 lg:sticky lg:top-28 lg:self-start">
+                <p className="accent-label mb-3">social</p>
+                <h3 className="font-display text-xl uppercase md:text-2xl">Seguilo online.</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Tutti i canali ufficiali di {artist.stage_name}.
+                </p>
+                <ul className="mt-6 grid gap-2 sm:grid-cols-2">
+                  {socials.map((s) => (
+                    <li key={s.key}>
+                      <a
+                        href={s.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 rounded-xl border border-border bg-muted px-4 py-3 text-sm transition hover:border-accent hover:text-accent"
+                      >
+                        <span className="text-accent">{s.icon}</span>
+                        <span className="font-medium">{s.label}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-          </Reveal>
+            </Reveal>
+          )}
         </div>
       </section>
 

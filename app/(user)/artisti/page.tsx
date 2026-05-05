@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import { StaggerList, Reveal } from "@/components/animations/Reveal";
-import { ArtistCard } from "@/components/marketing/ArtistCard";
+import { Reveal } from "@/components/animations/Reveal";
+import { ArtistsExplorer } from "@/components/marketing/ArtistsExplorer";
 
 export const metadata = { title: "Artisti — N'arte" };
 
@@ -8,11 +8,19 @@ export default async function ArtistiPage() {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("artists")
-    .select("id, slug, stage_name, city, genre, cover_image")
+    .select("id, slug, stage_name, city, genre, instruments, cover_image")
     .eq("status", "approved")
     .order("stage_name", { ascending: true });
 
-  const artists = data ?? [];
+  const artists = (data ?? []).map((a) => ({
+    id: a.id,
+    slug: a.slug,
+    stage_name: a.stage_name,
+    city: a.city,
+    cover_image: a.cover_image,
+    genre: (a.genre ?? []) as string[],
+    instruments: (a.instruments ?? []) as string[],
+  }));
 
   return (
     <>
@@ -32,13 +40,14 @@ export default async function ArtistiPage() {
           <Reveal delay={0.2}>
             <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
               Sfoglia il roster di artisti emergenti N&apos;arte disponibili per booking.
-              Clicca su un nome per scoprire bio, calendario e inviare una richiesta.
+              Filtra per tipologia o genere e clicca su un nome per scoprire bio, calendario
+              e inviare una richiesta.
             </p>
           </Reveal>
         </div>
       </section>
 
-      {/* GRID */}
+      {/* GRID + FILTERS */}
       <section className="bg-muted py-16 md:py-24">
         <div className="container-narte">
           {artists.length === 0 ? (
@@ -46,18 +55,7 @@ export default async function ArtistiPage() {
               Nessun artista ancora pubblicato.
             </p>
           ) : (
-            <StaggerList className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {artists.map((a) => (
-                <ArtistCard
-                  key={a.id}
-                  slug={a.slug}
-                  stageName={a.stage_name}
-                  city={a.city}
-                  coverImage={a.cover_image}
-                  genres={a.genre}
-                />
-              ))}
-            </StaggerList>
+            <ArtistsExplorer artists={artists} />
           )}
         </div>
       </section>

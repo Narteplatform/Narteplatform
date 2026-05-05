@@ -6,7 +6,7 @@ import { DayPicker } from "react-day-picker";
 import { it } from "date-fns/locale";
 import "react-day-picker/style.css";
 import { toast } from "sonner";
-import { Clock, X } from "lucide-react";
+import { Clock, X, CheckCircle2 } from "lucide-react";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatSlot, normalizeTime, resolveSlotsForDate, type Slot } from "@/lib/slots";
@@ -72,6 +72,7 @@ export function BookingCalendar({
   const [selectedISO, setSelectedISO] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -110,6 +111,7 @@ export function BookingCalendar({
     if (selectedISO) {
       setError(null);
       setSelectedSlot(null);
+      setSubmitted(false);
     }
   }, [selectedISO]);
 
@@ -144,17 +146,16 @@ export function BookingCalendar({
       toast.error(msg);
       return;
     }
-    toast.success("Richiesta inviata correttamente", {
-      description: `Abbiamo ricevuto la tua richiesta per ${artistName}. Ti ricontattiamo entro 48h.`,
-    });
+    toast.success("Richiesta d'interesse inviata correttamente");
     reset();
-    close();
+    setSubmitted(true);
   }
 
   function close() {
     setSelectedISO(null);
     setSelectedSlot(null);
     setError(null);
+    setSubmitted(false);
   }
 
   return (
@@ -200,6 +201,32 @@ export function BookingCalendar({
             >
               <X className="size-4" />
             </button>
+            {submitted ? (
+              <div className="flex flex-col items-center py-6 text-center">
+                <div className="flex size-16 items-center justify-center rounded-full bg-accent/15 text-accent">
+                  <CheckCircle2 className="size-9" />
+                </div>
+                <p className="accent-label mt-6">richiesta inviata</p>
+                <h3 className="mt-2 font-display text-2xl uppercase md:text-3xl">
+                  Richiesta d&apos;interesse inviata correttamente
+                </h3>
+                <p className="mt-3 max-w-md text-sm text-muted-foreground">
+                  Abbiamo ricevuto la tua richiesta per <strong>{artistName}</strong> il{" "}
+                  {formatHuman(selectedISO)}. L&apos;artista e il nostro team la valutano e ti
+                  rispondono via email entro 48h.
+                </p>
+                <Button
+                  type="button"
+                  variant="accent"
+                  size="lg"
+                  className="mt-8 min-w-[200px]"
+                  onClick={close}
+                >
+                  Chiudi
+                </Button>
+              </div>
+            ) : (
+              <>
             <p className="accent-label">interessato</p>
             <h3 className="mt-1 font-display text-2xl uppercase md:text-3xl">
               {artistName} — {formatHuman(selectedISO)}
@@ -283,6 +310,8 @@ export function BookingCalendar({
                   </Button>
                 </div>
               </form>
+              </>
+            )}
           </div>
         </div>
       )}
