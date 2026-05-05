@@ -22,40 +22,99 @@ export default async function ArtistDetailPage({
   const { slug } = await params;
   const supabase = createAdminClient();
 
-  const { data: artist } = await supabase
-    .from("artists")
-    .select(
-      "id, slug, stage_name, bio, genre, instruments, city, cover_image, gallery, videos, social_links, status"
-    )
-    .eq("slug", slug)
-    .eq("status", "approved")
-    .single();
+  // Select base + tentativo colonne extra che potrebbero non esistere su prod
+  type ArtistRow = {
+    id: string;
+    slug: string;
+    stage_name: string;
+    status: string;
+    bio?: string | null;
+    genre?: string[] | null;
+    instruments?: string[] | null;
+    city?: string | null;
+    cover_image?: string | null;
+    gallery?: string[] | null;
+    videos?: string[] | null;
+    social_links?: SocialLinks | null;
+  };
+  let artistRaw: ArtistRow | null = null;
+  {
+    const full = await supabase
+      .from("artists")
+      .select(
+        "id, slug, stage_name, bio, genre, instruments, city, cover_image, gallery, videos, social_links, status"
+      )
+      .eq("slug", slug)
+      .eq("status", "approved")
+      .maybeSingle();
+    if (full.error) {
+      console.error("[ArtistDetailPage] artists full select error", full.error);
+      const minimal = await supabase
+        .from("artists")
+        .select("id, slug, stage_name, bio, genre, city, cover_image, status")
+        .eq("slug", slug)
+        .eq("status", "approved")
+        .maybeSingle();
+      if (minimal.error) {
+        console.error("[ArtistDetailPage] artists minimal select error", minimal.error);
+      }
+      artistRaw = (minimal.data as unknown as ArtistRow) ?? null;
+    } else {
+      artistRaw = (full.data as unknown as ArtistRow) ?? null;
+    }
+  }
+  if (!artistRaw) notFound();
+  const artist = artistRaw;
 
-  if (!artist) notFound();
-
-  const [{ data: availability }, { data: defaultSlots }, { data: dateSlots }] =
-    await Promise.all([
-      supabase.from("artist_availability").select("date, status").eq("artist_id", artist.id),
-      supabase
-        .from("artist_default_slots")
-        .select("id, label, start_time, end_time")
-        .eq("artist_id", artist.id)
-        .order("start_time"),
-      supabase
-        .from("artist_date_slots")
-        .select("id, date, label, start_time, end_time")
-        .eq("artist_id", artist.id)
-        .order("start_time"),
-    ]);
+  // Slots / availability — tabelle/colonne possono non esistere su prod, gestiamo soft
+  type Avail = { date: string; status: string };
+  type DefaultSlotRow = { id: string; label: string | null; start_time: string; end_time: string };
+  type DateSlotRow = DefaultSlotRow & { date: string };
+  let availability: Avail[] | null = [];
+  let defaultSlots: DefaultSlotRow[] | null = [];
+  let dateSlots: DateSlotRow[] | null = [];
+  try {
+    const r = await supabase
+      .from("artist_availability")
+      .select("date, status")
+      .eq("artist_id", artist.id);
+    if (!r.error) availability = (r.data ?? []) as Avail[];
+  } catch (e) {
+    console.error("[ArtistDetailPage] availability fetch error", e);
+  }
+  try {
+    const r = await supabase
+      .from("artist_default_slots")
+      .select("id, label, start_time, end_time")
+      .eq("artist_id", artist.id)
+      .order("start_time");
+    if (!r.error) defaultSlots = (r.data ?? []) as DefaultSlotRow[];
+  } catch (e) {
+    console.error("[ArtistDetailPage] default_slots fetch error", e);
+  }
+  try {
+    const r = await supabase
+      .from("artist_date_slots")
+      .select("id, date, label, start_time, end_time")
+      .eq("artist_id", artist.id)
+      .order("start_time");
+    if (!r.error) dateSlots = (r.data ?? []) as DateSlotRow[];
+  } catch (e) {
+    console.error("[ArtistDetailPage] date_slots fetch error", e);
+  }
 
   const busyDates = (availability ?? [])
     .filter((a) => a.status === "busy")
     .map((a) => a.date);
 
-  const social = (artist.social_links ?? {}) as SocialLinks;
-  const gallery = (artist.gallery ?? []) as string[];
-  const videos = (artist.videos ?? []) as string[];
-  const instruments = (artist.instruments ?? []) as string[];
+  const social: SocialLinks = artist.social_links ?? {};
+  const gallery = artist.gallery ?? [];
+  const videos = artist.videos ?? [];
+  const instruments = artist.instruments ?? [];
+  const genres = artist.genre ?? [];
+  const bio = artist.bio ?? null;
+  const coverImage = artist.cover_image ?? null;
+  const city = artist.city ?? null;
 
   const socials: { key: string; href: string; label: string; icon: React.ReactNode }[] = [];
   if (social.instagram)
@@ -97,10 +156,10 @@ export default async function ArtistDetailPage({
           {/* Cover portrait */}
           <Reveal>
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-border bg-muted md:sticky md:top-28">
-              {artist.cover_image ? (
+              {coverImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={artist.cover_image}
+                  src={coverImage}
                   alt={artist.stage_name}
                   className="h-full w-full object-cover"
                 />
@@ -110,9 +169,9 @@ export default async function ArtistDetailPage({
                 </div>
               )}
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-              {artist.city && (
+              {city && (
                 <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-black/50 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-white backdrop-blur-sm">
-                  <MapPin className="size-3" /> {artist.city}
+                  <MapPin className="size-3" /> {city}
                 </span>
               )}
             </div>
@@ -130,7 +189,7 @@ export default async function ArtistDetailPage({
             </Reveal>
             <Reveal delay={0.2}>
               <ul className="mt-5 flex flex-wrap gap-2">
-                {artist.genre.map((g) => (
+                {genres.map((g) => (
                   <li
                     key={g}
                     className="rounded-full border border-border bg-muted px-3 py-1 text-xs lowercase tracking-wide"
@@ -184,9 +243,9 @@ export default async function ArtistDetailPage({
               <div>
                 <p className="accent-label mb-3">bio</p>
                 <h2 className="display-xl text-3xl md:text-5xl">Storia & sound.</h2>
-                {artist.bio ? (
+                {bio ? (
                   <p className="mt-6 whitespace-pre-wrap text-base leading-relaxed text-muted-foreground">
-                    {artist.bio}
+                    {bio}
                   </p>
                 ) : (
                   <p className="mt-6 text-base text-muted-foreground">

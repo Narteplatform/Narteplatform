@@ -6,13 +6,37 @@ export const metadata = { title: "Artisti — N'arte" };
 
 export default async function ArtistiPage() {
   const supabase = createAdminClient();
-  const { data } = await supabase
-    .from("artists")
-    .select("id, slug, stage_name, city, genre, instruments, cover_image")
-    .eq("status", "approved")
-    .order("stage_name", { ascending: true });
+  type ArtistRow = {
+    id: string;
+    slug: string;
+    stage_name: string;
+    city: string | null;
+    cover_image: string | null;
+    genre: string[] | null;
+    instruments?: string[] | null;
+  };
+  let rows: ArtistRow[] = [];
+  {
+    const full = await supabase
+      .from("artists")
+      .select("id, slug, stage_name, city, genre, instruments, cover_image")
+      .eq("status", "approved")
+      .order("stage_name", { ascending: true });
+    if (full.error) {
+      console.error("[ArtistiPage] full select error", full.error);
+      const minimal = await supabase
+        .from("artists")
+        .select("id, slug, stage_name, city, genre, cover_image")
+        .eq("status", "approved")
+        .order("stage_name", { ascending: true });
+      if (minimal.error) console.error("[ArtistiPage] minimal select error", minimal.error);
+      rows = ((minimal.data ?? []) as unknown) as ArtistRow[];
+    } else {
+      rows = ((full.data ?? []) as unknown) as ArtistRow[];
+    }
+  }
 
-  const artists = (data ?? []).map((a) => ({
+  const artists = rows.map((a) => ({
     id: a.id,
     slug: a.slug,
     stage_name: a.stage_name,
