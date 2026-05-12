@@ -40,7 +40,7 @@ export function FavoriteToggle({
       className={cls}
     >
       <Heart
-        className={"size-4 " + (active ? "fill-[#FF5722] text-[#FF5722]" : "")}
+        className={"size-4 " + (active ? "fill-corallo text-corallo" : "")}
         strokeWidth={2}
       />
       {label && <span>{label}</span>}

@@ -1,39 +1,62 @@
 import Image from "next/image";
+import { cn } from "@/lib/utils";
+
+type Variant = "dark" | "light";
 
 type Props = {
   /**
-   * Variante del logo:
-   * - "dark"  : usa l'asset bianco-su-nero (per sfondi scuri / public site)
-   * - "light" : usa l'asset nero-su-bianco (per sfondi chiari / dashboard light theme)
-   * - "auto"  : sceglie la variante in base al tema corrente via CSS (matchMedia non supportato server-side, fallback a dark)
+   * Variante:
+   * - "dark"  → asset bianco trasparente, render diretto (sfondi notte/azzurro)
+   * - "light" → applica CSS filter per virare a azzurro (sfondi palco)
    */
-  variant?: "dark" | "light";
-  /** Larghezza in px del logo. Altezza calcolata mantenendo l'aspect ratio originale (~1.38:1). */
+  variant?: Variant;
+  /** Larghezza in px. L'altezza segue l'aspect ratio dell'asset (2000×601 ≈ 3.328:1). */
   width?: number;
   className?: string;
   priority?: boolean;
   alt?: string;
 };
 
-const ASPECT = 371 / 512; // height / width sull'asset 512×371
+const LOGO_ASPECT = 601 / 2000; // height / width
+const MONO_ASPECT = 1413 / 2000;
 
 export function NarteLogo({
   variant = "dark",
   width = 120,
   className,
   priority = false,
-  alt = "N'arte",
+  alt = "N'Arte",
 }: Props) {
-  const src = variant === "light" ? "/logo-narte-light.png" : "/logo-narte.png";
-  const height = Math.round(width * ASPECT);
+  const height = Math.round(width * LOGO_ASPECT);
   return (
     <Image
-      src={src}
+      src="/brand/narte-logo.png"
       alt={alt}
       width={width}
       height={height}
       priority={priority}
-      className={className}
+      className={cn(variant === "light" && "logo-tint-azzurro", className)}
+      sizes={`${width}px`}
+    />
+  );
+}
+
+export function NarteMonogram({
+  variant = "dark",
+  width = 40,
+  className,
+  priority = false,
+  alt = "N'Arte",
+}: Props) {
+  const height = Math.round(width * MONO_ASPECT);
+  return (
+    <Image
+      src="/brand/narte-monogram.png"
+      alt={alt}
+      width={width}
+      height={height}
+      priority={priority}
+      className={cn(variant === "light" && "logo-tint-azzurro", className)}
       sizes={`${width}px`}
     />
   );

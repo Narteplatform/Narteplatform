@@ -40,15 +40,16 @@ export default function ApplicationReceivedEmail({
   );
 }
 
-const body = { backgroundColor: "#ffffff", fontFamily: "Inter, system-ui, sans-serif" };
+const body = { backgroundColor: "#ffffff", fontFamily: "DM Sans, system-ui, sans-serif" };
 const container = { padding: "32px", maxWidth: "560px", margin: "0 auto" };
 const h1 = {
   fontSize: "26px",
-  fontWeight: 900,
-  textTransform: "uppercase" as const,
+  fontWeight: 700,
+  fontFamily: "Fraunces, Georgia, serif",
+  letterSpacing: "-0.02em",
   margin: "0 0 16px",
-  color: "#0b0b0b",
+  color: "#0D1B2A",
 };
-const p = { fontSize: "14px", lineHeight: "22px", color: "#0b0b0b", margin: "8px 0" };
-const small = { fontSize: "12px", color: "#6b6b6b", margin: "8px 0" };
-const hr = { borderColor: "#e5e5e5", margin: "20px 0" };
+const p = { fontSize: "14px", lineHeight: "22px", color: "#0D1B2A", margin: "8px 0" };
+const small = { fontSize: "12px", color: "#7D746C", margin: "8px 0" };
+const hr = { borderColor: "#D6CFCA", margin: "20px 0" };

@@ -87,8 +87,8 @@ export function OrganizerCalendar({ events }: { events: Event[] }) {
               className={
                 "aspect-square rounded-md border p-1 text-left text-xs transition " +
                 (evs.length > 0
-                  ? "border-[#FF5722] bg-[#FF5722]/10 text-foreground"
-                  : "border-border bg-card text-muted-foreground")
+                  ? "border-azzurro bg-azzurro/10 text-foreground"
+                  : "border-border bg-surface text-muted-foreground")
               }
             >
               <div className="flex items-center justify-between">

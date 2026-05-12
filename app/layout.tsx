@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
-import { Inter, Archivo_Black } from "next/font/google";
+import { DM_Sans, Fraunces } from "next/font/google";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
-const inter = Inter({
+const dmSans = DM_Sans({
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-sans",
   display: "swap",
 });
 
-const archivoBlack = Archivo_Black({
+const fraunces = Fraunces({
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "600", "700", "900"],
+  style: ["normal", "italic"],
   variable: "--font-display",
   display: "swap",
 });
@@ -50,7 +52,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="it" className={`${inter.variable} ${archivoBlack.variable}`}>
+    <html lang="it" className={`${dmSans.variable} ${fraunces.variable}`}>
       <head>
         <meta httpEquiv="cache-control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="pragma" content="no-cache" />

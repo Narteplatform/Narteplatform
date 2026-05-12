@@ -43,7 +43,8 @@ export function HowItWorks() {
           </Reveal>
           <Reveal delay={0.1}>
             <h2 className="display-xl text-3xl md:text-5xl lg:text-6xl">
-              Come funziona N&apos;arte.
+              Come funziona{" "}
+              <span className="display-italic">N&apos;Arte.</span>
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
@@ -57,26 +58,26 @@ export function HowItWorks() {
         <div className="mt-12 grid gap-6 md:mt-16 md:grid-cols-3">
           {BLOCKS.map((b, i) => (
             <Reveal key={b.key} delay={0.1 * (i + 1)}>
-              <article className="group flex h-full flex-col rounded-2xl border border-border bg-muted p-6 transition-colors hover:border-accent md:p-8">
+              <article className="group flex h-full flex-col rounded-xl border border-border bg-surface p-6 shadow-[var(--shadow-sm)] transition-all duration-220 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-[var(--shadow-md)] md:p-7">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex size-10 items-center justify-center rounded-full bg-accent/15 text-accent transition-colors group-hover:bg-accent group-hover:text-accent-foreground">
+                  <span className="inline-flex size-11 items-center justify-center rounded-lg bg-azzurro-subtle text-azzurro transition-colors group-hover:bg-azzurro group-hover:text-white">
                     {b.icon}
                   </span>
                   <p className="accent-label">{b.label}</p>
                 </div>
-                <h3 className="mt-6 font-display text-2xl uppercase leading-tight md:text-3xl">
+                <h3 className="mt-6 font-display text-2xl font-bold leading-tight md:text-[1.65rem]">
                   {b.title}
                 </h3>
-                <ol className="mt-6 space-y-3">
+                <ol className="mt-5 space-y-3">
                   {b.steps.map((s, idx) => (
                     <li
                       key={s}
                       className="flex items-start gap-3 text-sm md:text-base"
                     >
-                      <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-background font-display text-xs">
+                      <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-azzurro/10 font-display text-[11px] font-bold text-azzurro">
                         {idx + 1}
                       </span>
-                      <span className="text-foreground/90">{s}</span>
+                      <span className="text-foreground/85">{s}</span>
                     </li>
                   ))}
                 </ol>

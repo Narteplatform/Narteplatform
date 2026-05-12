@@ -217,7 +217,7 @@ export function AvailabilityCalendar({
             background-color: rgba(22, 163, 74, 0.14) !important;
           }
           .rdp-hasSlots {
-            box-shadow: inset 0 0 0 1px #FF5722;
+            box-shadow: inset 0 0 0 1px #1A6BAD;
           }
         `}</style>
       </div>
@@ -233,7 +233,7 @@ export function AvailabilityCalendar({
           <span className="size-2 rounded-full bg-red-900" /> Storico
         </span>
         <span className="inline-flex items-center gap-2">
-          <span className="size-2 border border-[#FF5722]" /> Slot specifici impostati
+          <span className="size-2 border border-[#1A6BAD]" /> Slot specifici impostati
         </span>
       </div>
 

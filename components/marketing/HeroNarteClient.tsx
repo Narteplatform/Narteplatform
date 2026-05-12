@@ -55,8 +55,8 @@ export function HeroNarteClient(_props: { images?: HeroArtistImage[] }) {
             className="font-display tracking-tight"
             style={{ lineHeight: 0.92 }}
           >
-            <span className="block text-[14vw] font-normal leading-[0.92] text-foreground">
-              N&apos;arte.
+            <span className="block text-[14vw] font-black leading-[0.92] text-foreground">
+              N&apos;Arte.
             </span>
           </motion.h1>
           <motion.h2
@@ -64,8 +64,10 @@ export function HeroNarteClient(_props: { images?: HeroArtistImage[] }) {
             className="mt-1 font-display tracking-tight text-foreground"
             style={{ lineHeight: 0.95 }}
           >
-            <span className="block text-[8vw] leading-[1]">La piattaforma</span>
-            <span className="block text-[8vw] leading-[1]">degli artisti.</span>
+            <span className="block text-[8vw] font-bold leading-[1]">La piattaforma</span>
+            <span className="block text-[8vw] font-bold italic leading-[1] text-azzurro">
+              degli artisti.
+            </span>
           </motion.h2>
         </div>
       </div>
@@ -83,8 +85,8 @@ export function HeroNarteClient(_props: { images?: HeroArtistImage[] }) {
             className="font-display tracking-tight"
             style={{ lineHeight: 0.92 }}
           >
-            <span className="block text-[7vw] font-normal leading-[0.92] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] lg:text-[7rem] xl:text-[8.5rem]">
-              N&apos;arte.
+            <span className="block text-[7vw] font-black leading-[0.92] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] lg:text-[7rem] xl:text-[8.5rem]">
+              N&apos;Arte.
             </span>
           </motion.h1>
           <motion.h2
@@ -92,10 +94,10 @@ export function HeroNarteClient(_props: { images?: HeroArtistImage[] }) {
             className="font-display tracking-tight text-foreground"
             style={{ lineHeight: 0.95 }}
           >
-            <span className="block text-[5.5vw] leading-[1] lg:text-[5.5rem] xl:text-[6.5rem]">
+            <span className="block text-[5.5vw] font-bold leading-[1] lg:text-[5.5rem] xl:text-[6.5rem]">
               La piattaforma
             </span>
-            <span className="mt-1 block text-[5.5vw] leading-[1] lg:text-[5.5rem] xl:text-[6.5rem]">
+            <span className="mt-1 block text-[5.5vw] font-bold italic leading-[1] text-azzurro lg:text-[5.5rem] xl:text-[6.5rem]">
               degli artisti.
             </span>
           </motion.h2>

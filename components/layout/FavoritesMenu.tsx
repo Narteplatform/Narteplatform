@@ -38,10 +38,10 @@ export function FavoritesMenu() {
         className="relative inline-flex size-9 items-center justify-center rounded-full border border-foreground/20 text-foreground/80 transition-colors hover:border-foreground hover:text-foreground"
       >
         <Heart
-          className={"size-4 " + (count > 0 ? "fill-[#FF5722] text-[#FF5722]" : "")}
+          className={"size-4 " + (count > 0 ? "fill-corallo text-corallo" : "")}
         />
         {count > 0 && (
-          <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF5722] px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-corallo px-1 text-[10px] font-bold text-white">
             {count}
           </span>
         )}
