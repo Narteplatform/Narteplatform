@@ -4,9 +4,19 @@ import { createElement } from "react";
 import { createAdminClient } from "@/lib/supabase/server";
 import BookingStatusEmail from "@/lib/emails/templates/BookingStatusEmail";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const FROM = process.env.RESEND_FROM_EMAIL || "N'arte <noreply@narte.it>";
+
+// Lazy init: il client Resend richiede la chiave nel constructor. Durante
+// la build di Vercel (collect page data) il modulo viene valutato senza
+// env runtime → istanziarlo top-level rompe il build se la chiave manca.
+let _resend: Resend | null = null;
+function getResend(): Resend | null {
+  if (_resend) return _resend;
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  _resend = new Resend(key);
+  return _resend;
+}
 
 export async function sendEmail(opts: {
   to: string | string[];
@@ -14,7 +24,8 @@ export async function sendEmail(opts: {
   react: ReactElement;
   replyTo?: string;
 }) {
-  if (!process.env.RESEND_API_KEY) {
+  const resend = getResend();
+  if (!resend) {
     console.warn("[email] RESEND_API_KEY mancante — email non inviata", opts.subject);
     return { ok: false as const, skipped: true };
   }
