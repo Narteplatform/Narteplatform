@@ -10,8 +10,6 @@ import type { Database } from "@/lib/supabase/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const isProd = process.env.NODE_ENV === "production";
-
 function newRid() {
   try {
     return globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
@@ -30,34 +28,59 @@ function slugify(s: string) {
     .slice(0, 80);
 }
 
+function fail(rid: string, step: string, error: string, status = 400) {
+  console.error("[booking-request]", rid, "step=" + step, "error:", error);
+  return NextResponse.json(
+    { ok: false, rid, step, error: `${error} [${rid}]` },
+    { status }
+  );
+}
+
 export async function POST(req: Request) {
   const rid = newRid();
   try {
-    const body = await req.json().catch(() => null);
+    console.log("[booking-request]", rid, "step=start");
+
+    // --- Parse body
+    let body: unknown = null;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return fail(rid, "parse-body", "Body non valido");
+    }
+
     const parsed = bookingRequestPublicSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { ok: false, rid, error: "Dati non validi", details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+      return fail(rid, "zod", issues || "Dati non validi");
     }
     const data = parsed.data;
-    const admin = createAdminClient();
 
-    // 1. Carica artista
-    const { data: artist } = await admin
+    // --- Env check
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return fail(rid, "env", "Config server mancante (SERVICE_ROLE_KEY)", 500);
+    }
+
+    let admin;
+    try {
+      admin = createAdminClient();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail(rid, "admin-client", msg, 500);
+    }
+
+    // --- Load artist
+    const { data: artist, error: artistErr } = await admin
       .from("artists")
       .select("id, stage_name, status, user_id")
       .eq("id", data.artistId)
       .maybeSingle();
-    if (!artist || artist.status !== "approved") {
-      return NextResponse.json(
-        { ok: false, rid, error: "Artista non disponibile" },
-        { status: 400 }
-      );
-    }
+    if (artistErr) return fail(rid, "artist-lookup", artistErr.message, 500);
+    if (!artist) return fail(rid, "artist-missing", "Artista non trovato");
+    if (artist.status !== "approved")
+      return fail(rid, "artist-not-approved", "Artista non disponibile");
 
-    // 2. Identifica utente attuale
+    // --- Current user (if any)
     const supabaseSrv = await createClient();
     const {
       data: { user: currentUser },
@@ -67,76 +90,84 @@ export async function POST(req: Request) {
     let createdSession = false;
 
     if (!currentUser) {
-      // Signup branch: richiede email, password, displayName
+      // --- Signup branch
       if (!data.email || !data.password || !data.displayName) {
-        return NextResponse.json(
-          { ok: false, rid, error: "Compila email, password e nome per registrarti" },
-          { status: 400 }
-        );
+        return fail(rid, "signup-fields", "Compila email, password e nome");
       }
-      // Auto-confirm signup come organizzatore
-      const { data: created, error: createErr } =
-        await admin.auth.admin.createUser({
-          email: data.email,
-          password: data.password,
-          email_confirm: true,
-          user_metadata: {
-            role: "organizer",
-            display_name: data.displayName,
-            full_name: data.displayName,
-          },
-        });
-      if (createErr || !created.user) {
-        const msg = createErr?.message ?? "Impossibile creare account";
-        return NextResponse.json({ ok: false, rid, error: msg }, { status: 400 });
-      }
-      userId = created.user.id;
 
-      // 3. Auto-login: crea sessione con email/password via server-side cookies
-      const cookieStore = await cookies();
-      const ssr = createServerClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return cookieStore.getAll();
-            },
-            setAll(items) {
-              for (const it of items) {
-                cookieStore.set(it.name, it.value, it.options);
-              }
-            },
-          },
-        }
-      );
-      const { error: signinErr } = await ssr.auth.signInWithPassword({
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email: data.email,
         password: data.password,
+        email_confirm: true,
+        user_metadata: {
+          role: "organizer",
+          display_name: data.displayName,
+          full_name: data.displayName,
+        },
       });
-      if (signinErr) {
-        console.error("[booking-request]", rid, "auto-signin-fail", signinErr);
-      } else {
-        createdSession = true;
+
+      if (createErr || !created.user) {
+        const msg = createErr?.message ?? "Impossibile creare account";
+        // Email già registrata: prova a fare signin
+        if (/already (registered|been registered|exists)/i.test(msg)) {
+          return fail(
+            rid,
+            "signup-conflict",
+            "Email già registrata. Effettua il login e riprova.",
+            409
+          );
+        }
+        return fail(rid, "signup", msg);
+      }
+      userId = created.user.id;
+      console.log("[booking-request]", rid, "step=signup-ok", userId);
+
+      // --- Auto-signin via SSR cookies
+      try {
+        const cookieStore = await cookies();
+        const ssr = createServerClient<Database>(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          {
+            cookies: {
+              getAll() {
+                return cookieStore.getAll();
+              },
+              setAll(items) {
+                try {
+                  for (const it of items) {
+                    cookieStore.set(it.name, it.value, it.options);
+                  }
+                } catch (e) {
+                  console.warn("[booking-request]", rid, "cookie-set-fail", e);
+                }
+              },
+            },
+          }
+        );
+        const { error: signinErr } = await ssr.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
+        if (signinErr) {
+          console.error("[booking-request]", rid, "auto-signin-fail", signinErr);
+        } else {
+          createdSession = true;
+        }
+      } catch (e) {
+        console.warn("[booking-request]", rid, "auto-signin-exception", e);
       }
     } else {
-      // Utente loggato: controlla ruolo
+      // --- Logged-in branch
       const { data: profile } = await admin
         .from("profiles")
         .select("role")
         .eq("id", currentUser.id)
         .maybeSingle();
       const role = profile?.role;
-      if (role === "artist" || role === "superadmin") {
-        // superadmin può procedere (auto-bootstrap organizer)
-        if (role === "artist") {
-          return NextResponse.json(
-            { ok: false, rid, error: "Il profilo artista non può inviare richieste" },
-            { status: 403 }
-          );
-        }
+      if (role === "artist") {
+        return fail(rid, "role-artist", "Il profilo artista non può inviare richieste", 403);
       }
-      // user → promuovi a organizer
       if (role === "user") {
         const { error: promErr } = await admin.rpc("promote_user_to_organizer", {
           uid: currentUser.id,
@@ -147,19 +178,15 @@ export async function POST(req: Request) {
       }
     }
 
-    if (!userId) {
-      return NextResponse.json(
-        { ok: false, rid, error: "Sessione non valida" },
-        { status: 401 }
-      );
-    }
+    if (!userId) return fail(rid, "no-user", "Sessione non valida", 401);
 
-    // 4. Trova/crea organizer
-    let { data: organizer } = await admin
+    // --- Ensure organizer row
+    let { data: organizer, error: orgLookupErr } = await admin
       .from("organizers")
       .select("id, display_name")
       .eq("user_id", userId)
       .maybeSingle();
+    if (orgLookupErr) console.warn("[booking-request]", rid, "org-lookup-warn", orgLookupErr);
 
     if (!organizer) {
       const display =
@@ -167,27 +194,29 @@ export async function POST(req: Request) {
         currentUser?.user_metadata?.full_name ||
         currentUser?.email?.split("@")[0] ||
         "Organizzatore";
-      const { data: created, error: createOrgErr } = await admin
+      const { data: createdOrg, error: createOrgErr } = await admin
         .from("organizers")
         .insert({ user_id: userId, display_name: display, phone: data.phone ?? null })
         .select("id, display_name")
         .single();
-      if (createOrgErr || !created) {
-        return NextResponse.json(
-          { ok: false, rid, error: "Impossibile creare profilo organizzatore" },
-          { status: 500 }
+      if (createOrgErr || !createdOrg) {
+        return fail(
+          rid,
+          "create-organizer",
+          createOrgErr?.message ?? "Impossibile creare profilo organizzatore",
+          500
         );
       }
-      organizer = created;
+      organizer = createdOrg;
     } else if (data.phone) {
       await admin.from("organizers").update({ phone: data.phone }).eq("id", organizer.id);
     }
 
-    // 5. Trova/crea venue
+    // --- Resolve venue
     let venueId: string | null = data.venueId ?? null;
     if (!venueId && data.venueName) {
-      const slug = slugify(data.venueName) || "struttura";
-      let finalSlug = slug;
+      const baseSlug = slugify(data.venueName) || "struttura";
+      let finalSlug = baseSlug;
       for (let i = 0; i < 5; i++) {
         const { data: hit } = await admin
           .from("venues")
@@ -195,9 +224,9 @@ export async function POST(req: Request) {
           .eq("slug", finalSlug)
           .maybeSingle();
         if (!hit) break;
-        finalSlug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+        finalSlug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
       }
-      const { data: createdVenue } = await admin
+      const { data: createdVenue, error: venueErr } = await admin
         .from("venues")
         .insert({
           organizer_id: organizer.id,
@@ -207,14 +236,17 @@ export async function POST(req: Request) {
         })
         .select("id")
         .single();
+      if (venueErr) console.warn("[booking-request]", rid, "venue-create-warn", venueErr);
       venueId = createdVenue?.id ?? null;
     }
 
-    // 6. Inserisci booking request
+    // --- Insert booking request
     const composedMessage = `${data.message}${
-      data.venueName && !data.venueId ? `\n\nStruttura: ${data.venueName}${data.venueCity ? `, ${data.venueCity}` : ""}` : ""
+      data.venueName && !data.venueId
+        ? `\n\nStruttura: ${data.venueName}${data.venueCity ? `, ${data.venueCity}` : ""}`
+        : ""
     }`;
-    const { data: req, error: reqErr } = await admin
+    const { data: bookingReq, error: reqErr } = await admin
       .from("booking_requests")
       .insert({
         organizer_id: organizer.id,
@@ -229,72 +261,78 @@ export async function POST(req: Request) {
       .select("id")
       .single();
 
-    if (reqErr || !req) {
-      return NextResponse.json(
-        { ok: false, rid, error: reqErr?.message ?? "Errore salvataggio" },
-        { status: 500 }
-      );
+    if (reqErr || !bookingReq) {
+      return fail(rid, "insert-request", reqErr?.message ?? "Errore salvataggio", 500);
     }
 
-    // 7. Email best-effort all'artista + admin
-    let artistEmail: string | null = null;
-    if (artist.user_id) {
-      try {
+    console.log("[booking-request]", rid, "step=request-inserted", bookingReq.id);
+
+    // --- Emails (best-effort)
+    try {
+      let artistEmail: string | null = null;
+      if (artist.user_id) {
         const { data: u } = await admin.auth.admin.getUserById(artist.user_id);
         artistEmail = u?.user?.email ?? null;
-      } catch {}
+      }
+      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+      const requesterEmail = data.email ?? currentUser?.email ?? "";
+      await Promise.allSettled([
+        artistEmail
+          ? sendEmail({
+              to: artistEmail,
+              subject: `Nuova richiesta booking — ${data.date}`,
+              replyTo: requesterEmail || undefined,
+              react: BookingRequestEmail({
+                artistName: artist.stage_name,
+                requesterName: organizer.display_name,
+                eventDate: data.date,
+                eventLocation: data.venueName ?? data.venueCity ?? "Da definire",
+                budget: data.budgetOffer ?? null,
+                message: composedMessage,
+                contactEmail: requesterEmail,
+                contactPhone: data.phone ?? null,
+              }),
+            })
+          : Promise.resolve(),
+        adminEmail
+          ? sendEmail({
+              to: adminEmail,
+              subject: `[N'arte] Nuova richiesta per ${artist.stage_name}`,
+              replyTo: requesterEmail || undefined,
+              react: BookingRequestEmail({
+                artistName: artist.stage_name,
+                requesterName: organizer.display_name,
+                eventDate: data.date,
+                eventLocation: data.venueName ?? data.venueCity ?? "Da definire",
+                budget: data.budgetOffer ?? null,
+                message: composedMessage,
+                contactEmail: requesterEmail,
+                contactPhone: data.phone ?? null,
+                isAdminCopy: true,
+              }),
+            })
+          : Promise.resolve(),
+      ]);
+    } catch (e) {
+      console.warn("[booking-request]", rid, "emails-failed", e);
     }
-    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-    const requesterEmail = data.email ?? currentUser?.email ?? "";
-    await Promise.allSettled([
-      artistEmail
-        ? sendEmail({
-            to: artistEmail,
-            subject: `Nuova richiesta booking — ${data.date}`,
-            replyTo: requesterEmail || undefined,
-            react: BookingRequestEmail({
-              artistName: artist.stage_name,
-              requesterName: organizer.display_name,
-              eventDate: data.date,
-              eventLocation: data.venueName ?? data.venueCity ?? "Da definire",
-              budget: data.budgetOffer ?? null,
-              message: composedMessage,
-              contactEmail: requesterEmail,
-              contactPhone: data.phone ?? null,
-            }),
-          })
-        : Promise.resolve(),
-      adminEmail
-        ? sendEmail({
-            to: adminEmail,
-            subject: `[N'arte] Nuova richiesta per ${artist.stage_name}`,
-            replyTo: requesterEmail || undefined,
-            react: BookingRequestEmail({
-              artistName: artist.stage_name,
-              requesterName: organizer.display_name,
-              eventDate: data.date,
-              eventLocation: data.venueName ?? data.venueCity ?? "Da definire",
-              budget: data.budgetOffer ?? null,
-              message: composedMessage,
-              contactEmail: requesterEmail,
-              contactPhone: data.phone ?? null,
-              isAdminCopy: true,
-            }),
-          })
-        : Promise.resolve(),
-    ]);
 
     return NextResponse.json({
       ok: true,
       rid,
-      requestId: req.id,
+      requestId: bookingReq.id,
       sessionCreated: createdSession,
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Errore inatteso";
-    console.error("[booking-request]", rid, "unhandled", e);
+    const msg = e instanceof Error ? `${e.message}${e.stack ? `\n${e.stack}` : ""}` : String(e);
+    console.error("[booking-request]", rid, "step=unhandled", msg);
     return NextResponse.json(
-      { ok: false, rid, error: isProd ? "Errore inatteso" : msg },
+      {
+        ok: false,
+        rid,
+        step: "unhandled",
+        error: `${e instanceof Error ? e.message : "Errore inatteso"} [${rid}]`,
+      },
       { status: 500 }
     );
   }
