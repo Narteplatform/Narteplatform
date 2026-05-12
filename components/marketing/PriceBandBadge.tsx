@@ -32,9 +32,9 @@ export function PriceBandBadge({
       >
         <span
           aria-hidden="true"
-          className="select-none font-display tracking-tight text-foreground/80 blur-[4px]"
+          className="select-none font-display tracking-tight text-foreground/80 blur-[3.5px]"
         >
-          {SYMBOL[band]}
+          €€ - €€€€
         </span>
         <Lock className="size-3" />
         <span>Sblocca range</span>

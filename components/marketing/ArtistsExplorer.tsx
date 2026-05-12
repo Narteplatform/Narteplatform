@@ -60,9 +60,12 @@ export function ArtistsExplorer({
     () => Array.from(genreCounts.keys()).sort((a, b) => a.localeCompare(b, "it")),
     [genreCounts]
   );
+  // Mostra sempre tutte le tipologie. Anche se zero artisti per categoria
+  // l'utente vede il filtro completo (count 0). Nasconde solo se la lista
+  // artisti è vuota.
   const availableRoles = useMemo(
-    () => ROLE_GROUPS.filter((g) => roleCounts.has(g.key)),
-    [roleCounts]
+    () => (artists.length === 0 ? [] : ROLE_GROUPS),
+    [artists.length]
   );
 
   const filtered = useMemo(() => {

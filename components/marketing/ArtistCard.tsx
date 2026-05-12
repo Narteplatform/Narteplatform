@@ -121,9 +121,9 @@ function PriceRow({
         >
           <span
             aria-hidden="true"
-            className="select-none font-display tracking-tight text-foreground/70 blur-[4px]"
+            className="select-none font-display tracking-tight text-foreground/80 blur-[3.5px]"
           >
-            {PRICE_SYMBOL[priceBand]}
+            €€ - €€€€
           </span>
           <Lock className="size-3 text-muted-foreground" />
         </span>
