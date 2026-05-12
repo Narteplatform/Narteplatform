@@ -112,7 +112,7 @@ export function ArtistsExplorer({
         <div className="mt-5 grid gap-3 sm:grid-cols-2 md:hidden">
           {availableRoles.length > 0 && (
             <FilterSelect
-              label="Tipologia"
+              label="Tipologia artista"
               value={roleFilter ?? ""}
               onChange={(v) => setRoleFilter(v || null)}
               total={artists.length}
@@ -125,7 +125,7 @@ export function ArtistsExplorer({
           )}
           {allGenres.length > 0 && (
             <FilterSelect
-              label="Genere"
+              label="Generi musicali"
               value={genreFilter ?? ""}
               onChange={(v) => setGenreFilter(v || null)}
               total={artists.length}
@@ -141,7 +141,10 @@ export function ArtistsExplorer({
         {/* DESKTOP: chip rows */}
         <div className="mt-6 hidden space-y-6 md:block">
           {availableRoles.length > 0 && (
-            <FilterGroup label="Tipologia di artista" hint="Cantante, chitarrista, batterista…">
+            <FilterGroup
+              label="Tipologia artista"
+              hint="Ruolo principale: cantante, chitarrista, DJ…"
+            >
               <Chip
                 active={roleFilter === null}
                 onClick={() => setRoleFilter(null)}
@@ -163,7 +166,10 @@ export function ArtistsExplorer({
           )}
 
           {allGenres.length > 0 && (
-            <FilterGroup label="Generi musicali" hint="Stile e suono">
+            <FilterGroup
+              label="Generi musicali"
+              hint="Stile sonoro: pop, rock, jazz, elettronica…"
+            >
               <Chip
                 active={genreFilter === null}
                 onClick={() => setGenreFilter(null)}
@@ -182,6 +188,13 @@ export function ArtistsExplorer({
                 </Chip>
               ))}
             </FilterGroup>
+          )}
+          {(roleFilter !== null || genreFilter !== null) && (
+            <p className="text-xs text-muted-foreground">
+              {roleFilter && genreFilter
+                ? "Filtro combinato: gli artisti devono corrispondere sia alla tipologia che al genere selezionati."
+                : "Combina i due filtri per restringere ancora i risultati."}
+            </p>
           )}
         </div>
 

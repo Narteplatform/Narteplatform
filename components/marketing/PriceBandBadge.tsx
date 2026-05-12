@@ -27,11 +27,17 @@ export function PriceBandBadge({
     return (
       <Link
         href="/register?role=organizer"
-        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground transition hover:border-accent hover:text-accent"
-        title="Visibile agli organizzatori"
+        className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground transition hover:border-accent hover:text-accent"
+        title="Accedi come organizzatore per vedere il range"
       >
+        <span
+          aria-hidden="true"
+          className="select-none font-display tracking-tight text-foreground/80 blur-[4px]"
+        >
+          {SYMBOL[band]}
+        </span>
         <Lock className="size-3" />
-        <span>Visibile agli organizzatori</span>
+        <span>Sblocca range</span>
       </Link>
     );
   }
