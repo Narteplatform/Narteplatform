@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth/guards";
 import { Reveal } from "@/components/animations/Reveal";
 import { BookingCalendar, type ViewerRole, type ConfirmedBookingInfo } from "@/components/marketing/BookingCalendar";
 import { PriceBandBadge } from "@/components/marketing/PriceBandBadge";
+import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
 import type { PriceBand } from "@/lib/supabase/types";
 
 type SocialLinks = {
@@ -250,11 +251,21 @@ export default async function ArtistDetailPage({
             )}
 
             <Reveal delay={0.25}>
-              <div className="mt-5 flex items-center gap-3 text-sm">
+              <div className="mt-5 flex flex-wrap items-center gap-3 text-sm">
                 <span className="text-muted-foreground">Fascia di prezzo:</span>
                 <PriceBandBadge
                   band={artist.price_band ?? "standard"}
                   canSee={viewerRole === "organizer" || viewerRole === "superadmin"}
+                />
+                <FavoriteToggle
+                  artist={{
+                    slug: artist.slug,
+                    stage_name: artist.stage_name,
+                    cover_image: coverImage,
+                    city,
+                  }}
+                  variant="hero"
+                  label="Aggiungi ai preferiti"
                 />
               </div>
             </Reveal>

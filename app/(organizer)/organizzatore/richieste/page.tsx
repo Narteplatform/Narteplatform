@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { BookingStatus } from "@/lib/supabase/types";
+import { minToBudgetLabel } from "@/lib/constants/budget-ranges";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ const TABS: { value: BookingStatus | "all"; label: string }[] = [
 ];
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
-  pending: "In attesa",
+  pending: "In attesa di conferma dell'artista",
   in_trattativa: "In trattativa",
   confermata: "Confermata",
   rifiutata: "Rifiutata",
@@ -151,7 +152,9 @@ export default async function OrganizerRequestsPage({
                   <p className="line-clamp-3 text-sm text-muted-foreground">{r.message}</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     {venue && <span>{venue.name}{venue.city ? ` · ${venue.city}` : ""}</span>}
-                    {r.budget_offer && <span>Budget €{r.budget_offer}</span>}
+                    {r.budget_offer != null && (
+                      <span>Budget: {minToBudgetLabel(Number(r.budget_offer))}</span>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Button asChild size="sm" variant="outline">

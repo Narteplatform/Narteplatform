@@ -7,11 +7,12 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { RequestActions } from "@/components/organizer/RequestActions";
 import type { BookingStatus } from "@/lib/supabase/types";
+import { minToBudgetLabel } from "@/lib/constants/budget-ranges";
 
 export const dynamic = "force-dynamic";
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
-  pending: "In attesa",
+  pending: "In attesa di conferma dell'artista",
   in_trattativa: "In trattativa",
   confermata: "Confermata",
   rifiutata: "Rifiutata",
@@ -116,12 +117,12 @@ export default async function OrganizerRequestDetailPage({
                 </p>
               </div>
             )}
-            {req.budget_offer && (
+            {req.budget_offer != null && (
               <div>
                 <span className="text-xs font-medium uppercase text-muted-foreground">
-                  Budget offerto
+                  Range di budget
                 </span>
-                <p>€{req.budget_offer}</p>
+                <p>{minToBudgetLabel(Number(req.budget_offer))}</p>
               </div>
             )}
           </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Lock } from "lucide-react";
 import type { PriceBand } from "@/lib/supabase/types";
+import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
 
 const PRICE_SYMBOL: Record<PriceBand, string> = {
   budget: "€",
@@ -61,7 +62,7 @@ export function ArtistCard({
 
       <span
         className={
-          "absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-white backdrop-blur-sm " +
+          "absolute left-3 bottom-[88px] inline-flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-white backdrop-blur-sm " +
           (canSeePrice ? "" : "opacity-80")
         }
         title={canSeePrice ? "Fascia di prezzo" : "Visibile agli organizzatori"}
@@ -72,6 +73,11 @@ export function ArtistCard({
           <Lock className="size-3" />
         )}
       </span>
+
+      <FavoriteToggle
+        artist={{ slug, stage_name: stageName, cover_image: coverImage, city }}
+        variant="card"
+      />
 
       <div className="absolute inset-x-3 bottom-3 space-y-2">
         {genres.length > 0 && (

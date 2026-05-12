@@ -1,0 +1,111 @@
+// Lista delle principali città italiane (comuni capoluogo + comuni > 20k abitanti).
+// Usata per l'autocompletamento del campo "Città" nei form.
+export const ITALIAN_CITIES: readonly string[] = [
+  "Roma", "Milano", "Napoli", "Torino", "Palermo", "Genova", "Bologna", "Firenze",
+  "Bari", "Catania", "Venezia", "Verona", "Messina", "Padova", "Trieste", "Brescia",
+  "Taranto", "Prato", "Parma", "Reggio Calabria", "Modena", "Reggio Emilia",
+  "Perugia", "Livorno", "Ravenna", "Cagliari", "Foggia", "Rimini", "Salerno",
+  "Ferrara", "Sassari", "Latina", "Giugliano in Campania", "Monza", "Siracusa",
+  "Pescara", "Bergamo", "Forlì", "Trento", "Vicenza", "Terni", "Bolzano", "Novara",
+  "Piacenza", "Ancona", "Andria", "Arezzo", "Udine", "Cesena", "Lecce", "Pesaro",
+  "Barletta", "Alessandria", "La Spezia", "Pistoia", "Pisa", "Catanzaro", "Lucca",
+  "Brindisi", "Treviso", "Torre del Greco", "Busto Arsizio", "Marsala", "Grosseto",
+  "Sesto San Giovanni", "Pozzuoli", "Varese", "Fiumicino", "Casoria", "Asti",
+  "Cinisello Balsamo", "Caserta", "Guidonia Montecelio", "Aprilia", "Viareggio",
+  "Gela", "Cremona", "Carpi", "Quartu Sant'Elena", "Lamezia Terme", "Altamura",
+  "Imola", "Massa", "Ragusa", "Trapani", "Vittoria", "Carrara", "Vigevano",
+  "Cosenza", "Crotone", "L'Aquila", "Matera", "Caltanissetta", "Avellino", "Como",
+  "Pavia", "Savona", "Benevento", "Cuneo", "Potenza", "Mantova", "Lodi",
+  "Sondrio", "Verbania", "Vercelli", "Biella", "Aosta", "Belluno", "Rovigo",
+  "Pordenone", "Gorizia", "Imperia", "Massa-Carrara", "Macerata", "Ascoli Piceno",
+  "Fermo", "Rieti", "Frosinone", "Viterbo", "Chieti", "Teramo", "Isernia",
+  "Campobasso", "Vibo Valentia", "Enna", "Agrigento", "Nuoro", "Oristano",
+  "Olbia", "Tempio Pausania", "Carbonia", "Iglesias",
+  // Comuni > 20k aggiuntivi (selezione)
+  "Anzio", "Velletri", "Tivoli", "Civitavecchia", "Pomezia", "Albano Laziale",
+  "Marino", "Genzano di Roma", "Nettuno", "Cisterna di Latina", "Fondi",
+  "Formia", "Gaeta", "Terracina", "Cassino", "Sora", "Anagni", "Frascati",
+  "Monterotondo", "Mentana", "Fiumicino", "Fregene", "Ostia",
+  "Afragola", "Marano di Napoli", "Casalnuovo di Napoli", "Castellammare di Stabia",
+  "Acerra", "Aversa", "Battipaglia", "Ercolano", "Portici", "Nocera Inferiore",
+  "Scafati", "Casavatore", "San Giorgio a Cremano", "Cava de' Tirreni",
+  "Sant'Antimo", "Frattamaggiore", "Pagani", "Sorrento", "Capri", "Ischia",
+  "Pompei", "Procida", "Amalfi", "Positano", "Maiori", "Vico Equense",
+  "Sant'Agnello", "Vietri sul Mare",
+  "Bisceglie", "Trani", "Molfetta", "Bitonto", "Cerignola", "Manfredonia",
+  "San Severo", "Lucera", "Monopoli", "Putignano", "Gioia del Colle",
+  "Polignano a Mare", "Alberobello", "Ostuni", "Fasano", "Martina Franca",
+  "Locorotondo", "Cisternino", "Carovigno", "Mesagne", "Francavilla Fontana",
+  "Galatina", "Maglie", "Otranto", "Gallipoli", "Nardò", "Copertino",
+  "Reggio Calabria", "Gioia Tauro", "Palmi", "Locri", "Siderno", "Rosarno",
+  "Castrovillari", "Corigliano-Rossano", "Paola", "Amantea", "Tropea",
+  "Pizzo", "Soverato",
+  "Milazzo", "Capo d'Orlando", "Patti", "Sant'Agata di Militello", "Termini Imerese",
+  "Bagheria", "Cefalù", "Monreale", "Carini", "Partinico", "Alcamo",
+  "Castelvetrano", "Mazara del Vallo", "Modica", "Comiso", "Scicli",
+  "Pozzallo", "Avola", "Noto", "Lentini", "Augusta", "Acireale", "Giarre",
+  "Mascalucia", "Misterbianco", "Paternò", "Adrano", "Bronte", "Belpasso",
+  "Aci Castello", "Aci Catena", "Aci Sant'Antonio", "Catania", "Caltagirone",
+  "Sciacca", "Licata", "Canicattì", "Favara", "Porto Empedocle",
+  "Alghero", "Porto Torres", "Sorso", "Castelsardo", "La Maddalena",
+  "Arzachena", "Santa Teresa Gallura", "Palau", "San Teodoro", "Budoni",
+  "Siniscola", "Macomer", "Bosa", "Tortolì", "Lanusei", "Villaputzu",
+  "Sant'Antioco", "Domus de Maria", "Pula", "Villasimius", "Muravera",
+  "Imola", "Faenza", "Lugo", "Cervia", "Riccione", "Cattolica", "Misano Adriatico",
+  "Cesenatico", "Forlimpopoli", "Bertinoro", "Bagno di Romagna", "Sarsina",
+  "Pesaro", "Fano", "Senigallia", "Jesi", "Osimo", "Fabriano", "Recanati",
+  "Loreto", "Civitanova Marche", "Tolentino", "Camerino", "San Benedetto del Tronto",
+  "Grottammare", "Cupra Marittima",
+  "Massa", "Carrara", "Forte dei Marmi", "Pietrasanta", "Camaiore", "Viareggio",
+  "Lucca", "Capannori", "Altopascio", "Montecatini-Terme", "Pistoia", "Prato",
+  "Empoli", "San Miniato", "Fucecchio", "Castelfiorentino", "Certaldo",
+  "Greve in Chianti", "Tavarnelle Val di Pesa", "San Casciano in Val di Pesa",
+  "Impruneta", "Bagno a Ripoli", "Sesto Fiorentino", "Calenzano", "Campi Bisenzio",
+  "Scandicci", "Lastra a Signa", "Signa", "Pontassieve", "Figline e Incisa Valdarno",
+  "Reggello", "Pelago",
+  "Brescia", "Desenzano del Garda", "Sirmione", "Lonato del Garda",
+  "Salò", "Gardone Riviera", "Toscolano-Maderno", "Gargnano", "Limone sul Garda",
+  "Tremosine sul Garda", "Tignale", "Pisogne", "Iseo", "Sarnico", "Lovere",
+  "Como", "Cernobbio", "Bellagio", "Lecco", "Mandello del Lario", "Varenna",
+  "Sondrio", "Tirano", "Bormio", "Livigno", "Madesimo", "Chiavenna",
+  "Cortina d'Ampezzo", "Belluno", "Feltre", "Pieve di Cadore",
+  "Trento", "Riva del Garda", "Arco", "Rovereto", "Pergine Valsugana",
+  "Mezzolombardo", "Cles", "Cavalese", "Predazzo", "San Martino di Castrozza",
+  "Madonna di Campiglio", "Pinzolo",
+  "Bolzano", "Merano", "Bressanone", "Brunico", "Vipiteno", "Ortisei",
+  "Selva di Val Gardena", "Castelrotto", "Renon", "Caldaro sulla Strada del Vino",
+  "Aosta", "Courmayeur", "La Thuile", "Cogne", "Saint-Vincent", "Pila",
+  "Cervinia", "Champoluc", "Gressoney-Saint-Jean",
+  "Sanremo", "Bordighera", "Ventimiglia", "Imperia", "Alassio", "Albenga",
+  "Diano Marina", "Loano", "Finale Ligure", "Pietra Ligure", "Varazze",
+  "Albisola Superiore", "Celle Ligure", "Savona", "Sestri Levante",
+  "Lavagna", "Chiavari", "Rapallo", "Santa Margherita Ligure", "Portofino",
+  "Genova", "Recco", "Camogli", "Bogliasco", "Sori", "Pieve Ligure",
+  "Lerici", "La Spezia", "Portovenere", "Cinque Terre", "Monterosso al Mare",
+  "Vernazza", "Corniglia", "Manarola", "Riomaggiore",
+  "Cortona", "Arezzo", "Sansepolcro", "Bibbiena", "Poppi", "Castiglion Fiorentino",
+  "Foiano della Chiana", "Lucignano", "Monte San Savino", "Marciano della Chiana",
+  "Siena", "Poggibonsi", "Colle di Val d'Elsa", "Monteriggioni", "Castellina in Chianti",
+  "Radda in Chianti", "Gaiole in Chianti", "Castelnuovo Berardenga", "Asciano",
+  "Buonconvento", "Montalcino", "Pienza", "Montepulciano", "San Quirico d'Orcia",
+  "Castiglione d'Orcia", "Chianciano Terme", "Sarteano", "Cetona",
+  "Grosseto", "Castiglione della Pescaia", "Follonica", "Massa Marittima",
+  "Orbetello", "Monte Argentario", "Capalbio", "Manciano", "Pitigliano",
+  "Sorano", "Scansano",
+];
+
+export function findCitySuggestions(query: string, limit = 8): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const exact: string[] = [];
+  const starts: string[] = [];
+  const contains: string[] = [];
+  for (const c of ITALIAN_CITIES) {
+    const lc = c.toLowerCase();
+    if (lc === q) exact.push(c);
+    else if (lc.startsWith(q)) starts.push(c);
+    else if (lc.includes(q)) contains.push(c);
+    if (exact.length + starts.length + contains.length >= limit * 3) break;
+  }
+  return [...exact, ...starts, ...contains].slice(0, limit);
+}

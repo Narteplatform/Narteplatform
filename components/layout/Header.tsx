@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/guards";
 import { SearchBar } from "@/components/layout/SearchBar";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { MobileMenu } from "@/components/layout/MobileMenu";
+import { FavoritesMenu } from "@/components/layout/FavoritesMenu";
 
 export async function Header() {
   const user = await getCurrentUser();
@@ -48,6 +49,7 @@ export async function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <FavoritesMenu />
           {!user ? (
             <>
               {/* Desktop auth */}

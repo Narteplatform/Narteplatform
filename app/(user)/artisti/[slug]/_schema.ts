@@ -40,9 +40,13 @@ export const bookingRequestPublicSchema = z.object({
     .or(z.literal("").transform(() => undefined)),
   message: z.string().min(20, "Almeno 20 caratteri").max(2000),
   budgetOffer: z
-    .union([z.coerce.number().positive(), z.literal(""), z.null(), z.undefined()])
+    .union([z.coerce.number().nonnegative(), z.literal(""), z.null(), z.undefined()])
     .transform((v) => (typeof v === "number" ? v : undefined))
     .optional(),
+  budgetRange: z
+    .enum(["0-100", "100-300", "300-500", "500-1000", "1000+"])
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
   // Signup (richiesti solo se non loggato — validati lato server)
   email: z.string().email().optional().or(z.literal("").transform(() => undefined)),
   password: z

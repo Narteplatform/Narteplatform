@@ -7,26 +7,26 @@ import { Badge } from "@/components/ui/Badge";
 import { ArtistRequestActions } from "@/components/organizer/ArtistRequestActions";
 import { cn } from "@/lib/utils";
 import type { BookingStatus } from "@/lib/supabase/types";
+import { minToBudgetLabel } from "@/lib/constants/budget-ranges";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_VARIANT = {
+const LEAD_STATUS_VARIANT = {
   new: "warning",
   contacted: "muted",
   closed: "success",
 } as const;
 
-const STATUS_LABEL = {
+const LEAD_STATUS_LABEL = {
   new: "Nuova",
   contacted: "Contattata",
   closed: "Chiusa",
 } as const;
 
-const TABS: { v: "" | "new" | "contacted" | "closed"; label: string }[] = [
-  { v: "", label: "Tutte" },
-  { v: "new", label: "Nuove" },
-  { v: "contacted", label: "Contattate" },
-  { v: "closed", label: "Chiuse" },
+const TABS: { v: "pending" | "in_trattativa" | "confermata"; label: string }[] = [
+  { v: "pending", label: "Nuove" },
+  { v: "in_trattativa", label: "In trattativa" },
+  { v: "confermata", label: "Confermate" },
 ];
 
 export default async function ArtistLeadsPage({
@@ -54,28 +54,45 @@ export default async function ArtistLeadsPage({
     );
   }
 
-  const ALLOWED = ["new", "contacted", "closed"] as const;
-  type S = (typeof ALLOWED)[number];
-  const statusFilter: S | null =
-    sp?.status && (ALLOWED as readonly string[]).includes(sp.status) ? (sp.status as S) : null;
+  // Tab attivo: default "pending" (Nuove)
+  const TAB_VALUES: BookingStatus[] = ["pending", "in_trattativa", "confermata"];
+  const activeTab: BookingStatus =
+    sp?.status && (TAB_VALUES as string[]).includes(sp.status)
+      ? (sp.status as BookingStatus)
+      : "pending";
 
-  let q = supabase
-    .from("leads")
-    .select("*")
-    .eq("artist_id", artist.id)
-    .order("created_at", { ascending: false });
-  if (statusFilter) q = q.eq("status", statusFilter);
-  const { data: leads } = await q;
-
-  // Carica anche booking_requests handshake con organizer + venue join
+  // Carica booking_requests filtrate per tab
   const { data: bookingRows } = await supabase
     .from("booking_requests")
     .select(
       "id, event_date, time_slot, budget_offer, message, status, notes_artist, organizer_id, venue_id, created_at"
     )
     .eq("artist_id", artist.id)
+    .eq("status", activeTab)
     .order("created_at", { ascending: false });
   const bookings = bookingRows ?? [];
+
+  // Conteggi per badge
+  const [pendingCntRes, trattativaCntRes, confermataCntRes] = await Promise.all([
+    supabase.from("booking_requests").select("id", { count: "exact", head: true }).eq("artist_id", artist.id).eq("status", "pending"),
+    supabase.from("booking_requests").select("id", { count: "exact", head: true }).eq("artist_id", artist.id).eq("status", "in_trattativa"),
+    supabase.from("booking_requests").select("id", { count: "exact", head: true }).eq("artist_id", artist.id).eq("status", "confermata"),
+  ]);
+  const counts: Record<BookingStatus, number> = {
+    pending: pendingCntRes.count ?? 0,
+    in_trattativa: trattativaCntRes.count ?? 0,
+    confermata: confermataCntRes.count ?? 0,
+    rifiutata: 0,
+    annullata: 0,
+  };
+
+  // Legacy leads (vecchio sistema senza handshake): mostrate sotto, senza tab
+  const { data: leads } = await supabase
+    .from("leads")
+    .select("*")
+    .eq("artist_id", artist.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
   const organizerIds = [...new Set(bookings.map((b) => b.organizer_id))];
   const venueIds = [...new Set(bookings.map((b) => b.venue_id).filter(Boolean) as string[])];
   const [orgsRes, vensRes] = await Promise.all([
@@ -96,8 +113,8 @@ export default async function ArtistLeadsPage({
   const vens = new Map((vensRes.data ?? []).map((v) => [v.id, v]));
 
   const BOOKING_LABEL: Record<BookingStatus, string> = {
-    pending: "In attesa",
-    in_trattativa: "In trattativa",
+    pending: "Nuova richiesta",
+    in_trattativa: "In attesa della conferma definitiva dell'organizzatore",
     confermata: "Confermata",
     rifiutata: "Rifiutata",
     annullata: "Annullata",
@@ -114,30 +131,48 @@ export default async function ArtistLeadsPage({
 
       <div className="flex flex-wrap items-center gap-1 rounded-full bg-muted p-1 w-fit">
         {TABS.map((t) => {
-          const active = (sp?.status ?? "") === t.v;
-          const href = t.v ? `/dashboard/leads?status=${t.v}` : "/dashboard/leads";
+          const active = activeTab === t.v;
+          const href = `/dashboard/leads?status=${t.v}`;
+          const cnt = counts[t.v];
           return (
             <Link
-              key={t.v || "all"}
+              key={t.v}
               href={href}
               className={cn(
-                "inline-flex h-8 items-center rounded-full px-3 text-sm font-medium transition",
+                "inline-flex h-8 items-center gap-2 rounded-full px-3 text-sm font-medium transition",
                 active
                   ? "bg-foreground text-background shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               {t.label}
+              {cnt > 0 && (
+                <span
+                  className={cn(
+                    "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px]",
+                    active ? "bg-background/20 text-background" : "bg-foreground/10"
+                  )}
+                >
+                  {cnt}
+                </span>
+              )}
             </Link>
           );
         })}
       </div>
 
-      {bookings.length > 0 && (
+      {bookings.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            {activeTab === "pending"
+              ? "Nessuna nuova richiesta."
+              : activeTab === "in_trattativa"
+                ? "Nessuna trattativa aperta."
+                : "Nessuna data confermata."}
+          </CardContent>
+        </Card>
+      ) : (
         <section className="space-y-4">
-          <h2 className="font-display text-lg uppercase tracking-tight">
-            Richieste da organizzatori
-          </h2>
           <div className="space-y-4">
             {bookings.map((b) => {
               const org = orgs.get(b.organizer_id);
@@ -157,13 +192,23 @@ export default async function ArtistLeadsPage({
                         })}
                         {b.time_slot ? ` · ${b.time_slot}` : ""}
                       </CardTitle>
-                      {b.budget_offer && (
+                      {b.budget_offer != null && (
                         <p className="text-sm text-muted-foreground">
-                          Budget offerto €{Number(b.budget_offer).toFixed(2)}
+                          Budget: {minToBudgetLabel(Number(b.budget_offer))}
                         </p>
                       )}
                     </div>
-                    <Badge variant={b.status === "confermata" ? "success" : b.status === "in_trattativa" ? "warning" : "muted"} dot>
+                    <Badge
+                      variant={
+                        b.status === "confermata"
+                          ? "success"
+                          : b.status === "in_trattativa"
+                            ? "warning"
+                            : "muted"
+                      }
+                      dot
+                      className="max-w-[260px] whitespace-normal text-right leading-tight"
+                    >
                       {BOOKING_LABEL[b.status]}
                     </Badge>
                   </CardHeader>
@@ -248,62 +293,61 @@ export default async function ArtistLeadsPage({
         </section>
       )}
 
-      {!leads || leads.length === 0 ? (
-        <Card>
-          <CardContent className="py-10 text-center text-muted-foreground">
-            Nessuna richiesta trovata.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {leads.map((l) => (
-            <Card key={l.id}>
-              <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
-                <div className="space-y-1.5 min-w-0">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    {new Date(l.created_at).toLocaleString("it-IT")}
-                  </p>
-                  <CardTitle className="text-lg">
-                    {l.event_location} <span className="text-muted-foreground font-normal">·</span>{" "}
-                    {new Date(l.event_date).toLocaleDateString("it-IT")}
-                  </CardTitle>
-                  {l.event_time && (
-                    <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Clock className="size-3.5" /> {l.event_time}
+      {leads && leads.length > 0 && (
+        <section className="space-y-3 pt-6 border-t border-border">
+          <h2 className="font-display text-sm uppercase tracking-wider text-muted-foreground">
+            Richieste legacy (senza profilo organizzatore)
+          </h2>
+          <div className="space-y-4">
+            {leads.map((l) => (
+              <Card key={l.id}>
+                <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
+                  <div className="space-y-1.5 min-w-0">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      {new Date(l.created_at).toLocaleString("it-IT")}
                     </p>
-                  )}
-                  {l.budget != null && (
-                    <p className="text-sm text-muted-foreground">
-                      Budget €{Number(l.budget).toFixed(2)}
-                    </p>
-                  )}
-                </div>
-                <Badge variant={STATUS_VARIANT[l.status as keyof typeof STATUS_VARIANT]} dot>
-                  {STATUS_LABEL[l.status as keyof typeof STATUS_LABEL]}
-                </Badge>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">{l.message}</p>
-                <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                  <a
-                    href={`mailto:${l.contact_email}`}
-                    className="inline-flex items-center gap-1.5 hover:text-foreground"
-                  >
-                    <Mail className="size-3.5" /> {l.contact_email}
-                  </a>
-                  {l.contact_phone && (
+                    <CardTitle className="text-lg">
+                      {l.event_location} <span className="text-muted-foreground font-normal">·</span>{" "}
+                      {new Date(l.event_date).toLocaleDateString("it-IT")}
+                    </CardTitle>
+                    {l.event_time && (
+                      <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Clock className="size-3.5" /> {l.event_time}
+                      </p>
+                    )}
+                    {l.budget != null && (
+                      <p className="text-sm text-muted-foreground">
+                        Budget €{Number(l.budget).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant={LEAD_STATUS_VARIANT[l.status as keyof typeof LEAD_STATUS_VARIANT]} dot>
+                    {LEAD_STATUS_LABEL[l.status as keyof typeof LEAD_STATUS_LABEL]}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{l.message}</p>
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                     <a
-                      href={`tel:${l.contact_phone}`}
+                      href={`mailto:${l.contact_email}`}
                       className="inline-flex items-center gap-1.5 hover:text-foreground"
                     >
-                      <Phone className="size-3.5" /> {l.contact_phone}
+                      <Mail className="size-3.5" /> {l.contact_email}
                     </a>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    {l.contact_phone && (
+                      <a
+                        href={`tel:${l.contact_phone}`}
+                        className="inline-flex items-center gap-1.5 hover:text-foreground"
+                      >
+                        <Phone className="size-3.5" /> {l.contact_phone}
+                      </a>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

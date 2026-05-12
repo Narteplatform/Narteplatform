@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { DayPicker } from "react-day-picker";
 import { it } from "date-fns/locale";
 import "react-day-picker/style.css";
@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { Clock, X, CheckCircle2, ArrowRight, CalendarCheck2 } from "lucide-react";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { CityAutocomplete } from "@/components/forms/CityAutocomplete";
+import { BUDGET_RANGES, rangeToMin, type BudgetRangeValue } from "@/lib/constants/budget-ranges";
 import { formatSlot, normalizeTime, resolveSlotsForDate, type Slot } from "@/lib/slots";
 import type { ArtistInterestInput } from "@/app/(user)/artisti/[slug]/_schema";
 
@@ -77,7 +79,7 @@ type FormValues = {
   venueCity: string;
   // dati richiesta
   message: string;
-  budgetOffer: string;
+  budgetRange: BudgetRangeValue | "";
   venueId: string;
 };
 
@@ -137,7 +139,7 @@ export function BookingCalendar({
     });
   }, [selectedISO, busySet, dateSlotsByDate, defaultSlots]);
 
-  const { register, handleSubmit, reset, formState: { isSubmitting, errors } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, control, formState: { isSubmitting, errors } } = useForm<FormValues>({
     defaultValues: {
       email: viewerEmail ?? "",
       password: "",
@@ -146,7 +148,7 @@ export function BookingCalendar({
       venueName: "",
       venueCity: "",
       message: "",
-      budgetOffer: "",
+      budgetRange: "",
       venueId: organizerVenues[0]?.id ?? "",
     },
   });
@@ -178,12 +180,14 @@ export function BookingCalendar({
   async function onSubmit(values: FormValues) {
     if (!selectedISO) return;
     setError(null);
+    const budgetMin = rangeToMin(values.budgetRange);
     const payload: Record<string, unknown> = {
       artistId,
       date: selectedISO,
       timeSlot: selectedSlot ?? undefined,
       message: values.message,
-      budgetOffer: values.budgetOffer || undefined,
+      budgetOffer: budgetMin ?? undefined,
+      budgetRange: values.budgetRange || undefined,
     };
     if (needsSignup) {
       payload.email = values.email;
@@ -511,7 +515,17 @@ export function BookingCalendar({
                           />
                         </Field>
                         <Field label="Città struttura">
-                          <Input {...register("venueCity")} />
+                          <Controller
+                            control={control}
+                            name="venueCity"
+                            render={({ field }) => (
+                              <CityAutocomplete
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="Cerca città italiana…"
+                              />
+                            )}
+                          />
                         </Field>
                       </div>
                     </>
@@ -540,12 +554,32 @@ export function BookingCalendar({
                         />
                       </Field>
                       <Field label="Città struttura">
-                        <Input {...register("venueCity")} />
+                        <Controller
+                          control={control}
+                          name="venueCity"
+                          render={({ field }) => (
+                            <CityAutocomplete
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Cerca città italiana…"
+                            />
+                          )}
+                        />
                       </Field>
                     </div>
                   )}
-                  <Field label="Budget offerto (€)">
-                    <Input type="number" min={0} {...register("budgetOffer")} />
+                  <Field label="Range di budget">
+                    <select
+                      className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                      {...register("budgetRange")}
+                    >
+                      <option value="">Seleziona un range</option>
+                      {BUDGET_RANGES.map((b) => (
+                        <option key={b.value} value={b.value}>
+                          {b.label}
+                        </option>
+                      ))}
+                    </select>
                   </Field>
                   <Field
                     label="Messaggio per l'artista *"
