@@ -27,12 +27,28 @@ type DateSlot = {
   end_time: string;
 };
 
+export type ViewerRole = "anon" | "user" | "organizer" | "artist" | "superadmin";
+
+export type ConfirmedBookingInfo = {
+  date: string;
+  organizerName: string;
+  organizerAvatar: string | null;
+  venueName: string | null;
+  venueCity: string | null;
+  venueCover: string | null;
+};
+
 type Props = {
   artistId: string;
   artistName: string;
   busyDates: string[];
   defaultSlots?: DefaultSlot[];
   dateSlots?: DateSlot[];
+  viewerRole?: ViewerRole;
+  viewerEmail?: string | null;
+  viewerName?: string | null;
+  organizerVenues?: { id: string; name: string }[];
+  confirmedBookings?: ConfirmedBookingInfo[];
 };
 
 function toIsoDate(d: Date): string {
@@ -52,11 +68,17 @@ function formatHuman(iso: string): string {
 }
 
 type FormValues = {
-  name: string;
+  // signup (solo non loggati)
   email: string;
+  password: string;
+  displayName: string;
   phone: string;
-  location: string;
+  venueName: string;
+  venueCity: string;
+  // dati richiesta
   message: string;
+  budgetOffer: string;
+  venueId: string;
 };
 
 export function BookingCalendar({
@@ -65,7 +87,21 @@ export function BookingCalendar({
   busyDates,
   defaultSlots = [],
   dateSlots = [],
+  viewerRole = "anon",
+  viewerEmail = null,
+  viewerName = null,
+  organizerVenues = [],
+  confirmedBookings = [],
 }: Props) {
+  const canSubmit = viewerRole !== "artist"; // tutti tranne artist
+  const needsSignup = viewerRole === "anon";
+  const isUserToPromote = viewerRole === "user";
+  const confirmedByDate = useMemo(() => {
+    const m = new Map<string, ConfirmedBookingInfo>();
+    for (const b of confirmedBookings) m.set(b.date, b);
+    return m;
+  }, [confirmedBookings]);
+  const [selectedRedDate, setSelectedRedDate] = useState<string | null>(null);
   const [selectedISO, setSelectedISO] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -102,7 +138,17 @@ export function BookingCalendar({
   }, [selectedISO, busySet, dateSlotsByDate, defaultSlots]);
 
   const { register, handleSubmit, reset, formState: { isSubmitting, errors } } = useForm<FormValues>({
-    defaultValues: { name: "", email: "", phone: "", location: "", message: "" },
+    defaultValues: {
+      email: viewerEmail ?? "",
+      password: "",
+      displayName: viewerName ?? "",
+      phone: "",
+      venueName: "",
+      venueCity: "",
+      message: "",
+      budgetOffer: "",
+      venueId: organizerVenues[0]?.id ?? "",
+    },
   });
 
   useEffect(() => {
@@ -114,7 +160,12 @@ export function BookingCalendar({
   function onDayClick(day: Date) {
     if (day < today) return;
     const iso = toIsoDate(day);
-    if (busySet.has(iso)) return;
+    if (busySet.has(iso)) {
+      setSelectedRedDate(iso);
+      setSelectedISO(null);
+      return;
+    }
+    setSelectedRedDate(null);
     setSelectedISO(iso);
   }
 
@@ -127,25 +178,41 @@ export function BookingCalendar({
   async function onSubmit(values: FormValues) {
     if (!selectedISO) return;
     setError(null);
-    const payload: ArtistInterestInput = {
+    const payload: Record<string, unknown> = {
       artistId,
       date: selectedISO,
       timeSlot: selectedSlot ?? undefined,
-      name: values.name,
-      email: values.email,
-      phone: values.phone || undefined,
-      location: values.location || undefined,
       message: values.message,
+      budgetOffer: values.budgetOffer || undefined,
     };
+    if (needsSignup) {
+      payload.email = values.email;
+      payload.password = values.password;
+      payload.displayName = values.displayName;
+      payload.phone = values.phone || undefined;
+      payload.venueName = values.venueName || undefined;
+      payload.venueCity = values.venueCity || undefined;
+    } else {
+      if (values.venueId) payload.venueId = values.venueId;
+      else if (values.venueName) {
+        payload.venueName = values.venueName;
+        payload.venueCity = values.venueCity || undefined;
+      }
+      if (values.phone) payload.phone = values.phone;
+    }
     try {
-      const r = await fetch("/api/booking", {
+      const r = await fetch("/api/booking-request", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const json: { ok: boolean; rid?: string; error?: string; leadId?: string } = await r
-        .json()
-        .catch(() => ({ ok: false, error: "Risposta non valida dal server" }));
+      const json: {
+        ok: boolean;
+        rid?: string;
+        error?: string;
+        requestId?: string;
+        sessionCreated?: boolean;
+      } = await r.json().catch(() => ({ ok: false, error: "Risposta non valida dal server" }));
       if (!json.ok) {
         const msg = json.error ?? "Errore durante l'invio";
         const full = json.rid ? `${msg} [${json.rid}]` : msg;
@@ -153,9 +220,15 @@ export function BookingCalendar({
         toast.error(full);
         return;
       }
-      toast.success("Richiesta d'interesse inviata correttamente");
+      toast.success("Richiesta inviata. L'artista la valuterà entro 48h.");
       reset();
       setSubmitted(true);
+      // Se signup, redirect al pannello organizzatore
+      if (json.sessionCreated) {
+        setTimeout(() => {
+          window.location.href = "/organizzatore/richieste";
+        }, 1500);
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Errore di rete";
       setError(msg);
@@ -183,13 +256,58 @@ export function BookingCalendar({
             mode="single"
             locale={it}
             weekStartsOn={1}
-            disabled={[{ before: today }, ...busy]}
+            disabled={[{ before: today }]}
             modifiers={{ busy }}
             modifiersClassNames={{
-              busy: "bg-foreground text-background line-through opacity-60",
+              busy: "bg-foreground text-background line-through opacity-70 cursor-pointer",
             }}
             onDayClick={onDayClick}
           />
+          {selectedRedDate && (() => {
+            const info = confirmedByDate.get(selectedRedDate);
+            if (!info) {
+              return (
+                <div className="mt-3 rounded-xl border border-border bg-card p-3 text-xs text-muted-foreground">
+                  Data non disponibile.
+                </div>
+              );
+            }
+            return (
+              <div className="mt-3 rounded-xl border border-foreground/20 bg-card p-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Data bloccata
+                </p>
+                <div className="mt-2 flex items-center gap-3">
+                  {info.venueCover ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={info.venueCover}
+                      alt=""
+                      className="size-10 rounded-md object-cover"
+                    />
+                  ) : info.organizerAvatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={info.organizerAvatar}
+                      alt=""
+                      className="size-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="size-10 rounded-md bg-muted" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {info.venueName ?? info.organizerName}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {info.venueName ? info.organizerName : ""}
+                      {info.venueCity ? ` · ${info.venueCity}` : ""}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
           <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-2">
               <span className="inline-block size-3 border border-foreground" /> Libero — clicca
@@ -347,30 +465,109 @@ export function BookingCalendar({
                 </p>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Nome" error={errors.name && "Inserisci il nome (min 2 caratteri)"}>
-                      <Input {...register("name", { required: true, minLength: 2 })} />
+                  {needsSignup && (
+                    <>
+                      <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 text-xs">
+                        <p className="font-medium text-accent">
+                          Crea il tuo profilo organizzatore
+                        </p>
+                        <p className="mt-1 text-muted-foreground">
+                          Per inviare la richiesta devi avere un profilo organizzatore.
+                          Registrati ora e accederai subito al pannello dedicato.
+                        </p>
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <Field
+                          label="Email *"
+                          error={errors.email && "Email obbligatoria"}
+                        >
+                          <Input type="email" {...register("email", { required: true })} />
+                        </Field>
+                        <Field
+                          label="Password *"
+                          error={errors.password && "Min 8 caratteri"}
+                        >
+                          <Input
+                            type="password"
+                            {...register("password", { required: true, minLength: 8 })}
+                          />
+                        </Field>
+                        <Field
+                          label="Nome / brand *"
+                          error={errors.displayName && "Inserisci un nome"}
+                        >
+                          <Input
+                            placeholder="Es. Mario Rossi o Brand Eventi SRL"
+                            {...register("displayName", { required: true, minLength: 2 })}
+                          />
+                        </Field>
+                        <Field label="Telefono">
+                          <Input type="tel" {...register("phone")} />
+                        </Field>
+                        <Field label="Nome struttura">
+                          <Input
+                            placeholder="Es. Bar Centrale"
+                            {...register("venueName")}
+                          />
+                        </Field>
+                        <Field label="Città struttura">
+                          <Input {...register("venueCity")} />
+                        </Field>
+                      </div>
+                    </>
+                  )}
+                  {!needsSignup && organizerVenues.length > 0 && (
+                    <Field label="Struttura per cui prenoti">
+                      <select
+                        className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                        {...register("venueId")}
+                      >
+                        <option value="">Nessuna (definirò poi)</option>
+                        {organizerVenues.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.name}
+                          </option>
+                        ))}
+                      </select>
                     </Field>
-                    <Field label="Email" error={errors.email && "Email obbligatoria"}>
-                      <Input type="email" {...register("email", { required: true })} />
-                    </Field>
-                    <Field label="Telefono">
-                      <Input type="tel" {...register("phone")} />
-                    </Field>
-                    <Field label="Luogo evento">
-                      <Input placeholder="Città / venue" {...register("location")} />
-                    </Field>
-                  </div>
+                  )}
+                  {!needsSignup && organizerVenues.length === 0 && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Nome struttura">
+                        <Input
+                          placeholder="Es. Bar Centrale"
+                          {...register("venueName")}
+                        />
+                      </Field>
+                      <Field label="Città struttura">
+                        <Input {...register("venueCity")} />
+                      </Field>
+                    </div>
+                  )}
+                  <Field label="Budget offerto (€)">
+                    <Input type="number" min={0} {...register("budgetOffer")} />
+                  </Field>
                   <Field
-                    label="Dettagli"
-                    error={errors.message && "Scrivi qualche dettaglio (min 5 caratteri)"}
+                    label="Messaggio per l'artista *"
+                    error={errors.message && "Almeno 20 caratteri con i dettagli dell'evento"}
                   >
                     <Textarea
                       rows={4}
-                      placeholder="Tipo di evento, pubblico, qualunque dettaglio utile…"
-                      {...register("message", { required: true, minLength: 5 })}
+                      placeholder="Tipo di evento, pubblico atteso, qualunque dettaglio utile…"
+                      {...register("message", { required: true, minLength: 20 })}
                     />
                   </Field>
+                  {isUserToPromote && (
+                    <p className="text-xs text-muted-foreground">
+                      Inviando questa richiesta il tuo profilo verrà aggiornato a
+                      &quot;organizzatore&quot; per gestire date e prenotazioni.
+                    </p>
+                  )}
+                  {!canSubmit && (
+                    <p className="text-sm text-red-500">
+                      Il profilo artista non può inviare richieste.
+                    </p>
+                  )}
                   {error && <p className="text-sm text-red-500">{error}</p>}
                   <div className="flex flex-wrap items-center gap-3">
                     <Button
@@ -378,9 +575,13 @@ export function BookingCalendar({
                       variant="accent"
                       size="lg"
                       className="min-w-[200px]"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !canSubmit}
                     >
-                      {isSubmitting ? "Invio…" : "Invia richiesta"}
+                      {isSubmitting
+                        ? "Invio…"
+                        : needsSignup
+                          ? "Registrati & invia richiesta"
+                          : "Invia richiesta"}
                     </Button>
                     <Button type="button" variant="ghost" onClick={closeForm}>
                       Annulla

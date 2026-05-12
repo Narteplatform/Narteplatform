@@ -96,3 +96,72 @@ export const authSchema = z.object({
   fullName: z.string().min(2).max(80).optional(),
 });
 export type AuthInput = z.infer<typeof authSchema>;
+
+// =========================================
+// Organizer / Venues / Booking
+// =========================================
+
+export const priceBandEnum = z.enum(["budget", "standard", "premium", "luxury"]);
+export type PriceBand = z.infer<typeof priceBandEnum>;
+
+export const venueTypeEnum = z.enum(["club", "pub", "festival", "teatro", "locale", "altro"]);
+export type VenueType = z.infer<typeof venueTypeEnum>;
+
+export const organizerProfileSchema = z.object({
+  display_name: z.string().min(2, "Minimo 2 caratteri").max(120),
+  bio: z.string().max(800).optional().or(z.literal("").transform(() => undefined)),
+  is_brand: z.boolean().optional(),
+  avatar_url: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  phone: z.string().max(40).optional().or(z.literal("").transform(() => undefined)),
+  website: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
+  instagram: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
+});
+export type OrganizerProfileInput = z.infer<typeof organizerProfileSchema>;
+
+export const venueSchema = z.object({
+  name: z.string().min(2, "Minimo 2 caratteri").max(120),
+  venue_type: venueTypeEnum.optional(),
+  address: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
+  city: z.string().max(80).optional().or(z.literal("").transform(() => undefined)),
+  region: z.string().max(80).optional().or(z.literal("").transform(() => undefined)),
+  postal_code: z.string().max(20).optional().or(z.literal("").transform(() => undefined)),
+  capacity: z.coerce.number().int().positive().optional().or(z.literal("").transform(() => undefined)),
+  description: z.string().max(1500).optional().or(z.literal("").transform(() => undefined)),
+  cover_image: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  gallery: z.array(z.string().url()).max(6).optional(),
+  website: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
+  instagram: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
+  phone: z.string().max(40).optional().or(z.literal("").transform(() => undefined)),
+  email: z.string().email().optional().or(z.literal("").transform(() => undefined)),
+});
+export type VenueInput = z.infer<typeof venueSchema>;
+
+export const bookingRequestSchema = z.object({
+  artist_id: z.string().uuid(),
+  venue_id: z.string().uuid().optional(),
+  event_date: z.string().min(1, "Data richiesta"),
+  time_slot: z.string().max(40).optional().or(z.literal("").transform(() => undefined)),
+  budget_offer: z.coerce.number().positive().optional().or(z.literal("").transform(() => undefined)),
+  message: z.string().min(20, "Almeno 20 caratteri").max(2000),
+});
+export type BookingRequestInput = z.infer<typeof bookingRequestSchema>;
+
+// Submit dalla pagina pubblica artista. Se l'utente non è loggato include i
+// campi di registrazione (auto-confirm + auto-login lato server).
+export const requestFromPublicSchema = z.object({
+  artist_id: z.string().uuid(),
+  event_date: z.string().min(1),
+  time_slot: z.string().max(40).optional().or(z.literal("").transform(() => undefined)),
+  budget_offer: z.coerce.number().positive().optional().or(z.literal("").transform(() => undefined)),
+  message: z.string().min(20).max(2000),
+  // Signup (richiesti solo se non loggato — validato lato server)
+  email: z.string().email().optional().or(z.literal("").transform(() => undefined)),
+  password: z.string().min(8).max(72).optional().or(z.literal("").transform(() => undefined)),
+  display_name: z.string().min(2).max(120).optional().or(z.literal("").transform(() => undefined)),
+  phone: z.string().max(40).optional().or(z.literal("").transform(() => undefined)),
+  venue_name: z.string().max(120).optional().or(z.literal("").transform(() => undefined)),
+  venue_city: z.string().max(80).optional().or(z.literal("").transform(() => undefined)),
+  // Se loggato come organizer, riferimento opzionale a venue esistente
+  venue_id: z.string().uuid().optional(),
+});
+export type RequestFromPublicInput = z.infer<typeof requestFromPublicSchema>;

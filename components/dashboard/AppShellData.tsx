@@ -1,4 +1,5 @@
 import {
+  Building2,
   CalendarDays,
   Inbox,
   LayoutDashboard,
@@ -409,6 +410,178 @@ export async function AdminAppShell({
       storage={storage}
       recentActivity={recentActivity}
       whatsNewHref="/admin"
+    >
+      {children}
+    </AppShell>
+  );
+}
+
+async function loadOrganizerShell(userId: string): Promise<{
+  navSections: NavSection[];
+  storage: AppShellStorage | undefined;
+  recentActivity: AppShellRecent[];
+}> {
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (err) {
+    console.error("[AppShellData] createAdminClient failed:", err);
+    return { navSections: defaultOrganizerNav(), storage: undefined, recentActivity: [] };
+  }
+
+  const organizerRes = await safe(
+    admin.from("organizers").select("id, display_name, avatar_url").eq("user_id", userId).maybeSingle()
+  );
+  const organizer = organizerRes?.data ?? null;
+
+  let venuesCount = 0;
+  let pendingCount = 0;
+  let trattativaCount = 0;
+  let confermataCount = 0;
+  let recentReqs: { event_date: string; artist_id: string }[] = [];
+
+  if (organizer) {
+    const [venues, pending, trattativa, confermata, recent] = await Promise.all([
+      safe(admin.from("venues").select("id", { count: "exact", head: true }).eq("organizer_id", organizer.id)),
+      safe(
+        admin
+          .from("booking_requests")
+          .select("id", { count: "exact", head: true })
+          .eq("organizer_id", organizer.id)
+          .eq("status", "pending")
+      ),
+      safe(
+        admin
+          .from("booking_requests")
+          .select("id", { count: "exact", head: true })
+          .eq("organizer_id", organizer.id)
+          .eq("status", "in_trattativa")
+      ),
+      safe(
+        admin
+          .from("booking_requests")
+          .select("id", { count: "exact", head: true })
+          .eq("organizer_id", organizer.id)
+          .eq("status", "confermata")
+      ),
+      safe(
+        admin
+          .from("booking_requests")
+          .select("event_date, artist_id")
+          .eq("organizer_id", organizer.id)
+          .order("created_at", { ascending: false })
+          .limit(4)
+      ),
+    ]);
+    venuesCount = venues?.count ?? 0;
+    pendingCount = pending?.count ?? 0;
+    trattativaCount = trattativa?.count ?? 0;
+    confermataCount = confermata?.count ?? 0;
+    recentReqs = recent?.data ?? [];
+  }
+
+  const navSections: NavSection[] = [
+    {
+      href: "/organizzatore",
+      label: "Overview",
+      icon: <LayoutDashboard className="size-4" />,
+      exact: true,
+    },
+    {
+      href: "/organizzatore/richieste",
+      label: "Richieste",
+      icon: <Inbox className="size-4" />,
+      badge: pendingCount + trattativaCount > 0
+        ? { label: String(pendingCount + trattativaCount), variant: "accent" }
+        : undefined,
+      children: [
+        { href: "/organizzatore/richieste?status=pending", label: "In attesa", count: pendingCount },
+        { href: "/organizzatore/richieste?status=in_trattativa", label: "In trattativa", count: trattativaCount },
+        { href: "/organizzatore/richieste?status=confermata", label: "Confermate", count: confermataCount },
+      ],
+    },
+    {
+      href: "/organizzatore/strutture",
+      label: "Strutture",
+      icon: <Building2 className="size-4" />,
+      badge: venuesCount > 0 ? { label: String(venuesCount) } : undefined,
+    },
+    {
+      href: "/organizzatore/calendario",
+      label: "Calendario",
+      icon: <CalendarDays className="size-4" />,
+    },
+    {
+      href: "/organizzatore/profilo",
+      label: "Profilo",
+      icon: <UserCog className="size-4" />,
+    },
+  ];
+
+  const storage: AppShellStorage | undefined = organizer
+    ? {
+        label: "Profilo organizzatore",
+        used: [
+          Boolean(organizer.avatar_url),
+          venuesCount > 0,
+          confermataCount > 0,
+        ].filter(Boolean).length,
+        total: 3,
+        hint: `${venuesCount} strutture · ${confermataCount} eventi confermati`,
+        ctaLabel: venuesCount === 0 ? "Aggiungi struttura" : "Nuova richiesta",
+        ctaHref: venuesCount === 0 ? "/organizzatore/strutture/nuova" : "/artisti",
+        variant: "accent",
+      }
+    : undefined;
+
+  const recentActivity: AppShellRecent[] = recentReqs.map((r) => ({
+    name: new Date(r.event_date).toLocaleDateString("it-IT", { day: "2-digit", month: "short" }),
+  }));
+
+  return { navSections, storage, recentActivity };
+}
+
+function defaultOrganizerNav(): NavSection[] {
+  return [
+    { href: "/organizzatore", label: "Overview", icon: <LayoutDashboard className="size-4" />, exact: true },
+    { href: "/organizzatore/richieste", label: "Richieste", icon: <Inbox className="size-4" /> },
+    { href: "/organizzatore/strutture", label: "Strutture", icon: <Building2 className="size-4" /> },
+    { href: "/organizzatore/calendario", label: "Calendario", icon: <CalendarDays className="size-4" /> },
+    { href: "/organizzatore/profilo", label: "Profilo", icon: <UserCog className="size-4" /> },
+  ];
+}
+
+export async function OrganizerAppShell({
+  user,
+  children,
+}: {
+  user: AppShellUser;
+  children: ReactNode;
+}) {
+  let navSections: NavSection[];
+  let storage: AppShellStorage | undefined;
+  let recentActivity: AppShellRecent[];
+  try {
+    ({ navSections, storage, recentActivity } = await loadOrganizerShell(user.id));
+  } catch (err) {
+    console.error("[AppShellData] loadOrganizerShell crashed:", err);
+    navSections = defaultOrganizerNav();
+    storage = undefined;
+    recentActivity = [];
+  }
+  return (
+    <AppShell
+      brand={<ShellBrand suffix="Organizer" />}
+      brandHref="/organizzatore"
+      user={{
+        name: user.name ?? null,
+        email: user.email,
+        role: "organizer",
+        avatarUrl: user.avatarUrl ?? null,
+      }}
+      navSections={navSections}
+      storage={storage}
+      recentActivity={recentActivity}
     >
       {children}
     </AppShell>

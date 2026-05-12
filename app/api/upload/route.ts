@@ -9,6 +9,7 @@ const BUCKETS = {
   event: "event-covers",
   event_home: "event-covers",
   avatar: "artist-images",
+  venue: "venue-images",
 } as const;
 
 type Kind = keyof typeof BUCKETS;

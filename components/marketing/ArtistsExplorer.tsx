@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search, RotateCcw } from "lucide-react";
 import { ArtistCard } from "@/components/marketing/ArtistCard";
+import type { PriceBand } from "@/lib/supabase/types";
 
 export type ExplorerArtist = {
   id: string;
@@ -12,6 +13,7 @@ export type ExplorerArtist = {
   cover_image: string | null;
   genre: string[];
   instruments: string[];
+  price_band: PriceBand;
 };
 
 const ROLE_GROUPS: { key: string; label: string; match: (instr: string) => boolean }[] = [
@@ -25,7 +27,13 @@ const ROLE_GROUPS: { key: string; label: string; match: (instr: string) => boole
   { key: "dj", label: "DJ", match: (i) => /dj|controller|loop station/i.test(i) },
 ];
 
-export function ArtistsExplorer({ artists }: { artists: ExplorerArtist[] }) {
+export function ArtistsExplorer({
+  artists,
+  canSeePrice = false,
+}: {
+  artists: ExplorerArtist[];
+  canSeePrice?: boolean;
+}) {
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -209,6 +217,8 @@ export function ArtistsExplorer({ artists }: { artists: ExplorerArtist[] }) {
                 city={a.city}
                 coverImage={a.cover_image}
                 genres={a.genre}
+                priceBand={a.price_band}
+                canSeePrice={canSeePrice}
               />
             ))}
           </div>

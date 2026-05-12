@@ -46,7 +46,7 @@ export type NavSection = {
 export type AppShellUser = {
   name?: string | null;
   email: string;
-  role: "superadmin" | "artist" | "user";
+  role: "superadmin" | "artist" | "user" | "organizer";
   avatarUrl?: string | null;
 };
 
@@ -444,8 +444,19 @@ function StorageBlock({
 
 function UserCard({ user, onNavigate }: { user: AppShellUser; onNavigate: () => void }) {
   const roleLabel =
-    user.role === "superadmin" ? "Superadmin" : user.role === "artist" ? "Artista" : "Utente";
-  const profileHref = user.role === "artist" ? "/dashboard/profilo" : "/admin/profilo";
+    user.role === "superadmin"
+      ? "Superadmin"
+      : user.role === "artist"
+        ? "Artista"
+        : user.role === "organizer"
+          ? "Organizzatore"
+          : "Utente";
+  const profileHref =
+    user.role === "artist"
+      ? "/dashboard/profilo"
+      : user.role === "organizer"
+        ? "/organizzatore/profilo"
+        : "/admin/profilo";
   return (
     <div className="border-t border-border p-3">
       <DropdownMenu>

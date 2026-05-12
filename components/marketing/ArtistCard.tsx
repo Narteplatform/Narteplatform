@@ -1,4 +1,13 @@
 import Link from "next/link";
+import { Lock } from "lucide-react";
+import type { PriceBand } from "@/lib/supabase/types";
+
+const PRICE_SYMBOL: Record<PriceBand, string> = {
+  budget: "€",
+  standard: "€€",
+  premium: "€€€",
+  luxury: "€€€€",
+};
 
 export type ArtistCardProps = {
   slug: string;
@@ -6,9 +15,19 @@ export type ArtistCardProps = {
   city: string | null;
   coverImage: string | null;
   genres?: string[];
+  priceBand?: PriceBand;
+  canSeePrice?: boolean;
 };
 
-export function ArtistCard({ slug, stageName, city, coverImage, genres = [] }: ArtistCardProps) {
+export function ArtistCard({
+  slug,
+  stageName,
+  city,
+  coverImage,
+  genres = [],
+  priceBand = "standard",
+  canSeePrice = false,
+}: ArtistCardProps) {
   return (
     <Link
       href={`/artisti/${slug}`}
@@ -39,6 +58,20 @@ export function ArtistCard({ slug, stageName, city, coverImage, genres = [] }: A
           {city}
         </span>
       ) : null}
+
+      <span
+        className={
+          "absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-white backdrop-blur-sm " +
+          (canSeePrice ? "" : "opacity-80")
+        }
+        title={canSeePrice ? "Fascia di prezzo" : "Visibile agli organizzatori"}
+      >
+        {canSeePrice ? (
+          <span className="font-display tracking-tight">{PRICE_SYMBOL[priceBand]}</span>
+        ) : (
+          <Lock className="size-3" />
+        )}
+      </span>
 
       <div className="absolute inset-x-3 bottom-3 space-y-2">
         {genres.length > 0 && (

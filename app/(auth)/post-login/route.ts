@@ -36,7 +36,9 @@ export async function GET(request: Request) {
         ? "/admin"
         : role === "artist"
           ? "/dashboard"
-          : "/";
+          : role === "organizer"
+            ? "/organizzatore"
+            : "/";
 
   return NextResponse.redirect(new URL(dest, base));
 }

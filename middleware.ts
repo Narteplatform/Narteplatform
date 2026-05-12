@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
 
   // /artisti è pubblica come vetrina; il dettaglio richiede auth internamente
   // perché contiene il form di booking. /admin e /dashboard restano dietro auth.
-  const protectedPrefixes = ["/admin", "/dashboard"];
+  const protectedPrefixes = ["/admin", "/dashboard", "/organizzatore"];
   const requiresAuth = protectedPrefixes.some((p) => path.startsWith(p));
 
   if (requiresAuth && !user) {
@@ -50,7 +50,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && (path.startsWith("/admin") || path.startsWith("/dashboard"))) {
+  if (
+    user &&
+    (path.startsWith("/admin") ||
+      path.startsWith("/dashboard") ||
+      path.startsWith("/organizzatore"))
+  ) {
     // Lettura ruolo via service role (bypassa RLS, evita ricorsione delle policy
     // "is superadmin" che si auto-referenziano su profiles).
     const admin = createClient<Database>(
@@ -70,6 +75,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
     if (path.startsWith("/dashboard") && role !== "artist" && role !== "superadmin") {
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+    if (
+      path.startsWith("/organizzatore") &&
+      role !== "organizer" &&
+      role !== "superadmin"
+    ) {
       url.pathname = "/";
       return NextResponse.redirect(url);
     }

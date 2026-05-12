@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/guards";
 import { Reveal } from "@/components/animations/Reveal";
 import { ArtistsExplorer } from "@/components/marketing/ArtistsExplorer";
+import type { PriceBand } from "@/lib/supabase/types";
 
 export const metadata = { title: "Artisti — N'arte" };
 
@@ -14,12 +16,13 @@ export default async function ArtistiPage() {
     cover_image: string | null;
     genre: string[] | null;
     instruments?: string[] | null;
+    price_band?: PriceBand | null;
   };
   let rows: ArtistRow[] = [];
   {
     const full = await supabase
       .from("artists")
-      .select("id, slug, stage_name, city, genre, instruments, cover_image")
+      .select("id, slug, stage_name, city, genre, instruments, cover_image, price_band")
       .eq("status", "approved")
       .order("stage_name", { ascending: true });
     if (full.error) {
@@ -36,6 +39,10 @@ export default async function ArtistiPage() {
     }
   }
 
+  const viewer = await getCurrentUser();
+  const canSeePrice =
+    viewer?.profile?.role === "organizer" || viewer?.profile?.role === "superadmin";
+
   const artists = rows.map((a) => ({
     id: a.id,
     slug: a.slug,
@@ -44,6 +51,7 @@ export default async function ArtistiPage() {
     cover_image: a.cover_image,
     genre: (a.genre ?? []) as string[],
     instruments: (a.instruments ?? []) as string[],
+    price_band: (a.price_band ?? "standard") as PriceBand,
   }));
 
   return (
@@ -79,7 +87,7 @@ export default async function ArtistiPage() {
               Nessun artista ancora pubblicato.
             </p>
           ) : (
-            <ArtistsExplorer artists={artists} />
+            <ArtistsExplorer artists={artists} canSeePrice={canSeePrice} />
           )}
         </div>
       </section>

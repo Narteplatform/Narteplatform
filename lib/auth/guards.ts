@@ -33,3 +33,31 @@ export async function requireRole(role: Role | Role[]) {
   if (!user.profile || !roles.includes(user.profile.role)) redirect("/");
   return user;
 }
+
+export async function getOrganizerForUser(userId: string) {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("organizers")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data;
+}
+
+export async function requireOrganizer() {
+  const user = await requireRole(["organizer", "superadmin"]);
+  let organizer = await getOrganizerForUser(user.id);
+  // Auto-bootstrap: se è superadmin senza riga organizer, creala
+  if (!organizer) {
+    const admin = createAdminClient();
+    const display =
+      user.profile?.full_name || user.email?.split("@")[0] || "Organizzatore";
+    const { data: created } = await admin
+      .from("organizers")
+      .insert({ user_id: user.id, display_name: display })
+      .select()
+      .single();
+    organizer = created ?? null;
+  }
+  return { user, organizer: organizer! };
+}

@@ -7,6 +7,9 @@ export type Role = "superadmin" | "artist" | "user" | "organizer";
 export type ArtistStatus = "pending" | "approved" | "rejected";
 export type LeadStatus = "new" | "contacted" | "closed";
 export type AvailabilityStatus = "available" | "busy";
+export type PriceBand = "budget" | "standard" | "premium" | "luxury";
+export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "altro";
+export type BookingStatus = "pending" | "in_trattativa" | "confermata" | "rifiutata" | "annullata";
 export type EventCategory =
   | "music"
   | "clubs"
@@ -61,6 +64,7 @@ export interface Database {
           videos: string[];
           social_links: Json;
           base_fee: number | null;
+          price_band: PriceBand;
           status: ArtistStatus;
           created_at: string;
         };
@@ -78,6 +82,7 @@ export interface Database {
           videos?: string[];
           social_links?: Json;
           base_fee?: number | null;
+          price_band?: PriceBand;
           status?: ArtistStatus;
           created_at?: string;
         };
@@ -95,6 +100,7 @@ export interface Database {
           videos?: string[];
           social_links?: Json;
           base_fee?: number | null;
+          price_band?: PriceBand;
           status?: ArtistStatus;
           created_at?: string;
         };
@@ -400,15 +406,199 @@ export interface Database {
         };
         Relationships: [];
       };
+      organizers: {
+        Row: {
+          id: string;
+          user_id: string;
+          display_name: string;
+          avatar_url: string | null;
+          bio: string | null;
+          is_brand: boolean;
+          phone: string | null;
+          website: string | null;
+          instagram: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          display_name: string;
+          avatar_url?: string | null;
+          bio?: string | null;
+          is_brand?: boolean;
+          phone?: string | null;
+          website?: string | null;
+          instagram?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          display_name?: string;
+          avatar_url?: string | null;
+          bio?: string | null;
+          is_brand?: boolean;
+          phone?: string | null;
+          website?: string | null;
+          instagram?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      venues: {
+        Row: {
+          id: string;
+          organizer_id: string;
+          name: string;
+          slug: string | null;
+          address: string | null;
+          city: string | null;
+          region: string | null;
+          postal_code: string | null;
+          capacity: number | null;
+          venue_type: VenueType;
+          description: string | null;
+          cover_image: string | null;
+          gallery: string[];
+          website: string | null;
+          instagram: string | null;
+          phone: string | null;
+          email: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organizer_id: string;
+          name: string;
+          slug?: string | null;
+          address?: string | null;
+          city?: string | null;
+          region?: string | null;
+          postal_code?: string | null;
+          capacity?: number | null;
+          venue_type?: VenueType;
+          description?: string | null;
+          cover_image?: string | null;
+          gallery?: string[];
+          website?: string | null;
+          instagram?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organizer_id?: string;
+          name?: string;
+          slug?: string | null;
+          address?: string | null;
+          city?: string | null;
+          region?: string | null;
+          postal_code?: string | null;
+          capacity?: number | null;
+          venue_type?: VenueType;
+          description?: string | null;
+          cover_image?: string | null;
+          gallery?: string[];
+          website?: string | null;
+          instagram?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      booking_requests: {
+        Row: {
+          id: string;
+          organizer_id: string;
+          venue_id: string | null;
+          artist_id: string;
+          event_date: string;
+          time_slot: string | null;
+          budget_offer: number | null;
+          message: string;
+          status: BookingStatus;
+          artist_accepted_at: string | null;
+          organizer_confirmed_at: string | null;
+          notes_artist: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organizer_id: string;
+          venue_id?: string | null;
+          artist_id: string;
+          event_date: string;
+          time_slot?: string | null;
+          budget_offer?: number | null;
+          message: string;
+          status?: BookingStatus;
+          artist_accepted_at?: string | null;
+          organizer_confirmed_at?: string | null;
+          notes_artist?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organizer_id?: string;
+          venue_id?: string | null;
+          artist_id?: string;
+          event_date?: string;
+          time_slot?: string | null;
+          budget_offer?: number | null;
+          message?: string;
+          status?: BookingStatus;
+          artist_accepted_at?: string | null;
+          organizer_confirmed_at?: string | null;
+          notes_artist?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
-    Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Views: {
+      booking_requests_public: {
+        Row: {
+          id: string;
+          artist_id: string;
+          event_date: string;
+          status: BookingStatus;
+          time_slot: string | null;
+          organizer_id: string;
+          organizer_name: string;
+          organizer_avatar: string | null;
+          venue_id: string | null;
+          venue_name: string | null;
+          venue_city: string | null;
+          venue_cover: string | null;
+        };
+      };
+    };
+    Functions: {
+      promote_user_to_organizer: {
+        Args: { uid: string };
+        Returns: void;
+      };
+    };
     Enums: {
       role_enum: Role;
       artist_status_enum: ArtistStatus;
       lead_status_enum: LeadStatus;
       availability_status_enum: AvailabilityStatus;
       event_category_enum: EventCategory;
+      price_band_enum: PriceBand;
+      venue_type_enum: VenueType;
+      booking_status_enum: BookingStatus;
     };
     CompositeTypes: { [_ in never]: never };
   };

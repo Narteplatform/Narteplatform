@@ -2,8 +2,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Instagram, Globe, Music, Facebook, Youtube, MapPin } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/guards";
 import { Reveal } from "@/components/animations/Reveal";
-import { BookingCalendar } from "@/components/marketing/BookingCalendar";
+import { BookingCalendar, type ViewerRole, type ConfirmedBookingInfo } from "@/components/marketing/BookingCalendar";
+import { PriceBandBadge } from "@/components/marketing/PriceBandBadge";
+import type { PriceBand } from "@/lib/supabase/types";
 
 type SocialLinks = {
   instagram?: string | null;
@@ -41,6 +44,7 @@ export default async function ArtistDetailPage({
     gallery?: string[] | null;
     videos?: string[] | null;
     social_links?: SocialLinks | string | null;
+    price_band?: PriceBand | null;
   };
   let artistRaw: ArtistRow | null = null;
   try {
@@ -98,6 +102,48 @@ export default async function ArtistDetailPage({
   const busyDates = (availability ?? [])
     .filter((a) => a.status === "busy")
     .map((a) => a.date);
+
+  // Viewer role + dati per organizzatore
+  const viewer = await getCurrentUser();
+  const viewerRole: ViewerRole =
+    (viewer?.profile?.role as ViewerRole | undefined) ?? "anon";
+  let organizerVenues: { id: string; name: string }[] = [];
+  if (viewer && (viewerRole === "organizer" || viewerRole === "superadmin")) {
+    const { data: org } = await supabase
+      .from("organizers")
+      .select("id")
+      .eq("user_id", viewer.id)
+      .maybeSingle();
+    if (org) {
+      const { data: vs } = await supabase
+        .from("venues")
+        .select("id, name")
+        .eq("organizer_id", org.id)
+        .order("name");
+      organizerVenues = vs ?? [];
+    }
+  }
+
+  // Banner data rossa: confermate
+  let confirmedBookings: ConfirmedBookingInfo[] = [];
+  try {
+    const { data } = await supabase
+      .from("booking_requests_public")
+      .select(
+        "event_date, organizer_name, organizer_avatar, venue_name, venue_city, venue_cover"
+      )
+      .eq("artist_id", artist.id);
+    confirmedBookings = (data ?? []).map((b) => ({
+      date: b.event_date,
+      organizerName: b.organizer_name,
+      organizerAvatar: b.organizer_avatar,
+      venueName: b.venue_name,
+      venueCity: b.venue_city,
+      venueCover: b.venue_cover,
+    }));
+  } catch (e) {
+    console.error("[ArtistDetailPage] confirmed bookings fetch error", e);
+  }
 
   let social: SocialLinks = {};
   try {
@@ -203,6 +249,16 @@ export default async function ArtistDetailPage({
               </Reveal>
             )}
 
+            <Reveal delay={0.25}>
+              <div className="mt-5 flex items-center gap-3 text-sm">
+                <span className="text-muted-foreground">Fascia di prezzo:</span>
+                <PriceBandBadge
+                  band={artist.price_band ?? "standard"}
+                  canSee={viewerRole === "organizer" || viewerRole === "superadmin"}
+                />
+              </div>
+            </Reveal>
+
             {/* Calendar tab */}
             <Reveal delay={0.3}>
               <div className="mt-8 rounded-2xl border border-border bg-background p-5 md:p-6">
@@ -234,6 +290,11 @@ export default async function ArtistDetailPage({
                       start_time: s.start_time,
                       end_time: s.end_time,
                     }))}
+                    viewerRole={viewerRole}
+                    viewerEmail={viewer?.email ?? null}
+                    viewerName={viewer?.profile?.full_name ?? null}
+                    organizerVenues={organizerVenues}
+                    confirmedBookings={confirmedBookings}
                   />
                 </div>
               </div>
