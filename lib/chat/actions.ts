@@ -61,7 +61,9 @@ export async function sendMessage(input: ChatMessageInput): Promise<ActionResult
 
   const { role, isParty, bookingStatus } = await resolveSenderRole(parsed.data.booking_request_id, user.id);
   if (!isParty || !role) return { ok: false, error: "Non sei parte di questa trattativa" };
-  if (bookingStatus !== "in_trattativa") return { ok: false, error: "Trattativa non aperta" };
+  if (bookingStatus !== "in_trattativa" && bookingStatus !== "confermata") {
+    return { ok: false, error: "Chat non disponibile" };
+  }
 
   // Rate limit semplice: nessun messaggio nello stesso secondo dallo stesso sender
   const admin = createAdminClient();

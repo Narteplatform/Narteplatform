@@ -47,14 +47,16 @@ export function ChatPanel({
   }, [meta.bookingRequestId, readOnly, viewerRole, messages.length]);
 
   const status = statusLabel[meta.status];
-  const canWrite = !readOnly && viewerRole !== "superadmin" && meta.status === "in_trattativa";
+  const canWrite =
+    !readOnly &&
+    viewerRole !== "superadmin" &&
+    (meta.status === "in_trattativa" || meta.status === "confermata");
+  const canOffer = !readOnly && viewerRole !== "superadmin" && meta.status === "in_trattativa";
   const disabledReason =
     viewerRole === "superadmin"
       ? "Vista superadmin (sola lettura)"
-      : meta.status === "in_trattativa"
+      : meta.status === "in_trattativa" || meta.status === "confermata"
       ? undefined
-      : meta.status === "confermata"
-      ? "Trattativa confermata. Chat in sola lettura."
       : meta.status === "pending"
       ? "Chat disponibile dopo l'accettazione dell'artista."
       : "Trattativa chiusa.";
@@ -78,7 +80,12 @@ export function ChatPanel({
         viewerRole={viewerRole}
         readOnly={readOnly || viewerRole === "superadmin"}
       />
-      <MessageComposer meta={meta} disabled={!canWrite} disabledReason={disabledReason} />
+      <MessageComposer
+        meta={meta}
+        disabled={!canWrite}
+        disabledReason={disabledReason}
+        allowOffer={canOffer}
+      />
     </div>
   );
 }

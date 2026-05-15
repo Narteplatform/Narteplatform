@@ -11,10 +11,12 @@ export function MessageComposer({
   meta,
   disabled,
   disabledReason,
+  allowOffer = true,
 }: {
   meta: ChatPartyMeta;
   disabled: boolean;
   disabledReason?: string;
+  allowOffer?: boolean;
 }) {
   const [text, setText] = useState("");
   const [showOffer, setShowOffer] = useState(false);
@@ -63,18 +65,20 @@ export function MessageComposer({
     <div className="border-t border-border bg-surface px-3 py-2.5">
       {error && <p className="px-1 pb-1 text-xs text-[var(--color-error)]">{error}</p>}
       <div className="flex items-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setShowOffer(true)}
-          disabled={busy}
-          className="shrink-0"
-          aria-label="Invia offerta"
-        >
-          <Tag className="size-4" />
-          <span className="hidden sm:inline">Offerta</span>
-        </Button>
+        {allowOffer && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowOffer(true)}
+            disabled={busy}
+            className="shrink-0"
+            aria-label="Invia offerta"
+          >
+            <Tag className="size-4" />
+            <span className="hidden sm:inline">Offerta</span>
+          </Button>
+        )}
         <textarea
           ref={taRef}
           value={text}
@@ -95,16 +99,18 @@ export function MessageComposer({
           {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
         </Button>
       </div>
-      <OfferDialog
-        open={showOffer}
-        onClose={() => setShowOffer(false)}
-        bookingRequestId={meta.bookingRequestId}
-        defaults={{
-          eventDate: meta.eventDate,
-          timeSlot: meta.timeSlot,
-          budget: meta.budget,
-        }}
-      />
+      {allowOffer && (
+        <OfferDialog
+          open={showOffer}
+          onClose={() => setShowOffer(false)}
+          bookingRequestId={meta.bookingRequestId}
+          defaults={{
+            eventDate: meta.eventDate,
+            timeSlot: meta.timeSlot,
+            budget: meta.budget,
+          }}
+        />
+      )}
     </div>
   );
 }
