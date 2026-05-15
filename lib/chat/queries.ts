@@ -255,7 +255,7 @@ export async function getMessages(bookingRequestId: string): Promise<ChatMessage
     )
     .eq("booking_request_id", bookingRequestId)
     .order("created_at", { ascending: true })
-    .limit(500);
+    .limit(5000);
   return (data ?? []).map((m) => ({
     id: m.id,
     bookingRequestId: m.booking_request_id,

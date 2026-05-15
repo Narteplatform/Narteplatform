@@ -19,6 +19,11 @@ type Raw = {
   offer_responded_at: string | null;
   read_by_artist_at: string | null;
   read_by_organizer_at: string | null;
+  attachment_url: string | null;
+  attachment_type: string | null;
+  attachment_name: string | null;
+  attachment_size: number | null;
+  attachment_duration_ms: number | null;
   created_at: string;
 };
 
@@ -37,6 +42,11 @@ function fromRaw(r: Raw): ChatMessage {
     offerRespondedAt: r.offer_responded_at,
     readByArtistAt: r.read_by_artist_at,
     readByOrganizerAt: r.read_by_organizer_at,
+    attachmentUrl: r.attachment_url ?? null,
+    attachmentType: r.attachment_type ?? null,
+    attachmentName: r.attachment_name ?? null,
+    attachmentSize: r.attachment_size ?? null,
+    attachmentDurationMs: r.attachment_duration_ms ?? null,
     createdAt: r.created_at,
   };
 }

@@ -14,6 +14,13 @@ function sanitize(name: string): string {
     .slice(0, 120);
 }
 
+function uid(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export async function uploadChatFile(
   bookingRequestId: string,
   file: File | Blob,
@@ -24,7 +31,7 @@ export async function uploadChatFile(
   if (file.size > MAX) return { error: "File troppo grande (max 25 MB)" };
 
   const supabase = createClient();
-  const id = crypto.randomUUID();
+  const id = uid();
   const safe = sanitize(filename) || `file-${id}`;
   const path = `${bookingRequestId}/${id}-${safe}`;
 
