@@ -1,0 +1,88 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { ChatMessage } from "@/lib/chat/queries";
+import type { ChatMessageKind, ChatOfferStatus, Role } from "@/lib/supabase/types";
+
+type Raw = {
+  id: string;
+  booking_request_id: string;
+  sender_id: string | null;
+  sender_role: Role;
+  kind: ChatMessageKind;
+  body: string | null;
+  offer_event_date: string | null;
+  offer_time_slot: string | null;
+  offer_budget: number | null;
+  offer_status: ChatOfferStatus | null;
+  offer_responded_at: string | null;
+  read_by_artist_at: string | null;
+  read_by_organizer_at: string | null;
+  created_at: string;
+};
+
+function fromRaw(r: Raw): ChatMessage {
+  return {
+    id: r.id,
+    bookingRequestId: r.booking_request_id,
+    senderId: r.sender_id,
+    senderRole: r.sender_role,
+    kind: r.kind,
+    body: r.body,
+    offerEventDate: r.offer_event_date,
+    offerTimeSlot: r.offer_time_slot,
+    offerBudget: r.offer_budget,
+    offerStatus: r.offer_status,
+    offerRespondedAt: r.offer_responded_at,
+    readByArtistAt: r.read_by_artist_at,
+    readByOrganizerAt: r.read_by_organizer_at,
+    createdAt: r.created_at,
+  };
+}
+
+export function useChatChannel(bookingRequestId: string | null, initial: ChatMessage[]) {
+  const [messages, setMessages] = useState<ChatMessage[]>(initial);
+  const initialKey = useRef<string>("");
+
+  useEffect(() => {
+    if (initialKey.current !== bookingRequestId) {
+      setMessages(initial);
+      initialKey.current = bookingRequestId ?? "";
+    }
+  }, [bookingRequestId, initial]);
+
+  useEffect(() => {
+    if (!bookingRequestId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`booking:${bookingRequestId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "booking_messages",
+          filter: `booking_request_id=eq.${bookingRequestId}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const m = fromRaw(payload.new as Raw);
+            setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+          } else if (payload.eventType === "UPDATE") {
+            const m = fromRaw(payload.new as Raw);
+            setMessages((prev) => prev.map((x) => (x.id === m.id ? m : x)));
+          } else if (payload.eventType === "DELETE") {
+            const id = (payload.old as { id?: string }).id;
+            if (id) setMessages((prev) => prev.filter((x) => x.id !== id));
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [bookingRequestId]);
+
+  return { messages, setMessages };
+}

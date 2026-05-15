@@ -10,6 +10,8 @@ export type AvailabilityStatus = "available" | "busy";
 export type PriceBand = "budget" | "standard" | "premium" | "luxury";
 export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "altro";
 export type BookingStatus = "pending" | "in_trattativa" | "confermata" | "rifiutata" | "annullata";
+export type ChatMessageKind = "text" | "offer" | "system";
+export type ChatOfferStatus = "pending" | "accepted" | "rejected" | "superseded";
 export type EventCategory =
   | "music"
   | "clubs"
@@ -565,6 +567,57 @@ export interface Database {
         };
         Relationships: [];
       };
+      booking_messages: {
+        Row: {
+          id: string;
+          booking_request_id: string;
+          sender_id: string | null;
+          sender_role: Role;
+          kind: ChatMessageKind;
+          body: string | null;
+          offer_event_date: string | null;
+          offer_time_slot: string | null;
+          offer_budget: number | null;
+          offer_status: ChatOfferStatus | null;
+          offer_responded_at: string | null;
+          read_by_artist_at: string | null;
+          read_by_organizer_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_request_id: string;
+          sender_id?: string | null;
+          sender_role: Role;
+          kind?: ChatMessageKind;
+          body?: string | null;
+          offer_event_date?: string | null;
+          offer_time_slot?: string | null;
+          offer_budget?: number | null;
+          offer_status?: ChatOfferStatus | null;
+          offer_responded_at?: string | null;
+          read_by_artist_at?: string | null;
+          read_by_organizer_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          booking_request_id?: string;
+          sender_id?: string | null;
+          sender_role?: Role;
+          kind?: ChatMessageKind;
+          body?: string | null;
+          offer_event_date?: string | null;
+          offer_time_slot?: string | null;
+          offer_budget?: number | null;
+          offer_status?: ChatOfferStatus | null;
+          offer_responded_at?: string | null;
+          read_by_artist_at?: string | null;
+          read_by_organizer_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       booking_requests_public: {
@@ -589,6 +642,10 @@ export interface Database {
         Args: { uid: string };
         Returns: void;
       };
+      accept_chat_offer: {
+        Args: { message_id: string; actor: string };
+        Returns: Json;
+      };
     };
     Enums: {
       role_enum: Role;
@@ -599,6 +656,8 @@ export interface Database {
       price_band_enum: PriceBand;
       venue_type_enum: VenueType;
       booking_status_enum: BookingStatus;
+      chat_message_kind: ChatMessageKind;
+      chat_offer_status: ChatOfferStatus;
     };
     CompositeTypes: { [_ in never]: never };
   };

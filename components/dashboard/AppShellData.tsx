@@ -3,12 +3,17 @@ import {
   CalendarDays,
   Inbox,
   LayoutDashboard,
+  MessageCircle,
   MessageSquare,
   Sparkles,
   Tags,
   UserCog,
   Users,
 } from "lucide-react";
+import {
+  getActiveConversationsCountSuperadmin,
+  getUnreadCountForUser,
+} from "@/lib/chat/queries";
 import type { ReactNode } from "react";
 import { AppShell, type AppShellRecent, type AppShellStorage, type NavSection } from "@/components/layout/AppShell";
 import { NarteLogo } from "@/components/layout/NarteLogo";
@@ -111,6 +116,7 @@ async function loadAdminShell(): Promise<{
   const c = (n: { count: number | null } | null) => n?.count ?? 0;
   const newLeadsCount = c(newLeads);
   const messagesCount = c(contactMessages);
+  const activeChats = await safe(getActiveConversationsCountSuperadmin()).then((v) => v ?? 0);
 
   const navSections: NavSection[] = [
     {
@@ -153,6 +159,12 @@ async function loadAdminShell(): Promise<{
         { href: "/admin/leads?status=contacted", label: "Contattati", count: c(contactedLeads) },
         { href: "/admin/leads?status=closed", label: "Chiusi", count: c(closedLeads) },
       ],
+    },
+    {
+      href: "/admin/chat",
+      label: "Chat",
+      icon: <MessageCircle className="size-4" />,
+      badge: activeChats > 0 ? { label: String(activeChats), variant: "accent" } : undefined,
     },
     {
       href: "/admin/messaggi",
@@ -278,6 +290,8 @@ async function loadArtistShell(userId: string): Promise<{
     recentLeads = recent?.data ?? [];
   }
 
+  const unreadChat = await safe(getUnreadCountForUser(userId, "artist")).then((v) => v ?? 0);
+
   const navSections: NavSection[] = [
     {
       href: "/dashboard/overview",
@@ -309,6 +323,12 @@ async function loadArtistShell(userId: string): Promise<{
         { href: "/dashboard/leads?status=contacted", label: "Contattate", count: contactedLeads },
         { href: "/dashboard/leads?status=closed", label: "Chiuse", count: closedLeads },
       ],
+    },
+    {
+      href: "/dashboard/chat",
+      label: "Chat",
+      icon: <MessageCircle className="size-4" />,
+      badge: unreadChat > 0 ? { label: String(unreadChat), variant: "accent" } : undefined,
     },
     {
       href: "/dashboard/profilo",
@@ -480,6 +500,8 @@ async function loadOrganizerShell(userId: string): Promise<{
     recentReqs = recent?.data ?? [];
   }
 
+  const unreadChatOrg = await safe(getUnreadCountForUser(userId, "organizer")).then((v) => v ?? 0);
+
   const navSections: NavSection[] = [
     {
       href: "/organizzatore",
@@ -510,6 +532,12 @@ async function loadOrganizerShell(userId: string): Promise<{
       href: "/organizzatore/calendario",
       label: "Calendario",
       icon: <CalendarDays className="size-4" />,
+    },
+    {
+      href: "/organizzatore/chat",
+      label: "Chat",
+      icon: <MessageCircle className="size-4" />,
+      badge: unreadChatOrg > 0 ? { label: String(unreadChatOrg), variant: "accent" } : undefined,
     },
     {
       href: "/organizzatore/profilo",
