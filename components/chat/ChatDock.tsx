@@ -35,18 +35,33 @@ export function ChatDock() {
   // Realtime: ascolta INSERT su booking_messages → ricarica lista
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel("dock:booking_messages")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "booking_messages" },
-        () => {
-          reloadList();
-        },
-      )
-      .subscribe();
+    const suffix =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase.channel(`dock:booking_messages:${suffix}`);
+      channel
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "booking_messages" },
+          () => {
+            reloadList();
+          },
+        )
+        .subscribe();
+    } catch (err) {
+      console.error("[chat-dock] realtime subscribe failed:", err);
+    }
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        try {
+          supabase.removeChannel(channel);
+        } catch (err) {
+          console.error("[chat-dock] realtime cleanup failed:", err);
+        }
+      }
     };
   }, [reloadList]);
 

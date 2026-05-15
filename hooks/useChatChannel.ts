@@ -65,32 +65,47 @@ export function useChatChannel(bookingRequestId: string | null, initial: ChatMes
   useEffect(() => {
     if (!bookingRequestId) return;
     const supabase = createClient();
-    const channel = supabase
-      .channel(`booking:${bookingRequestId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "booking_messages",
-          filter: `booking_request_id=eq.${bookingRequestId}`,
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            const m = fromRaw(payload.new as Raw);
-            setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
-          } else if (payload.eventType === "UPDATE") {
-            const m = fromRaw(payload.new as Raw);
-            setMessages((prev) => prev.map((x) => (x.id === m.id ? m : x)));
-          } else if (payload.eventType === "DELETE") {
-            const id = (payload.old as { id?: string }).id;
-            if (id) setMessages((prev) => prev.filter((x) => x.id !== id));
-          }
-        },
-      )
-      .subscribe();
+    const suffix =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase.channel(`booking:${bookingRequestId}:${suffix}`);
+      channel
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "booking_messages",
+            filter: `booking_request_id=eq.${bookingRequestId}`,
+          },
+          (payload) => {
+            if (payload.eventType === "INSERT") {
+              const m = fromRaw(payload.new as Raw);
+              setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+            } else if (payload.eventType === "UPDATE") {
+              const m = fromRaw(payload.new as Raw);
+              setMessages((prev) => prev.map((x) => (x.id === m.id ? m : x)));
+            } else if (payload.eventType === "DELETE") {
+              const id = (payload.old as { id?: string }).id;
+              if (id) setMessages((prev) => prev.filter((x) => x.id !== id));
+            }
+          },
+        )
+        .subscribe();
+    } catch (err) {
+      console.error("[chat] realtime subscribe failed:", err);
+    }
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        try {
+          supabase.removeChannel(channel);
+        } catch (err) {
+          console.error("[chat] realtime cleanup failed:", err);
+        }
+      }
     };
   }, [bookingRequestId]);
 
