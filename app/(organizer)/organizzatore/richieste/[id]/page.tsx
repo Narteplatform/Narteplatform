@@ -129,6 +129,14 @@ export default async function OrganizerRequestDetailPage({
 
           <RequestActions requestId={req.id} status={req.status} />
 
+          {(req.status === "in_trattativa" || req.status === "confermata") && (
+            <Button asChild>
+              <Link href={`/organizzatore/chat/${req.id}`}>
+                {req.status === "in_trattativa" ? "Apri chat con l'artista" : "Vai alla chat"}
+              </Link>
+            </Button>
+          )}
+
           {artist && (
             <Button asChild variant="outline" size="sm">
               <Link href={`/artisti/${artist.slug}`}>Vai al profilo artista</Link>

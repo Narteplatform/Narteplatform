@@ -285,6 +285,15 @@ export default async function ArtistLeadsPage({
                     )}
 
                     <ArtistRequestActions requestId={b.id} status={b.status} />
+
+                    {(b.status === "in_trattativa" || b.status === "confermata") && (
+                      <Link
+                        href={`/dashboard/chat/${b.id}`}
+                        className="inline-flex items-center justify-center gap-2 rounded-md bg-azzurro px-5 h-10 text-sm font-semibold text-white hover:bg-azzurro-dark"
+                      >
+                        {b.status === "in_trattativa" ? "Apri chat con l'organizzatore" : "Vai alla chat"}
+                      </Link>
+                    )}
                   </CardContent>
                 </Card>
               );

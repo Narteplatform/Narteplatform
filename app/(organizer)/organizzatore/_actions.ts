@@ -265,10 +265,33 @@ export async function artistAcceptRequest(requestId: string, notes?: string) {
     .eq("id", requestId);
   if (error) return { ok: false as const, error: error.message };
 
+  // Apre la chat con un system message: serve sia come opener visivo
+  // sia come trigger realtime per la lista conversazioni dell'organizzatore.
+  const artistName =
+    (await admin.from("artists").select("stage_name").eq("id", req.artist_id).maybeSingle()).data
+      ?.stage_name ?? "L'artista";
+  const opener = notes?.trim()
+    ? `${artistName} ha accettato la trattativa. Nota: ${notes.trim()}`
+    : `${artistName} ha accettato la trattativa. Iniziate a chattare.`;
+  await admin
+    .from("booking_messages")
+    .insert({
+      booking_request_id: requestId,
+      sender_id: user.id,
+      sender_role: "artist",
+      kind: "system",
+      body: opener,
+    })
+    .then((r) => {
+      if (r.error) console.error("chat opener insert:", r.error.message);
+    });
+
   await sendBookingAcceptedEmail(requestId).catch((e) => console.error("email accepted:", e));
 
   revalidatePath("/dashboard/leads");
+  revalidatePath("/dashboard/chat");
   revalidatePath("/organizzatore/richieste");
+  revalidatePath("/organizzatore/chat");
   return { ok: true as const };
 }
 
