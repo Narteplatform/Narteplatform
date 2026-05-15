@@ -188,6 +188,55 @@ export async function respondToOffer(messageId: string, action: "accept" | "reje
   return { ok: true };
 }
 
+type AttachmentKind = "image" | "document" | "voice";
+
+export async function sendAttachment(input: {
+  booking_request_id: string;
+  kind: AttachmentKind;
+  url: string;
+  type: string;
+  name: string;
+  size: number;
+  duration_ms?: number;
+}): Promise<ActionResult> {
+  if (!["image", "document", "voice"].includes(input.kind)) {
+    return { ok: false, error: "Tipo allegato non valido" };
+  }
+  if (typeof input.size !== "number" || input.size <= 0 || input.size > 25 * 1024 * 1024) {
+    return { ok: false, error: "File troppo grande (max 25 MB)" };
+  }
+  if (!input.url || !input.url.startsWith("http")) {
+    return { ok: false, error: "URL allegato non valido" };
+  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Non autorizzato" };
+
+  const { role, isParty, bookingStatus } = await resolveSenderRole(input.booking_request_id, user.id);
+  if (!isParty || !role) return { ok: false, error: "Non sei parte di questa trattativa" };
+  if (bookingStatus !== "in_trattativa" && bookingStatus !== "confermata") {
+    return { ok: false, error: "Chat non disponibile" };
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("booking_messages").insert({
+    booking_request_id: input.booking_request_id,
+    sender_id: user.id,
+    sender_role: role,
+    kind: input.kind,
+    body: null,
+    attachment_url: input.url,
+    attachment_type: input.type.slice(0, 120),
+    attachment_name: input.name.slice(0, 200),
+    attachment_size: input.size,
+    attachment_duration_ms: input.duration_ms ?? null,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function fetchDockConversations(): Promise<
   | { ok: true; conversations: ConversationItem[]; role: "artist" | "organizer" }
   | ActionErr

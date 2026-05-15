@@ -79,14 +79,20 @@ export function MessageList({
                 );
               }
               const isOwn = viewerRole !== "superadmin" && currentUserId !== null && m.senderId === currentUserId;
-              const isReadByOther =
+              const readByOther =
                 viewerRole === "artist"
                   ? m.readByOrganizerAt != null
                   : viewerRole === "organizer"
                   ? m.readByArtistAt != null
                   : false;
+              const isPersisted = !m.id.startsWith("temp-");
+              const tick: "sent" | "delivered" | "read" = readByOther
+                ? "read"
+                : isPersisted
+                ? "delivered"
+                : "sent";
               return (
-                <MessageBubble key={m.id} msg={m} isOwn={isOwn} isReadByOther={isReadByOther} />
+                <MessageBubble key={m.id} msg={m} isOwn={isOwn} tick={tick} />
               );
             })}
           </div>

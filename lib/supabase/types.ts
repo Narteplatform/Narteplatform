@@ -10,7 +10,7 @@ export type AvailabilityStatus = "available" | "busy";
 export type PriceBand = "budget" | "standard" | "premium" | "luxury";
 export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "altro";
 export type BookingStatus = "pending" | "in_trattativa" | "confermata" | "rifiutata" | "annullata";
-export type ChatMessageKind = "text" | "offer" | "system";
+export type ChatMessageKind = "text" | "offer" | "system" | "image" | "document" | "voice";
 export type ChatOfferStatus = "pending" | "accepted" | "rejected" | "superseded";
 export type EventCategory =
   | "music"
@@ -582,6 +582,11 @@ export interface Database {
           offer_responded_at: string | null;
           read_by_artist_at: string | null;
           read_by_organizer_at: string | null;
+          attachment_url: string | null;
+          attachment_type: string | null;
+          attachment_name: string | null;
+          attachment_size: number | null;
+          attachment_duration_ms: number | null;
           created_at: string;
         };
         Insert: {
@@ -598,6 +603,11 @@ export interface Database {
           offer_responded_at?: string | null;
           read_by_artist_at?: string | null;
           read_by_organizer_at?: string | null;
+          attachment_url?: string | null;
+          attachment_type?: string | null;
+          attachment_name?: string | null;
+          attachment_size?: number | null;
+          attachment_duration_ms?: number | null;
           created_at?: string;
         };
         Update: {
@@ -614,6 +624,11 @@ export interface Database {
           offer_responded_at?: string | null;
           read_by_artist_at?: string | null;
           read_by_organizer_at?: string | null;
+          attachment_url?: string | null;
+          attachment_type?: string | null;
+          attachment_name?: string | null;
+          attachment_size?: number | null;
+          attachment_duration_ms?: number | null;
           created_at?: string;
         };
         Relationships: [];

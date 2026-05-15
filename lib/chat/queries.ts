@@ -43,6 +43,11 @@ export type ChatMessage = {
   offerRespondedAt: string | null;
   readByArtistAt: string | null;
   readByOrganizerAt: string | null;
+  attachmentUrl: string | null;
+  attachmentType: string | null;
+  attachmentName: string | null;
+  attachmentSize: number | null;
+  attachmentDurationMs: number | null;
   createdAt: string;
 };
 
@@ -52,8 +57,30 @@ export type ChatPartyMeta = {
   eventDate: string;
   timeSlot: string | null;
   budget: number | null;
-  artist: { id: string; userId: string | null; name: string; avatarUrl: string | null; slug: string };
-  organizer: { id: string; userId: string; name: string; avatarUrl: string | null };
+  artist: {
+    id: string;
+    userId: string | null;
+    name: string;
+    avatarUrl: string | null;
+    slug: string;
+    bio?: string | null;
+    city?: string | null;
+    genre?: string[] | null;
+    instagram?: string | null;
+    spotify?: string | null;
+    website?: string | null;
+  };
+  organizer: {
+    id: string;
+    userId: string;
+    name: string;
+    avatarUrl: string | null;
+    bio?: string | null;
+    isBrand?: boolean | null;
+    phone?: string | null;
+    instagram?: string | null;
+    website?: string | null;
+  };
   venue: { id: string | null; name: string | null; city: string | null } | null;
 };
 
@@ -224,7 +251,7 @@ export async function getMessages(bookingRequestId: string): Promise<ChatMessage
   const { data } = await admin
     .from("booking_messages")
     .select(
-      "id, booking_request_id, sender_id, sender_role, kind, body, offer_event_date, offer_time_slot, offer_budget, offer_status, offer_responded_at, read_by_artist_at, read_by_organizer_at, created_at"
+      "id, booking_request_id, sender_id, sender_role, kind, body, offer_event_date, offer_time_slot, offer_budget, offer_status, offer_responded_at, read_by_artist_at, read_by_organizer_at, attachment_url, attachment_type, attachment_name, attachment_size, attachment_duration_ms, created_at"
     )
     .eq("booking_request_id", bookingRequestId)
     .order("created_at", { ascending: true })
@@ -243,6 +270,11 @@ export async function getMessages(bookingRequestId: string): Promise<ChatMessage
     offerRespondedAt: m.offer_responded_at,
     readByArtistAt: m.read_by_artist_at,
     readByOrganizerAt: m.read_by_organizer_at,
+    attachmentUrl: m.attachment_url,
+    attachmentType: m.attachment_type,
+    attachmentName: m.attachment_name,
+    attachmentSize: m.attachment_size,
+    attachmentDurationMs: m.attachment_duration_ms,
     createdAt: m.created_at,
   }));
 }
@@ -252,21 +284,33 @@ export async function getConversationMeta(bookingRequestId: string): Promise<Cha
   const { data } = await admin
     .from("booking_requests")
     .select(
-      "id, status, event_date, time_slot, budget_offer, artist_id, organizer_id, venue_id, artists!inner(id, stage_name, slug, cover_image, user_id), organizers!inner(id, display_name, avatar_url, user_id), venues(id, name, city)"
+      "id, status, event_date, time_slot, budget_offer, artist_id, organizer_id, venue_id, artists!inner(id, stage_name, slug, cover_image, user_id, bio, city, genre, social_links), organizers!inner(id, display_name, avatar_url, user_id, bio, is_brand, phone, instagram, website), venues(id, name, city)"
     )
     .eq("id", bookingRequestId)
     .maybeSingle();
   if (!data) return null;
   const a = (data as unknown as Row & {
     venues: { id: string; name: string; city: string | null } | null;
-  }).artists;
+  }).artists as unknown as Row["artists"] & {
+    bio?: string | null;
+    city?: string | null;
+    genre?: string[] | null;
+    social_links?: { instagram?: string; spotify?: string; website?: string } | null;
+  };
   const o = (data as unknown as Row & {
     venues: { id: string; name: string; city: string | null } | null;
-  }).organizers;
+  }).organizers as unknown as Row["organizers"] & {
+    bio?: string | null;
+    is_brand?: boolean | null;
+    phone?: string | null;
+    instagram?: string | null;
+    website?: string | null;
+  };
   const v = (data as unknown as Row & {
     venues: { id: string; name: string; city: string | null } | null;
   }).venues;
   if (!a || !o) return null;
+  const social = a.social_links ?? {};
   return {
     bookingRequestId: data.id,
     status: data.status as BookingStatus,
@@ -279,12 +323,23 @@ export async function getConversationMeta(bookingRequestId: string): Promise<Cha
       name: a.stage_name,
       avatarUrl: a.cover_image,
       slug: a.slug,
+      bio: a.bio ?? null,
+      city: a.city ?? null,
+      genre: a.genre ?? null,
+      instagram: social.instagram ?? null,
+      spotify: social.spotify ?? null,
+      website: social.website ?? null,
     },
     organizer: {
       id: o.id,
       userId: o.user_id,
       name: o.display_name,
       avatarUrl: o.avatar_url,
+      bio: o.bio ?? null,
+      isBrand: o.is_brand ?? null,
+      phone: o.phone ?? null,
+      instagram: o.instagram ?? null,
+      website: o.website ?? null,
     },
     venue: v ? { id: v.id, name: v.name, city: v.city } : null,
   };
