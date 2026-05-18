@@ -15,19 +15,19 @@ import {
   getConversationsForOrganizer,
   getConversationMeta,
   getMessages,
+  getConversationByPair,
   type ChatMessage,
   type ChatPartyMeta,
   type ConversationItem,
 } from "@/lib/chat/queries";
 
-type ActionOk<T = Record<string, never>> = { ok: true } & T;
 type ActionErr = { ok: false; error: string };
-type ActionResult<T = Record<string, never>> = ActionOk<T> | ActionErr;
+type ActionResult<T = unknown> = ({ ok: true } & T) | ActionErr;
 
-async function resolveSenderRole(
-  bookingRequestId: string,
+async function resolveConversationRole(
+  conversationId: string,
   userId: string,
-): Promise<{ role: Role | null; isParty: boolean; isSuperadmin: boolean; bookingStatus: string | null }> {
+): Promise<{ role: Role | null; isParty: boolean; isSuperadmin: boolean }> {
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
@@ -36,17 +36,58 @@ async function resolveSenderRole(
     .maybeSingle();
   const isSuperadmin = profile?.role === "superadmin";
 
-  const { data: br } = await admin
-    .from("booking_requests")
-    .select("id, status, artists(user_id), organizers(user_id)")
-    .eq("id", bookingRequestId)
+  const { data: c } = await admin
+    .from("conversations")
+    .select("id, artists!inner(user_id), organizers!inner(user_id)")
+    .eq("id", conversationId)
     .maybeSingle();
-  if (!br) return { role: null, isParty: false, isSuperadmin, bookingStatus: null };
-  const artistUserId = (br as unknown as { artists: { user_id: string | null } | null }).artists?.user_id ?? null;
-  const orgUserId = (br as unknown as { organizers: { user_id: string } | null }).organizers?.user_id ?? null;
-  if (artistUserId === userId) return { role: "artist", isParty: true, isSuperadmin, bookingStatus: br.status };
-  if (orgUserId === userId) return { role: "organizer", isParty: true, isSuperadmin, bookingStatus: br.status };
-  return { role: null, isParty: false, isSuperadmin, bookingStatus: br.status };
+  if (!c) return { role: null, isParty: false, isSuperadmin };
+  const artistUserId = (c as unknown as { artists: { user_id: string | null } | null }).artists?.user_id ?? null;
+  const orgUserId = (c as unknown as { organizers: { user_id: string } | null }).organizers?.user_id ?? null;
+  if (artistUserId === userId) return { role: "artist", isParty: true, isSuperadmin };
+  if (orgUserId === userId) return { role: "organizer", isParty: true, isSuperadmin };
+  return { role: null, isParty: false, isSuperadmin };
+}
+
+export async function openOrCreateConversation(
+  artistId: string,
+  organizerId?: string,
+): Promise<ActionResult<{ conversationId: string }>> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Non autorizzato" };
+
+  const admin = createAdminClient();
+  let orgId = organizerId;
+  if (!orgId) {
+    const { data: o } = await admin
+      .from("organizers")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!o) return { ok: false, error: "Profilo organizzatore non trovato" };
+    orgId = o.id;
+  }
+
+  // Verifica esistenza artista
+  const { data: a } = await admin.from("artists").select("id").eq("id", artistId).maybeSingle();
+  if (!a) return { ok: false, error: "Artista non trovato" };
+
+  // RPC security definer
+  const userClient = await createClient();
+  const { data, error } = await userClient.rpc("get_or_create_conversation", {
+    p_artist_id: artistId,
+    p_organizer_id: orgId,
+  });
+  if (error) {
+    // Fallback admin (l'utente potrebbe non avere user_id su artist legacy)
+    const existing = await getConversationByPair(artistId, orgId);
+    if (existing) return { ok: true, conversationId: existing };
+    return { ok: false, error: error.message };
+  }
+  return { ok: true, conversationId: data as unknown as string };
 }
 
 export async function sendMessage(input: ChatMessageInput): Promise<ActionResult> {
@@ -59,26 +100,22 @@ export async function sendMessage(input: ChatMessageInput): Promise<ActionResult
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Non autorizzato" };
 
-  const { role, isParty, bookingStatus } = await resolveSenderRole(parsed.data.booking_request_id, user.id);
-  if (!isParty || !role) return { ok: false, error: "Non sei parte di questa trattativa" };
-  if (bookingStatus !== "in_trattativa" && bookingStatus !== "confermata") {
-    return { ok: false, error: "Chat non disponibile" };
-  }
+  const { role, isParty } = await resolveConversationRole(parsed.data.conversation_id, user.id);
+  if (!isParty || !role) return { ok: false, error: "Non sei parte di questa conversazione" };
 
-  // Rate limit semplice: nessun messaggio nello stesso secondo dallo stesso sender
   const admin = createAdminClient();
   const since = new Date(Date.now() - 500).toISOString();
   const { data: recent } = await admin
-    .from("booking_messages")
+    .from("messages")
     .select("id")
-    .eq("booking_request_id", parsed.data.booking_request_id)
+    .eq("conversation_id", parsed.data.conversation_id)
     .eq("sender_id", user.id)
     .gt("created_at", since)
     .limit(1);
   if ((recent?.length ?? 0) > 0) return { ok: false, error: "Troppo veloce, riprova" };
 
-  const { error } = await admin.from("booking_messages").insert({
-    booking_request_id: parsed.data.booking_request_id,
+  const { error } = await admin.from("messages").insert({
+    conversation_id: parsed.data.conversation_id,
     sender_id: user.id,
     sender_role: role,
     kind: "text",
@@ -98,34 +135,36 @@ export async function sendOffer(input: ChatOfferInput): Promise<ActionResult> {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Non autorizzato" };
 
-  const { role, isParty, bookingStatus } = await resolveSenderRole(parsed.data.booking_request_id, user.id);
-  if (!isParty || !role) return { ok: false, error: "Non sei parte di questa trattativa" };
-  if (bookingStatus !== "in_trattativa") return { ok: false, error: "Trattativa non aperta" };
+  const { role, isParty } = await resolveConversationRole(parsed.data.conversation_id, user.id);
+  if (!isParty || !role) return { ok: false, error: "Non sei parte di questa conversazione" };
 
   const admin = createAdminClient();
-  // Marca offerte pending precedenti come superseded
   await admin
-    .from("booking_messages")
+    .from("messages")
     .update({ offer_status: "superseded" })
-    .eq("booking_request_id", parsed.data.booking_request_id)
+    .eq("conversation_id", parsed.data.conversation_id)
     .eq("kind", "offer")
     .eq("offer_status", "pending");
 
-  const { error } = await admin.from("booking_messages").insert({
-    booking_request_id: parsed.data.booking_request_id,
+  const { error } = await admin.from("messages").insert({
+    conversation_id: parsed.data.conversation_id,
     sender_id: user.id,
     sender_role: role,
     kind: "offer",
     offer_event_date: parsed.data.event_date,
     offer_time_slot: parsed.data.time_slot,
-    offer_budget: parsed.data.budget,
+    offer_budget_cents: parsed.data.budget_cents,
+    offer_description: parsed.data.description ?? null,
     offer_status: "pending",
   });
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
 
-export async function respondToOffer(messageId: string, action: "accept" | "reject"): Promise<ActionResult> {
+export async function respondToOffer(
+  messageId: string,
+  action: "accept" | "reject",
+): Promise<ActionResult<{ bookingRequestId?: string }>> {
   if (action !== "accept" && action !== "reject") {
     return { ok: false, error: "Azione non valida" };
   }
@@ -139,8 +178,8 @@ export async function respondToOffer(messageId: string, action: "accept" | "reje
 
   if (action === "reject") {
     const { data: msg } = await admin
-      .from("booking_messages")
-      .select("id, booking_request_id, sender_id, kind, offer_status")
+      .from("messages")
+      .select("id, conversation_id, sender_id, kind, offer_status")
       .eq("id", messageId)
       .maybeSingle();
     if (!msg) return { ok: false, error: "Offerta non trovata" };
@@ -150,31 +189,25 @@ export async function respondToOffer(messageId: string, action: "accept" | "reje
     if (msg.sender_id === user.id) {
       return { ok: false, error: "Non puoi rispondere alla tua offerta" };
     }
-    const { isParty, bookingStatus } = await resolveSenderRole(msg.booking_request_id, user.id);
+    const { isParty } = await resolveConversationRole(msg.conversation_id, user.id);
     if (!isParty) return { ok: false, error: "Non autorizzato" };
-    if (bookingStatus !== "in_trattativa") return { ok: false, error: "Trattativa non aperta" };
 
     const { error: updErr } = await admin
-      .from("booking_messages")
+      .from("messages")
       .update({ offer_status: "rejected", offer_responded_at: new Date().toISOString() })
       .eq("id", messageId);
     if (updErr) return { ok: false, error: updErr.message };
     return { ok: true };
   }
 
-  // Accept: chiama funzione transazionale
-  const { data, error } = await admin.rpc("accept_chat_offer", { message_id: messageId, actor: user.id });
+  // Accept via RPC security definer
+  const { data, error } = await supabase.rpc("accept_offer_v2", { p_message_id: messageId });
   if (error) return { ok: false, error: error.message };
-  const res = (data as unknown as { ok: boolean; error?: string } | null) ?? null;
+  const res = (data as unknown as { ok: boolean; error?: string; booking_request_id?: string } | null) ?? null;
   if (!res || !res.ok) return { ok: false, error: res?.error ?? "Errore nell'accettazione" };
 
-  const { data: msg } = await admin
-    .from("booking_messages")
-    .select("booking_request_id")
-    .eq("id", messageId)
-    .maybeSingle();
-  if (msg?.booking_request_id) {
-    await sendBookingConfirmedEmail(msg.booking_request_id).catch((e) =>
+  if (res.booking_request_id) {
+    await sendBookingConfirmedEmail(res.booking_request_id).catch((e) =>
       console.error("email confirmed (chat):", e),
     );
   }
@@ -185,13 +218,13 @@ export async function respondToOffer(messageId: string, action: "accept" | "reje
   revalidatePath("/organizzatore/chat");
   revalidatePath("/admin/chat");
   revalidatePath("/artisti");
-  return { ok: true };
+  return { ok: true, bookingRequestId: res.booking_request_id };
 }
 
 type AttachmentKind = "image" | "document" | "voice";
 
 export async function sendAttachment(input: {
-  booking_request_id: string;
+  conversation_id: string;
   kind: AttachmentKind;
   url: string;
   type: string;
@@ -214,15 +247,12 @@ export async function sendAttachment(input: {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Non autorizzato" };
 
-  const { role, isParty, bookingStatus } = await resolveSenderRole(input.booking_request_id, user.id);
-  if (!isParty || !role) return { ok: false, error: "Non sei parte di questa trattativa" };
-  if (bookingStatus !== "in_trattativa" && bookingStatus !== "confermata") {
-    return { ok: false, error: "Chat non disponibile" };
-  }
+  const { role, isParty } = await resolveConversationRole(input.conversation_id, user.id);
+  if (!isParty || !role) return { ok: false, error: "Non sei parte di questa conversazione" };
 
   const admin = createAdminClient();
-  const { error } = await admin.from("booking_messages").insert({
-    booking_request_id: input.booking_request_id,
+  const { error } = await admin.from("messages").insert({
+    conversation_id: input.conversation_id,
     sender_id: user.id,
     sender_role: role,
     kind: input.kind,
@@ -265,7 +295,7 @@ export async function fetchDockConversations(): Promise<
 }
 
 export async function fetchDockConversation(
-  bookingRequestId: string,
+  conversationId: string,
 ): Promise<
   | { ok: true; meta: ChatPartyMeta; messages: ChatMessage[]; currentUserId: string; viewerRole: "artist" | "organizer" }
   | ActionErr
@@ -276,39 +306,41 @@ export async function fetchDockConversation(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Non autorizzato" };
 
-  const { role, isParty } = await resolveSenderRole(bookingRequestId, user.id);
-  if (!isParty || !role) return { ok: false, error: "Non autorizzato" };
+  const { role, isParty } = await resolveConversationRole(conversationId, user.id);
+  if (!isParty || (role !== "artist" && role !== "organizer")) {
+    return { ok: false, error: "Non autorizzato" };
+  }
 
-  const meta = await getConversationMeta(bookingRequestId);
-  if (!meta) return { ok: false, error: "Trattativa non trovata" };
-  const messages = await getMessages(bookingRequestId);
+  const meta = await getConversationMeta(conversationId);
+  if (!meta) return { ok: false, error: "Conversazione non trovata" };
+  const messages = await getMessages(conversationId);
   return { ok: true, meta, messages, currentUserId: user.id, viewerRole: role };
 }
 
-export async function markConversationRead(bookingRequestId: string): Promise<ActionResult> {
+export async function markConversationRead(conversationId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Non autorizzato" };
 
-  const { role, isParty } = await resolveSenderRole(bookingRequestId, user.id);
+  const { role, isParty } = await resolveConversationRole(conversationId, user.id);
   if (!isParty || !role) return { ok: false, error: "Non autorizzato" };
 
   const admin = createAdminClient();
   const now = new Date().toISOString();
   if (role === "artist") {
     await admin
-      .from("booking_messages")
+      .from("messages")
       .update({ read_by_artist_at: now })
-      .eq("booking_request_id", bookingRequestId)
+      .eq("conversation_id", conversationId)
       .neq("sender_role", "artist")
       .is("read_by_artist_at", null);
   } else {
     await admin
-      .from("booking_messages")
+      .from("messages")
       .update({ read_by_organizer_at: now })
-      .eq("booking_request_id", bookingRequestId)
+      .eq("conversation_id", conversationId)
       .neq("sender_role", "organizer")
       .is("read_by_organizer_at", null);
   }

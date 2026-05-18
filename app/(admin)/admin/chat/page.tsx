@@ -5,13 +5,12 @@ import { getConversationsForSuperadmin } from "@/lib/chat/queries";
 export const metadata = { title: "Chat — N'arte Admin" };
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ scope?: "active" | "completed" | "all"; q?: string }>;
+type SearchParams = Promise<{ q?: string }>;
 
 export default async function AdminChatPage({ searchParams }: { searchParams: SearchParams }) {
   await requireRole(["superadmin"]);
   const sp = await searchParams;
-  const scope = sp.scope ?? "active";
-  const items = await getConversationsForSuperadmin(scope, sp.q);
+  const items = await getConversationsForSuperadmin(sp.q);
 
   return (
     <div className="space-y-4">
@@ -23,14 +22,9 @@ export default async function AdminChatPage({ searchParams }: { searchParams: Se
           </p>
         </div>
       </header>
-      <div className="h-[calc(100vh-12rem)] grid grid-cols-1 md:grid-cols-[380px_1fr] rounded-xl border border-border bg-surface overflow-hidden">
+      <div className="h-[calc(100dvh-12rem)] grid grid-cols-1 md:grid-cols-[380px_1fr] rounded-xl border border-border bg-surface overflow-hidden">
         <aside className="border-r border-border min-h-0">
-          <ConversationList
-            items={items}
-            basePath="/admin/chat"
-            mode="superadmin"
-            superadminScope={scope}
-          />
+          <ConversationList items={items} basePath="/admin/chat" mode="superadmin" />
         </aside>
         <section className="hidden md:flex h-full items-center justify-center text-center px-8 text-muted-foreground">
           <div>

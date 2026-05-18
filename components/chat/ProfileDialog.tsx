@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, ExternalLink, Globe, Instagram, MapPin, Music2, Phone, X } from "lucide-react";
+import { ExternalLink, Globe, Instagram, MapPin, Music2, Phone, X } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -65,12 +65,6 @@ export function ProfileDialog({
               ) : (
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   {meta.organizer.isBrand && <Badge variant="accent">Brand</Badge>}
-                  {meta.venue?.name && (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                      <Building2 className="size-3" /> {meta.venue.name}
-                      {meta.venue.city ? ` · ${meta.venue.city}` : ""}
-                    </span>
-                  )}
                 </div>
               )}
             </div>

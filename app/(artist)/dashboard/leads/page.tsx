@@ -5,9 +5,11 @@ import { requireRole } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ArtistRequestActions } from "@/components/organizer/ArtistRequestActions";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import type { BookingStatus } from "@/lib/supabase/types";
 import { minToBudgetLabel } from "@/lib/constants/budget-ranges";
+import { openChatAndRedirect } from "@/lib/chat/open";
 
 export const dynamic = "force-dynamic";
 
@@ -286,14 +288,12 @@ export default async function ArtistLeadsPage({
 
                     <ArtistRequestActions requestId={b.id} status={b.status} />
 
-                    {(b.status === "in_trattativa" || b.status === "confermata") && (
-                      <Link
-                        href={`/dashboard/chat/${b.id}`}
-                        className="inline-flex items-center justify-center gap-2 rounded-md bg-azzurro px-5 h-10 text-sm font-semibold text-white hover:bg-azzurro-dark"
-                      >
-                        {b.status === "in_trattativa" ? "Apri chat con l'organizzatore" : "Vai alla chat"}
-                      </Link>
-                    )}
+                    <form action={openChatAndRedirect}>
+                      <input type="hidden" name="artist_id" value={artist.id} />
+                      <input type="hidden" name="organizer_id" value={b.organizer_id} />
+                      <input type="hidden" name="base_path" value="/dashboard/chat" />
+                      <Button type="submit">Apri chat con l&apos;organizzatore</Button>
+                    </form>
                   </CardContent>
                 </Card>
               );

@@ -27,12 +27,12 @@ function pickMimeType(): { mime: string; ext: string } {
 }
 
 export function VoiceRecorder({
-  bookingRequestId,
+  conversationId,
   onSent,
   onError,
   onCancel,
 }: {
-  bookingRequestId: string;
+  conversationId: string;
   onSent: () => void;
   onError: (msg: string) => void;
   onCancel: () => void;
@@ -114,7 +114,7 @@ export function VoiceRecorder({
     if (!blob) return;
     setState("uploading");
     const filename = `voice-${Date.now()}.${mimeRef.current.ext}`;
-    const up = await uploadChatFile(bookingRequestId, blob, filename, mimeRef.current.mime);
+    const up = await uploadChatFile(conversationId, blob, filename, mimeRef.current.mime);
     if ("error" in up) {
       onError(up.error);
       setState("preview");
@@ -122,7 +122,7 @@ export function VoiceRecorder({
     }
     const durationMs = elapsed * 1000;
     const res = await sendAttachment({
-      booking_request_id: bookingRequestId,
+      conversation_id: conversationId,
       kind: "voice",
       url: up.url,
       type: up.type,

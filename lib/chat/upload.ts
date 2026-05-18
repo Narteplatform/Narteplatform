@@ -22,7 +22,7 @@ function uid(): string {
 }
 
 export async function uploadChatFile(
-  bookingRequestId: string,
+  conversationId: string,
   file: File | Blob,
   filename: string,
   contentType: string,
@@ -33,7 +33,7 @@ export async function uploadChatFile(
   const supabase = createClient();
   const id = uid();
   const safe = sanitize(filename) || `file-${id}`;
-  const path = `${bookingRequestId}/${id}-${safe}`;
+  const path = `${conversationId}/${id}-${safe}`;
 
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType,

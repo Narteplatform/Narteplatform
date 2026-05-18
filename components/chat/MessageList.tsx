@@ -40,6 +40,12 @@ export function MessageList({
   viewerRole: "artist" | "organizer" | "superadmin";
   readOnly: boolean;
 }) {
+  const bookingLinkBase =
+    viewerRole === "artist"
+      ? "/dashboard/leads"
+      : viewerRole === "organizer"
+      ? "/organizzatore/richieste"
+      : undefined;
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -75,6 +81,7 @@ export function MessageList({
                     msg={m}
                     canRespond={canRespond}
                     readOnly={readOnly || viewerRole === "superadmin"}
+                    bookingLinkBase={bookingLinkBase}
                   />
                 );
               }

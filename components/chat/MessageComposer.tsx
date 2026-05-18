@@ -7,15 +7,14 @@ import { sendAttachment, sendMessage } from "@/lib/chat/actions";
 import { uploadChatFile } from "@/lib/chat/upload";
 import { OfferDialog } from "./OfferDialog";
 import { VoiceRecorder } from "./VoiceRecorder";
-import type { ChatPartyMeta } from "@/lib/chat/queries";
 
 export function MessageComposer({
-  meta,
+  conversationId,
   disabled,
   disabledReason,
   allowOffer = true,
 }: {
-  meta: ChatPartyMeta;
+  conversationId: string;
   disabled: boolean;
   disabledReason?: string;
   allowOffer?: boolean;
@@ -35,7 +34,7 @@ export function MessageComposer({
     setError(null);
     const body = text;
     startTransition(async () => {
-      const res = await sendMessage({ booking_request_id: meta.bookingRequestId, body });
+      const res = await sendMessage({ conversation_id: conversationId, body });
       if (!res.ok) {
         setError(res.error);
         return;
@@ -63,13 +62,13 @@ export function MessageComposer({
     setError(null);
     setUploading(true);
     try {
-      const up = await uploadChatFile(meta.bookingRequestId, file, file.name, file.type || "application/octet-stream");
+      const up = await uploadChatFile(conversationId, file, file.name, file.type || "application/octet-stream");
       if ("error" in up) {
         setError(up.error);
         return;
       }
       const res = await sendAttachment({
-        booking_request_id: meta.bookingRequestId,
+        conversation_id: conversationId,
         kind,
         url: up.url,
         type: up.type,
@@ -96,7 +95,7 @@ export function MessageComposer({
 
   if (disabled) {
     return (
-      <div className="border-t border-border bg-muted/40 px-4 py-3 text-center text-xs text-muted-foreground">
+      <div className="border-t border-border bg-muted/40 px-4 py-3 text-center text-xs text-muted-foreground pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {disabledReason ?? "Composer disabilitato"}
       </div>
     );
@@ -104,9 +103,9 @@ export function MessageComposer({
 
   if (recording) {
     return (
-      <div className="border-t border-border bg-surface px-3 py-2.5">
+      <div className="border-t border-border bg-surface px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
         <VoiceRecorder
-          bookingRequestId={meta.bookingRequestId}
+          conversationId={conversationId}
           onSent={() => setRecording(false)}
           onCancel={() => setRecording(false)}
           onError={(msg) => setError(msg)}
@@ -116,7 +115,7 @@ export function MessageComposer({
   }
 
   return (
-    <div className="border-t border-border bg-surface px-3 py-2.5">
+    <div className="sticky bottom-0 z-10 border-t border-border bg-surface px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
       {error && <p className="px-1 pb-1 text-xs text-[var(--color-error)]">{error}</p>}
       <input
         ref={imgInputRef}
@@ -140,8 +139,8 @@ export function MessageComposer({
             size="sm"
             onClick={() => setShowOffer(true)}
             disabled={busy || uploading}
-            className="shrink-0"
-            aria-label="Invia offerta"
+            className="shrink-0 min-h-11 min-w-11"
+            aria-label="Fai un'offerta"
           >
             <Tag className="size-4" />
             <span className="hidden lg:inline">Offerta</span>
@@ -153,7 +152,7 @@ export function MessageComposer({
           size="sm"
           onClick={() => imgInputRef.current?.click()}
           disabled={busy || uploading}
-          className="shrink-0"
+          className="shrink-0 min-h-11 min-w-11"
           aria-label="Allega immagine"
         >
           <ImageIcon className="size-4" />
@@ -164,7 +163,7 @@ export function MessageComposer({
           size="sm"
           onClick={() => docInputRef.current?.click()}
           disabled={busy || uploading}
-          className="shrink-0"
+          className="shrink-0 min-h-11 min-w-11"
           aria-label="Allega documento"
         >
           <Paperclip className="size-4" />
@@ -175,7 +174,7 @@ export function MessageComposer({
           size="sm"
           onClick={() => setRecording(true)}
           disabled={busy || uploading}
-          className="shrink-0"
+          className="shrink-0 min-h-11 min-w-11"
           aria-label="Registra vocale"
         >
           <Mic className="size-4" />
@@ -196,7 +195,7 @@ export function MessageComposer({
           onClick={submit}
           disabled={busy || uploading || !text.trim()}
           aria-label="Invia messaggio"
-          className="shrink-0"
+          className="shrink-0 min-h-11 min-w-11"
         >
           {busy || uploading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
         </Button>
@@ -205,12 +204,7 @@ export function MessageComposer({
         <OfferDialog
           open={showOffer}
           onClose={() => setShowOffer(false)}
-          bookingRequestId={meta.bookingRequestId}
-          defaults={{
-            eventDate: meta.eventDate,
-            timeSlot: meta.timeSlot,
-            budget: meta.budget,
-          }}
+          conversationId={conversationId}
         />
       )}
     </div>

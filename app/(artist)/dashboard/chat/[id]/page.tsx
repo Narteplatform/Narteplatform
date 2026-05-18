@@ -39,7 +39,7 @@ export default async function ArtistChatDetailPage({
   ]);
 
   return (
-    <div className="h-[calc(100vh-9rem)] grid grid-cols-1 md:grid-cols-[340px_1fr] rounded-xl border border-border bg-surface overflow-hidden">
+    <div className="h-[100dvh] md:h-[calc(100dvh-9rem)] grid grid-cols-1 md:grid-cols-[340px_1fr] rounded-none md:rounded-xl border-0 md:border md:border-border bg-surface overflow-hidden">
       <aside className="hidden md:block border-r border-border min-h-0">
         <ConversationList items={conversations} basePath="/dashboard/chat" activeId={id} />
       </aside>
@@ -51,6 +51,7 @@ export default async function ArtistChatDetailPage({
           currentUserId={user.id}
           readOnly={isSuper && !isOwn}
           compact
+          backHref="/dashboard/chat"
         />
       </section>
     </div>

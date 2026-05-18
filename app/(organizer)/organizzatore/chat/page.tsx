@@ -10,7 +10,7 @@ export default async function OrganizerChatPage() {
   const user = await requireRole(["organizer", "superadmin"]);
   const conversations = await getConversationsForOrganizer(user.id);
   return (
-    <div className="h-[calc(100vh-9rem)] grid grid-cols-1 md:grid-cols-[340px_1fr] rounded-xl border border-border bg-surface overflow-hidden">
+    <div className="h-[calc(100dvh-9rem)] grid grid-cols-1 md:grid-cols-[340px_1fr] rounded-xl border border-border bg-surface overflow-hidden">
       <aside className="border-r border-border min-h-0">
         <ConversationList items={conversations} basePath="/organizzatore/chat" />
       </aside>

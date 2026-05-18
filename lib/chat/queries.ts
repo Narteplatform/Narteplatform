@@ -1,24 +1,18 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import type { BookingStatus, ChatMessageKind, ChatOfferStatus, Role } from "@/lib/supabase/types";
+import type { ChatMessageKind, ChatOfferStatus, Role } from "@/lib/supabase/types";
 
 export type ChatViewerRole = "artist" | "organizer" | "superadmin";
 
 export type ConversationItem = {
-  bookingRequestId: string;
-  status: BookingStatus;
-  eventDate: string;
-  timeSlot: string | null;
-  budget: number | null;
-  // Controparte (lato del visualizzatore)
-  counterpartName: string;
-  counterpartAvatarUrl: string | null;
-  // Entrambi (utile per superadmin)
+  conversationId: string;
   artistId: string;
+  organizerId: string;
   artistName: string;
   artistAvatarUrl: string | null;
-  organizerId: string;
   organizerName: string;
   organizerAvatarUrl: string | null;
+  counterpartName: string;
+  counterpartAvatarUrl: string | null;
   lastMessage: {
     body: string | null;
     kind: ChatMessageKind;
@@ -26,21 +20,23 @@ export type ConversationItem = {
     senderRole: Role;
   } | null;
   unreadCount: number;
-  updatedAt: string;
+  lastMessageAt: string;
 };
 
 export type ChatMessage = {
   id: string;
-  bookingRequestId: string;
+  conversationId: string;
   senderId: string | null;
   senderRole: Role;
   kind: ChatMessageKind;
   body: string | null;
   offerEventDate: string | null;
   offerTimeSlot: string | null;
-  offerBudget: number | null;
+  offerBudgetCents: number | null;
+  offerDescription: string | null;
   offerStatus: ChatOfferStatus | null;
   offerRespondedAt: string | null;
+  offerBookingRequestId: string | null;
   readByArtistAt: string | null;
   readByOrganizerAt: string | null;
   attachmentUrl: string | null;
@@ -52,11 +48,7 @@ export type ChatMessage = {
 };
 
 export type ChatPartyMeta = {
-  bookingRequestId: string;
-  status: BookingStatus;
-  eventDate: string;
-  timeSlot: string | null;
-  budget: number | null;
+  conversationId: string;
   artist: {
     id: string;
     userId: string | null;
@@ -81,25 +73,19 @@ export type ChatPartyMeta = {
     instagram?: string | null;
     website?: string | null;
   };
-  venue: { id: string | null; name: string | null; city: string | null } | null;
 };
 
-type Row = {
+type ConvRow = {
   id: string;
-  organizer_id: string;
   artist_id: string;
-  venue_id: string | null;
-  status: BookingStatus;
-  event_date: string;
-  time_slot: string | null;
-  budget_offer: number | null;
-  updated_at: string;
-  artists: { id: string; stage_name: string; slug: string; cover_image: string | null; user_id: string | null } | null;
+  organizer_id: string;
+  last_message_at: string;
+  artists: { id: string; stage_name: string; cover_image: string | null; user_id: string | null } | null;
   organizers: { id: string; display_name: string; avatar_url: string | null; user_id: string } | null;
 };
 
 async function rowsToConversations(
-  rows: Row[],
+  rows: ConvRow[],
   viewer: ChatViewerRole,
 ): Promise<ConversationItem[]> {
   const admin = createAdminClient();
@@ -107,36 +93,35 @@ async function rowsToConversations(
   if (ids.length === 0) return [];
 
   const { data: lastMsgs } = await admin
-    .from("booking_messages")
-    .select("booking_request_id, body, kind, created_at, sender_role")
-    .in("booking_request_id", ids)
+    .from("messages")
+    .select("conversation_id, body, kind, created_at, sender_role")
+    .in("conversation_id", ids)
     .order("created_at", { ascending: false });
 
-  const lastByReq = new Map<string, NonNullable<typeof lastMsgs>[number]>();
+  const lastByConv = new Map<string, NonNullable<typeof lastMsgs>[number]>();
   for (const m of lastMsgs ?? []) {
-    if (!lastByReq.has(m.booking_request_id)) lastByReq.set(m.booking_request_id, m);
+    if (!lastByConv.has(m.conversation_id)) lastByConv.set(m.conversation_id, m);
   }
 
-  // Conteggio unread per il visualizzatore (artist o organizer)
   const unread = new Map<string, number>();
   if (viewer !== "superadmin") {
     const field = viewer === "artist" ? "read_by_artist_at" : "read_by_organizer_at";
     const otherRole: Role = viewer === "artist" ? "organizer" : "artist";
     const { data: unreadRows } = await admin
-      .from("booking_messages")
-      .select("booking_request_id")
-      .in("booking_request_id", ids)
+      .from("messages")
+      .select("conversation_id")
+      .in("conversation_id", ids)
       .eq("sender_role", otherRole)
       .is(field, null);
     for (const u of unreadRows ?? []) {
-      unread.set(u.booking_request_id, (unread.get(u.booking_request_id) ?? 0) + 1);
+      unread.set(u.conversation_id, (unread.get(u.conversation_id) ?? 0) + 1);
     }
   }
 
   return rows.map((r) => {
     const a = r.artists;
     const o = r.organizers;
-    const last = lastByReq.get(r.id) ?? null;
+    const last = lastByConv.get(r.id) ?? null;
     let counterpartName = "—";
     let counterpartAvatarUrl: string | null = null;
     if (viewer === "artist") {
@@ -150,19 +135,15 @@ async function rowsToConversations(
       counterpartAvatarUrl = a?.cover_image ?? null;
     }
     return {
-      bookingRequestId: r.id,
-      status: r.status,
-      eventDate: r.event_date,
-      timeSlot: r.time_slot,
-      budget: r.budget_offer,
-      counterpartName,
-      counterpartAvatarUrl,
+      conversationId: r.id,
       artistId: a?.id ?? r.artist_id,
+      organizerId: o?.id ?? r.organizer_id,
       artistName: a?.stage_name ?? "Artista",
       artistAvatarUrl: a?.cover_image ?? null,
-      organizerId: o?.id ?? r.organizer_id,
       organizerName: o?.display_name ?? "Organizzatore",
       organizerAvatarUrl: o?.avatar_url ?? null,
+      counterpartName,
+      counterpartAvatarUrl,
       lastMessage: last
         ? {
             body: last.body,
@@ -172,10 +153,13 @@ async function rowsToConversations(
           }
         : null,
       unreadCount: unread.get(r.id) ?? 0,
-      updatedAt: r.updated_at,
+      lastMessageAt: r.last_message_at,
     };
   });
 }
+
+const CONV_SELECT =
+  "id, artist_id, organizer_id, last_message_at, artists!inner(id, stage_name, cover_image, user_id), organizers!inner(id, display_name, avatar_url, user_id)";
 
 export async function getConversationsForArtist(userId: string): Promise<ConversationItem[]> {
   const admin = createAdminClient();
@@ -186,14 +170,11 @@ export async function getConversationsForArtist(userId: string): Promise<Convers
     .maybeSingle();
   if (!artist) return [];
   const { data } = await admin
-    .from("booking_requests")
-    .select(
-      "id, organizer_id, artist_id, venue_id, status, event_date, time_slot, budget_offer, updated_at, artists!inner(id, stage_name, slug, cover_image, user_id), organizers!inner(id, display_name, avatar_url, user_id)"
-    )
+    .from("conversations")
+    .select(CONV_SELECT)
     .eq("artist_id", artist.id)
-    .in("status", ["in_trattativa", "confermata", "rifiutata", "annullata"])
-    .order("updated_at", { ascending: false });
-  return rowsToConversations((data as unknown as Row[]) ?? [], "artist");
+    .order("last_message_at", { ascending: false });
+  return rowsToConversations((data as unknown as ConvRow[]) ?? [], "artist");
 }
 
 export async function getConversationsForOrganizer(userId: string): Promise<ConversationItem[]> {
@@ -205,36 +186,22 @@ export async function getConversationsForOrganizer(userId: string): Promise<Conv
     .maybeSingle();
   if (!org) return [];
   const { data } = await admin
-    .from("booking_requests")
-    .select(
-      "id, organizer_id, artist_id, venue_id, status, event_date, time_slot, budget_offer, updated_at, artists!inner(id, stage_name, slug, cover_image, user_id), organizers!inner(id, display_name, avatar_url, user_id)"
-    )
+    .from("conversations")
+    .select(CONV_SELECT)
     .eq("organizer_id", org.id)
-    .in("status", ["in_trattativa", "confermata", "rifiutata", "annullata"])
-    .order("updated_at", { ascending: false });
-  return rowsToConversations((data as unknown as Row[]) ?? [], "organizer");
+    .order("last_message_at", { ascending: false });
+  return rowsToConversations((data as unknown as ConvRow[]) ?? [], "organizer");
 }
 
 export async function getConversationsForSuperadmin(
-  scope: "active" | "completed" | "all",
   search?: string,
 ): Promise<ConversationItem[]> {
   const admin = createAdminClient();
-  let q = admin
-    .from("booking_requests")
-    .select(
-      "id, organizer_id, artist_id, venue_id, status, event_date, time_slot, budget_offer, updated_at, artists!inner(id, stage_name, slug, cover_image, user_id), organizers!inner(id, display_name, avatar_url, user_id)"
-    )
-    .order("updated_at", { ascending: false });
-  if (scope === "active") {
-    q = q.eq("status", "in_trattativa");
-  } else if (scope === "completed") {
-    q = q.in("status", ["confermata", "rifiutata", "annullata"]);
-  } else {
-    q = q.in("status", ["in_trattativa", "confermata", "rifiutata", "annullata"]);
-  }
-  const { data } = await q;
-  let rows = (data as unknown as Row[]) ?? [];
+  const { data } = await admin
+    .from("conversations")
+    .select(CONV_SELECT)
+    .order("last_message_at", { ascending: false });
+  let rows = (data as unknown as ConvRow[]) ?? [];
   if (search && search.trim()) {
     const s = search.trim().toLowerCase();
     rows = rows.filter(
@@ -246,28 +213,30 @@ export async function getConversationsForSuperadmin(
   return rowsToConversations(rows, "superadmin");
 }
 
-export async function getMessages(bookingRequestId: string): Promise<ChatMessage[]> {
+export async function getMessages(conversationId: string): Promise<ChatMessage[]> {
   const admin = createAdminClient();
   const { data } = await admin
-    .from("booking_messages")
+    .from("messages")
     .select(
-      "id, booking_request_id, sender_id, sender_role, kind, body, offer_event_date, offer_time_slot, offer_budget, offer_status, offer_responded_at, read_by_artist_at, read_by_organizer_at, attachment_url, attachment_type, attachment_name, attachment_size, attachment_duration_ms, created_at"
+      "id, conversation_id, sender_id, sender_role, kind, body, offer_event_date, offer_time_slot, offer_budget_cents, offer_description, offer_status, offer_responded_at, offer_booking_request_id, read_by_artist_at, read_by_organizer_at, attachment_url, attachment_type, attachment_name, attachment_size, attachment_duration_ms, created_at",
     )
-    .eq("booking_request_id", bookingRequestId)
+    .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true })
     .limit(5000);
   return (data ?? []).map((m) => ({
     id: m.id,
-    bookingRequestId: m.booking_request_id,
+    conversationId: m.conversation_id,
     senderId: m.sender_id,
     senderRole: m.sender_role,
     kind: m.kind,
     body: m.body,
     offerEventDate: m.offer_event_date,
     offerTimeSlot: m.offer_time_slot,
-    offerBudget: m.offer_budget,
+    offerBudgetCents: m.offer_budget_cents,
+    offerDescription: m.offer_description,
     offerStatus: m.offer_status,
     offerRespondedAt: m.offer_responded_at,
+    offerBookingRequestId: m.offer_booking_request_id,
     readByArtistAt: m.read_by_artist_at,
     readByOrganizerAt: m.read_by_organizer_at,
     attachmentUrl: m.attachment_url,
@@ -279,44 +248,50 @@ export async function getMessages(bookingRequestId: string): Promise<ChatMessage
   }));
 }
 
-export async function getConversationMeta(bookingRequestId: string): Promise<ChatPartyMeta | null> {
+export async function getConversationMeta(conversationId: string): Promise<ChatPartyMeta | null> {
   const admin = createAdminClient();
   const { data } = await admin
-    .from("booking_requests")
+    .from("conversations")
     .select(
-      "id, status, event_date, time_slot, budget_offer, artist_id, organizer_id, venue_id, artists!inner(id, stage_name, slug, cover_image, user_id, bio, city, genre, social_links), organizers!inner(id, display_name, avatar_url, user_id, bio, is_brand, phone, instagram, website), venues(id, name, city)"
+      "id, artist_id, organizer_id, artists!inner(id, stage_name, slug, cover_image, user_id, bio, city, genre, social_links), organizers!inner(id, display_name, avatar_url, user_id, bio, is_brand, phone, instagram, website)",
     )
-    .eq("id", bookingRequestId)
+    .eq("id", conversationId)
     .maybeSingle();
   if (!data) return null;
-  const a = (data as unknown as Row & {
-    venues: { id: string; name: string; city: string | null } | null;
-  }).artists as unknown as Row["artists"] & {
-    bio?: string | null;
-    city?: string | null;
-    genre?: string[] | null;
-    social_links?: { instagram?: string; spotify?: string; website?: string } | null;
-  };
-  const o = (data as unknown as Row & {
-    venues: { id: string; name: string; city: string | null } | null;
-  }).organizers as unknown as Row["organizers"] & {
-    bio?: string | null;
-    is_brand?: boolean | null;
-    phone?: string | null;
-    instagram?: string | null;
-    website?: string | null;
-  };
-  const v = (data as unknown as Row & {
-    venues: { id: string; name: string; city: string | null } | null;
-  }).venues;
+  const a = (
+    data as unknown as {
+      artists: {
+        id: string;
+        stage_name: string;
+        slug: string;
+        cover_image: string | null;
+        user_id: string | null;
+        bio: string | null;
+        city: string | null;
+        genre: string[] | null;
+        social_links: { instagram?: string; spotify?: string; website?: string } | null;
+      };
+    }
+  ).artists;
+  const o = (
+    data as unknown as {
+      organizers: {
+        id: string;
+        display_name: string;
+        avatar_url: string | null;
+        user_id: string;
+        bio: string | null;
+        is_brand: boolean | null;
+        phone: string | null;
+        instagram: string | null;
+        website: string | null;
+      };
+    }
+  ).organizers;
   if (!a || !o) return null;
   const social = a.social_links ?? {};
   return {
-    bookingRequestId: data.id,
-    status: data.status as BookingStatus,
-    eventDate: data.event_date,
-    timeSlot: data.time_slot,
-    budget: data.budget_offer,
+    conversationId: data.id,
     artist: {
       id: a.id,
       userId: a.user_id,
@@ -341,29 +316,39 @@ export async function getConversationMeta(bookingRequestId: string): Promise<Cha
       instagram: o.instagram ?? null,
       website: o.website ?? null,
     },
-    venue: v ? { id: v.id, name: v.name, city: v.city } : null,
   };
 }
 
-export async function getUnreadCountForUser(userId: string, role: "artist" | "organizer"): Promise<number> {
+export async function getUnreadCountForUser(
+  userId: string,
+  role: "artist" | "organizer",
+): Promise<number> {
   const admin = createAdminClient();
   if (role === "artist") {
-    const { data: a } = await admin.from("artists").select("id").eq("user_id", userId).maybeSingle();
+    const { data: a } = await admin
+      .from("artists")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
     if (!a) return 0;
     const { data } = await admin
-      .from("booking_messages")
-      .select("id, booking_requests!inner(artist_id)")
-      .eq("booking_requests.artist_id", a.id)
+      .from("messages")
+      .select("id, conversations!inner(artist_id)")
+      .eq("conversations.artist_id", a.id)
       .eq("sender_role", "organizer")
       .is("read_by_artist_at", null);
     return data?.length ?? 0;
   }
-  const { data: o } = await admin.from("organizers").select("id").eq("user_id", userId).maybeSingle();
+  const { data: o } = await admin
+    .from("organizers")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
   if (!o) return 0;
   const { data } = await admin
-    .from("booking_messages")
-    .select("id, booking_requests!inner(organizer_id)")
-    .eq("booking_requests.organizer_id", o.id)
+    .from("messages")
+    .select("id, conversations!inner(organizer_id)")
+    .eq("conversations.organizer_id", o.id)
     .eq("sender_role", "artist")
     .is("read_by_organizer_at", null);
   return data?.length ?? 0;
@@ -372,8 +357,46 @@ export async function getUnreadCountForUser(userId: string, role: "artist" | "or
 export async function getActiveConversationsCountSuperadmin(): Promise<number> {
   const admin = createAdminClient();
   const { count } = await admin
-    .from("booking_requests")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "in_trattativa");
+    .from("conversations")
+    .select("id", { count: "exact", head: true });
   return count ?? 0;
+}
+
+export async function getConversationByPair(
+  artistId: string,
+  organizerId: string,
+): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("conversations")
+    .select("id")
+    .eq("artist_id", artistId)
+    .eq("organizer_id", organizerId)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
+/**
+ * Lista degli ID conversazione cui l'utente partecipa (per il filtro toast lato client).
+ */
+export async function getConversationIdsForUser(userId: string): Promise<string[]> {
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+  if (profile?.role === "artist") {
+    const { data: a } = await admin.from("artists").select("id").eq("user_id", userId).maybeSingle();
+    if (!a) return [];
+    const { data } = await admin.from("conversations").select("id").eq("artist_id", a.id);
+    return (data ?? []).map((r) => r.id);
+  }
+  if (profile?.role === "organizer") {
+    const { data: o } = await admin.from("organizers").select("id").eq("user_id", userId).maybeSingle();
+    if (!o) return [];
+    const { data } = await admin.from("conversations").select("id").eq("organizer_id", o.id);
+    return (data ?? []).map((r) => r.id);
+  }
+  return [];
 }

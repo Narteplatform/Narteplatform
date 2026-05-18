@@ -7,16 +7,18 @@ import type { ChatMessageKind, ChatOfferStatus, Role } from "@/lib/supabase/type
 
 type Raw = {
   id: string;
-  booking_request_id: string;
+  conversation_id: string;
   sender_id: string | null;
   sender_role: Role;
   kind: ChatMessageKind;
   body: string | null;
   offer_event_date: string | null;
   offer_time_slot: string | null;
-  offer_budget: number | null;
+  offer_budget_cents: number | null;
+  offer_description: string | null;
   offer_status: ChatOfferStatus | null;
   offer_responded_at: string | null;
+  offer_booking_request_id: string | null;
   read_by_artist_at: string | null;
   read_by_organizer_at: string | null;
   attachment_url: string | null;
@@ -30,16 +32,18 @@ type Raw = {
 function fromRaw(r: Raw): ChatMessage {
   return {
     id: r.id,
-    bookingRequestId: r.booking_request_id,
+    conversationId: r.conversation_id,
     senderId: r.sender_id,
     senderRole: r.sender_role,
     kind: r.kind,
     body: r.body,
     offerEventDate: r.offer_event_date,
     offerTimeSlot: r.offer_time_slot,
-    offerBudget: r.offer_budget,
+    offerBudgetCents: r.offer_budget_cents,
+    offerDescription: r.offer_description,
     offerStatus: r.offer_status,
     offerRespondedAt: r.offer_responded_at,
+    offerBookingRequestId: r.offer_booking_request_id,
     readByArtistAt: r.read_by_artist_at,
     readByOrganizerAt: r.read_by_organizer_at,
     attachmentUrl: r.attachment_url ?? null,
@@ -51,19 +55,19 @@ function fromRaw(r: Raw): ChatMessage {
   };
 }
 
-export function useChatChannel(bookingRequestId: string | null, initial: ChatMessage[]) {
+export function useChatChannel(conversationId: string | null, initial: ChatMessage[]) {
   const [messages, setMessages] = useState<ChatMessage[]>(initial);
   const initialKey = useRef<string>("");
 
   useEffect(() => {
-    if (initialKey.current !== bookingRequestId) {
+    if (initialKey.current !== conversationId) {
       setMessages(initial);
-      initialKey.current = bookingRequestId ?? "";
+      initialKey.current = conversationId ?? "";
     }
-  }, [bookingRequestId, initial]);
+  }, [conversationId, initial]);
 
   useEffect(() => {
-    if (!bookingRequestId) return;
+    if (!conversationId) return;
     const supabase = createClient();
     const suffix =
       typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -71,15 +75,15 @@ export function useChatChannel(bookingRequestId: string | null, initial: ChatMes
         : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let channel: ReturnType<typeof supabase.channel> | null = null;
     try {
-      channel = supabase.channel(`booking:${bookingRequestId}:${suffix}`);
+      channel = supabase.channel(`conversation:${conversationId}:${suffix}`);
       channel
         .on(
           "postgres_changes",
           {
             event: "*",
             schema: "public",
-            table: "booking_messages",
-            filter: `booking_request_id=eq.${bookingRequestId}`,
+            table: "messages",
+            filter: `conversation_id=eq.${conversationId}`,
           },
           (payload) => {
             if (payload.eventType === "INSERT") {
@@ -107,7 +111,7 @@ export function useChatChannel(bookingRequestId: string | null, initial: ChatMes
         }
       }
     };
-  }, [bookingRequestId]);
+  }, [conversationId]);
 
   return { messages, setMessages };
 }

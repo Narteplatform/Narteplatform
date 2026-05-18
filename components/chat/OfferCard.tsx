@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
-import { CalendarDays, Clock, Euro, Loader2 } from "lucide-react";
+import { CalendarDays, Clock, Euro, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { respondToOffer } from "@/lib/chat/actions";
@@ -12,10 +13,17 @@ function formatDateIt(iso: string | null): string {
   return new Date(iso).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
 }
 
-function formatBudget(b: number | null): string {
-  if (b == null) return "—";
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(b);
+function formatBudgetCents(c: number | null): string {
+  if (c == null) return "—";
+  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(c / 100);
 }
+
+const SLOT_LABEL: Record<string, string> = {
+  mattina: "Mattina",
+  pomeriggio: "Pomeriggio",
+  sera: "Sera",
+  notte: "Notte",
+};
 
 const statusBadge: Record<NonNullable<ChatMessage["offerStatus"]>, { label: string; variant: "warning" | "success" | "danger" | "muted" }> = {
   pending: { label: "In attesa", variant: "warning" },
@@ -28,10 +36,12 @@ export function OfferCard({
   msg,
   canRespond,
   readOnly,
+  bookingLinkBase,
 }: {
   msg: ChatMessage;
   canRespond: boolean;
   readOnly: boolean;
+  bookingLinkBase?: string;
 }) {
   const [busy, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -64,15 +74,18 @@ export function OfferCard({
             <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
               <Clock className="size-3" /> Fascia
             </span>
-            <span className="font-semibold text-notte">{msg.offerTimeSlot ?? "—"}</span>
+            <span className="font-semibold text-notte">{msg.offerTimeSlot ? (SLOT_LABEL[msg.offerTimeSlot] ?? msg.offerTimeSlot) : "—"}</span>
           </div>
           <div className="flex flex-col gap-1">
             <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
               <Euro className="size-3" /> Budget
             </span>
-            <span className="font-semibold text-notte">{formatBudget(msg.offerBudget)}</span>
+            <span className="font-semibold text-notte">{formatBudgetCents(msg.offerBudgetCents)}</span>
           </div>
         </div>
+        {msg.offerDescription && (
+          <p className="mt-3 text-sm whitespace-pre-wrap text-foreground">{msg.offerDescription}</p>
+        )}
         {canRespond && !readOnly && status === "pending" && (
           <div className="mt-4 flex gap-2">
             <Button
@@ -80,7 +93,7 @@ export function OfferCard({
               variant="default"
               disabled={busy}
               onClick={() => respond("accept")}
-              className="flex-1"
+              className="flex-1 min-h-11"
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : "Accetta"}
             </Button>
@@ -89,11 +102,18 @@ export function OfferCard({
               variant="outline"
               disabled={busy}
               onClick={() => respond("reject")}
-              className="flex-1"
+              className="flex-1 min-h-11"
             >
               Rifiuta
             </Button>
           </div>
+        )}
+        {status === "accepted" && msg.offerBookingRequestId && bookingLinkBase && (
+          <Button asChild size="sm" variant="outline" className="mt-3 w-full">
+            <Link href={`${bookingLinkBase}/${msg.offerBookingRequestId}`}>
+              <ExternalLink className="size-3.5" /> Vedi booking confermato
+            </Link>
+          </Button>
         )}
         {error && <p className="mt-2 text-xs text-[var(--color-error)]">{error}</p>}
       </div>

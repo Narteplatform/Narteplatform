@@ -567,19 +567,45 @@ export interface Database {
         };
         Relationships: [];
       };
-      booking_messages: {
+      conversations: {
         Row: {
           id: string;
-          booking_request_id: string;
+          artist_id: string;
+          organizer_id: string;
+          created_at: string;
+          last_message_at: string;
+        };
+        Insert: {
+          id?: string;
+          artist_id: string;
+          organizer_id: string;
+          created_at?: string;
+          last_message_at?: string;
+        };
+        Update: {
+          id?: string;
+          artist_id?: string;
+          organizer_id?: string;
+          created_at?: string;
+          last_message_at?: string;
+        };
+        Relationships: [];
+      };
+      messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
           sender_id: string | null;
           sender_role: Role;
           kind: ChatMessageKind;
           body: string | null;
           offer_event_date: string | null;
           offer_time_slot: string | null;
-          offer_budget: number | null;
+          offer_budget_cents: number | null;
+          offer_description: string | null;
           offer_status: ChatOfferStatus | null;
           offer_responded_at: string | null;
+          offer_booking_request_id: string | null;
           read_by_artist_at: string | null;
           read_by_organizer_at: string | null;
           attachment_url: string | null;
@@ -591,16 +617,18 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          booking_request_id: string;
+          conversation_id: string;
           sender_id?: string | null;
           sender_role: Role;
           kind?: ChatMessageKind;
           body?: string | null;
           offer_event_date?: string | null;
           offer_time_slot?: string | null;
-          offer_budget?: number | null;
+          offer_budget_cents?: number | null;
+          offer_description?: string | null;
           offer_status?: ChatOfferStatus | null;
           offer_responded_at?: string | null;
+          offer_booking_request_id?: string | null;
           read_by_artist_at?: string | null;
           read_by_organizer_at?: string | null;
           attachment_url?: string | null;
@@ -612,16 +640,18 @@ export interface Database {
         };
         Update: {
           id?: string;
-          booking_request_id?: string;
+          conversation_id?: string;
           sender_id?: string | null;
           sender_role?: Role;
           kind?: ChatMessageKind;
           body?: string | null;
           offer_event_date?: string | null;
           offer_time_slot?: string | null;
-          offer_budget?: number | null;
+          offer_budget_cents?: number | null;
+          offer_description?: string | null;
           offer_status?: ChatOfferStatus | null;
           offer_responded_at?: string | null;
+          offer_booking_request_id?: string | null;
           read_by_artist_at?: string | null;
           read_by_organizer_at?: string | null;
           attachment_url?: string | null;
@@ -657,8 +687,12 @@ export interface Database {
         Args: { uid: string };
         Returns: void;
       };
-      accept_chat_offer: {
-        Args: { message_id: string; actor: string };
+      get_or_create_conversation: {
+        Args: { p_artist_id: string; p_organizer_id: string };
+        Returns: string;
+      };
+      accept_offer_v2: {
+        Args: { p_message_id: string };
         Returns: Json;
       };
     };

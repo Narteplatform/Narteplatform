@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { ArtistAppShell } from "@/components/dashboard/AppShellData";
 import { ChatDockProvider } from "@/components/chat/ChatDockProvider";
 import { ChatDock } from "@/components/chat/ChatDock";
+import { UnreadToastProvider } from "@/components/chat/UnreadToastProvider";
 
 export default async function ArtistDashboardLayout({
   children,
@@ -22,6 +23,7 @@ export default async function ArtistDashboardLayout({
         {children}
       </ArtistAppShell>
       <ChatDock />
+      <UnreadToastProvider currentUserId={user.id} />
     </ChatDockProvider>
   );
 }

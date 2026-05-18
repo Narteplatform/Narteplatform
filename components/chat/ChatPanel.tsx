@@ -1,23 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { Badge } from "@/components/ui/Badge";
 import { MessageList } from "./MessageList";
 import { MessageComposer } from "./MessageComposer";
 import { ProfileDialog } from "./ProfileDialog";
 import { useChatChannel } from "@/hooks/useChatChannel";
 import { markConversationRead } from "@/lib/chat/actions";
 import type { ChatMessage, ChatPartyMeta } from "@/lib/chat/queries";
-import type { BookingStatus } from "@/lib/supabase/types";
-
-const statusLabel: Record<BookingStatus, { label: string; variant: "default" | "warning" | "success" | "danger" | "muted" }> = {
-  pending: { label: "In attesa artista", variant: "warning" },
-  in_trattativa: { label: "In trattativa", variant: "default" },
-  confermata: { label: "Confermata", variant: "success" },
-  rifiutata: { label: "Rifiutata", variant: "danger" },
-  annullata: { label: "Annullata", variant: "muted" },
-};
 
 export function ChatPanel({
   meta,
@@ -26,6 +18,7 @@ export function ChatPanel({
   currentUserId,
   readOnly = false,
   compact = false,
+  backHref,
 }: {
   meta: ChatPartyMeta;
   initialMessages: ChatMessage[];
@@ -33,8 +26,10 @@ export function ChatPanel({
   currentUserId: string | null;
   readOnly?: boolean;
   compact?: boolean;
+  backHref?: string;
 }) {
-  const { messages } = useChatChannel(meta.bookingRequestId, initialMessages);
+  const router = useRouter();
+  const { messages } = useChatChannel(meta.conversationId, initialMessages);
   const [profileOpen, setProfileOpen] = useState<"artist" | "organizer" | null>(null);
 
   const counterpartParty: "artist" | "organizer" =
@@ -47,27 +42,27 @@ export function ChatPanel({
 
   useEffect(() => {
     if (readOnly || viewerRole === "superadmin") return;
-    markConversationRead(meta.bookingRequestId).catch(() => {});
-  }, [meta.bookingRequestId, readOnly, viewerRole, messages.length]);
+    markConversationRead(meta.conversationId).catch(() => {});
+  }, [meta.conversationId, readOnly, viewerRole, messages.length]);
 
-  const status = statusLabel[meta.status];
-  const canWrite =
-    !readOnly &&
-    viewerRole !== "superadmin" &&
-    (meta.status === "in_trattativa" || meta.status === "confermata");
-  const canOffer = !readOnly && viewerRole !== "superadmin" && meta.status === "in_trattativa";
+  const canWrite = !readOnly && viewerRole !== "superadmin";
+  const canOffer = canWrite;
   const disabledReason =
-    viewerRole === "superadmin"
-      ? "Vista superadmin (sola lettura)"
-      : meta.status === "in_trattativa" || meta.status === "confermata"
-      ? undefined
-      : meta.status === "pending"
-      ? "Chat disponibile dopo l'accettazione dell'artista."
-      : "Trattativa chiusa.";
+    viewerRole === "superadmin" ? "Vista superadmin (sola lettura)" : undefined;
 
   return (
-    <div className={`flex h-full flex-col ${compact ? "" : "rounded-xl border border-border bg-surface overflow-hidden"}`}>
-      <header className="flex items-center gap-3 border-b border-border bg-surface px-4 py-3">
+    <div className={`flex h-full min-h-0 flex-col ${compact ? "" : "rounded-xl border border-border bg-surface overflow-hidden"}`}>
+      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-surface px-3 py-2.5 sm:px-4 sm:py-3">
+        {backHref && (
+          <button
+            type="button"
+            onClick={() => router.push(backHref)}
+            className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted active:scale-95 transition"
+            aria-label="Torna alla lista"
+          >
+            <ArrowLeft className="size-5" />
+          </button>
+        )}
         {viewerRole === "superadmin" ? (
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <button
@@ -94,20 +89,18 @@ export function ChatPanel({
           <button
             type="button"
             onClick={() => setProfileOpen(counterpartParty)}
-            className="flex flex-1 min-w-0 items-center gap-3 text-left hover:bg-muted/60 rounded-md px-1 py-0.5 transition-colors"
+            className="flex flex-1 min-w-0 items-center gap-3 text-left hover:bg-muted/60 rounded-md px-1 py-1 transition-colors"
             aria-label="Visualizza profilo"
           >
             <Avatar src={counterpart.avatar} name={counterpart.name} size="sm" />
             <div className="flex-1 min-w-0">
               <div className="truncate font-semibold text-sm text-notte">{counterpart.name}</div>
               <div className="truncate text-[11px] text-muted-foreground">
-                Evento {new Date(meta.eventDate).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" })}
-                {meta.venue?.name ? ` · ${meta.venue.name}` : ""}
+                {viewerRole === "artist" ? "Organizzatore" : "Artista"}
               </div>
             </div>
           </button>
         )}
-        <Badge variant={status.variant} dot>{status.label}</Badge>
       </header>
       <ProfileDialog
         open={profileOpen !== null}
@@ -122,7 +115,7 @@ export function ChatPanel({
         readOnly={readOnly || viewerRole === "superadmin"}
       />
       <MessageComposer
-        meta={meta}
+        conversationId={meta.conversationId}
         disabled={!canWrite}
         disabledReason={disabledReason}
         allowOffer={canOffer}

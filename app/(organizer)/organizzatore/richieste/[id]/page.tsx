@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { RequestActions } from "@/components/organizer/RequestActions";
 import type { BookingStatus } from "@/lib/supabase/types";
 import { minToBudgetLabel } from "@/lib/constants/budget-ranges";
+import { openChatAndRedirect } from "@/lib/chat/open";
 
 export const dynamic = "force-dynamic";
 
@@ -129,13 +130,12 @@ export default async function OrganizerRequestDetailPage({
 
           <RequestActions requestId={req.id} status={req.status} />
 
-          {(req.status === "in_trattativa" || req.status === "confermata") && (
-            <Button asChild>
-              <Link href={`/organizzatore/chat/${req.id}`}>
-                {req.status === "in_trattativa" ? "Apri chat con l'artista" : "Vai alla chat"}
-              </Link>
-            </Button>
-          )}
+          <form action={openChatAndRedirect}>
+            <input type="hidden" name="artist_id" value={req.artist_id} />
+            <input type="hidden" name="organizer_id" value={organizer.id} />
+            <input type="hidden" name="base_path" value="/organizzatore/chat" />
+            <Button type="submit">Apri chat con l&apos;artista</Button>
+          </form>
 
           {artist && (
             <Button asChild variant="outline" size="sm">

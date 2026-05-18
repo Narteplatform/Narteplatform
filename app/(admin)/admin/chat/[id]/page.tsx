@@ -4,43 +4,38 @@ import { Eye } from "lucide-react";
 import { requireRole } from "@/lib/auth/guards";
 import { ConversationList } from "@/components/chat/ConversationList";
 import { ChatPanel } from "@/components/chat/ChatPanel";
-import { getConversationMeta, getConversationsForSuperadmin, getMessages } from "@/lib/chat/queries";
+import {
+  getConversationMeta,
+  getConversationsForSuperadmin,
+  getMessages,
+} from "@/lib/chat/queries";
 
 export const metadata = { title: "Chat — N'arte Admin" };
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ scope?: "active" | "completed" | "all" }>;
-
 export default async function AdminChatDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: SearchParams;
 }) {
   const { id } = await params;
-  const sp = await searchParams;
   const user = await requireRole(["superadmin"]);
-  const scope = sp.scope ?? "active";
 
   const meta = await getConversationMeta(id);
   if (!meta) notFound();
-  const [messages, items] = await Promise.all([getMessages(id), getConversationsForSuperadmin(scope)]);
+  const [messages, items] = await Promise.all([
+    getMessages(id),
+    getConversationsForSuperadmin(),
+  ]);
 
   return (
     <div className="space-y-3">
       <Link href="/admin/chat" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">
         ← Tutte le conversazioni
       </Link>
-      <div className="h-[calc(100vh-12rem)] grid grid-cols-1 md:grid-cols-[380px_1fr] rounded-xl border border-border bg-surface overflow-hidden">
+      <div className="h-[100dvh] md:h-[calc(100dvh-12rem)] grid grid-cols-1 md:grid-cols-[380px_1fr] rounded-none md:rounded-xl border-0 md:border md:border-border bg-surface overflow-hidden">
         <aside className="hidden md:block border-r border-border min-h-0">
-          <ConversationList
-            items={items}
-            basePath="/admin/chat"
-            activeId={id}
-            mode="superadmin"
-            superadminScope={scope}
-          />
+          <ConversationList items={items} basePath="/admin/chat" activeId={id} mode="superadmin" />
         </aside>
         <section className="min-h-0 flex flex-col">
           <div className="flex items-center gap-2 px-3 py-2 bg-corallo-subtle/60 border-b border-border text-xs text-corallo-dark">
@@ -55,6 +50,7 @@ export default async function AdminChatDetailPage({
               currentUserId={user.id}
               readOnly
               compact
+              backHref="/admin/chat"
             />
           </div>
         </section>

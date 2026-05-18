@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Instagram, Globe, Music, Facebook, Youtube, MapPin } from "lucide-react";
+import { Instagram, Globe, Music, Facebook, Youtube, MapPin, MessageCircle } from "lucide-react";
+import { openChatAndRedirect } from "@/lib/chat/open";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { Reveal } from "@/components/animations/Reveal";
@@ -267,6 +268,18 @@ export default async function ArtistDetailPage({
                   variant="hero"
                   label="Aggiungi ai preferiti"
                 />
+                {viewerRole === "organizer" && (
+                  <form action={openChatAndRedirect} className="inline-flex">
+                    <input type="hidden" name="artist_id" value={artist.id} />
+                    <input type="hidden" name="base_path" value="/organizzatore/chat" />
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-azzurro bg-azzurro px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white hover:bg-azzurro-dark transition"
+                    >
+                      <MessageCircle className="size-3.5" /> Contatta artista
+                    </button>
+                  </form>
+                )}
               </div>
             </Reveal>
 

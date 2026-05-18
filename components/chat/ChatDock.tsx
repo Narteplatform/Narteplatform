@@ -32,7 +32,6 @@ export function ChatDock() {
     reloadList();
   }, [reloadList]);
 
-  // Realtime: ascolta INSERT su booking_messages → ricarica lista
   useEffect(() => {
     const supabase = createClient();
     const suffix =
@@ -41,11 +40,11 @@ export function ChatDock() {
         : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let channel: ReturnType<typeof supabase.channel> | null = null;
     try {
-      channel = supabase.channel(`dock:booking_messages:${suffix}`);
+      channel = supabase.channel(`dock:messages:${suffix}`);
       channel
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "booking_messages" },
+          { event: "*", schema: "public", table: "messages" },
           () => {
             reloadList();
           },
@@ -65,7 +64,6 @@ export function ChatDock() {
     };
   }, [reloadList]);
 
-  // Carica conversazione attiva
   useEffect(() => {
     if (!state.activeId) {
       setActive(null);
@@ -97,7 +95,6 @@ export function ChatDock() {
 
   return (
     <>
-      {/* Pill collapsed */}
       <AnimatePresence>
         {!state.open && (
           <motion.button
@@ -120,7 +117,6 @@ export function ChatDock() {
         )}
       </AnimatePresence>
 
-      {/* Pannello expanded */}
       <AnimatePresence>
         {state.open && (
           <motion.div
@@ -140,7 +136,7 @@ export function ChatDock() {
                   <button
                     type="button"
                     onClick={clearConversation}
-                    className="rounded-full p-1.5 hover:bg-muted"
+                    className="rounded-full p-2 hover:bg-muted min-h-11 min-w-11"
                     aria-label="Indietro"
                   >
                     <ArrowLeft className="size-4" />
@@ -153,7 +149,7 @@ export function ChatDock() {
               <button
                 type="button"
                 onClick={closeDock}
-                className="rounded-full p-1.5 hover:bg-muted"
+                className="rounded-full p-2 hover:bg-muted min-h-11 min-w-11"
                 aria-label="Chiudi"
               >
                 <X className="size-4" />
@@ -185,7 +181,6 @@ export function ChatDock() {
         )}
       </AnimatePresence>
 
-      {/* Toggle quando dock chiuso ma user vuole riaprire (non necessario perché pill è già visibile) */}
       <span className="sr-only" aria-hidden="true" onClick={toggleDock} />
     </>
   );

@@ -167,18 +167,26 @@ export const requestFromPublicSchema = z.object({
 export type RequestFromPublicInput = z.infer<typeof requestFromPublicSchema>;
 
 // =========================================
-// Chat (booking_messages)
+// Chat v2 (conversations + messages)
 // =========================================
 export const chatMessageSchema = z.object({
-  booking_request_id: z.string().uuid(),
+  conversation_id: z.string().uuid(),
   body: z.string().trim().min(1, "Messaggio vuoto").max(2000, "Massimo 2000 caratteri"),
 });
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 
+export const chatTimeSlotEnum = z.enum(["mattina", "pomeriggio", "sera", "notte"]);
+export type ChatTimeSlot = z.infer<typeof chatTimeSlotEnum>;
+
 export const chatOfferSchema = z.object({
-  booking_request_id: z.string().uuid(),
+  conversation_id: z.string().uuid(),
   event_date: z.string().min(1, "Data richiesta"),
-  time_slot: z.string().trim().min(1, "Fascia oraria richiesta").max(60),
-  budget: z.coerce.number().min(0, "Budget non valido").max(1_000_000),
+  time_slot: chatTimeSlotEnum,
+  budget_cents: z.coerce.number().int().min(0, "Budget non valido").max(100_000_000),
+  description: z
+    .string()
+    .max(1000)
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 export type ChatOfferInput = z.infer<typeof chatOfferSchema>;
