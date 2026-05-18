@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { ImageUpload } from "@/components/forms/ImageUpload";
 import { GalleryUpload } from "@/components/forms/GalleryUpload";
+import { AudioUpload, type AudioTrack } from "@/components/forms/AudioUpload";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
 import { updateArtistProfile } from "@/app/(artist)/dashboard/_actions";
 
@@ -21,6 +22,7 @@ type Artist = {
   social_links: unknown;
   gallery: string[];
   videos: string[];
+  audio_files?: AudioTrack[] | null;
 };
 
 function readLink(links: unknown, key: string): string {
@@ -46,6 +48,7 @@ type FormValues = {
   website: string;
   gallery: string[];
   videos: string;
+  audio_files: AudioTrack[];
 };
 
 function splitLines(text: string): string[] {
@@ -80,6 +83,7 @@ export function ArtistProfileForm({
       website: readLink(artist.social_links, "website"),
       gallery: artist.gallery ?? [],
       videos: (artist.videos ?? []).join("\n"),
+      audio_files: (artist.audio_files ?? []) as AudioTrack[],
     },
   });
 
@@ -105,6 +109,7 @@ export function ArtistProfileForm({
       },
       gallery: values.gallery,
       videos: splitLines(values.videos),
+      audio_files: (values.audio_files ?? []).filter((t) => t && t.url),
     });
     if (!res.ok) setError(res.error ?? "Errore");
     else {
@@ -183,6 +188,21 @@ export function ArtistProfileForm({
             <GalleryUpload
               label="Carica foto direttamente da computer o cellulare"
               value={field.value ?? []}
+              onChange={field.onChange}
+            />
+          )}
+        />
+      </fieldset>
+
+      <fieldset className="space-y-4 border-t border-border pt-6">
+        <legend className="font-display text-lg uppercase">Tracce audio</legend>
+        <Controller
+          control={control}
+          name="audio_files"
+          render={({ field }) => (
+            <AudioUpload
+              label="Carica demo, brani o estratti dal vivo (MP3/WAV/M4A)"
+              value={(field.value ?? []) as AudioTrack[]}
               onChange={field.onChange}
             />
           )}

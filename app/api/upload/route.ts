@@ -10,9 +10,14 @@ const BUCKETS = {
   event_home: "event-covers",
   avatar: "artist-images",
   venue: "venue-images",
+  audio: "artist-audio",
 } as const;
 
 type Kind = keyof typeof BUCKETS;
+
+const AUDIO_MIME = /^audio\//;
+const AUDIO_MAX = 25 * 1024 * 1024; // 25MB
+const IMAGE_MAX = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request: Request) {
   // Auth check: solo utenti loggati possono caricare
@@ -42,14 +47,26 @@ export async function POST(request: Request) {
   const kind = kindRaw as Kind;
   const bucket = BUCKETS[kind];
 
-  if (file.size > 5 * 1024 * 1024) {
-    return NextResponse.json({ error: "Immagine troppo grande (max 5MB)" }, { status: 413 });
-  }
-  if (!file.type.startsWith("image/")) {
-    return NextResponse.json({ error: "Formato non supportato" }, { status: 415 });
+  if (kind === "audio") {
+    if (file.size > AUDIO_MAX) {
+      return NextResponse.json({ error: "Audio troppo grande (max 25MB)" }, { status: 413 });
+    }
+    if (!AUDIO_MIME.test(file.type)) {
+      return NextResponse.json({ error: "Formato audio non supportato" }, { status: 415 });
+    }
+  } else {
+    if (file.size > IMAGE_MAX) {
+      return NextResponse.json({ error: "Immagine troppo grande (max 5MB)" }, { status: 413 });
+    }
+    if (!file.type.startsWith("image/")) {
+      return NextResponse.json({ error: "Formato non supportato" }, { status: 415 });
+    }
   }
 
-  const ext = (file.type.split("/")[1] || "jpg").replace(/[^a-z0-9]/gi, "").slice(0, 5) || "jpg";
+  const ext =
+    (file.type.split("/")[1] || (kind === "audio" ? "mp3" : "jpg"))
+      .replace(/[^a-z0-9]/gi, "")
+      .slice(0, 5) || (kind === "audio" ? "mp3" : "jpg");
   const path = `${user.id}/${Date.now()}-${kind}.${ext}`;
 
   const admin = createAdminClient();
@@ -63,5 +80,12 @@ export async function POST(request: Request) {
   }
 
   const { data: pub } = admin.storage.from(bucket).getPublicUrl(path);
-  return NextResponse.json({ url: pub.publicUrl, path, bucket });
+  return NextResponse.json({
+    url: pub.publicUrl,
+    path,
+    bucket,
+    name: file.name,
+    size: file.size,
+    contentType: file.type,
+  });
 }

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 
+type AudioTrack = { url: string; title: string };
+
 type ProfileUpdate = {
   stage_name: string;
   bio: string | null;
@@ -13,6 +15,7 @@ type ProfileUpdate = {
   social_links: Record<string, string>;
   gallery: string[];
   videos: string[];
+  audio_files: AudioTrack[];
 };
 
 async function ownsArtist(artistId: string) {

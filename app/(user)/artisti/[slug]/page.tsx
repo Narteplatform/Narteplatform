@@ -168,6 +168,7 @@ export default async function ArtistDetailPage({
     cover_image?: string | null;
     gallery?: string[] | null;
     videos?: string[] | null;
+    audio_files?: { url: string; title: string }[] | null;
     social_links?: SocialLinks | string | null;
     price_band?: PriceBand | null;
   };
@@ -281,6 +282,11 @@ export default async function ArtistDetailPage({
   }
   const gallery: string[] = Array.isArray(artist.gallery) ? artist.gallery : [];
   const videos: string[] = Array.isArray(artist.videos) ? artist.videos : [];
+  const audioTracks: { url: string; title: string }[] = Array.isArray(artist.audio_files)
+    ? (artist.audio_files as { url: string; title: string }[]).filter(
+        (t) => t && typeof t.url === "string"
+      )
+    : [];
   const instruments: string[] = Array.isArray(artist.instruments) ? artist.instruments : [];
   const genres: string[] = Array.isArray(artist.genre) ? artist.genre : [];
   const bio = artist.bio ?? null;
@@ -517,6 +523,35 @@ export default async function ArtistDetailPage({
           )}
         </div>
       </section>
+
+      {/* AUDIO */}
+      {audioTracks.length > 0 && (
+        <section className="border-t border-border bg-background py-16 md:py-24">
+          <div className="container-narte">
+            <Reveal>
+              <p className="accent-label mb-3">audio</p>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <h2 className="display-xl text-3xl md:text-5xl">Ascolta.</h2>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <ul className="mt-8 grid gap-3 md:grid-cols-2">
+                {audioTracks.map((t, i) => (
+                  <li
+                    key={`${t.url}-${i}`}
+                    className="flex flex-col gap-2 rounded-2xl border border-border bg-muted p-4"
+                  >
+                    <p className="font-display text-sm uppercase tracking-tight">
+                      {t.title || `Traccia ${i + 1}`}
+                    </p>
+                    <audio controls preload="none" src={t.url} className="w-full" />
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
+          </div>
+        </section>
+      )}
 
       {/* GALLERY */}
       {gallery.length > 0 && (

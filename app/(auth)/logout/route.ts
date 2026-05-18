@@ -5,5 +5,5 @@ import { getSiteUrl } from "@/lib/site-url";
 export async function POST() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  return NextResponse.redirect(new URL("/", getSiteUrl()));
+  return NextResponse.redirect(new URL("/login", getSiteUrl()), { status: 303 });
 }
