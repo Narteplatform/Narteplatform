@@ -41,6 +41,7 @@ export type NavSection = {
   exact?: boolean;
   badge?: { label: string; variant?: "accent" | "default" };
   children?: NavSubItem[];
+  featured?: boolean;
 };
 
 export type AppShellUser = {
@@ -343,12 +344,21 @@ function NavItem({
             }}
             className={cn(
               "flex flex-1 items-center gap-3 rounded-md px-3 py-2 text-sm transition",
-              linkActive
+              section.featured && !linkActive
+                ? "bg-accent text-accent-foreground font-semibold shadow-[0_4px_20px_rgba(232,84,42,0.25)] hover:opacity-90"
+                : section.featured && linkActive
+                ? "bg-accent text-accent-foreground font-semibold shadow-[0_4px_20px_rgba(232,84,42,0.35)]"
+                : linkActive
                 ? "bg-muted font-medium text-foreground"
                 : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
             )}
           >
-            <span className="flex size-5 shrink-0 items-center justify-center text-foreground/70">
+            <span
+              className={cn(
+                "flex size-5 shrink-0 items-center justify-center",
+                section.featured ? "text-accent-foreground" : "text-foreground/70"
+              )}
+            >
               {section.icon}
             </span>
             <span className="flex-1 truncate">{section.label}</span>

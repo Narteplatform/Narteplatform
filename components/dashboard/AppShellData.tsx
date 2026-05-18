@@ -188,7 +188,8 @@ async function loadAdminShell(): Promise<{
         : undefined,
       children: [
         { href: "/admin/consulenza", label: "Appuntamenti", count: pendingConsultations },
-        { href: "/admin/consulenza/slots", label: "Slot disponibili" },
+        { href: "/admin/consulenza/consulenti", label: "Consulenti" },
+        { href: "/admin/consulenza/slots", label: "Slot legacy" },
       ],
     },
     {
@@ -312,6 +313,12 @@ async function loadArtistShell(userId: string): Promise<{
   const unreadChat = await safe(getUnreadCountForUser(userId, "artist")).then((v) => v ?? 0);
 
   const navSections: NavSection[] = [
+    {
+      href: "/dashboard/consulenza",
+      label: "Consulente N'arte",
+      icon: <Phone className="size-4" />,
+      featured: true,
+    },
     {
       href: "/dashboard/overview",
       label: "Overview",
