@@ -1,8 +1,22 @@
 import { Mic2, Eye, Users2, TrendingUp } from "lucide-react";
 import { ArtistApplicationForm } from "@/components/forms/ArtistApplicationForm";
 import { Reveal } from "@/components/animations/Reveal";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Sei un artista? — N'arte" };
+
+async function getGenreOptions(): Promise<string[]> {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("genres")
+      .select("name")
+      .order("order_index", { ascending: true });
+    return ((data ?? []) as unknown as { name: string }[]).map((g) => g.name);
+  } catch {
+    return [];
+  }
+}
 
 const BENEFITS = [
   {
@@ -27,7 +41,8 @@ const BENEFITS = [
   },
 ];
 
-export default function CandidaturaPage() {
+export default async function CandidaturaPage() {
+  const genreOptions = await getGenreOptions();
   return (
     <section className="relative overflow-hidden border-b border-border pt-28 pb-16 md:pt-36 md:pb-24">
       <div
@@ -85,7 +100,7 @@ export default function CandidaturaPage() {
                   disponibilità.
                 </p>
                 <div className="mt-6">
-                  <ArtistApplicationForm />
+                  <ArtistApplicationForm genreOptions={genreOptions} />
                 </div>
               </div>
             </Reveal>

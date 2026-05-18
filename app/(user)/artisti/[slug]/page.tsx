@@ -1,6 +1,7 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Instagram, Globe, Music, Facebook, Youtube, MapPin, MessageCircle } from "lucide-react";
+import { Instagram, Globe, Music, Facebook, Youtube, MapPin, MessageCircle, Lock, LogIn, UserPlus } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { openChatAndRedirect } from "@/lib/chat/open";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
@@ -27,8 +28,124 @@ export default async function ArtistDetailPage({
   const { slug } = await params;
 
   const viewer = await getCurrentUser();
-  if (!viewer) {
-    redirect(`/login?next=/artisti/${slug}`);
+  const isGuest = !viewer;
+
+  if (isGuest) {
+    // Fetch minimo: solo cover blurrata + genere/categoria
+    let admin;
+    try {
+      admin = createAdminClient();
+    } catch {
+      notFound();
+    }
+    const { data: locked } = await admin
+      .from("artists")
+      .select("stage_name, cover_image, genre, instruments")
+      .eq("slug", slug)
+      .eq("status", "approved")
+      .maybeSingle();
+    if (!locked) notFound();
+    return (
+      <article className="min-h-[80vh]">
+        <section className="relative overflow-hidden border-b border-border pt-24 pb-12 md:pt-32 md:pb-16">
+          <div
+            aria-hidden="true"
+            className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/3 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"
+          />
+          <div className="container-narte relative z-10 grid gap-8 md:grid-cols-[1fr_1.4fr] md:items-center md:gap-10 lg:gap-14">
+            {/* Cover bloccata */}
+            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-border bg-muted">
+              {locked.cover_image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={locked.cover_image}
+                  alt="Artista bloccato"
+                  className="h-full w-full scale-110 object-cover blur-2xl"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center font-display text-6xl uppercase text-foreground/30">
+                  ?
+                </div>
+              )}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span className="inline-flex size-20 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm">
+                  <Lock className="size-9 text-white" />
+                </span>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="flex flex-col">
+              <p className="accent-label mb-3">contenuto riservato</p>
+              <h1 className="display-xl text-4xl md:text-5xl lg:text-6xl">
+                Accedi per scoprire questo artista
+              </h1>
+              <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
+                Nome, biografia, gallery, calendario e tutti i dettagli sono visibili solo agli
+                utenti iscritti a N&apos;arte. Iscriviti o accedi per sbloccare l&apos;intero roster.
+              </p>
+
+              {(locked.genre?.length ?? 0) > 0 && (
+                <div className="mt-6">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Generi
+                  </p>
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {(locked.genre ?? []).slice(0, 5).map((g: string) => (
+                      <li
+                        key={g}
+                        className="rounded-full border border-border bg-muted px-3 py-1 text-xs lowercase tracking-wide"
+                      >
+                        {g}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {(locked.instruments?.length ?? 0) > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Categoria
+                  </p>
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {(locked.instruments ?? []).slice(0, 4).map((i: string) => (
+                      <li
+                        key={i}
+                        className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs text-accent"
+                      >
+                        {i}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button asChild variant="accent" size="lg">
+                  <Link href={`/register?next=/artisti/${slug}`}>
+                    <UserPlus className="size-4" /> Iscriviti per sbloccare
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link href={`/login?next=/artisti/${slug}`}>
+                    <LogIn className="size-4" /> Ho già un account
+                  </Link>
+                </Button>
+              </div>
+
+              <p className="mt-6 text-xs text-muted-foreground">
+                Iscrizione gratuita.{" "}
+                <Link href="/artisti" className="underline underline-offset-2 hover:text-foreground">
+                  Torna al roster
+                </Link>
+              </p>
+            </div>
+          </div>
+        </section>
+      </article>
+    );
   }
 
   let supabase;

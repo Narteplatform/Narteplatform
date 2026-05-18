@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   artistApplicationSchema,
@@ -9,17 +9,24 @@ import {
 } from "@/lib/validators/schemas";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { MultiSelect } from "@/components/ui/MultiSelect";
 import { submitArtistApplication } from "@/app/(public)/candidatura-artista/_actions";
 
-export function ArtistApplicationForm() {
+export function ArtistApplicationForm({
+  genreOptions = [],
+}: {
+  genreOptions?: string[];
+}) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ArtistApplicationInput>({
     resolver: zodResolver(artistApplicationSchema),
+    defaultValues: { genres: [] },
   });
 
   async function onSubmit(values: ArtistApplicationInput) {
@@ -40,6 +47,8 @@ export function ArtistApplicationForm() {
     );
   }
 
+  const options = genreOptions.map((g) => ({ value: g, label: g }));
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
@@ -52,8 +61,21 @@ export function ArtistApplicationForm() {
         <Field label="Nome d'arte" error={errors.stageName?.message}>
           <Input {...register("stageName")} />
         </Field>
-        <Field label="Genere" error={errors.genre?.message}>
-          <Input placeholder="es. Indie, Trap, Jazz" {...register("genre")} />
+        <Field label="Generi musicali" error={errors.genres?.message}>
+          <Controller
+            control={control}
+            name="genres"
+            render={({ field }) => (
+              <MultiSelect
+                options={options}
+                value={field.value ?? []}
+                onChange={field.onChange}
+                placeholder="Seleziona uno o più generi…"
+                searchPlaceholder="Cerca genere…"
+                emptyText="Nessun genere disponibile"
+              />
+            )}
+          />
         </Field>
       </div>
       <Field label="Bio" error={errors.bio?.message}>

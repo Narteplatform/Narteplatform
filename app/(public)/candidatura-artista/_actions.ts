@@ -19,7 +19,7 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
       name: data.name,
       email: data.email,
       stage_name: data.stageName,
-      genre: data.genre.split(",").map((g) => g.trim()).filter(Boolean),
+      genre: data.genres,
       bio: data.bio ?? null,
       links: {
         ...(data.instagram ? { instagram: data.instagram } : {}),

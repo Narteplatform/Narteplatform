@@ -17,14 +17,17 @@ export type ExplorerArtist = {
 };
 
 const ROLE_GROUPS: { key: string; label: string; match: (instr: string) => boolean }[] = [
-  { key: "cantante", label: "Cantante", match: (i) => /voce|cori/i.test(i) },
-  { key: "chitarrista", label: "Chitarrista", match: (i) => /chitarra/i.test(i) },
-  { key: "bassista", label: "Bassista", match: (i) => /^basso$|contrabbasso/i.test(i) },
-  { key: "batterista", label: "Batterista", match: (i) => /batteria|percussioni|cajón|cajon/i.test(i) },
-  { key: "tastierista", label: "Tastierista", match: (i) => /pianoforte|tastiere|organo|synth/i.test(i) },
-  { key: "fiati", label: "Fiati", match: (i) => /sax|tromba|trombone|flauto|clarinetto/i.test(i) },
-  { key: "archi", label: "Archi", match: (i) => /violino|viola|violoncello|arpa/i.test(i) },
-  { key: "dj", label: "DJ", match: (i) => /dj|controller|loop station/i.test(i) },
+  { key: "bassista", label: "Bassista", match: (i) => /\bbass(o|ist)|contrabbasso/i.test(i) },
+  { key: "batterista", label: "Batterista", match: (i) => /batter(ia|ist)|drum/i.test(i) },
+  { key: "cantante", label: "Cantante", match: (i) => /\b(voce|cantante|vocal|singer)\b/i.test(i) },
+  { key: "chitarrista", label: "Chitarrista", match: (i) => /chitarr(a|ist)|guitar/i.test(i) },
+  { key: "corista", label: "Corista", match: (i) => /corist|cori\b|backing vocal|coro/i.test(i) },
+  { key: "dj", label: "DJ", match: (i) => /\bdj\b|controller|loop station|turntabl/i.test(i) },
+  { key: "percussionista", label: "Percussionista", match: (i) => /percussion|cajón|cajon|conga|bongo|djembe/i.test(i) },
+  { key: "sassofonista", label: "Sassofonista", match: (i) => /sax|sassofon/i.test(i) },
+  { key: "tastierista", label: "Tastierista", match: (i) => /tastier|pianoforte|piano\b|organo|synth|keyboard/i.test(i) },
+  { key: "trombettista", label: "Trombettista", match: (i) => /tromba|trombett|trumpet/i.test(i) },
+  { key: "violinista", label: "Violinista", match: (i) => /violin/i.test(i) },
 ];
 
 export function ArtistsExplorer({
@@ -59,15 +62,17 @@ export function ArtistsExplorer({
   }, [artists]);
 
   const allGenres = useMemo(
-    () => Array.from(genreCounts.keys()).sort((a, b) => a.localeCompare(b, "it")),
+    () =>
+      Array.from(genreCounts.entries())
+        .filter(([, count]) => count > 0)
+        .map(([g]) => g)
+        .sort((a, b) => a.localeCompare(b, "it")),
     [genreCounts]
   );
-  // Mostra sempre tutte le tipologie. Anche se zero artisti per categoria
-  // l'utente vede il filtro completo (count 0). Nasconde solo se la lista
-  // artisti è vuota.
+  // Mostra solo tipologie con almeno un artista corrispondente
   const availableRoles = useMemo(
-    () => (artists.length === 0 ? [] : ROLE_GROUPS),
-    [artists.length]
+    () => ROLE_GROUPS.filter((r) => (roleCounts.get(r.key) ?? 0) > 0),
+    [roleCounts]
   );
 
   const filtered = useMemo(() => {

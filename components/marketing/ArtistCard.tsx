@@ -48,7 +48,7 @@ export function ArtistCard({
   isGuest = false,
   category = null,
 }: ArtistCardProps) {
-  const href = isGuest ? `/login?next=/artisti` : `/artisti/${slug}`;
+  const href = `/artisti/${slug}`;
   return (
     <Link
       href={href}

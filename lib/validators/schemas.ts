@@ -15,7 +15,7 @@ export const artistApplicationSchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email(),
   stageName: z.string().min(2).max(80),
-  genre: z.string().min(2).max(120),
+  genres: z.array(z.string().min(1)).min(1, "Seleziona almeno un genere").max(8),
   bio: z.string().max(2000).optional(),
   instagram: z.string().max(120).optional(),
   spotify: z.string().max(200).optional(),
