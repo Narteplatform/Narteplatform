@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Instagram, Globe, Music, Facebook, Youtube, MapPin, MessageCircle } from "lucide-react";
 import { openChatAndRedirect } from "@/lib/chat/open";
@@ -25,6 +25,12 @@ export default async function ArtistDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+
+  const viewer = await getCurrentUser();
+  if (!viewer) {
+    redirect(`/login?next=/artisti/${slug}`);
+  }
+
   let supabase;
   try {
     supabase = createAdminClient();
@@ -106,7 +112,6 @@ export default async function ArtistDetailPage({
     .map((a) => a.date);
 
   // Viewer role + dati per organizzatore
-  const viewer = await getCurrentUser();
   const viewerRole: ViewerRole =
     (viewer?.profile?.role as ViewerRole | undefined) ?? "anon";
   let organizerVenues: { id: string; name: string }[] = [];

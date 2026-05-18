@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import { Reveal, StaggerList } from "@/components/animations/Reveal";
+import { Reveal } from "@/components/animations/Reveal";
+import { Marquee } from "@/components/animations/Marquee";
 
 type Collab = {
   id: string;
@@ -40,30 +41,34 @@ export async function CollaborationsSection() {
             nei luoghi più iconici di Napoli e oltre.
           </p>
         </Reveal>
-
-        <StaggerList className="mt-12 grid grid-cols-2 gap-px overflow-hidden border border-border bg-border md:grid-cols-3 lg:grid-cols-4">
-          {collabs.map((c) => (
-            <LogoCell key={c.id} collab={c} />
-          ))}
-        </StaggerList>
       </div>
+
+      <Reveal delay={0.25}>
+        <div className="relative mt-12 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+          <Marquee speed={40}>
+            {collabs.map((c) => (
+              <LogoCell key={c.id} collab={c} />
+            ))}
+          </Marquee>
+        </div>
+      </Reveal>
     </section>
   );
 }
 
 function LogoCell({ collab }: { collab: Collab }) {
   const inner = (
-    <div className="flex aspect-[2/1] w-full items-center justify-center bg-background p-6 transition group-hover:bg-foreground">
+    <div className="flex h-[110px] w-[220px] shrink-0 items-center justify-center rounded-xl border border-border bg-background p-5 shadow-sm transition group-hover:border-accent group-hover:shadow-md">
       {collab.logo_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={collab.logo_url}
           alt={collab.name}
           loading="lazy"
-          className="max-h-full max-w-full object-contain transition group-hover:invert"
+          className="max-h-full max-w-full object-contain"
         />
       ) : (
-        <span className="font-display text-xl uppercase text-foreground transition group-hover:text-background">
+        <span className="font-display text-base uppercase tracking-tight text-foreground">
           {collab.name}
         </span>
       )}

@@ -33,6 +33,8 @@ export type ArtistCardProps = {
   genres?: string[];
   priceBand?: PriceBand;
   canSeePrice?: boolean;
+  isGuest?: boolean;
+  category?: string | null;
 };
 
 export function ArtistCard({
@@ -43,11 +45,15 @@ export function ArtistCard({
   genres = [],
   priceBand = "standard",
   canSeePrice = false,
+  isGuest = false,
+  category = null,
 }: ArtistCardProps) {
+  const href = isGuest ? `/login?next=/artisti` : `/artisti/${slug}`;
   return (
     <Link
-      href={`/artisti/${slug}`}
+      href={href}
       className="group relative flex w-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)] transition-all duration-220 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-[var(--shadow-md)]"
+      aria-label={isGuest ? "Iscriviti per vedere i dettagli dell'artista" : stageName}
     >
       {/* IMAGE */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-notte-80">
@@ -55,33 +61,53 @@ export function ArtistCard({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={coverImage}
-            alt={stageName}
+            alt={isGuest ? "Artista bloccato" : stageName}
             loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            className={`absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
+              isGuest ? "blur-xl scale-110" : ""
+            }`}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center font-display text-4xl text-palco/40">
-            {stageName.slice(0, 2)}
+            {isGuest ? "?" : stageName.slice(0, 2)}
           </div>
         )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-notte via-notte/20 to-transparent" />
 
-        {city && (
+        {isGuest && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span
+              aria-hidden="true"
+              className="inline-flex size-14 items-center justify-center rounded-full bg-notte/70 backdrop-blur-sm"
+            >
+              <Lock className="size-6 text-palco" />
+            </span>
+          </div>
+        )}
+
+        {!isGuest && city && (
           <span className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-notte/55 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-palco backdrop-blur-sm">
             <span className="size-1.5 rounded-full bg-azzurro" />
             {city}
           </span>
         )}
 
-        <FavoriteToggle
-          artist={{ slug, stage_name: stageName, cover_image: coverImage, city }}
-          variant="card"
-        />
+        {!isGuest && (
+          <FavoriteToggle
+            artist={{ slug, stage_name: stageName, cover_image: coverImage, city }}
+            variant="card"
+          />
+        )}
 
         {/* Nome sull'immagine in basso */}
         <div className="absolute inset-x-3 bottom-3">
-          <h3 className="font-display text-xl font-bold leading-tight text-palco drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
-            {stageName}
+          <h3
+            className={`font-display text-xl font-bold leading-tight text-palco drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] ${
+              isGuest ? "blur-md select-none" : ""
+            }`}
+            aria-hidden={isGuest}
+          >
+            {isGuest ? "Nome artista" : stageName}
           </h3>
           {genres.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
@@ -100,10 +126,19 @@ export function ArtistCard({
 
       {/* INFO */}
       <div className="flex flex-col gap-2.5 px-4 py-4">
-        <PriceRow priceBand={priceBand} canSeePrice={canSeePrice} />
+        {isGuest ? (
+          <div className="flex items-center justify-between gap-2">
+            <span className="narte-label">Categoria</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent">
+              {category ?? "Artista"}
+            </span>
+          </div>
+        ) : (
+          <PriceRow priceBand={priceBand} canSeePrice={canSeePrice} />
+        )}
         <p className="inline-flex items-center gap-1.5 text-xs text-palco-20">
           <MapPin className="size-3" />
-          {city || "Italia"}
+          {isGuest ? "Iscriviti per scoprire" : city || "Italia"}
         </p>
       </div>
     </Link>

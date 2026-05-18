@@ -15,6 +15,7 @@ const NAV_LINKS: { href: string; label: string }[] = [
   { href: "/chi-siamo", label: "Chi siamo" },
   { href: "/collaborazioni", label: "Collaborazioni" },
   { href: "/contatti", label: "Contatti" },
+  { href: "/faq", label: "F.A.Q." },
 ];
 
 export function MobileMenu({ isLoggedIn, role }: Props) {

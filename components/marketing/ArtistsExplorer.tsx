@@ -30,9 +30,11 @@ const ROLE_GROUPS: { key: string; label: string; match: (instr: string) => boole
 export function ArtistsExplorer({
   artists,
   canSeePrice = false,
+  isGuest = false,
 }: {
   artists: ExplorerArtist[];
   canSeePrice?: boolean;
+  isGuest?: boolean;
 }) {
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
@@ -225,18 +227,25 @@ export function ArtistsExplorer({
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {filtered.map((a) => (
-              <ArtistCard
-                key={a.id}
-                slug={a.slug}
-                stageName={a.stage_name}
-                city={a.city}
-                coverImage={a.cover_image}
-                genres={a.genre}
-                priceBand={a.price_band}
-                canSeePrice={canSeePrice}
-              />
-            ))}
+            {filtered.map((a) => {
+              const roleLabel =
+                ROLE_GROUPS.find((g) => (a.instruments ?? []).some((i) => g.match(i)))?.label ??
+                null;
+              return (
+                <ArtistCard
+                  key={a.id}
+                  slug={a.slug}
+                  stageName={a.stage_name}
+                  city={a.city}
+                  coverImage={a.cover_image}
+                  genres={a.genre}
+                  priceBand={a.price_band}
+                  canSeePrice={canSeePrice}
+                  isGuest={isGuest}
+                  category={roleLabel}
+                />
+              );
+            })}
           </div>
         )}
       </div>

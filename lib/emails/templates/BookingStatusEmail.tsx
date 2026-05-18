@@ -11,12 +11,13 @@ import {
 } from "@react-email/components";
 
 type Props = {
-  kind: "accepted" | "confirmed" | "declined";
+  kind: "accepted" | "confirmed" | "declined" | "cancelled_by_admin";
   artistName: string;
   organizerName: string;
   venueName: string | null;
   eventDate: string;
   notesArtist: string | null;
+  cancellationReason?: string | null;
 };
 
 const COPY: Record<Props["kind"], { heading: string; body: string; preview: string }> = {
@@ -35,6 +36,11 @@ const COPY: Record<Props["kind"], { heading: string; body: string; preview: stri
     body: "L'artista ha declinato la richiesta. Puoi inviare una nuova proposta o cercare un'altra disponibilità.",
     preview: "Richiesta declinata",
   },
+  cancelled_by_admin: {
+    heading: "Data annullata dall'amministratore",
+    body: "La data confermata è stata annullata dall'amministrazione di N'arte. La disponibilità dell'artista è stata liberata. Trovi qui sotto la motivazione.",
+    preview: "Data annullata da N'arte",
+  },
 };
 
 export default function BookingStatusEmail({
@@ -44,6 +50,7 @@ export default function BookingStatusEmail({
   venueName,
   eventDate,
   notesArtist,
+  cancellationReason,
 }: Props) {
   const c = COPY[kind];
   return (
@@ -68,6 +75,15 @@ export default function BookingStatusEmail({
                 Note dall'artista
               </Heading>
               <Text style={p}>{notesArtist}</Text>
+            </>
+          )}
+          {cancellationReason && (
+            <>
+              <Hr style={hr} />
+              <Heading as="h2" style={h2}>
+                Motivazione
+              </Heading>
+              <Text style={p}>{cancellationReason}</Text>
             </>
           )}
         </Container>

@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { ArtistStatusToggle } from "@/components/admin/ArtistStatusToggle";
 import { ArtistEditForm } from "@/components/admin/ArtistEditForm";
 import { DeleteArtistButton } from "@/components/admin/DeleteArtistButton";
+import { CancelBookingDialog } from "@/components/admin/CancelBookingDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -38,14 +39,31 @@ export default async function AdminArtistDetailPage({
 }) {
   const { id } = await params;
   const supabase = createAdminClient();
-  const [{ data: artist }, { data: genresData }] = await Promise.all([
+  const [{ data: artist }, { data: genresData }, { data: confirmedBookings }] = await Promise.all([
     supabase.from("artists").select("*").eq("id", id).single(),
     supabase.from("genres").select("name").order("order_index"),
+    supabase
+      .from("booking_requests")
+      .select(
+        "id, event_date, time_slot, budget_offer, organizers(display_name), venues(name, city)"
+      )
+      .eq("artist_id", id)
+      .eq("status", "confermata")
+      .order("event_date", { ascending: true }),
   ]);
   if (!artist) notFound();
 
   const social = (artist.social_links ?? {}) as SocialLinks;
   const genreOptions = (genresData ?? []).map((g) => g.name as string);
+  type ConfirmedRow = {
+    id: string;
+    event_date: string;
+    time_slot: string | null;
+    budget_offer: number | null;
+    organizers: { display_name: string } | null;
+    venues: { name: string; city: string | null } | null;
+  };
+  const bookings = (confirmedBookings ?? []) as unknown as ConfirmedRow[];
 
   return (
     <div className="space-y-6">
@@ -94,6 +112,68 @@ export default async function AdminArtistDetailPage({
         </CardHeader>
         <CardContent className="pt-2">
           <ArtistStatusToggle artistId={artist.id} status={artist.status} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Date confermate</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-2">
+          {bookings.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nessuna data confermata per questo artista.
+            </p>
+          ) : (
+            <div className="-mx-2 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="px-2 py-2">Data</th>
+                    <th className="px-2 py-2">Slot</th>
+                    <th className="px-2 py-2">Organizzatore</th>
+                    <th className="px-2 py-2">Struttura</th>
+                    <th className="px-2 py-2">Budget</th>
+                    <th className="px-2 py-2 text-right">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookings.map((b) => {
+                    const dateLabel = new Date(b.event_date).toLocaleDateString("it-IT", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    });
+                    return (
+                      <tr key={b.id} className="border-t border-border">
+                        <td className="px-2 py-2 font-medium">{dateLabel}</td>
+                        <td className="px-2 py-2 text-muted-foreground">{b.time_slot ?? "—"}</td>
+                        <td className="px-2 py-2">{b.organizers?.display_name ?? "—"}</td>
+                        <td className="px-2 py-2 text-muted-foreground">
+                          {b.venues?.name
+                            ? `${b.venues.name}${b.venues.city ? ` · ${b.venues.city}` : ""}`
+                            : "—"}
+                        </td>
+                        <td className="px-2 py-2">
+                          {b.budget_offer != null
+                            ? `€${Number(b.budget_offer).toLocaleString("it-IT")}`
+                            : "—"}
+                        </td>
+                        <td className="px-2 py-2 text-right">
+                          <CancelBookingDialog
+                            bookingId={b.id}
+                            artistName={artist.stage_name}
+                            organizerName={b.organizers?.display_name ?? "Organizzatore"}
+                            eventDate={dateLabel}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 

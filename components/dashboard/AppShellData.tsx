@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   MessageCircle,
   MessageSquare,
+  Phone,
   Sparkles,
   Tags,
   UserCog,
@@ -117,6 +118,12 @@ async function loadAdminShell(): Promise<{
   const newLeadsCount = c(newLeads);
   const messagesCount = c(contactMessages);
   const activeChats = await safe(getActiveConversationsCountSuperadmin()).then((v) => v ?? 0);
+  const pendingConsultations = await safe(
+    admin
+      .from("consultations")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["requested", "confirmed"])
+  ).then((v) => v?.count ?? 0);
 
   const navSections: NavSection[] = [
     {
@@ -171,6 +178,18 @@ async function loadAdminShell(): Promise<{
       label: "Messaggi",
       icon: <MessageSquare className="size-4" />,
       badge: messagesCount > 0 ? { label: String(messagesCount) } : undefined,
+    },
+    {
+      href: "/admin/consulenza",
+      label: "Consulenza",
+      icon: <Phone className="size-4" />,
+      badge: pendingConsultations > 0
+        ? { label: String(pendingConsultations), variant: "accent" }
+        : undefined,
+      children: [
+        { href: "/admin/consulenza", label: "Appuntamenti", count: pendingConsultations },
+        { href: "/admin/consulenza/slots", label: "Slot disponibili" },
+      ],
     },
     {
       href: "/admin/profilo",

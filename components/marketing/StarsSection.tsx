@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { ArtistCard, type ArtistCardProps } from "./ArtistCard";
 import { StaggerList, Reveal } from "@/components/animations/Reveal";
 import { createAdminClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/guards";
 
 async function getStars(limit = 8): Promise<ArtistCardProps[]> {
   try {
@@ -27,7 +28,8 @@ async function getStars(limit = 8): Promise<ArtistCardProps[]> {
 }
 
 export async function StarsSection() {
-  const artists = await getStars();
+  const [artists, viewer] = await Promise.all([getStars(), getCurrentUser()]);
+  const isGuest = !viewer;
 
   return (
     <section className="bg-muted py-20 text-foreground md:py-28">
@@ -55,7 +57,7 @@ export async function StarsSection() {
         ) : (
           <StaggerList className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {artists.map((a) => (
-              <ArtistCard key={a.slug} {...a} />
+              <ArtistCard key={a.slug} {...a} isGuest={isGuest} />
             ))}
           </StaggerList>
         )}

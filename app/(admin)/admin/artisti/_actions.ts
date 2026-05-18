@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 import { getSiteUrl } from "@/lib/site-url";
 import { artistSchema, type ArtistInput } from "@/lib/validators/schemas";
+import { sendBookingCancelledByAdminEmail } from "@/lib/emails/send";
 
 async function ensureAdmin() {
   const supabase = await createClient();
@@ -141,6 +143,43 @@ export async function deleteArtist(artistId: string) {
   revalidatePath("/artisti");
   revalidatePath("/");
   redirect("/admin/artisti");
+}
+
+const cancelBookingSchema = z.object({
+  bookingId: z.string().uuid(),
+  reason: z.string().trim().min(10, "Motivazione obbligatoria (min 10 caratteri)"),
+});
+
+export async function cancelConfirmedBooking(input: { bookingId: string; reason: string }) {
+  const ctx = await ensureAdmin();
+  if (!ctx.ok) return ctx;
+
+  const parsed = cancelBookingSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("superadmin_cancel_booking", {
+    p_booking_id: parsed.data.bookingId,
+    p_reason: parsed.data.reason,
+  });
+
+  if (error) return { ok: false as const, error: error.message };
+  const payload = data as { ok: boolean; error?: string } | null;
+  if (!payload?.ok) {
+    return { ok: false as const, error: payload?.error ?? "Errore RPC" };
+  }
+
+  await sendBookingCancelledByAdminEmail(parsed.data.bookingId, parsed.data.reason).catch((e) =>
+    console.error("[email] cancel by admin:", e)
+  );
+
+  revalidatePath("/admin/artisti");
+  revalidatePath("/organizzatore/richieste");
+  revalidatePath("/organizzatore/calendario");
+  revalidatePath("/artisti");
+  return { ok: true as const };
 }
 
 export async function createArtistManual(input: {

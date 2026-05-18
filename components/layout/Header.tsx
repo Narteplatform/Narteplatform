@@ -46,6 +46,7 @@ export async function Header() {
           <Link href="/chi-siamo" className="transition-opacity hover:opacity-75">Chi siamo</Link>
           <Link href="/collaborazioni" className="transition-opacity hover:opacity-75">Collaborazioni</Link>
           <Link href="/contatti" className="transition-opacity hover:opacity-75">Contatti</Link>
+          <Link href="/faq" className="transition-opacity hover:opacity-75">F.A.Q.</Link>
         </nav>
 
         <div className="flex items-center gap-2">

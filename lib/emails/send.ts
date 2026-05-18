@@ -146,3 +146,23 @@ export async function sendBookingDeclinedEmail(requestId: string) {
     }),
   });
 }
+
+export async function sendBookingCancelledByAdminEmail(requestId: string, reason: string) {
+  const ctx = await loadBookingContext(requestId);
+  if (!ctx) return { ok: false as const };
+  const recipients = [ctx.artistEmail, ctx.organizerEmail].filter(Boolean) as string[];
+  if (recipients.length === 0) return { ok: false as const };
+  return sendEmail({
+    to: recipients,
+    subject: `Data annullata da N'arte · ${ctx.req.event_date}`,
+    react: createElement(BookingStatusEmail, {
+      kind: "cancelled_by_admin",
+      artistName: ctx.artist?.stage_name ?? "Artista",
+      organizerName: ctx.organizer?.display_name ?? "",
+      venueName: ctx.venue?.name ?? null,
+      eventDate: ctx.req.event_date,
+      notesArtist: ctx.req.notes_artist,
+      cancellationReason: reason,
+    }),
+  });
+}
