@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { CalendarDays, Clock, Euro, ExternalLink, Loader2 } from "lucide-react";
+import { CalendarDays, Check, CheckCheck, Clock, Euro, ExternalLink, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { respondToOffer } from "@/lib/chat/actions";
+import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/chat/queries";
 
 function formatDateIt(iso: string | null): string {
@@ -18,6 +19,11 @@ function formatBudgetCents(c: number | null): string {
   return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(c / 100);
 }
 
+function formatTime(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+}
+
 const SLOT_LABEL: Record<string, string> = {
   mattina: "Mattina",
   pomeriggio: "Pomeriggio",
@@ -26,22 +32,35 @@ const SLOT_LABEL: Record<string, string> = {
 };
 
 const statusBadge: Record<NonNullable<ChatMessage["offerStatus"]>, { label: string; variant: "warning" | "success" | "danger" | "muted" }> = {
-  pending: { label: "In attesa", variant: "warning" },
+  pending: { label: "In sospeso", variant: "warning" },
   accepted: { label: "Accettata", variant: "success" },
   rejected: { label: "Rifiutata", variant: "danger" },
   superseded: { label: "Sostituita", variant: "muted" },
 };
+
+type TickState = "sent" | "delivered" | "read";
+
+function Ticks({ state, isOwn }: { state: TickState; isOwn: boolean }) {
+  if (!isOwn) return null;
+  if (state === "sent") return <Check className="size-3.5 opacity-70" />;
+  if (state === "delivered") return <CheckCheck className="size-3.5 opacity-70" />;
+  return <CheckCheck className="size-3.5 text-[#34B7F1]" />;
+}
 
 export function OfferCard({
   msg,
   canRespond,
   readOnly,
   bookingLinkBase,
+  isOwn = false,
+  tick = "delivered",
 }: {
   msg: ChatMessage;
   canRespond: boolean;
   readOnly: boolean;
   bookingLinkBase?: string;
+  isOwn?: boolean;
+  tick?: TickState;
 }) {
   const [busy, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -56,66 +75,89 @@ export function OfferCard({
     });
   }
 
+  const isRejected = status === "rejected" || status === "superseded";
+
   return (
-    <div className="flex justify-center w-full">
-      <div className="w-full max-w-[460px] rounded-2xl border-[1.5px] border-azzurro bg-azzurro-subtle/40 p-4 shadow-sm">
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="font-display text-base text-notte">Offerta</div>
+    <div className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+      <div
+        className={cn(
+          "w-full max-w-[78%] sm:max-w-[420px] rounded-2xl border-[1.5px] p-3.5 shadow-sm",
+          isOwn
+            ? "border-azzurro bg-azzurro text-white rounded-br-md"
+            : "border-azzurro/40 bg-azzurro-subtle/40 text-notte rounded-bl-md",
+        )}
+      >
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className={cn("font-display text-sm uppercase tracking-wide", isOwn ? "text-white" : "text-notte")}>
+            Offerta
+          </div>
           <Badge variant={badge.variant} dot>{badge.label}</Badge>
         </div>
-        <div className="grid grid-cols-3 gap-3 text-sm">
-          <div className="flex flex-col gap-1">
-            <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="flex flex-col gap-0.5">
+            <span className={cn("inline-flex items-center gap-1 text-[10px] uppercase tracking-wider", isOwn ? "text-white/70" : "text-muted-foreground")}>
               <CalendarDays className="size-3" /> Data
             </span>
-            <span className="font-semibold text-notte">{formatDateIt(msg.offerEventDate)}</span>
+            <span className={cn("font-semibold text-sm", isOwn ? "text-white" : "text-notte", isRejected && "line-through opacity-70")}>
+              {formatDateIt(msg.offerEventDate)}
+            </span>
           </div>
-          <div className="flex flex-col gap-1">
-            <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+          <div className="flex flex-col gap-0.5">
+            <span className={cn("inline-flex items-center gap-1 text-[10px] uppercase tracking-wider", isOwn ? "text-white/70" : "text-muted-foreground")}>
               <Clock className="size-3" /> Fascia
             </span>
-            <span className="font-semibold text-notte">{msg.offerTimeSlot ? (SLOT_LABEL[msg.offerTimeSlot] ?? msg.offerTimeSlot) : "—"}</span>
+            <span className={cn("font-semibold text-sm", isOwn ? "text-white" : "text-notte", isRejected && "line-through opacity-70")}>
+              {msg.offerTimeSlot ? (SLOT_LABEL[msg.offerTimeSlot] ?? msg.offerTimeSlot) : "—"}
+            </span>
           </div>
-          <div className="flex flex-col gap-1">
-            <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+          <div className="flex flex-col gap-0.5">
+            <span className={cn("inline-flex items-center gap-1 text-[10px] uppercase tracking-wider", isOwn ? "text-white/70" : "text-muted-foreground")}>
               <Euro className="size-3" /> Budget
             </span>
-            <span className="font-semibold text-notte">{formatBudgetCents(msg.offerBudgetCents)}</span>
+            <span className={cn("font-semibold text-sm", isOwn ? "text-white" : "text-notte", isRejected && "line-through opacity-70")}>
+              {formatBudgetCents(msg.offerBudgetCents)}
+            </span>
           </div>
         </div>
         {msg.offerDescription && (
-          <p className="mt-3 text-sm whitespace-pre-wrap text-foreground">{msg.offerDescription}</p>
+          <p className={cn("mt-2.5 text-sm whitespace-pre-wrap", isOwn ? "text-white/95" : "text-foreground")}>
+            {msg.offerDescription}
+          </p>
         )}
         {canRespond && !readOnly && status === "pending" && (
-          <div className="mt-4 flex gap-2">
+          <div className="mt-3 flex gap-2">
             <Button
               size="sm"
               variant="default"
               disabled={busy}
               onClick={() => respond("accept")}
-              className="flex-1 min-h-11"
+              className="flex-1 min-h-10"
             >
-              {busy ? <Loader2 className="size-4 animate-spin" /> : "Accetta"}
+              {busy ? <Loader2 className="size-4 animate-spin" /> : (<><Check className="size-4" /> Accetta</>)}
             </Button>
             <Button
               size="sm"
               variant="outline"
               disabled={busy}
               onClick={() => respond("reject")}
-              className="flex-1 min-h-11"
+              className={cn("flex-1 min-h-10", isOwn && "bg-white/10 text-white border-white/30 hover:bg-white/20")}
             >
-              Rifiuta
+              <X className="size-4" /> Rifiuta
             </Button>
           </div>
         )}
         {status === "accepted" && msg.offerBookingRequestId && bookingLinkBase && (
-          <Button asChild size="sm" variant="outline" className="mt-3 w-full">
+          <Button asChild size="sm" variant={isOwn ? "outline" : "default"} className={cn("mt-3 w-full", isOwn && "bg-white/10 text-white border-white/30 hover:bg-white/20")}>
             <Link href={`${bookingLinkBase}/${msg.offerBookingRequestId}`}>
               <ExternalLink className="size-3.5" /> Vedi booking confermato
             </Link>
           </Button>
         )}
-        {error && <p className="mt-2 text-xs text-[var(--color-error)]">{error}</p>}
+        {error && <p className={cn("mt-2 text-xs", isOwn ? "text-white/90" : "text-[var(--color-error)]")}>{error}</p>}
+        <div className={cn("mt-2 flex items-center justify-end gap-1 text-[10px]", isOwn ? "text-white/70" : "text-muted-foreground")}>
+          <span>{formatTime(msg.createdAt)}</span>
+          <Ticks state={tick} isOwn={isOwn} />
+        </div>
       </div>
     </div>
   );

@@ -73,18 +73,6 @@ export function MessageList({
               </span>
             </div>
             {g.items.map((m) => {
-              if (m.kind === "offer") {
-                const canRespond = !readOnly && currentUserId !== null && m.senderId !== currentUserId;
-                return (
-                  <OfferCard
-                    key={m.id}
-                    msg={m}
-                    canRespond={canRespond}
-                    readOnly={readOnly || viewerRole === "superadmin"}
-                    bookingLinkBase={bookingLinkBase}
-                  />
-                );
-              }
               const isOwn = viewerRole !== "superadmin" && currentUserId !== null && m.senderId === currentUserId;
               const readByOther =
                 viewerRole === "artist"
@@ -98,6 +86,20 @@ export function MessageList({
                 : isPersisted
                 ? "delivered"
                 : "sent";
+              if (m.kind === "offer") {
+                const canRespond = !readOnly && currentUserId !== null && m.senderId !== currentUserId;
+                return (
+                  <OfferCard
+                    key={m.id}
+                    msg={m}
+                    canRespond={canRespond}
+                    readOnly={readOnly || viewerRole === "superadmin"}
+                    bookingLinkBase={bookingLinkBase}
+                    isOwn={isOwn}
+                    tick={tick}
+                  />
+                );
+              }
               return (
                 <MessageBubble key={m.id} msg={m} isOwn={isOwn} tick={tick} />
               );
