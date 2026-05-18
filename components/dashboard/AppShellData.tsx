@@ -188,6 +188,7 @@ async function loadAdminShell(): Promise<{
         : undefined,
       children: [
         { href: "/admin/consulenza", label: "Appuntamenti", count: pendingConsultations },
+        { href: "/admin/consulenza/confermati", label: "Confermati" },
         { href: "/admin/consulenza/consulenti", label: "Consulenti" },
         { href: "/admin/consulenza/slots", label: "Slot legacy" },
       ],

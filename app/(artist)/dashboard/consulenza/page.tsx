@@ -3,9 +3,10 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import {
-  ArtistConsultationBooker,
-  type ConsultantWithSlots,
-} from "@/components/dashboard/ArtistConsultationBooker";
+  ArtistConsulenzaCalendar,
+  type CalendarConsultant,
+  type CalendarSlot,
+} from "@/components/dashboard/ArtistConsulenzaCalendar";
 
 export const metadata = { title: "Consulente N'arte — Dashboard" };
 export const dynamic = "force-dynamic";
@@ -18,27 +19,13 @@ export default async function ArtistConsulenzaPage() {
 
   const { data: consRaw } = await admin
     .from("consultants")
-    .select("id, name, role, bio, avatar_url, email")
+    .select("id, name, role, bio, avatar_url")
     .eq("is_active", true)
     .order("name", { ascending: true });
-  type Consultant = {
-    id: string;
-    name: string;
-    role: string | null;
-    bio: string | null;
-    avatar_url: string | null;
-    email: string | null;
-  };
-  const consultants = (consRaw ?? []) as unknown as Consultant[];
-  const ids = consultants.map((c) => c.id);
+  const consultants = (consRaw ?? []) as unknown as CalendarConsultant[];
 
-  type SlotRow = {
-    id: string;
-    slot_at: string;
-    duration_min: number;
-    consultant_id: string;
-  };
-  let slots: SlotRow[] = [];
+  const ids = consultants.map((c) => c.id);
+  let slotsAll: { id: string; slot_at: string; duration_min: number; consultant_id: string }[] = [];
   if (ids.length > 0) {
     const { data: slotsRaw } = await admin
       .from("consultant_slots")
@@ -47,29 +34,25 @@ export default async function ArtistConsulenzaPage() {
       .gte("slot_at", nowIso)
       .in("consultant_id", ids)
       .order("slot_at", { ascending: true })
-      .limit(120);
-    slots = (slotsRaw ?? []) as unknown as SlotRow[];
+      .limit(500);
+    slotsAll = ((slotsRaw ?? []) as unknown as typeof slotsAll);
   }
 
-  // Filtra slot già prenotati
+  // Mappa slot prenotati
   let bookedSet = new Set<string>();
-  if (slots.length > 0) {
+  if (slotsAll.length > 0) {
     const { data: booked } = await admin
       .from("consultations")
       .select("slot_id")
-      .in("slot_id", slots.map((s) => s.id))
+      .in("slot_id", slotsAll.map((s) => s.id))
       .in("status", ["requested", "confirmed"]);
     bookedSet = new Set(((booked ?? []) as { slot_id: string }[]).map((b) => b.slot_id));
   }
 
-  const consultantsWithSlots: ConsultantWithSlots[] = consultants
-    .map((c) => ({
-      ...c,
-      slots: slots
-        .filter((s) => s.consultant_id === c.id && !bookedSet.has(s.id))
-        .map(({ id, slot_at, duration_min }) => ({ id, slot_at, duration_min })),
-    }))
-    .filter((c) => c.slots.length > 0);
+  const slots: CalendarSlot[] = slotsAll.map((s) => ({
+    ...s,
+    is_booked: bookedSet.has(s.id),
+  }));
 
   return (
     <div className="space-y-6">
@@ -81,17 +64,23 @@ export default async function ArtistConsulenzaPage() {
           Consulente N&apos;arte
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground md:text-base">
-          Prenota una consulenza telefonica gratuita con uno dei nostri consulenti. Per gli
-          artisti N&apos;arte gli appuntamenti vengono confermati automaticamente.
+          Scegli un giorno dal calendario, poi seleziona orario e consulente. La prenotazione è
+          gratuita e confermata automaticamente.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Slot disponibili</CardTitle>
+          <CardTitle className="text-base">Calendario disponibilità</CardTitle>
         </CardHeader>
         <CardContent>
-          <ArtistConsultationBooker consultants={consultantsWithSlots} />
+          {consultants.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nessun consulente attivo al momento.
+            </p>
+          ) : (
+            <ArtistConsulenzaCalendar consultants={consultants} slots={slots} />
+          )}
         </CardContent>
       </Card>
     </div>
