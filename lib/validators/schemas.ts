@@ -14,6 +14,10 @@ export type LeadInput = z.infer<typeof leadSchema>;
 export const artistApplicationSchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email(),
+  password: z
+    .string()
+    .min(8, "La password deve avere almeno 8 caratteri")
+    .max(100, "Massimo 100 caratteri"),
   stageName: z.string().min(2).max(80),
   genres: z.array(z.string().min(1)).min(1, "Seleziona almeno un genere").max(8),
   bio: z.string().max(2000).optional(),

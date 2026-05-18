@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
 import {
   artistApplicationSchema,
   type ArtistApplicationInput,
@@ -19,6 +21,7 @@ export function ArtistApplicationForm({
 }) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -38,11 +41,19 @@ export function ArtistApplicationForm({
 
   if (done) {
     return (
-      <div className="border border-foreground p-6">
-        <p className="font-display text-xl uppercase">Candidatura inviata</p>
+      <div className="rounded-xl border border-accent/40 bg-accent/5 p-6">
+        <p className="font-display text-xl uppercase">Candidatura inviata · Account creato</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Ti contatteremo dopo la revisione con un link per completare il profilo.
+          Il tuo account è attivo: puoi già accedere con email e password che hai scelto.
+          Riceverai una email di conferma quando la candidatura sarà approvata e il profilo
+          artista pubblicato.
         </p>
+        <Link
+          href="/login"
+          className="mt-4 inline-flex items-center rounded-full bg-accent px-5 py-2 text-sm font-semibold uppercase tracking-wide text-accent-foreground hover:opacity-90"
+        >
+          Accedi ora
+        </Link>
       </div>
     );
   }
@@ -53,15 +64,41 @@ export function ArtistApplicationForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Nome e cognome" error={errors.name?.message}>
-          <Input {...register("name")} />
+          <Input {...register("name")} autoComplete="name" />
         </Field>
         <Field label="Email" error={errors.email?.message}>
-          <Input type="email" {...register("email")} />
+          <Input type="email" {...register("email")} autoComplete="email" />
+        </Field>
+        <Field
+          label="Password (min 8 caratteri)"
+          error={errors.password?.message}
+          hint="Userai questa password per accedere alla tua dashboard artista."
+        >
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              {...register("password")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-2 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label={showPassword ? "Nascondi password" : "Mostra password"}
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
         </Field>
         <Field label="Nome d'arte" error={errors.stageName?.message}>
           <Input {...register("stageName")} />
         </Field>
-        <Field label="Generi musicali" error={errors.genres?.message}>
+        <Field
+          label="Generi musicali"
+          error={errors.genres?.message}
+          className="md:col-span-2"
+        >
           <Controller
             control={control}
             name="genres"
@@ -103,16 +140,21 @@ export function ArtistApplicationForm({
 function Field({
   label,
   error,
+  hint,
+  className,
   children,
 }: {
   label: string;
   error?: string;
+  hint?: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1">
+    <div className={`space-y-1 ${className ?? ""}`}>
       <Label>{label}</Label>
       {children}
+      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );
