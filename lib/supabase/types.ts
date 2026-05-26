@@ -680,6 +680,42 @@ export interface Database {
         };
         Relationships: [];
       };
+      platform_feedback: {
+        Row: {
+          id: string;
+          user_id: string;
+          role: Role;
+          category: "generale" | "bug" | "suggerimento" | "altro";
+          subject: string | null;
+          body: string;
+          rating: number | null;
+          status: "new" | "read" | "archived";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          role: Role;
+          category?: "generale" | "bug" | "suggerimento" | "altro";
+          subject?: string | null;
+          body: string;
+          rating?: number | null;
+          status?: "new" | "read" | "archived";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          role?: Role;
+          category?: "generale" | "bug" | "suggerimento" | "altro";
+          subject?: string | null;
+          body?: string;
+          rating?: number | null;
+          status?: "new" | "read" | "archived";
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       conversations: {
         Row: {
           id: string;

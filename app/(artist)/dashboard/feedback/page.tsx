@@ -1,7 +1,8 @@
 import { Star } from "lucide-react";
 import { requireRole } from "@/lib/auth/guards";
 import { getFeedbackForArtistUser } from "@/lib/feedback/queries";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { PlatformFeedbackForm } from "@/components/feedback/PlatformFeedbackForm";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Feedback ricevuti — N'arte Artist" };
@@ -28,10 +29,27 @@ export default async function ArtistFeedbackPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-2xl tracking-tight">Feedback ricevuti</h1>
+        <h1 className="font-display text-2xl tracking-tight">Feedback</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Cosa dicono gli organizzatori dopo aver lavorato con te.
+          Recensioni ricevute dagli organizzatori dopo gli eventi e modulo per inviare il tuo
+          feedback al team N&apos;arte.
         </p>
+      </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Invia feedback al team N&apos;arte</CardTitle>
+          <CardDescription>
+            Suggerimenti, bug o richieste sulla piattaforma. Il team riceve tutto su /admin/feedback.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PlatformFeedbackForm />
+        </CardContent>
+      </Card>
+
+      <header>
+        <h2 className="font-display text-lg tracking-tight">Recensioni ricevute</h2>
       </header>
 
       {feedback.length > 0 && (

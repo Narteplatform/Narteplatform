@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { feedbackSchema } from "@/lib/validators/schemas";
+import { feedbackSchema, platformFeedbackSchema } from "@/lib/validators/schemas";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -94,6 +94,105 @@ export async function toggleFeedbackHidden(input: { id: string }): Promise<Resul
 
   revalidatePath("/admin/feedback");
   revalidatePath("/dashboard/feedback");
+  return { ok: true };
+}
+
+export async function submitPlatformFeedback(input: {
+  category?: "generale" | "bug" | "suggerimento" | "altro";
+  subject?: string;
+  body: string;
+  rating?: number;
+}): Promise<Result> {
+  const parsed = platformFeedbackSchema.safeParse({
+    category: input.category ?? "generale",
+    subject: input.subject ?? "",
+    body: input.body,
+    rating: input.rating ?? "",
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Non autenticato" };
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  const role = (profile?.role ?? "user") as
+    | "superadmin"
+    | "artist"
+    | "user"
+    | "organizer"
+    | "consultant";
+  if (role !== "artist" && role !== "organizer") {
+    return { ok: false, error: "Solo artisti e organizzatori possono inviare feedback" };
+  }
+
+  const { error } = await admin.from("platform_feedback").insert({
+    user_id: user.id,
+    role,
+    category: parsed.data.category,
+    subject: parsed.data.subject ?? null,
+    body: parsed.data.body,
+    rating: parsed.data.rating ?? null,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/dashboard/feedback");
+  revalidatePath("/organizzatore/feedback");
+  revalidatePath("/admin/feedback");
+  return { ok: true };
+}
+
+export async function updatePlatformFeedbackStatus(input: {
+  id: string;
+  status: "new" | "read" | "archived";
+}): Promise<Result> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Non autenticato" };
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.role !== "superadmin") return { ok: false, error: "Solo superadmin" };
+
+  const { error } = await admin
+    .from("platform_feedback")
+    .update({ status: input.status })
+    .eq("id", input.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/feedback");
+  return { ok: true };
+}
+
+export async function deletePlatformFeedback(input: { id: string }): Promise<Result> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Non autenticato" };
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.role !== "superadmin") return { ok: false, error: "Solo superadmin" };
+
+  const { error } = await admin.from("platform_feedback").delete().eq("id", input.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/feedback");
   return { ok: true };
 }
 

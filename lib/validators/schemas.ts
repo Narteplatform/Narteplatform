@@ -278,3 +278,35 @@ export const feedbackSchema = z.object({
     .max(2000, "Massimo 2000 caratteri"),
 });
 export type FeedbackInput = z.infer<typeof feedbackSchema>;
+
+// =========================================
+// Platform feedback (artisti/organizzatori -> N'arte)
+// =========================================
+export const platformFeedbackCategory = z.enum([
+  "generale",
+  "bug",
+  "suggerimento",
+  "altro",
+]);
+export type PlatformFeedbackCategory = z.infer<typeof platformFeedbackCategory>;
+
+export const platformFeedbackSchema = z.object({
+  category: platformFeedbackCategory.default("generale"),
+  subject: z
+    .string()
+    .max(160)
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  body: z
+    .string()
+    .min(10, "Almeno 10 caratteri")
+    .max(4000, "Massimo 4000 caratteri"),
+  rating: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+});
+export type PlatformFeedbackInput = z.infer<typeof platformFeedbackSchema>;

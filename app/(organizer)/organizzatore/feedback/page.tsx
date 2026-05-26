@@ -3,6 +3,7 @@ import { requireOrganizer } from "@/lib/auth/guards";
 import { getBookingsAwaitingFeedback } from "@/lib/feedback/queries";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { FeedbackForm } from "@/components/feedback/FeedbackForm";
+import { PlatformFeedbackForm } from "@/components/feedback/PlatformFeedbackForm";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Feedback artisti — N'arte Organizer" };
@@ -22,12 +23,23 @@ export default async function OrganizerFeedbackPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-2xl tracking-tight">Feedback artisti</h1>
+        <h1 className="font-display text-2xl tracking-tight">Feedback</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Valuta gli artisti dopo gli eventi confermati. Il feedback è visibile all'artista e al
-          team N'arte per migliorare il matching.
+          Recensisci gli artisti dopo gli eventi e invia feedback al team N&apos;arte sulla piattaforma.
         </p>
       </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Invia feedback al team N&apos;arte</CardTitle>
+          <CardDescription>
+            Suggerimenti, bug o richieste sulla piattaforma. Il team riceve tutto su /admin/feedback.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PlatformFeedbackForm />
+        </CardContent>
+      </Card>
 
       <section>
         <h2 className="mb-3 font-display text-sm uppercase tracking-wide text-muted-foreground">

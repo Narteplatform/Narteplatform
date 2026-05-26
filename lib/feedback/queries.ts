@@ -186,6 +186,93 @@ export type AdminFeedbackStats = {
   topArtists: Array<{ artist_id: string; name: string; avg: number; count: number }>;
 };
 
+// =========================================
+// Platform feedback (artisti/organizzatori -> N'arte)
+// =========================================
+
+export type PlatformFeedbackRow = {
+  id: string;
+  user_id: string;
+  role: "artist" | "organizer" | "user" | "superadmin" | "consultant";
+  category: "generale" | "bug" | "suggerimento" | "altro";
+  subject: string | null;
+  body: string;
+  rating: number | null;
+  status: "new" | "read" | "archived";
+  created_at: string;
+  user_name: string | null;
+  user_email: string | null;
+};
+
+export async function listPlatformFeedback(filters?: {
+  status?: "new" | "read" | "archived";
+  role?: "artist" | "organizer";
+  category?: "generale" | "bug" | "suggerimento" | "altro";
+}): Promise<PlatformFeedbackRow[]> {
+  const admin = createAdminClient();
+  let query = admin
+    .from("platform_feedback")
+    .select("id, user_id, role, category, subject, body, rating, status, created_at")
+    .order("created_at", { ascending: false });
+  if (filters?.status) query = query.eq("status", filters.status);
+  if (filters?.role) query = query.eq("role", filters.role);
+  if (filters?.category) query = query.eq("category", filters.category);
+
+  const { data } = await query;
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  const ids = [...new Set(rows.map((r) => r.user_id))];
+  const [{ data: profiles }, { data: usersList }] = await Promise.all([
+    admin.from("profiles").select("id, full_name").in("id", ids),
+    admin.auth.admin.listUsers({ perPage: 200 }),
+  ]);
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+  const emailMap = new Map<string, string>();
+  for (const u of usersList?.users ?? []) {
+    if (u.id && u.email) emailMap.set(u.id, u.email);
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    user_name: profileMap.get(r.user_id) ?? null,
+    user_email: emailMap.get(r.user_id) ?? null,
+  }));
+}
+
+export type PlatformFeedbackStats = {
+  total: number;
+  unread: number;
+  last30: number;
+  byRole: { artist: number; organizer: number };
+  byCategory: Record<"generale" | "bug" | "suggerimento" | "altro", number>;
+};
+
+export async function getPlatformFeedbackStats(): Promise<PlatformFeedbackStats> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("platform_feedback")
+    .select("role, category, status, created_at");
+  const rows = data ?? [];
+  const since30 = Date.now() - 30 * 86400000;
+  const stats: PlatformFeedbackStats = {
+    total: rows.length,
+    unread: 0,
+    last30: 0,
+    byRole: { artist: 0, organizer: 0 },
+    byCategory: { generale: 0, bug: 0, suggerimento: 0, altro: 0 },
+  };
+  for (const r of rows) {
+    if (r.status === "new") stats.unread++;
+    if (new Date(r.created_at).getTime() >= since30) stats.last30++;
+    if (r.role === "artist") stats.byRole.artist++;
+    else if (r.role === "organizer") stats.byRole.organizer++;
+    const cat = r.category as keyof PlatformFeedbackStats["byCategory"];
+    if (cat in stats.byCategory) stats.byCategory[cat]++;
+  }
+  return stats;
+}
+
 export async function getFeedbackStats(): Promise<AdminFeedbackStats> {
   const admin = createAdminClient();
   const { data } = await admin
