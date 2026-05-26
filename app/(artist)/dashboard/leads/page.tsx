@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import type { BookingStatus } from "@/lib/supabase/types";
 import { minToBudgetLabel } from "@/lib/constants/budget-ranges";
 import { openChatAndRedirect } from "@/lib/chat/open";
+import { FinalPriceBox } from "@/components/booking/FinalPriceBox";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +68,7 @@ export default async function ArtistLeadsPage({
   const { data: bookingRows } = await supabase
     .from("booking_requests")
     .select(
-      "id, event_date, time_slot, budget_offer, message, status, notes_artist, organizer_id, venue_id, created_at"
+      "id, event_date, time_slot, budget_offer, message, status, notes_artist, organizer_id, venue_id, created_at, final_price, final_price_proposed_by, final_price_proposed_at, final_price_confirmed_by, final_price_confirmed_at"
     )
     .eq("artist_id", artist.id)
     .eq("status", activeTab)
@@ -284,6 +285,19 @@ export default async function ArtistLeadsPage({
                         </span>
                         <p className="mt-1 whitespace-pre-wrap">{b.notes_artist}</p>
                       </div>
+                    )}
+
+                    {b.status === "confermata" && (
+                      <FinalPriceBox
+                        bookingId={b.id}
+                        role="artist"
+                        currentUserId={user.id}
+                        finalPrice={b.final_price != null ? Number(b.final_price) : null}
+                        proposedBy={b.final_price_proposed_by}
+                        proposedAt={b.final_price_proposed_at}
+                        confirmedBy={b.final_price_confirmed_by}
+                        confirmedAt={b.final_price_confirmed_at}
+                      />
                     )}
 
                     <ArtistRequestActions requestId={b.id} status={b.status} />

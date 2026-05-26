@@ -194,3 +194,87 @@ export const chatOfferSchema = z.object({
     .or(z.literal("").transform(() => undefined)),
 });
 export type ChatOfferInput = z.infer<typeof chatOfferSchema>;
+
+// =========================================
+// Superadmin: invito + permessi pagine admin
+// =========================================
+export const ADMIN_PAGE_KEYS = [
+  "overview",
+  "eventi",
+  "artisti",
+  "generi",
+  "leads",
+  "chat",
+  "messaggi",
+  "consulenza",
+  "blog",
+  "email",
+  "profilo",
+  "impostazioni",
+  "feedback",
+] as const;
+export type AdminPageKey = (typeof ADMIN_PAGE_KEYS)[number];
+
+export const inviteSuperadminSchema = z.object({
+  email: z.string().email("Email non valida"),
+  full_name: z
+    .string()
+    .min(2)
+    .max(80)
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+});
+export type InviteSuperadminInput = z.infer<typeof inviteSuperadminSchema>;
+
+export const pagePermissionsSchema = z.object({
+  user_id: z.string().uuid(),
+  page_keys: z.array(z.enum(ADMIN_PAGE_KEYS)).max(ADMIN_PAGE_KEYS.length),
+});
+export type PagePermissionsInput = z.infer<typeof pagePermissionsSchema>;
+
+// =========================================
+// Artist videos
+// =========================================
+export const artistVideoSchema = z.object({
+  artist_id: z.string().uuid(),
+  url: z.string().url(),
+  storage_path: z.string().min(1),
+  title: z.string().max(120).optional().or(z.literal("").transform(() => undefined)),
+  size_bytes: z.coerce.number().int().positive().max(50 * 1024 * 1024).optional(),
+  mime_type: z.string().max(80).optional(),
+});
+export type ArtistVideoInput = z.infer<typeof artistVideoSchema>;
+
+// =========================================
+// Mass availability editing
+// =========================================
+export const bulkAvailabilitySchema = z.object({
+  artist_id: z.string().uuid(),
+  date_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
+  date_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
+  status: z.enum(["available", "busy"]),
+  slot_ids: z.array(z.string().uuid()).max(20).optional(),
+});
+export type BulkAvailabilityInput = z.infer<typeof bulkAvailabilitySchema>;
+
+// =========================================
+// Final price (booking confermata)
+// =========================================
+export const finalPriceProposeSchema = z.object({
+  booking_id: z.string().uuid(),
+  price: z.coerce.number().positive("Prezzo non valido").max(1_000_000),
+});
+export type FinalPriceProposeInput = z.infer<typeof finalPriceProposeSchema>;
+
+// =========================================
+// Feedback (organizer -> artist post evento)
+// =========================================
+export const feedbackSchema = z.object({
+  booking_request_id: z.string().uuid(),
+  rating: z.coerce.number().int().min(1, "Voto minimo 1").max(5, "Voto massimo 5"),
+  body: z
+    .string()
+    .min(10, "Almeno 10 caratteri")
+    .max(2000, "Massimo 2000 caratteri"),
+});
+export type FeedbackInput = z.infer<typeof feedbackSchema>;

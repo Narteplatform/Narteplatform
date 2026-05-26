@@ -538,6 +538,11 @@ export interface Database {
           artist_accepted_at: string | null;
           organizer_confirmed_at: string | null;
           notes_artist: string | null;
+          final_price: number | null;
+          final_price_proposed_by: string | null;
+          final_price_proposed_at: string | null;
+          final_price_confirmed_by: string | null;
+          final_price_confirmed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -554,6 +559,11 @@ export interface Database {
           artist_accepted_at?: string | null;
           organizer_confirmed_at?: string | null;
           notes_artist?: string | null;
+          final_price?: number | null;
+          final_price_proposed_by?: string | null;
+          final_price_proposed_at?: string | null;
+          final_price_confirmed_by?: string | null;
+          final_price_confirmed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -570,8 +580,103 @@ export interface Database {
           artist_accepted_at?: string | null;
           organizer_confirmed_at?: string | null;
           notes_artist?: string | null;
+          final_price?: number | null;
+          final_price_proposed_by?: string | null;
+          final_price_proposed_at?: string | null;
+          final_price_confirmed_by?: string | null;
+          final_price_confirmed_at?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      admin_page_permissions: {
+        Row: {
+          user_id: string;
+          page_key: string;
+          can_view: boolean;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          page_key: string;
+          can_view?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          page_key?: string;
+          can_view?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      artist_videos: {
+        Row: {
+          id: string;
+          artist_id: string;
+          url: string;
+          storage_path: string;
+          title: string | null;
+          duration_ms: number | null;
+          size_bytes: number | null;
+          mime_type: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          artist_id: string;
+          url: string;
+          storage_path: string;
+          title?: string | null;
+          duration_ms?: number | null;
+          size_bytes?: number | null;
+          mime_type?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          artist_id?: string;
+          url?: string;
+          storage_path?: string;
+          title?: string | null;
+          duration_ms?: number | null;
+          size_bytes?: number | null;
+          mime_type?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      feedback: {
+        Row: {
+          id: string;
+          booking_request_id: string;
+          organizer_id: string;
+          artist_id: string;
+          rating: number;
+          body: string;
+          hidden: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_request_id: string;
+          organizer_id: string;
+          artist_id: string;
+          rating: number;
+          body: string;
+          hidden?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          booking_request_id?: string;
+          organizer_id?: string;
+          artist_id?: string;
+          rating?: number;
+          body?: string;
+          hidden?: boolean;
+          created_at?: string;
         };
         Relationships: [];
       };

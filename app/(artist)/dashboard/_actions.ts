@@ -204,3 +204,146 @@ export async function deleteDateSlot(artistId: string, slotId: string) {
   revalidatePath("/artisti");
   return { ok: true as const };
 }
+
+// =========================================
+// Video artista (artist_videos)
+// =========================================
+export async function addArtistVideo(input: {
+  artist_id: string;
+  url: string;
+  storage_path: string;
+  size_bytes: number;
+  mime_type: string;
+  title?: string;
+}) {
+  const user = await ownsArtist(input.artist_id);
+  if (!user) return { ok: false as const, error: "Non autorizzato" };
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("artist_videos")
+    .insert({
+      artist_id: input.artist_id,
+      url: input.url,
+      storage_path: input.storage_path,
+      size_bytes: input.size_bytes,
+      mime_type: input.mime_type,
+      title: input.title ?? null,
+    })
+    .select("id, artist_id, url, storage_path, title, size_bytes, mime_type, created_at")
+    .single();
+  if (error || !data) return { ok: false as const, error: error?.message ?? "Errore" };
+  revalidatePath("/dashboard/profilo-artista/video");
+  revalidatePath("/artisti");
+  return { ok: true as const, video: data };
+}
+
+export async function deleteArtistVideo(videoId: string) {
+  const admin = createAdminClient();
+  const { data: video } = await admin
+    .from("artist_videos")
+    .select("id, artist_id, storage_path")
+    .eq("id", videoId)
+    .maybeSingle();
+  if (!video) return { ok: false as const, error: "Video non trovato" };
+  const user = await ownsArtist(video.artist_id);
+  if (!user) return { ok: false as const, error: "Non autorizzato" };
+
+  if (video.storage_path) {
+    await admin.storage.from("artist-videos").remove([video.storage_path]);
+  }
+  const { error } = await admin.from("artist_videos").delete().eq("id", videoId);
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath("/dashboard/profilo-artista/video");
+  revalidatePath("/artisti");
+  return { ok: true as const };
+}
+
+// =========================================
+// Mass editing disponibilità
+// =========================================
+export async function bulkSetAvailability(input: {
+  artist_id: string;
+  date_from: string;
+  date_to: string;
+  status: "available" | "busy";
+  slot_ids?: string[];
+}) {
+  const user = await ownsArtist(input.artist_id);
+  if (!user) return { ok: false as const, error: "Non autorizzato" };
+
+  const from = new Date(input.date_from);
+  const to = new Date(input.date_to);
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+    return { ok: false as const, error: "Date non valide" };
+  }
+  if (from.getTime() > to.getTime()) {
+    return { ok: false as const, error: "Data 'da' successiva a 'a'" };
+  }
+  const diffDays = Math.round((to.getTime() - from.getTime()) / 86400000);
+  if (diffDays > 365) {
+    return { ok: false as const, error: "Massimo 365 giorni per operazione" };
+  }
+
+  const admin = createAdminClient();
+
+  const dates: string[] = [];
+  for (let d = new Date(from); d.getTime() <= to.getTime(); d.setDate(d.getDate() + 1)) {
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate()
+    ).padStart(2, "0")}`;
+    dates.push(iso);
+  }
+
+  // Upsert availability per ogni data
+  const rows = dates.map((date) => ({
+    artist_id: input.artist_id,
+    date,
+    status: input.status,
+  }));
+  const { error: upErr } = await admin
+    .from("artist_availability")
+    .upsert(rows, { onConflict: "artist_id,date" });
+  if (upErr) return { ok: false as const, error: upErr.message };
+
+  // Se richiesti slot specifici, copia gli orari dai default come override per data
+  if (input.slot_ids && input.slot_ids.length > 0 && input.status === "available") {
+    const { data: defaultSlots } = await admin
+      .from("artist_default_slots")
+      .select("id, label, start_time, end_time")
+      .eq("artist_id", input.artist_id)
+      .in("id", input.slot_ids);
+    if (defaultSlots && defaultSlots.length > 0) {
+      const overrides: {
+        artist_id: string;
+        date: string;
+        label: string | null;
+        start_time: string;
+        end_time: string;
+      }[] = [];
+      for (const date of dates) {
+        for (const slot of defaultSlots) {
+          overrides.push({
+            artist_id: input.artist_id,
+            date,
+            label: slot.label,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+          });
+        }
+      }
+      // Idempotenza: prima rimuovi eventuali override esistenti negli stessi (artist,date)
+      // poi inserisci i nuovi. Non blocchiamo se cancellazione fallisce.
+      await admin
+        .from("artist_date_slots")
+        .delete()
+        .eq("artist_id", input.artist_id)
+        .in("date", dates);
+      const { error: insErr } = await admin.from("artist_date_slots").insert(overrides);
+      if (insErr) return { ok: false as const, error: insErr.message };
+    }
+  }
+
+  revalidatePath("/dashboard/calendario");
+  revalidatePath("/artisti");
+  return { ok: true as const, count: dates.length };
+}

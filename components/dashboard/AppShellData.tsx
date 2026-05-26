@@ -8,7 +8,9 @@ import {
   MessageCircle,
   MessageSquare,
   Phone,
+  Settings,
   Sparkles,
+  Star,
   Tags,
   UserCog,
   Users,
@@ -21,6 +23,8 @@ import type { ReactNode } from "react";
 import { AppShell, type AppShellRecent, type AppShellStorage, type NavSection } from "@/components/layout/AppShell";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { createAdminClient } from "@/lib/supabase/server";
+import { getAllowedAdminPages, isRootSuperadminEmail } from "@/lib/admin/permissions";
+import type { AdminPageKey } from "@/lib/validators/schemas";
 
 function ShellBrand({ suffix }: { suffix?: string }) {
   return (
@@ -68,7 +72,7 @@ function safe<T>(p: PromiseLike<T>): Promise<T | null> {
   );
 }
 
-async function loadAdminShell(): Promise<{
+async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boolean }): Promise<{
   navSections: NavSection[];
   storage: AppShellStorage;
   recentActivity: AppShellRecent[];
@@ -128,14 +132,14 @@ async function loadAdminShell(): Promise<{
       .in("status", ["requested", "confirmed"])
   ).then((v) => v?.count ?? 0);
 
-  const navSections: NavSection[] = [
-    {
+  const sectionsByKey: Record<AdminPageKey, NavSection | null> = {
+    overview: {
       href: "/admin",
       label: "Overview",
       icon: <LayoutDashboard className="size-4" />,
       exact: true,
     },
-    {
+    eventi: {
       href: "/admin/eventi",
       label: "Eventi",
       icon: <CalendarDays className="size-4" />,
@@ -144,7 +148,7 @@ async function loadAdminShell(): Promise<{
         { href: "/admin/eventi?filter=past", label: "Passati", count: c(pastEvents) },
       ],
     },
-    {
+    artisti: {
       href: "/admin/artisti",
       label: "Artisti",
       icon: <Users className="size-4" />,
@@ -154,12 +158,12 @@ async function loadAdminShell(): Promise<{
         { href: "/admin/artisti?filter=approved", label: "Roster", count: c(approvedArtists) },
       ],
     },
-    {
+    generi: {
       href: "/admin/generi",
       label: "Generi",
       icon: <Tags className="size-4" />,
     },
-    {
+    leads: {
       href: "/admin/leads",
       label: "Lead",
       icon: <Inbox className="size-4" />,
@@ -170,19 +174,19 @@ async function loadAdminShell(): Promise<{
         { href: "/admin/leads?status=closed", label: "Chiusi", count: c(closedLeads) },
       ],
     },
-    {
+    chat: {
       href: "/admin/chat",
       label: "Chat",
       icon: <MessageCircle className="size-4" />,
       badge: activeChats > 0 ? { label: String(activeChats), variant: "accent" } : undefined,
     },
-    {
+    messaggi: {
       href: "/admin/messaggi",
       label: "Messaggi",
       icon: <MessageSquare className="size-4" />,
       badge: messagesCount > 0 ? { label: String(messagesCount) } : undefined,
     },
-    {
+    consulenza: {
       href: "/admin/consulenza",
       label: "Consulenza",
       icon: <Phone className="size-4" />,
@@ -196,22 +200,54 @@ async function loadAdminShell(): Promise<{
         { href: "/admin/consulenza/slots", label: "Slot legacy" },
       ],
     },
-    {
+    blog: {
       href: "/admin/blog",
       label: "Blog",
       icon: <FileText className="size-4" />,
     },
-    {
+    email: {
       href: "/admin/email",
       label: "Email",
       icon: <Mail className="size-4" />,
     },
-    {
+    feedback: {
+      href: "/admin/feedback",
+      label: "Feedback",
+      icon: <Star className="size-4" />,
+    },
+    impostazioni: opts?.isRoot
+      ? {
+          href: "/admin/impostazioni",
+          label: "Impostazioni",
+          icon: <Settings className="size-4" />,
+        }
+      : null,
+    profilo: {
       href: "/admin/profilo",
       label: "Profilo",
       icon: <UserCog className="size-4" />,
     },
+  };
+
+  const ORDER: AdminPageKey[] = [
+    "overview",
+    "eventi",
+    "artisti",
+    "generi",
+    "leads",
+    "chat",
+    "messaggi",
+    "consulenza",
+    "blog",
+    "email",
+    "feedback",
+    "impostazioni",
+    "profilo",
   ];
+  const navSections: NavSection[] = ORDER.filter((k) => {
+    if (opts?.allowed && !opts.allowed.has(k)) return false;
+    return sectionsByKey[k] !== null;
+  }).map((k) => sectionsByKey[k]!) as NavSection[];
 
   const usedEvents = c(eventsTotal);
   const storage: AppShellStorage = {
@@ -343,6 +379,10 @@ async function loadArtistShell(userId: string): Promise<{
       href: "/dashboard/profilo-artista",
       label: "Profilo artista",
       icon: <Sparkles className="size-4" />,
+      children: [
+        { href: "/dashboard/profilo-artista", label: "Dati & media" },
+        { href: "/dashboard/profilo-artista/video", label: "Video" },
+      ],
     },
     {
       href: "/dashboard/calendario",
@@ -369,6 +409,11 @@ async function loadArtistShell(userId: string): Promise<{
       label: "Chat",
       icon: <MessageCircle className="size-4" />,
       badge: unreadChat > 0 ? { label: String(unreadChat), variant: "accent" } : undefined,
+    },
+    {
+      href: "/dashboard/feedback",
+      label: "Feedback ricevuti",
+      icon: <Star className="size-4" />,
     },
     {
       href: "/dashboard/profilo",
@@ -539,7 +584,9 @@ export async function AdminAppShell({
     if (isConsultant) {
       ({ navSections, storage, recentActivity } = await loadConsultantShell(user.id));
     } else {
-      ({ navSections, storage, recentActivity } = await loadAdminShell());
+      const isRoot = isRootSuperadminEmail(user.email);
+      const allowed = await getAllowedAdminPages(user.id, user.email);
+      ({ navSections, storage, recentActivity } = await loadAdminShell({ allowed, isRoot }));
     }
   } catch (err) {
     console.error("[AppShellData] loadAdminShell crashed:", err);
@@ -669,6 +716,11 @@ async function loadOrganizerShell(userId: string): Promise<{
       label: "Chat",
       icon: <MessageCircle className="size-4" />,
       badge: unreadChatOrg > 0 ? { label: String(unreadChatOrg), variant: "accent" } : undefined,
+    },
+    {
+      href: "/organizzatore/feedback",
+      label: "Feedback artisti",
+      icon: <Star className="size-4" />,
     },
     {
       href: "/organizzatore/profilo",

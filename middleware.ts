@@ -72,7 +72,48 @@ export async function middleware(request: NextRequest) {
     const role = profile?.role;
     if (path.startsWith("/admin")) {
       if (role === "superadmin") {
-        // ok
+        // Gate impostazioni: solo root superadmin
+        const rootEmail = (process.env.SUPERADMIN_EMAIL ?? "").trim().toLowerCase();
+        const userEmail = (user.email ?? "").trim().toLowerCase();
+        const isRoot = rootEmail !== "" && userEmail === rootEmail;
+        if (path.startsWith("/admin/impostazioni") && !isRoot) {
+          url.pathname = "/admin";
+          url.search = "";
+          return NextResponse.redirect(url);
+        }
+        // Permessi pagina per superadmin non-root
+        if (!isRoot) {
+          const PAGE_PREFIX: Record<string, string> = {
+            "/admin/eventi": "eventi",
+            "/admin/artisti": "artisti",
+            "/admin/generi": "generi",
+            "/admin/leads": "leads",
+            "/admin/chat": "chat",
+            "/admin/messaggi": "messaggi",
+            "/admin/consulenza": "consulenza",
+            "/admin/blog": "blog",
+            "/admin/email": "email",
+            "/admin/feedback": "feedback",
+            "/admin/impostazioni": "impostazioni",
+            "/admin/profilo": "profilo",
+          };
+          const matchedKey = Object.entries(PAGE_PREFIX).find(([prefix]) =>
+            path.startsWith(prefix)
+          )?.[1];
+          if (matchedKey && matchedKey !== "overview" && matchedKey !== "profilo") {
+            const { data: perm } = await admin
+              .from("admin_page_permissions")
+              .select("can_view")
+              .eq("user_id", user.id)
+              .eq("page_key", matchedKey)
+              .maybeSingle();
+            if (!perm || !perm.can_view) {
+              url.pathname = "/admin";
+              url.search = "";
+              return NextResponse.redirect(url);
+            }
+          }
+        }
       } else if (role === "consultant") {
         // Consulente: accesso solo a consulenza + profilo
         const allowedForConsultant =

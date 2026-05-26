@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { AvailabilityCalendar } from "@/components/forms/AvailabilityCalendar";
 import { DefaultSlotsEditor } from "@/components/forms/DefaultSlotsEditor";
+import { BulkAvailabilityPanel } from "@/components/dashboard/BulkAvailabilityPanel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
 export const dynamic = "force-dynamic";
@@ -73,6 +74,27 @@ export default async function CalendarioPage() {
           <DefaultSlotsEditor
             artistId={artist.id}
             slots={(defaultSlots ?? []).map((s) => ({
+              id: s.id,
+              label: s.label,
+              start_time: s.start_time,
+              end_time: s.end_time,
+            }))}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Modifica in massa</CardTitle>
+          <CardDescription>
+            Imposta disponibilità su un intervallo di date con un click. Spunta opzionalmente gli
+            slot da copiare come override per ogni giorno selezionato.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BulkAvailabilityPanel
+            artistId={artist.id}
+            defaultSlots={(defaultSlots ?? []).map((s) => ({
               id: s.id,
               label: s.label,
               start_time: s.start_time,

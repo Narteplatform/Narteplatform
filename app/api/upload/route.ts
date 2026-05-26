@@ -11,12 +11,15 @@ const BUCKETS = {
   avatar: "artist-images",
   venue: "venue-images",
   audio: "artist-audio",
+  "artist-video": "artist-videos",
 } as const;
 
 type Kind = keyof typeof BUCKETS;
 
 const AUDIO_MIME = /^audio\//;
+const VIDEO_MIME = /^video\/(mp4|webm|quicktime)$/;
 const AUDIO_MAX = 25 * 1024 * 1024; // 25MB
+const VIDEO_MAX = 50 * 1024 * 1024; // 50MB
 const IMAGE_MAX = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request: Request) {
@@ -54,6 +57,16 @@ export async function POST(request: Request) {
     if (!AUDIO_MIME.test(file.type)) {
       return NextResponse.json({ error: "Formato audio non supportato" }, { status: 415 });
     }
+  } else if (kind === "artist-video") {
+    if (file.size > VIDEO_MAX) {
+      return NextResponse.json({ error: "Video troppo grande (max 50MB)" }, { status: 413 });
+    }
+    if (!VIDEO_MIME.test(file.type)) {
+      return NextResponse.json(
+        { error: "Formato video non supportato (solo mp4/webm/mov)" },
+        { status: 415 }
+      );
+    }
   } else {
     if (file.size > IMAGE_MAX) {
       return NextResponse.json({ error: "Immagine troppo grande (max 5MB)" }, { status: 413 });
@@ -63,11 +76,12 @@ export async function POST(request: Request) {
     }
   }
 
+  const defaultExt =
+    kind === "audio" ? "mp3" : kind === "artist-video" ? "mp4" : "jpg";
   const ext =
-    (file.type.split("/")[1] || (kind === "audio" ? "mp3" : "jpg"))
-      .replace(/[^a-z0-9]/gi, "")
-      .slice(0, 5) || (kind === "audio" ? "mp3" : "jpg");
-  const path = `${user.id}/${Date.now()}-${kind}.${ext}`;
+    (file.type.split("/")[1] || defaultExt).replace(/[^a-z0-9]/gi, "").slice(0, 5) || defaultExt;
+  const safeKind = kind.replace(/[^a-z0-9_-]/gi, "_");
+  const path = `${user.id}/${Date.now()}-${safeKind}.${ext}`;
 
   const admin = createAdminClient();
   const arrayBuffer = await file.arrayBuffer();

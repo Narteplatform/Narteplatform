@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CheckCircle2 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -6,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { BookingStatus } from "@/lib/supabase/types";
 import { minToBudgetLabel } from "@/lib/constants/budget-ranges";
+import { FinalPriceBox } from "@/components/booking/FinalPriceBox";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +41,7 @@ export default async function OrganizerRequestsPage({
 }: {
   searchParams: Promise<Search>;
 }) {
-  const { organizer } = await requireOrganizer();
+  const { user, organizer } = await requireOrganizer();
   const sp = await searchParams;
   const status = sp.status ?? "pending";
   const admin = createAdminClient();
@@ -47,7 +49,7 @@ export default async function OrganizerRequestsPage({
   let query = admin
     .from("booking_requests")
     .select(
-      "id, event_date, time_slot, budget_offer, message, status, artist_id, venue_id, created_at"
+      "id, event_date, time_slot, budget_offer, message, status, artist_id, venue_id, created_at, final_price, final_price_proposed_by, final_price_proposed_at, final_price_confirmed_by, final_price_confirmed_at"
     )
     .eq("organizer_id", organizer.id)
     .order("created_at", { ascending: false });
@@ -118,8 +120,15 @@ export default async function OrganizerRequestsPage({
           {items.map((r) => {
             const artist = artists.get(r.artist_id);
             const venue = r.venue_id ? venues.get(r.venue_id) : null;
+            const priceConfirmed =
+              r.status === "confermata" && r.final_price_confirmed_at != null;
             return (
-              <Card key={r.id} className="overflow-hidden">
+              <Card
+                key={r.id}
+                className={`overflow-hidden ${
+                  priceConfirmed ? "border-emerald-500 ring-1 ring-emerald-500/40" : ""
+                }`}
+              >
                 <CardHeader className="flex-row items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="size-12 overflow-hidden rounded-md bg-muted">
@@ -146,7 +155,14 @@ export default async function OrganizerRequestsPage({
                       </p>
                     </div>
                   </div>
-                  <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</Badge>
+                    {priceConfirmed && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                        <CheckCircle2 className="size-3" /> Prezzo €{Number(r.final_price)}
+                      </span>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="line-clamp-3 text-sm text-muted-foreground">{r.message}</p>
@@ -156,6 +172,18 @@ export default async function OrganizerRequestsPage({
                       <span>Budget: {minToBudgetLabel(Number(r.budget_offer))}</span>
                     )}
                   </div>
+                  {r.status === "confermata" && (
+                    <FinalPriceBox
+                      bookingId={r.id}
+                      role="organizer"
+                      currentUserId={user.id}
+                      finalPrice={r.final_price != null ? Number(r.final_price) : null}
+                      proposedBy={r.final_price_proposed_by}
+                      proposedAt={r.final_price_proposed_at}
+                      confirmedBy={r.final_price_confirmed_by}
+                      confirmedAt={r.final_price_confirmed_at}
+                    />
+                  )}
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Button asChild size="sm" variant="outline">
                       <Link href={`/organizzatore/richieste/${r.id}`}>Dettagli</Link>
