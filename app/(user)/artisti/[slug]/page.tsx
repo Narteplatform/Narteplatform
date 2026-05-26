@@ -483,7 +483,7 @@ export default async function ArtistDetailPage({
       </section>
 
       {/* BOOKING INFORMATION + SOCIAL */}
-      <section className="bg-muted py-16 md:py-24">
+      <section className="bg-white py-16 md:py-24">
         <div className="container-narte grid gap-10 lg:grid-cols-[1.4fr_1fr]">
           <div className="space-y-8">
             <Reveal>
