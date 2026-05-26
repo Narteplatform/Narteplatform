@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Search, ChevronDown } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import type { SearchHit } from "@/app/api/search/route";
 
 const easing = [0.22, 1, 0.36, 1] as const;
 
@@ -45,6 +46,11 @@ export function HeroNarteClient() {
   const [q, setQ] = React.useState("");
   const [genre, setGenre] = React.useState("");
   const [city, setCity] = React.useState("");
+  const [hits, setHits] = React.useState<SearchHit[]>([]);
+  const [open, setOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [activeIdx, setActiveIdx] = React.useState(-1);
+  const wrapRef = React.useRef<HTMLDivElement>(null);
 
   const titleAnim = (delay: number) => ({
     initial: reduce ? false : { y: 28, opacity: 0 },
@@ -52,8 +58,91 @@ export function HeroNarteClient() {
     transition: { duration: 0.9, ease: easing, delay },
   });
 
-  function onSearch(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  // Debounce fetch artisti dal DB
+  React.useEffect(() => {
+    const t = q.trim();
+    if (t.length < 2) {
+      setHits([]);
+      setOpen(false);
+      setActiveIdx(-1);
+      return;
+    }
+    setLoading(true);
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(t)}`, {
+          signal: ctrl.signal,
+        });
+        if (!res.ok) throw new Error("search failed");
+        const data: { hits: SearchHit[] } = await res.json();
+        // Solo artisti nella hero
+        const onlyArtists = data.hits.filter((h) => h.type === "artist");
+        setHits(onlyArtists);
+        setOpen(true);
+        setActiveIdx(-1);
+      } catch {
+        // aborts ignorati
+      } finally {
+        setLoading(false);
+      }
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [q]);
+
+  // Chiudi su click fuori
+  React.useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  function goToArtist(slug: string) {
+    setOpen(false);
+    setQ("");
+    setHits([]);
+    router.push(`/artisti/${slug}`);
+  }
+
+  function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!open || hits.length === 0) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onSearch();
+      }
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIdx((i) => (i + 1) % hits.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIdx((i) => (i <= 0 ? hits.length - 1 : i - 1));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const target = activeIdx >= 0 ? hits[activeIdx] : hits[0];
+      if (target) goToArtist(target.slug);
+      else onSearch();
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  }
+
+  function onSearch(e?: React.FormEvent<HTMLFormElement>) {
+    e?.preventDefault();
+    // Se c'e' un solo match esatto in autocomplete, vai diretto
+    const t = q.trim().toLowerCase();
+    const exact = hits.find((h) => h.title.toLowerCase() === t);
+    if (exact) {
+      goToArtist(exact.slug);
+      return;
+    }
     const params = new URLSearchParams();
     if (q.trim()) params.set("q", q.trim());
     if (genre) params.set("genre", genre);
@@ -114,40 +203,116 @@ export function HeroNarteClient() {
           onSubmit={onSearch}
           className="mt-8 w-full max-w-3xl"
         >
-          <div className="flex flex-col gap-2 rounded-2xl bg-palco p-2 shadow-xl shadow-black/30 sm:flex-row sm:items-stretch sm:rounded-full sm:p-1.5">
-            <label className="flex flex-1 items-center gap-2 px-4 sm:px-4">
-              <Search className="size-4 shrink-0 text-notte/40" />
-              <input
-                type="search"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Cerca artista, genere…"
-                className="h-10 w-full bg-transparent text-sm text-notte placeholder:text-notte/40 focus:outline-none"
-                aria-label="Cerca artista o genere"
+          <div ref={wrapRef} className="relative">
+            <div className="flex flex-col gap-2 rounded-2xl bg-palco p-2 shadow-xl shadow-black/30 sm:flex-row sm:items-stretch sm:rounded-full sm:p-1.5">
+              <label className="flex flex-1 items-center gap-2 px-4 sm:px-4">
+                <Search className="size-4 shrink-0 text-notte/40" />
+                <input
+                  type="search"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  onFocus={() => q.trim().length >= 2 && hits.length > 0 && setOpen(true)}
+                  onKeyDown={onInputKeyDown}
+                  placeholder="Cerca artista, genere…"
+                  autoComplete="off"
+                  role="combobox"
+                  aria-expanded={open}
+                  aria-controls="hero-search-results"
+                  aria-autocomplete="list"
+                  className="h-10 w-full bg-transparent text-sm text-notte placeholder:text-notte/40 focus:outline-none"
+                />
+              </label>
+
+              <HeroSelect
+                value={genre}
+                onChange={setGenre}
+                options={GENRES}
+                ariaLabel="Genere"
               />
-            </label>
+              <HeroSelect
+                value={city}
+                onChange={setCity}
+                options={CITIES}
+                ariaLabel="Città"
+              />
 
-            <HeroSelect
-              value={genre}
-              onChange={setGenre}
-              options={GENRES}
-              ariaLabel="Genere"
-            />
-            <HeroSelect
-              value={city}
-              onChange={setCity}
-              options={CITIES}
-              ariaLabel="Città"
-            />
+              <Button
+                type="submit"
+                variant="default"
+                size="md"
+                className="!h-10 !rounded-full px-5"
+              >
+                <Search className="size-4" /> Cerca
+              </Button>
+            </div>
 
-            <Button
-              type="submit"
-              variant="default"
-              size="md"
-              className="!h-10 !rounded-full px-5"
-            >
-              <Search className="size-4" /> Cerca
-            </Button>
+            {open && (
+              <div
+                id="hero-search-results"
+                role="listbox"
+                className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[60vh] overflow-y-auto rounded-2xl border border-palco-60 bg-palco text-left text-notte shadow-2xl"
+              >
+                {loading && (
+                  <p className="px-4 py-3 text-xs uppercase tracking-wider text-notte/50">
+                    Cerco…
+                  </p>
+                )}
+                {!loading && hits.length === 0 && (
+                  <p className="px-4 py-3 text-xs uppercase tracking-wider text-notte/50">
+                    Nessun artista per &quot;{q}&quot;
+                  </p>
+                )}
+                {hits.length > 0 && (
+                  <ul className="py-1">
+                    {hits.map((h, i) => {
+                      const active = i === activeIdx;
+                      return (
+                        <li key={`${h.type}-${h.slug}`} role="option" aria-selected={active}>
+                          <button
+                            type="button"
+                            onMouseEnter={() => setActiveIdx(i)}
+                            onClick={() => goToArtist(h.slug)}
+                            className={`flex w-full items-center gap-3 px-4 py-2 text-left transition-colors ${
+                              active ? "bg-palco-80" : "hover:bg-palco-80"
+                            }`}
+                          >
+                            <span className="size-10 shrink-0 overflow-hidden rounded-md bg-palco-80">
+                              {h.image ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={h.image}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : null}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-display text-sm uppercase">
+                                {h.title}
+                              </span>
+                              {h.subtitle && (
+                                <span className="block truncate text-xs text-notte/55">
+                                  {h.subtitle}
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                <div className="border-t border-palco-60 px-4 py-2 text-right text-[11px] uppercase tracking-wider">
+                  <Link
+                    href="/artisti"
+                    onClick={() => setOpen(false)}
+                    className="text-azzurro hover:underline"
+                  >
+                    Vedi tutti gli artisti
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </motion.form>
 
