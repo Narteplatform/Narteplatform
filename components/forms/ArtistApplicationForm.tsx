@@ -95,8 +95,9 @@ export function ArtistApplicationForm({
           <Input {...register("stageName")} />
         </Field>
         <Field
-          label="Generi musicali"
+          label="Generi musicali (massimo 3)"
           error={errors.genres?.message}
+          hint="Scegli al massimo 3 generi che descrivono meglio il tuo progetto."
           className="md:col-span-2"
         >
           <Controller
@@ -107,7 +108,8 @@ export function ArtistApplicationForm({
                 options={options}
                 value={field.value ?? []}
                 onChange={field.onChange}
-                placeholder="Seleziona uno o più generi…"
+                max={3}
+                placeholder="Seleziona da 1 a 3 generi…"
                 searchPlaceholder="Cerca genere…"
                 emptyText="Nessun genere disponibile"
               />

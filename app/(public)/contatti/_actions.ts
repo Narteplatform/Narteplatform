@@ -33,6 +33,7 @@ export async function submitContact(input: ContactInput) {
       to: adminEmail,
       subject: `Nuovo messaggio da ${data.name}`,
       replyTo: data.email,
+      template: "ContactMessage",
       react: ContactMessageEmail({
         name: data.name,
         email: data.email,

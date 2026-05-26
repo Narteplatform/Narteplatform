@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CalendarDays, Image as ImageIcon, Inbox, UserPlus, Users } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
@@ -14,8 +15,11 @@ import { formatEventDate } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
-  const supabase = createAdminClient();
   const user = await getCurrentUser();
+  if (user?.profile?.role === "consultant") {
+    redirect("/admin/consulenza");
+  }
+  const supabase = createAdminClient();
 
   const [eventsRes, artistsRes, leadsRes, applicationsRes, recentEventsRes, recentLeadsRes, recentMessagesRes] =
     await Promise.all([

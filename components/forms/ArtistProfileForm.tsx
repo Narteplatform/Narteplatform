@@ -23,6 +23,14 @@ type Artist = {
   gallery: string[];
   videos: string[];
   audio_files?: AudioTrack[] | null;
+  tier?: "free" | "pro" | "max";
+  percorso_artistico?: "cover_artist" | "tribute_band" | "progetto_inedito" | null;
+};
+
+const PERCORSO_LABEL: Record<"cover_artist" | "tribute_band" | "progetto_inedito", string> = {
+  cover_artist: "Cover artist",
+  tribute_band: "Tribute band",
+  progetto_inedito: "Progetto inedito",
 };
 
 function readLink(links: unknown, key: string): string {
@@ -49,6 +57,7 @@ type FormValues = {
   gallery: string[];
   videos: string;
   audio_files: AudioTrack[];
+  percorso_artistico: "" | "cover_artist" | "tribute_band" | "progetto_inedito";
 };
 
 function splitLines(text: string): string[] {
@@ -84,8 +93,12 @@ export function ArtistProfileForm({
       gallery: artist.gallery ?? [],
       videos: (artist.videos ?? []).join("\n"),
       audio_files: (artist.audio_files ?? []) as AudioTrack[],
+      percorso_artistico: (artist.percorso_artistico ?? "") as FormValues["percorso_artistico"],
     },
   });
+
+  const tier = artist.tier ?? "free";
+  const canEditPercorso = tier === "pro" || tier === "max";
 
   const genreOpts = genreOptions.map((g) => ({ value: g, label: g }));
   const instrumentOpts = INSTRUMENT_OPTIONS.map((i) => ({ value: i, label: i }));
@@ -110,6 +123,11 @@ export function ArtistProfileForm({
       gallery: values.gallery,
       videos: splitLines(values.videos),
       audio_files: (values.audio_files ?? []).filter((t) => t && t.url),
+      percorso_artistico: canEditPercorso
+        ? values.percorso_artistico === ""
+          ? null
+          : values.percorso_artistico
+        : null,
     });
     if (!res.ok) setError(res.error ?? "Errore");
     else {
@@ -126,7 +144,7 @@ export function ArtistProfileForm({
           <Field label="Nome d'arte"><Input {...register("stage_name", { required: true })} /></Field>
           <Field label="Città"><Input {...register("city")} /></Field>
         </div>
-        <Field label="Generi musicali">
+        <Field label="Generi musicali (max 3)">
           <Controller
             control={control}
             name="genre"
@@ -135,7 +153,8 @@ export function ArtistProfileForm({
                 options={genreOpts}
                 value={field.value ?? []}
                 onChange={field.onChange}
-                placeholder="Seleziona uno o più generi…"
+                max={3}
+                placeholder="Seleziona da 1 a 3 generi…"
                 searchPlaceholder="Cerca genere…"
                 emptyText="Nessun genere trovato"
               />
@@ -161,6 +180,39 @@ export function ArtistProfileForm({
         <Field label="Bio">
           <Textarea rows={5} {...register("bio")} />
         </Field>
+
+        <div className="rounded-xl border border-border bg-muted/40 p-4">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <Label>Percorso artistico</Label>
+            <span
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                tier === "free"
+                  ? "border-border text-muted-foreground"
+                  : "border-accent text-accent"
+              }`}
+            >
+              Piano: {tier}
+            </span>
+          </div>
+          {canEditPercorso ? (
+            <select
+              {...register("percorso_artistico")}
+              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+            >
+              <option value="">— Non specificato —</option>
+              <option value="cover_artist">{PERCORSO_LABEL.cover_artist}</option>
+              <option value="tribute_band">{PERCORSO_LABEL.tribute_band}</option>
+              <option value="progetto_inedito">{PERCORSO_LABEL.progetto_inedito}</option>
+            </select>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Il campo <em>Percorso artistico</em> (cover artist, tribute band,
+              progetto inedito) è disponibile solo per gli artisti con piano{" "}
+              <strong>Pro</strong> o <strong>Max</strong>. Contatta lo staff N&apos;arte
+              per l&apos;upgrade.
+            </p>
+          )}
+        </div>
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">

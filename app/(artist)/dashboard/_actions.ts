@@ -16,6 +16,7 @@ type ProfileUpdate = {
   gallery: string[];
   videos: string[];
   audio_files: AudioTrack[];
+  percorso_artistico: "cover_artist" | "tribute_band" | "progetto_inedito" | null;
 };
 
 async function ownsArtist(artistId: string) {
@@ -47,10 +48,29 @@ export async function updateArtistProfile(artistId: string, update: ProfileUpdat
   const user = await ownsArtist(artistId);
   if (!user) return { ok: false as const, error: "Non autorizzato" };
 
+  if (update.genre.length > 3) {
+    return { ok: false as const, error: "Massimo 3 generi" };
+  }
+
   const admin = createAdminClient();
+
+  // percorso_artistico solo per tier pro/max — verifica server-side
+  let payload: ProfileUpdate = update;
+  if (payload.percorso_artistico) {
+    const { data: artistRow } = await admin
+      .from("artists")
+      .select("tier")
+      .eq("id", artistId)
+      .maybeSingle();
+    const tier = (artistRow as { tier?: string } | null)?.tier ?? "free";
+    if (tier !== "pro" && tier !== "max") {
+      payload = { ...payload, percorso_artistico: null };
+    }
+  }
+
   const { error } = await admin
     .from("artists")
-    .update(update)
+    .update(payload)
     .eq("id", artistId);
 
   if (error) return { ok: false as const, error: error.message };

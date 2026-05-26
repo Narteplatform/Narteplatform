@@ -43,6 +43,8 @@ export async function Header() {
         <nav className="hidden items-center gap-6 text-sm font-medium text-foreground/85 lg:flex">
           <Link href="/eventi" className="transition-opacity hover:opacity-75">Eventi</Link>
           <Link href="/artisti" className="transition-opacity hover:opacity-75">Artisti</Link>
+          <Link href="/format" className="transition-opacity hover:opacity-75">Format</Link>
+          <Link href="/blog" className="transition-opacity hover:opacity-75">Blog</Link>
           <Link href="/chi-siamo" className="transition-opacity hover:opacity-75">Chi siamo</Link>
           <Link href="/collaborazioni" className="transition-opacity hover:opacity-75">Collaborazioni</Link>
           <Link href="/contatti" className="transition-opacity hover:opacity-75">Contatti</Link>
@@ -101,7 +103,7 @@ export async function Header() {
           {/* Burger sotto lg */}
           <MobileMenu
             isLoggedIn={!!user}
-            role={(role as "superadmin" | "artist" | "user" | "organizer" | undefined) ?? null}
+            role={(role as "superadmin" | "artist" | "user" | "organizer" | "consultant" | undefined) ?? null}
           />
         </div>
       </div>

@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Plus, User2 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -22,6 +24,8 @@ type Consultant = {
 };
 
 export default async function AdminConsulentiPage() {
+  const me = await getCurrentUser();
+  if (me?.profile?.role === "consultant") redirect("/admin/consulenza");
   const admin = createAdminClient();
   const { data: rawList } = await admin
     .from("consultants")

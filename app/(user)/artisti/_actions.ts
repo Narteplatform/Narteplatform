@@ -75,6 +75,7 @@ export async function requestConsultation(input: ConsultationInput) {
     sendEmail({
       to: data.email,
       subject: `Richiesta chiamata gratuita con N'arte · ${slotAt}`,
+      template: "ConsultationRequestUser",
       react: createElement(ConsultationRequestEmail, {
         toRole: "user",
         name: data.name,
@@ -85,6 +86,7 @@ export async function requestConsultation(input: ConsultationInput) {
     sendEmail({
       to: ADMIN_EMAIL,
       subject: `Nuova richiesta consulenza · ${data.name}`,
+      template: "ConsultationRequestAdmin",
       react: createElement(ConsultationRequestEmail, {
         toRole: "admin",
         name: data.name,

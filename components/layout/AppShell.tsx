@@ -47,7 +47,7 @@ export type NavSection = {
 export type AppShellUser = {
   name?: string | null;
   email: string;
-  role: "superadmin" | "artist" | "user" | "organizer";
+  role: "superadmin" | "artist" | "user" | "organizer" | "consultant";
   avatarUrl?: string | null;
 };
 

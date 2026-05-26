@@ -70,9 +70,22 @@ export async function middleware(request: NextRequest) {
       .single();
 
     const role = profile?.role;
-    if (path.startsWith("/admin") && role !== "superadmin") {
-      url.pathname = "/";
-      return NextResponse.redirect(url);
+    if (path.startsWith("/admin")) {
+      if (role === "superadmin") {
+        // ok
+      } else if (role === "consultant") {
+        // Consulente: accesso solo a consulenza + profilo
+        const allowedForConsultant =
+          path.startsWith("/admin/consulenza") || path.startsWith("/admin/profilo");
+        if (!allowedForConsultant) {
+          url.pathname = "/admin/consulenza";
+          url.search = "";
+          return NextResponse.redirect(url);
+        }
+      } else {
+        url.pathname = "/";
+        return NextResponse.redirect(url);
+      }
     }
     if (path.startsWith("/dashboard") && role !== "artist" && role !== "superadmin") {
       url.pathname = "/";

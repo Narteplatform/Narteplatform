@@ -6,12 +6,14 @@ import { Menu, X, LogIn, UserPlus, User, LayoutDashboard, Sparkles } from "lucid
 
 type Props = {
   isLoggedIn: boolean;
-  role?: "superadmin" | "artist" | "user" | "organizer" | null;
+  role?: "superadmin" | "artist" | "user" | "organizer" | "consultant" | null;
 };
 
 const NAV_LINKS: { href: string; label: string }[] = [
   { href: "/eventi", label: "Eventi" },
   { href: "/artisti", label: "Artisti" },
+  { href: "/format", label: "Format" },
+  { href: "/blog", label: "Blog" },
   { href: "/chi-siamo", label: "Chi siamo" },
   { href: "/collaborazioni", label: "Collaborazioni" },
   { href: "/contatti", label: "Contatti" },

@@ -19,7 +19,7 @@ export const artistApplicationSchema = z.object({
     .min(8, "La password deve avere almeno 8 caratteri")
     .max(100, "Massimo 100 caratteri"),
   stageName: z.string().min(2).max(80),
-  genres: z.array(z.string().min(1)).min(1, "Seleziona almeno un genere").max(8),
+  genres: z.array(z.string().min(1)).min(1, "Seleziona almeno un genere").max(3, "Massimo 3 generi"),
   bio: z.string().max(2000).optional(),
   instagram: z.string().max(120).optional(),
   spotify: z.string().max(200).optional(),

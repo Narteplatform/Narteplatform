@@ -1,8 +1,10 @@
 import {
   Building2,
   CalendarDays,
+  FileText,
   Inbox,
   LayoutDashboard,
+  Mail,
   MessageCircle,
   MessageSquare,
   Phone,
@@ -40,6 +42,7 @@ type AppShellUser = {
   email: string;
   name?: string | null;
   avatarUrl?: string | null;
+  role?: "superadmin" | "consultant";
 };
 
 function todayIso() {
@@ -192,6 +195,16 @@ async function loadAdminShell(): Promise<{
         { href: "/admin/consulenza/consulenti", label: "Consulenti" },
         { href: "/admin/consulenza/slots", label: "Slot legacy" },
       ],
+    },
+    {
+      href: "/admin/blog",
+      label: "Blog",
+      icon: <FileText className="size-4" />,
+    },
+    {
+      href: "/admin/email",
+      label: "Email",
+      icon: <Mail className="size-4" />,
     },
     {
       href: "/admin/profilo",
@@ -425,6 +438,92 @@ function defaultAdminStorage(used: number): AppShellStorage {
   };
 }
 
+async function loadConsultantShell(userId: string): Promise<{
+  navSections: NavSection[];
+  storage: AppShellStorage | undefined;
+  recentActivity: AppShellRecent[];
+}> {
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (err) {
+    console.error("[AppShellData] createAdminClient failed:", err);
+    return { navSections: defaultConsultantNav(), storage: undefined, recentActivity: [] };
+  }
+
+  const consultantRow = await safe(
+    admin.from("consultants").select("id, name").eq("user_id", userId).maybeSingle()
+  );
+  const consultantId = (consultantRow?.data as { id: string } | null)?.id ?? null;
+
+  let pendingCount = 0;
+  let confirmedCount = 0;
+  let futureSlots = 0;
+  if (consultantId) {
+    const nowIso = new Date().toISOString();
+    const [pending, confirmed, slots] = await Promise.all([
+      safe(
+        admin
+          .from("consultations")
+          .select("id, slot_id, consultant_slots!inner(consultant_id)", { count: "exact", head: true })
+          .eq("status", "requested")
+          .eq("consultant_slots.consultant_id", consultantId)
+      ),
+      safe(
+        admin
+          .from("consultations")
+          .select("id, slot_id, consultant_slots!inner(consultant_id)", { count: "exact", head: true })
+          .eq("status", "confirmed")
+          .eq("consultant_slots.consultant_id", consultantId)
+      ),
+      safe(
+        admin
+          .from("consultant_slots")
+          .select("id", { count: "exact", head: true })
+          .eq("consultant_id", consultantId)
+          .eq("is_active", true)
+          .gte("slot_at", nowIso)
+      ),
+    ]);
+    pendingCount = pending?.count ?? 0;
+    confirmedCount = confirmed?.count ?? 0;
+    futureSlots = slots?.count ?? 0;
+  }
+
+  const navSections: NavSection[] = [
+    {
+      href: "/admin/consulenza",
+      label: "Appuntamenti",
+      icon: <Phone className="size-4" />,
+      badge: pendingCount > 0 ? { label: String(pendingCount), variant: "accent" } : undefined,
+      children: [
+        { href: "/admin/consulenza?status=requested", label: "Richiesti", count: pendingCount },
+        { href: "/admin/consulenza?status=confirmed", label: "Confermati", count: confirmedCount },
+      ],
+    },
+    {
+      href: consultantId ? `/admin/consulenza/consulenti/${consultantId}` : "/admin/consulenza",
+      label: "I miei slot",
+      icon: <CalendarDays className="size-4" />,
+      badge: futureSlots > 0 ? { label: String(futureSlots) } : undefined,
+    },
+    {
+      href: "/admin/profilo",
+      label: "Profilo",
+      icon: <UserCog className="size-4" />,
+    },
+  ];
+
+  return { navSections, storage: undefined, recentActivity: [] };
+}
+
+function defaultConsultantNav(): NavSection[] {
+  return [
+    { href: "/admin/consulenza", label: "Appuntamenti", icon: <Phone className="size-4" /> },
+    { href: "/admin/profilo", label: "Profilo", icon: <UserCog className="size-4" /> },
+  ];
+}
+
 export async function AdminAppShell({
   user,
   children,
@@ -432,31 +531,36 @@ export async function AdminAppShell({
   user: AppShellUser;
   children: ReactNode;
 }) {
+  const isConsultant = user.role === "consultant";
   let navSections: NavSection[];
   let storage: AppShellStorage | undefined;
   let recentActivity: AppShellRecent[];
   try {
-    ({ navSections, storage, recentActivity } = await loadAdminShell());
+    if (isConsultant) {
+      ({ navSections, storage, recentActivity } = await loadConsultantShell(user.id));
+    } else {
+      ({ navSections, storage, recentActivity } = await loadAdminShell());
+    }
   } catch (err) {
     console.error("[AppShellData] loadAdminShell crashed:", err);
-    navSections = defaultAdminNav();
-    storage = defaultAdminStorage(0);
+    navSections = isConsultant ? defaultConsultantNav() : defaultAdminNav();
+    storage = isConsultant ? undefined : defaultAdminStorage(0);
     recentActivity = [];
   }
   return (
     <AppShell
-      brand={<ShellBrand suffix="Admin" />}
-      brandHref="/admin"
+      brand={<ShellBrand suffix={isConsultant ? "Consulente" : "Admin"} />}
+      brandHref={isConsultant ? "/admin/consulenza" : "/admin"}
       user={{
         name: user.name ?? null,
         email: user.email,
-        role: "superadmin",
+        role: isConsultant ? "consultant" : "superadmin",
         avatarUrl: user.avatarUrl ?? null,
       }}
       navSections={navSections}
       storage={storage}
       recentActivity={recentActivity}
-      whatsNewHref="/admin"
+      whatsNewHref={isConsultant ? "/admin/consulenza" : "/admin"}
     >
       {children}
     </AppShell>

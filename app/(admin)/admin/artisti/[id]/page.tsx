@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { ArtistStatusToggle } from "@/components/admin/ArtistStatusToggle";
 import { ArtistEditForm } from "@/components/admin/ArtistEditForm";
+import { ArtistTierSelect } from "@/components/admin/ArtistTierSelect";
 import { DeleteArtistButton } from "@/components/admin/DeleteArtistButton";
 import { CancelBookingDialog } from "@/components/admin/CancelBookingDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -112,6 +113,23 @@ export default async function AdminArtistDetailPage({
         </CardHeader>
         <CardContent className="pt-2">
           <ArtistStatusToggle artistId={artist.id} status={artist.status} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Piano artista (tier)</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-2 space-y-2">
+          <ArtistTierSelect
+            artistId={artist.id}
+            tier={(artist as { tier?: "free" | "pro" | "max" }).tier ?? "free"}
+          />
+          <p className="text-xs text-muted-foreground">
+            Il campo <em>Percorso artistico</em> (cover artist, tribute band,
+            progetto inedito) è visibile e modificabile solo per i tier <strong>pro</strong> e{" "}
+            <strong>max</strong>.
+          </p>
         </CardContent>
       </Card>
 

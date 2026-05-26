@@ -1,13 +1,15 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
+import { getCurrentUser, getConsultantForUser } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { ConsultantForm } from "@/components/admin/ConsultantForm";
 import { ConsultantSlotsCalendar } from "@/components/admin/ConsultantSlotsCalendar";
 import { ConsultantToggle, ConsultantDelete } from "@/components/admin/ConsultantActions";
+import { LinkConsultantAccount } from "@/components/admin/LinkConsultantAccount";
 
 export const metadata = { title: "Consulente — N'arte Admin" };
 export const dynamic = "force-dynamic";
@@ -21,6 +23,7 @@ type Consultant = {
   bio: string | null;
   avatar_url: string | null;
   is_active: boolean;
+  user_id: string | null;
 };
 
 type Slot = {
@@ -37,10 +40,19 @@ export default async function ConsultantDetailPage({
 }) {
   const { id } = await params;
   const admin = createAdminClient();
+
+  // Access control: consultant può vedere solo il proprio detail
+  const currentUser = await getCurrentUser();
+  const isConsultant = currentUser?.profile?.role === "consultant";
+  if (isConsultant) {
+    const own = await getConsultantForUser(currentUser!.id);
+    if (!own || own.id !== id) redirect("/admin/consulenza");
+  }
+
   const [{ data: cRaw }, { data: slotsRaw }] = await Promise.all([
     admin
       .from("consultants")
-      .select("id, name, role, email, phone, bio, avatar_url, is_active")
+      .select("id, name, role, email, phone, bio, avatar_url, is_active, user_id")
       .eq("id", id)
       .maybeSingle(),
     admin
@@ -55,12 +67,14 @@ export default async function ConsultantDetailPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/admin/consulenza/consulenti"
-        className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-3.5" /> Tutti i consulenti
-      </Link>
+      {!isConsultant && (
+        <Link
+          href="/admin/consulenza/consulenti"
+          className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" /> Tutti i consulenti
+        </Link>
+      )}
 
       <Card>
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -77,13 +91,32 @@ export default async function ConsultantDetailPage({
                 <Badge variant={consultant.is_active ? "success" : "muted"} dot>
                   {consultant.is_active ? "Attivo" : "Disattivo"}
                 </Badge>
-                <ConsultantToggle consultantId={consultant.id} isActive={consultant.is_active} />
+                <Badge variant={consultant.user_id ? "success" : "muted"}>
+                  {consultant.user_id ? "Account collegato" : "Nessun account"}
+                </Badge>
+                {!isConsultant && (
+                  <ConsultantToggle consultantId={consultant.id} isActive={consultant.is_active} />
+                )}
               </div>
             </div>
           </div>
-          <ConsultantDelete consultantId={consultant.id} name={consultant.name} />
+          {!isConsultant && <ConsultantDelete consultantId={consultant.id} name={consultant.name} />}
         </CardContent>
       </Card>
+
+      {!isConsultant && !consultant.user_id && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Account di login</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LinkConsultantAccount
+              consultantId={consultant.id}
+              initialEmail={consultant.email}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

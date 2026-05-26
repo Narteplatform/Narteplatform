@@ -93,6 +93,7 @@ export async function bookConsultationAsArtist(input: {
       ? sendEmail({
           to: user.email,
           subject: `Appuntamento confermato con N'arte · ${slotAt}`,
+          template: "ConsultationConfirmedArtist",
           react: createElement(ConsultationRequestEmail, {
             toRole: "user",
             name: displayName ?? "Artista",
@@ -104,6 +105,7 @@ export async function bookConsultationAsArtist(input: {
     sendEmail({
       to: ADMIN_EMAIL,
       subject: `Artista ha prenotato consulenza · ${displayName}`,
+      template: "ConsultationConfirmedAdmin",
       react: createElement(ConsultationRequestEmail, {
         toRole: "admin",
         name: displayName ?? "Artista",

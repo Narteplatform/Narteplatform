@@ -69,6 +69,7 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
     sendEmail({
       to: data.email,
       subject: "Candidatura ricevuta — N'arte",
+      template: "ApplicationReceived",
       react: ApplicationReceivedEmail({
         applicantName: data.name,
         stageName: data.stageName,
@@ -78,6 +79,7 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
       ? sendEmail({
           to: adminEmail,
           subject: `Nuova candidatura: ${data.stageName}`,
+          template: "ApplicationReceivedAdmin",
           react: ApplicationReceivedEmail({
             applicantName: data.name,
             stageName: data.stageName,

@@ -18,32 +18,94 @@ function getResend(): Resend | null {
   return _resend;
 }
 
-export async function sendEmail(opts: {
+type SendEmailOpts = {
   to: string | string[];
   subject: string;
   react: ReactElement;
   replyTo?: string;
+  template?: string;
+  meta?: Record<string, unknown>;
+};
+
+async function logEmail(row: {
+  to: string[];
+  subject: string;
+  template?: string;
+  status: "sent" | "failed" | "skipped";
+  providerId?: string | null;
+  error?: string | null;
+  meta?: Record<string, unknown>;
 }) {
+  try {
+    const admin = createAdminClient();
+    await admin.from("email_log").insert({
+      to_addresses: row.to,
+      subject: row.subject,
+      template: row.template ?? null,
+      status: row.status,
+      provider_id: row.providerId ?? null,
+      error: row.error ?? null,
+      meta: row.meta ?? {},
+    });
+  } catch (e) {
+    console.error("[email_log] impossibile salvare riga", e);
+  }
+}
+
+export async function sendEmail(opts: SendEmailOpts) {
+  const toArr = Array.isArray(opts.to) ? opts.to : [opts.to];
   const resend = getResend();
   if (!resend) {
     console.warn("[email] RESEND_API_KEY mancante — email non inviata", opts.subject);
+    await logEmail({
+      to: toArr,
+      subject: opts.subject,
+      template: opts.template,
+      status: "skipped",
+      error: "RESEND_API_KEY mancante",
+      meta: opts.meta,
+    });
     return { ok: false as const, skipped: true };
   }
   try {
     const { data, error } = await resend.emails.send({
       from: FROM,
-      to: Array.isArray(opts.to) ? opts.to : [opts.to],
+      to: toArr,
       subject: opts.subject,
       react: opts.react,
       replyTo: opts.replyTo,
     });
     if (error) {
       console.error("[email] errore Resend", error);
+      await logEmail({
+        to: toArr,
+        subject: opts.subject,
+        template: opts.template,
+        status: "failed",
+        error: typeof error === "object" && error && "message" in error ? String((error as { message: unknown }).message) : JSON.stringify(error),
+        meta: opts.meta,
+      });
       return { ok: false as const, error };
     }
+    await logEmail({
+      to: toArr,
+      subject: opts.subject,
+      template: opts.template,
+      status: "sent",
+      providerId: data?.id ?? null,
+      meta: opts.meta,
+    });
     return { ok: true as const, id: data?.id };
   } catch (err) {
     console.error("[email] eccezione", err);
+    await logEmail({
+      to: toArr,
+      subject: opts.subject,
+      template: opts.template,
+      status: "failed",
+      error: err instanceof Error ? err.message : String(err),
+      meta: opts.meta,
+    });
     return { ok: false as const, error: err };
   }
 }
@@ -100,6 +162,8 @@ export async function sendBookingAcceptedEmail(requestId: string) {
   return sendEmail({
     to: ctx.organizerEmail,
     subject: `Risposta da ${ctx.artist?.stage_name ?? "artista"} — in trattativa`,
+    template: "BookingAccepted",
+    meta: { requestId, artistId: ctx.req.artist_id },
     react: createElement(BookingStatusEmail, {
       kind: "accepted",
       artistName: ctx.artist?.stage_name ?? "Artista",
@@ -119,6 +183,8 @@ export async function sendBookingConfirmedEmail(requestId: string) {
   return sendEmail({
     to: recipients,
     subject: `Data confermata: ${ctx.artist?.stage_name ?? "artista"} · ${ctx.req.event_date}`,
+    template: "BookingConfirmed",
+    meta: { requestId, artistId: ctx.req.artist_id },
     react: createElement(BookingStatusEmail, {
       kind: "confirmed",
       artistName: ctx.artist?.stage_name ?? "Artista",
@@ -136,6 +202,8 @@ export async function sendBookingDeclinedEmail(requestId: string) {
   return sendEmail({
     to: ctx.organizerEmail,
     subject: `${ctx.artist?.stage_name ?? "Artista"} non disponibile per la data richiesta`,
+    template: "BookingDeclined",
+    meta: { requestId, artistId: ctx.req.artist_id },
     react: createElement(BookingStatusEmail, {
       kind: "declined",
       artistName: ctx.artist?.stage_name ?? "Artista",
@@ -155,6 +223,8 @@ export async function sendBookingCancelledByAdminEmail(requestId: string, reason
   return sendEmail({
     to: recipients,
     subject: `Data annullata da N'arte · ${ctx.req.event_date}`,
+    template: "BookingCancelledByAdmin",
+    meta: { requestId, artistId: ctx.req.artist_id, reason },
     react: createElement(BookingStatusEmail, {
       kind: "cancelled_by_admin",
       artistName: ctx.artist?.stage_name ?? "Artista",

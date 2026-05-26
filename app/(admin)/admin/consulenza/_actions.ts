@@ -104,6 +104,8 @@ const consultantSchema = z.object({
     .url("URL avatar non valido")
     .optional()
     .or(z.literal("").transform(() => undefined)),
+  createAccount: z.boolean().optional(),
+  password: z.string().min(8, "Password min 8 caratteri").optional().or(z.literal("").transform(() => undefined)),
 });
 
 export async function createConsultant(input: z.infer<typeof consultantSchema>) {
@@ -113,7 +115,28 @@ export async function createConsultant(input: z.infer<typeof consultantSchema>) 
   if (!parsed.success) {
     return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
   }
+  if (parsed.data.createAccount && (!parsed.data.email || !parsed.data.password)) {
+    return { ok: false as const, error: "Email e password obbligatorie per creare l'account" };
+  }
   const admin = createAdminClient();
+
+  let userId: string | null = null;
+  if (parsed.data.createAccount && parsed.data.email && parsed.data.password) {
+    const { data: created, error: authErr } = await admin.auth.admin.createUser({
+      email: parsed.data.email,
+      password: parsed.data.password,
+      email_confirm: true,
+      user_metadata: { role: "consultant", full_name: parsed.data.name },
+    });
+    if (authErr || !created?.user) {
+      return { ok: false as const, error: authErr?.message ?? "Errore creazione account" };
+    }
+    userId = created.user.id;
+    // Trigger handle_new_user crea già il profilo con role=consultant.
+    // Aggiorna esplicitamente per sicurezza.
+    await admin.from("profiles").update({ role: "consultant", full_name: parsed.data.name }).eq("id", userId);
+  }
+
   const { data, error } = await admin
     .from("consultants")
     .insert({
@@ -124,14 +147,61 @@ export async function createConsultant(input: z.infer<typeof consultantSchema>) 
       bio: parsed.data.bio ?? null,
       avatar_url: parsed.data.avatarUrl ?? null,
       is_active: true,
+      user_id: userId,
     })
     .select("id")
     .single();
-  if (error) return { ok: false as const, error: error.message };
+  if (error) {
+    if (userId) await admin.auth.admin.deleteUser(userId);
+    return { ok: false as const, error: error.message };
+  }
   revalidatePath("/admin/consulenza");
   revalidatePath("/admin/consulenza/consulenti");
   revalidatePath("/dashboard/consulenza");
   return { ok: true as const, id: (data as { id: string } | null)?.id ?? null };
+}
+
+export async function linkConsultantAccount(input: {
+  consultantId: string;
+  email: string;
+  password: string;
+}) {
+  const ctx = await ensureAdmin();
+  if (!ctx.ok) return ctx;
+  if (!input.email || !input.password || input.password.length < 8) {
+    return { ok: false as const, error: "Email valida e password (min 8) obbligatorie" };
+  }
+  const admin = createAdminClient();
+  const { data: existing } = await admin
+    .from("consultants")
+    .select("id, name, user_id")
+    .eq("id", input.consultantId)
+    .maybeSingle();
+  const row = existing as { id: string; name: string; user_id: string | null } | null;
+  if (!row) return { ok: false as const, error: "Consulente non trovato" };
+  if (row.user_id) return { ok: false as const, error: "Account già collegato" };
+
+  const { data: created, error: authErr } = await admin.auth.admin.createUser({
+    email: input.email,
+    password: input.password,
+    email_confirm: true,
+    user_metadata: { role: "consultant", full_name: row.name },
+  });
+  if (authErr || !created?.user) {
+    return { ok: false as const, error: authErr?.message ?? "Errore creazione account" };
+  }
+  const userId = created.user.id;
+  await admin.from("profiles").update({ role: "consultant", full_name: row.name }).eq("id", userId);
+  const { error: linkErr } = await admin
+    .from("consultants")
+    .update({ user_id: userId, email: input.email, updated_at: new Date().toISOString() })
+    .eq("id", input.consultantId);
+  if (linkErr) {
+    await admin.auth.admin.deleteUser(userId);
+    return { ok: false as const, error: linkErr.message };
+  }
+  revalidatePath(`/admin/consulenza/consulenti/${input.consultantId}`);
+  return { ok: true as const };
 }
 
 export async function updateConsultant(

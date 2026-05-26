@@ -18,6 +18,28 @@ async function ensureAdmin() {
   return { ok: true as const, user };
 }
 
+const tierSchema = z.enum(["free", "pro", "max"]);
+
+export async function updateArtistTier(
+  artistId: string,
+  tier: z.infer<typeof tierSchema>
+) {
+  const ctx = await ensureAdmin();
+  if (!ctx.ok) return ctx;
+  if (!tierSchema.safeParse(tier).success) {
+    return { ok: false as const, error: "Tier non valido" };
+  }
+  const admin = createAdminClient();
+  const updates: { tier: "free" | "pro" | "max"; percorso_artistico?: null } = { tier };
+  if (tier === "free") updates.percorso_artistico = null;
+  const { error } = await admin.from("artists").update(updates).eq("id", artistId);
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath(`/admin/artisti/${artistId}`);
+  revalidatePath("/admin/artisti");
+  revalidatePath("/dashboard/profilo-artista");
+  return { ok: true as const };
+}
+
 export async function approveApplication(applicationId: string) {
   const ctx = await ensureAdmin();
   if (!ctx.ok) return ctx;

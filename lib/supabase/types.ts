@@ -3,11 +3,13 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-export type Role = "superadmin" | "artist" | "user" | "organizer";
+export type Role = "superadmin" | "artist" | "user" | "organizer" | "consultant";
 export type ArtistStatus = "pending" | "approved" | "rejected";
 export type LeadStatus = "new" | "contacted" | "closed";
 export type AvailabilityStatus = "available" | "busy";
 export type PriceBand = "budget" | "standard" | "premium" | "luxury";
+export type ArtistTier = "free" | "pro" | "max";
+export type ArtistPath = "cover_artist" | "tribute_band" | "progetto_inedito";
 export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "altro";
 export type BookingStatus = "pending" | "in_trattativa" | "confermata" | "rifiutata" | "annullata";
 export type ChatMessageKind = "text" | "offer" | "system" | "image" | "document" | "voice";
@@ -68,6 +70,8 @@ export interface Database {
           base_fee: number | null;
           price_band: PriceBand;
           status: ArtistStatus;
+          tier: ArtistTier;
+          percorso_artistico: ArtistPath | null;
           created_at: string;
         };
         Insert: {
@@ -86,6 +90,8 @@ export interface Database {
           base_fee?: number | null;
           price_band?: PriceBand;
           status?: ArtistStatus;
+          tier?: ArtistTier;
+          percorso_artistico?: ArtistPath | null;
           created_at?: string;
         };
         Update: {
@@ -104,6 +110,8 @@ export interface Database {
           base_fee?: number | null;
           price_band?: PriceBand;
           status?: ArtistStatus;
+          tier?: ArtistTier;
+          percorso_artistico?: ArtistPath | null;
           created_at?: string;
         };
         Relationships: [];
@@ -588,6 +596,87 @@ export interface Database {
           organizer_id?: string;
           created_at?: string;
           last_message_at?: string;
+        };
+        Relationships: [];
+      };
+      email_log: {
+        Row: {
+          id: string;
+          to_addresses: string[];
+          subject: string;
+          template: string | null;
+          status: "sent" | "failed" | "skipped";
+          provider_id: string | null;
+          error: string | null;
+          meta: Json;
+          sent_at: string;
+        };
+        Insert: {
+          id?: string;
+          to_addresses: string[];
+          subject: string;
+          template?: string | null;
+          status: "sent" | "failed" | "skipped";
+          provider_id?: string | null;
+          error?: string | null;
+          meta?: Json;
+          sent_at?: string;
+        };
+        Update: {
+          id?: string;
+          to_addresses?: string[];
+          subject?: string;
+          template?: string | null;
+          status?: "sent" | "failed" | "skipped";
+          provider_id?: string | null;
+          error?: string | null;
+          meta?: Json;
+          sent_at?: string;
+        };
+        Relationships: [];
+      };
+      blog_posts: {
+        Row: {
+          id: string;
+          slug: string;
+          title: string;
+          excerpt: string | null;
+          cover_image: string | null;
+          content: string;
+          seo_title: string | null;
+          seo_description: string | null;
+          author_name: string;
+          published_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          title: string;
+          excerpt?: string | null;
+          cover_image?: string | null;
+          content: string;
+          seo_title?: string | null;
+          seo_description?: string | null;
+          author_name?: string;
+          published_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          slug?: string;
+          title?: string;
+          excerpt?: string | null;
+          cover_image?: string | null;
+          content?: string;
+          seo_title?: string | null;
+          seo_description?: string | null;
+          author_name?: string;
+          published_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

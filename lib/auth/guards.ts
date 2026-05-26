@@ -34,6 +34,18 @@ export async function requireRole(role: Role | Role[]) {
   return user;
 }
 
+export async function getConsultantForUser(userId: string) {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("consultants")
+    .select("id, name, email, avatar_url, is_active")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data as
+    | { id: string; name: string; email: string | null; avatar_url: string | null; is_active: boolean }
+    | null;
+}
+
 export async function getOrganizerForUser(userId: string) {
   const admin = createAdminClient();
   const { data } = await admin

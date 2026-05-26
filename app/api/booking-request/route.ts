@@ -282,6 +282,7 @@ export async function POST(req: Request) {
               to: artistEmail,
               subject: `Nuova richiesta booking — ${data.date}`,
               replyTo: requesterEmail || undefined,
+              template: "BookingRequestArtist",
               react: BookingRequestEmail({
                 artistName: artist.stage_name,
                 requesterName: organizer.display_name,
@@ -299,6 +300,7 @@ export async function POST(req: Request) {
               to: adminEmail,
               subject: `[N'arte] Nuova richiesta per ${artist.stage_name}`,
               replyTo: requesterEmail || undefined,
+              template: "BookingRequestAdmin",
               react: BookingRequestEmail({
                 artistName: artist.stage_name,
                 requesterName: organizer.display_name,

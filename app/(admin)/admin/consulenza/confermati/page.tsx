@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Mail, Phone, User2 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
+import { getCurrentUser, getConsultantForUser } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -40,12 +41,23 @@ export default async function AdminConsulenzaConfermatiPage({
 
   const admin = createAdminClient();
 
+  const me = await getCurrentUser();
+  const isConsultant = me?.profile?.role === "consultant";
+  let consultantId: string | null = null;
+  if (isConsultant) {
+    const row = await getConsultantForUser(me!.id);
+    consultantId = row?.id ?? null;
+  }
+
   let q = admin
     .from("consultations")
     .select(
-      "id, name, email, phone, needs, status, admin_notes, created_at, user_id, consultant_slots(slot_at, duration_min, consultant_id)"
+      "id, name, email, phone, needs, status, admin_notes, created_at, user_id, consultant_slots!inner(slot_at, duration_min, consultant_id)"
     )
     .eq("status", "confirmed");
+  if (isConsultant && consultantId) {
+    q = q.eq("consultant_slots.consultant_id", consultantId);
+  }
 
   const { data: rowsRaw } = await q;
   let rows = (rowsRaw ?? []) as unknown as Row[];

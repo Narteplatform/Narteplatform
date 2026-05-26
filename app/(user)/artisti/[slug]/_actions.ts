@@ -152,6 +152,7 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
             to: artistEmail,
             subject: `Nuova richiesta booking — ${data.date}`,
             replyTo: data.email,
+            template: "BookingRequestArtist",
             react: BookingRequestEmail({
               artistName: artist.stage_name,
               requesterName: data.name,
@@ -169,6 +170,7 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
             to: adminEmail,
             subject: `[N'arte] Nuovo lead per ${artist.stage_name}`,
             replyTo: data.email,
+            template: "BookingRequestAdmin",
             react: BookingRequestEmail({
               artistName: artist.stage_name,
               requesterName: data.name,
@@ -247,6 +249,7 @@ export async function submitLead(input: LeadInput) {
           to: artistEmail,
           subject: `Nuova richiesta booking — ${data.eventLocation}`,
           replyTo: data.contactEmail,
+          template: "LeadArtist",
           react: BookingRequestEmail({
             artistName: artist.stage_name,
             eventDate: data.eventDate,
@@ -263,6 +266,7 @@ export async function submitLead(input: LeadInput) {
           to: adminEmail,
           subject: `[N'arte] Nuovo lead per ${artist.stage_name}`,
           replyTo: data.contactEmail,
+          template: "LeadAdmin",
           react: BookingRequestEmail({
             artistName: artist.stage_name,
             eventDate: data.eventDate,

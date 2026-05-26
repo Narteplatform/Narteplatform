@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Mail, Phone } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
+import { getCurrentUser, getConsultantForUser } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -40,11 +41,37 @@ export default async function AdminConsulenzaPage({
     ? (sp.status as Status)
     : null;
 
+  const currentUser = await getCurrentUser();
+  const isConsultant = currentUser?.profile?.role === "consultant";
+  const consultantRow = isConsultant ? await getConsultantForUser(currentUser!.id) : null;
+
+  // Se è consultant, restringe agli slot del consulente
+  let slotIdFilter: string[] | null = null;
+  if (isConsultant) {
+    if (!consultantRow) {
+      return (
+        <div className="space-y-4">
+          <h1 className="font-display text-2xl tracking-tight">Consulenza</h1>
+          <p className="text-sm text-muted-foreground">
+            Il tuo account non è collegato ad alcun profilo consulente. Contatta il superadmin.
+          </p>
+        </div>
+      );
+    }
+    const { data: mySlots } = await admin
+      .from("consultant_slots")
+      .select("id")
+      .eq("consultant_id", consultantRow.id);
+    slotIdFilter = (mySlots ?? []).map((s) => (s as { id: string }).id);
+    if (slotIdFilter.length === 0) slotIdFilter = ["00000000-0000-0000-0000-000000000000"];
+  }
+
   let q = admin
     .from("consultations")
     .select("id, name, email, phone, needs, status, admin_notes, created_at, slot_id, consultant_slots(slot_at, duration_min)")
     .order("created_at", { ascending: false });
   if (filter) q = q.eq("status", filter);
+  if (slotIdFilter) q = q.in("slot_id", slotIdFilter);
 
   const { data: rowsRaw } = await q;
   type Row = {
@@ -70,9 +97,16 @@ export default async function AdminConsulenzaPage({
             Gestisci gli appuntamenti telefonici dei consulenti N&apos;arte.
           </p>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/admin/consulenza/slots">Gestisci slot</Link>
-        </Button>
+        {!isConsultant && (
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin/consulenza/slots">Gestisci slot</Link>
+          </Button>
+        )}
+        {isConsultant && consultantRow && (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/consulenza/consulenti/${consultantRow.id}`}>I miei slot</Link>
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs">

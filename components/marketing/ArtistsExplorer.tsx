@@ -39,8 +39,8 @@ export function ArtistsExplorer({
   canSeePrice?: boolean;
   isGuest?: boolean;
 }) {
-  const [genreFilter, setGenreFilter] = useState<string | null>(null);
-  const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [genreFilters, setGenreFilters] = useState<string[]>([]);
+  const [roleFilters, setRoleFilters] = useState<string[]>([]);
   const [query, setQuery] = useState("");
 
   const genreCounts = useMemo(() => {
@@ -69,7 +69,6 @@ export function ArtistsExplorer({
         .sort((a, b) => a.localeCompare(b, "it")),
     [genreCounts]
   );
-  // Mostra solo tipologie con almeno un artista corrispondente
   const availableRoles = useMemo(
     () => ROLE_GROUPS.filter((r) => (roleCounts.get(r.key) ?? 0) > 0),
     [roleCounts]
@@ -78,12 +77,17 @@ export function ArtistsExplorer({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return artists.filter((a) => {
-      if (genreFilter && !(a.genre ?? []).includes(genreFilter)) return false;
-      if (roleFilter) {
-        const group = ROLE_GROUPS.find((g) => g.key === roleFilter);
-        if (!group) return true;
-        const hit = (a.instruments ?? []).some((i) => group.match(i));
-        if (!hit) return false;
+      if (genreFilters.length > 0) {
+        const has = (a.genre ?? []).some((g) => genreFilters.includes(g));
+        if (!has) return false;
+      }
+      if (roleFilters.length > 0) {
+        const matchedKeys = new Set<string>();
+        for (const i of a.instruments ?? []) {
+          for (const g of ROLE_GROUPS) if (g.match(i)) matchedKeys.add(g.key);
+        }
+        const ok = roleFilters.some((r) => matchedKeys.has(r));
+        if (!ok) return false;
       }
       if (q) {
         const hay = `${a.stage_name} ${a.city ?? ""}`.toLowerCase();
@@ -91,21 +95,25 @@ export function ArtistsExplorer({
       }
       return true;
     });
-  }, [artists, genreFilter, roleFilter, query]);
+  }, [artists, genreFilters, roleFilters, query]);
 
-  const hasFilters = genreFilter !== null || roleFilter !== null || query.length > 0;
+  const hasFilters =
+    genreFilters.length > 0 || roleFilters.length > 0 || query.length > 0;
+
+  function toggle(list: string[], setList: (v: string[]) => void, value: string) {
+    if (list.includes(value)) setList(list.filter((x) => x !== value));
+    else setList([...list, value]);
+  }
 
   function reset() {
-    setGenreFilter(null);
-    setRoleFilter(null);
+    setGenreFilters([]);
+    setRoleFilters([]);
     setQuery("");
   }
 
   return (
     <div>
-      {/* FILTER CARD */}
       <div className="rounded-2xl border border-border bg-background p-5 md:p-6">
-        {/* Search */}
         <div className="relative">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -118,55 +126,19 @@ export function ArtistsExplorer({
           />
         </div>
 
-        {/* MOBILE: dropdown selects */}
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 md:hidden">
-          {availableRoles.length > 0 && (
-            <FilterSelect
-              label="Tipologia artista"
-              value={roleFilter ?? ""}
-              onChange={(v) => setRoleFilter(v || null)}
-              total={artists.length}
-              options={availableRoles.map((r) => ({
-                value: r.key,
-                label: r.label,
-                count: roleCounts.get(r.key) ?? 0,
-              }))}
-            />
-          )}
-          {allGenres.length > 0 && (
-            <FilterSelect
-              label="Generi musicali"
-              value={genreFilter ?? ""}
-              onChange={(v) => setGenreFilter(v || null)}
-              total={artists.length}
-              options={allGenres.map((g) => ({
-                value: g,
-                label: g,
-                count: genreCounts.get(g) ?? 0,
-              }))}
-            />
-          )}
-        </div>
-
-        {/* DESKTOP: chip rows */}
-        <div className="mt-6 hidden space-y-6 md:block">
+        <div className="mt-6 space-y-6">
           {availableRoles.length > 0 && (
             <FilterGroup
               label="Tipologia artista"
-              hint="Ruolo principale: cantante, chitarrista, DJ…"
+              hint="Ruolo principale — seleziona uno o più: cantante, chitarrista, DJ…"
+              activeCount={roleFilters.length}
+              onClear={() => setRoleFilters([])}
             >
-              <Chip
-                active={roleFilter === null}
-                onClick={() => setRoleFilter(null)}
-                count={artists.length}
-              >
-                Tutti
-              </Chip>
               {availableRoles.map((r) => (
                 <Chip
                   key={r.key}
-                  active={roleFilter === r.key}
-                  onClick={() => setRoleFilter(roleFilter === r.key ? null : r.key)}
+                  active={roleFilters.includes(r.key)}
+                  onClick={() => toggle(roleFilters, setRoleFilters, r.key)}
                   count={roleCounts.get(r.key) ?? 0}
                 >
                   {r.label}
@@ -178,20 +150,15 @@ export function ArtistsExplorer({
           {allGenres.length > 0 && (
             <FilterGroup
               label="Generi musicali"
-              hint="Stile sonoro: pop, rock, jazz, elettronica…"
+              hint="Stile sonoro — multi-selezione attiva"
+              activeCount={genreFilters.length}
+              onClear={() => setGenreFilters([])}
             >
-              <Chip
-                active={genreFilter === null}
-                onClick={() => setGenreFilter(null)}
-                count={artists.length}
-              >
-                Tutti
-              </Chip>
               {allGenres.map((g) => (
                 <Chip
                   key={g}
-                  active={genreFilter === g}
-                  onClick={() => setGenreFilter(genreFilter === g ? null : g)}
+                  active={genreFilters.includes(g)}
+                  onClick={() => toggle(genreFilters, setGenreFilters, g)}
                   count={genreCounts.get(g) ?? 0}
                 >
                   {g}
@@ -199,32 +166,31 @@ export function ArtistsExplorer({
               ))}
             </FilterGroup>
           )}
-          {(roleFilter !== null || genreFilter !== null) && (
+          {(roleFilters.length > 0 || genreFilters.length > 0) && (
             <p className="text-xs text-muted-foreground">
-              {roleFilter && genreFilter
-                ? "Filtro combinato: gli artisti devono corrispondere sia alla tipologia che al genere selezionati."
-                : "Combina i due filtri per restringere ancora i risultati."}
+              Filtro combinato: gli artisti devono corrispondere ad almeno una tipologia
+              selezionata <strong>e</strong> ad almeno un genere selezionato.
             </p>
           )}
         </div>
 
-        {hasFilters && (
-          <div className="mt-5 flex items-center justify-between gap-4 border-t border-border pt-4 text-xs">
-            <span className="text-muted-foreground">
-              {filtered.length} {filtered.length === 1 ? "artista trovato" : "artisti trovati"}
-            </span>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4 text-xs">
+          <span className="text-muted-foreground">
+            {filtered.length} {filtered.length === 1 ? "artista" : "artisti"}
+            {hasFilters ? " (filtrati)" : ""}
+          </span>
+          {hasFilters && (
             <button
               type="button"
               onClick={reset}
               className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background px-3 py-1.5 uppercase tracking-wide transition hover:border-accent hover:text-accent"
             >
-              <RotateCcw className="size-3" /> Reset
+              <RotateCcw className="size-3" /> Reset filtri
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* GRID */}
       <div className="mt-10">
         {filtered.length === 0 ? (
           <p className="text-center text-muted-foreground">
@@ -258,64 +224,39 @@ export function ArtistsExplorer({
   );
 }
 
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-  total,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string; count: number }[];
-  total: number;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-11 w-full appearance-none rounded-full border border-border bg-muted px-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/30"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='currentColor' d='M2 4l4 4 4-4z'/></svg>\")",
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: "right 14px center",
-        }}
-      >
-        <option value="">Tutti ({total})</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label} ({o.count})
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 function FilterGroup({
   label,
   hint,
+  activeCount,
+  onClear,
   children,
 }: {
   label: string;
   hint?: string;
+  activeCount: number;
+  onClear: () => void;
   children: React.ReactNode;
 }) {
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="font-display text-sm uppercase tracking-tight">{label}</span>
-        {hint ? (
-          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            {hint}
-          </span>
-        ) : null}
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="font-display text-sm uppercase tracking-tight">{label}</span>
+          {hint ? (
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              {hint}
+            </span>
+          ) : null}
+        </div>
+        {activeCount > 0 && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-[11px] uppercase tracking-wider text-muted-foreground hover:text-accent"
+          >
+            Pulisci ({activeCount})
+          </button>
+        )}
       </div>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>

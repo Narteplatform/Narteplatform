@@ -15,6 +15,7 @@ type Props = {
   emptyText?: string;
   searchPlaceholder?: string;
   className?: string;
+  max?: number;
 };
 
 export function MultiSelect({
@@ -25,6 +26,7 @@ export function MultiSelect({
   emptyText = "Nessuna opzione",
   searchPlaceholder = "Cerca…",
   className,
+  max,
 }: Props) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -42,7 +44,10 @@ export function MultiSelect({
 
   function toggle(v: string) {
     if (value.includes(v)) onChange(value.filter((x) => x !== v));
-    else onChange([...value, v]);
+    else {
+      if (max && value.length >= max) return;
+      onChange([...value, v]);
+    }
   }
 
   function remove(v: string) {
@@ -113,14 +118,17 @@ export function MultiSelect({
             ) : (
               filtered.map((o) => {
                 const checked = value.includes(o.value);
+                const disabled = !checked && max !== undefined && value.length >= max;
                 return (
                   <li key={o.value}>
                     <button
                       type="button"
                       onClick={() => toggle(o.value)}
+                      disabled={disabled}
                       className={cn(
                         "flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-muted",
-                        checked && "bg-muted/60"
+                        checked && "bg-muted/60",
+                        disabled && "cursor-not-allowed opacity-40"
                       )}
                     >
                       <span>{o.label}</span>
