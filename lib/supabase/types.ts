@@ -72,6 +72,16 @@ export interface Database {
           status: ArtistStatus;
           tier: ArtistTier;
           percorso_artistico: ArtistPath | null;
+          price_range: string | null;
+          gig_min_minutes: number | null;
+          gig_max_minutes: number | null;
+          languages: string[];
+          what_to_expect: string | null;
+          about_extended: string | null;
+          personnel: Json;
+          set_list: string | null;
+          influences: string[];
+          setup_requirements: string | null;
           created_at: string;
         };
         Insert: {
@@ -92,6 +102,16 @@ export interface Database {
           status?: ArtistStatus;
           tier?: ArtistTier;
           percorso_artistico?: ArtistPath | null;
+          price_range?: string | null;
+          gig_min_minutes?: number | null;
+          gig_max_minutes?: number | null;
+          languages?: string[];
+          what_to_expect?: string | null;
+          about_extended?: string | null;
+          personnel?: Json;
+          set_list?: string | null;
+          influences?: string[];
+          setup_requirements?: string | null;
           created_at?: string;
         };
         Update: {
@@ -112,6 +132,16 @@ export interface Database {
           status?: ArtistStatus;
           tier?: ArtistTier;
           percorso_artistico?: ArtistPath | null;
+          price_range?: string | null;
+          gig_min_minutes?: number | null;
+          gig_max_minutes?: number | null;
+          languages?: string[];
+          what_to_expect?: string | null;
+          about_extended?: string | null;
+          personnel?: Json;
+          set_list?: string | null;
+          influences?: string[];
+          setup_requirements?: string | null;
           created_at?: string;
         };
         Relationships: [];

@@ -11,6 +11,8 @@ import { AudioUpload, type AudioTrack } from "@/components/forms/AudioUpload";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
 import { updateArtistProfile } from "@/app/(artist)/dashboard/_actions";
 
+type PersonnelMember = { name: string; role: string };
+
 type Artist = {
   id: string;
   stage_name: string;
@@ -25,6 +27,17 @@ type Artist = {
   audio_files?: AudioTrack[] | null;
   tier?: "free" | "pro" | "max";
   percorso_artistico?: "cover_artist" | "tribute_band" | "progetto_inedito" | null;
+  // Booking information
+  price_range?: string | null;
+  gig_min_minutes?: number | null;
+  gig_max_minutes?: number | null;
+  languages?: string[] | null;
+  what_to_expect?: string | null;
+  about_extended?: string | null;
+  personnel?: PersonnelMember[] | null;
+  set_list?: string | null;
+  influences?: string[] | null;
+  setup_requirements?: string | null;
 };
 
 const PERCORSO_LABEL: Record<"cover_artist" | "tribute_band" | "progetto_inedito", string> = {
@@ -58,6 +71,17 @@ type FormValues = {
   videos: string;
   audio_files: AudioTrack[];
   percorso_artistico: "" | "cover_artist" | "tribute_band" | "progetto_inedito";
+  // Booking information
+  price_range: string;
+  gig_min_minutes: string;
+  gig_max_minutes: string;
+  languages: string;
+  what_to_expect: string;
+  about_extended: string;
+  personnel: string;
+  set_list: string;
+  influences: string;
+  setup_requirements: string;
 };
 
 function splitLines(text: string): string[] {
@@ -65,6 +89,31 @@ function splitLines(text: string): string[] {
     .split(/\r?\n/)
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function splitCsv(text: string): string[] {
+  return text
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function parsePersonnel(text: string): PersonnelMember[] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [name, ...rest] = line.split("—");
+      const role = rest.join("—").trim();
+      return { name: (name ?? "").trim(), role };
+    })
+    .filter((m) => m.name);
+}
+
+function personnelToText(list: PersonnelMember[] | null | undefined): string {
+  if (!list) return "";
+  return list.map((m) => (m.role ? `${m.name} — ${m.role}` : m.name)).join("\n");
 }
 
 export function ArtistProfileForm({
@@ -94,6 +143,16 @@ export function ArtistProfileForm({
       videos: (artist.videos ?? []).join("\n"),
       audio_files: (artist.audio_files ?? []) as AudioTrack[],
       percorso_artistico: (artist.percorso_artistico ?? "") as FormValues["percorso_artistico"],
+      price_range: artist.price_range ?? "",
+      gig_min_minutes: artist.gig_min_minutes != null ? String(artist.gig_min_minutes) : "",
+      gig_max_minutes: artist.gig_max_minutes != null ? String(artist.gig_max_minutes) : "",
+      languages: (artist.languages ?? []).join(", "),
+      what_to_expect: artist.what_to_expect ?? "",
+      about_extended: artist.about_extended ?? "",
+      personnel: personnelToText(artist.personnel),
+      set_list: artist.set_list ?? "",
+      influences: (artist.influences ?? []).join(", "),
+      setup_requirements: artist.setup_requirements ?? "",
     },
   });
 
@@ -128,6 +187,20 @@ export function ArtistProfileForm({
           ? null
           : values.percorso_artistico
         : null,
+      price_range: values.price_range.trim() || null,
+      gig_min_minutes: values.gig_min_minutes.trim()
+        ? Math.max(0, Math.min(1440, Number(values.gig_min_minutes)))
+        : null,
+      gig_max_minutes: values.gig_max_minutes.trim()
+        ? Math.max(0, Math.min(1440, Number(values.gig_max_minutes)))
+        : null,
+      languages: splitCsv(values.languages),
+      what_to_expect: values.what_to_expect.trim() || null,
+      about_extended: values.about_extended.trim() || null,
+      personnel: parsePersonnel(values.personnel),
+      set_list: values.set_list.trim() || null,
+      influences: splitCsv(values.influences),
+      setup_requirements: values.setup_requirements.trim() || null,
     });
     if (!res.ok) setError(res.error ?? "Errore");
     else {
@@ -268,6 +341,79 @@ export function ArtistProfileForm({
             rows={3}
             placeholder={"https://youtube.com/watch?v=...\nhttps://vimeo.com/..."}
             {...register("videos")}
+          />
+        </Field>
+      </fieldset>
+
+      <fieldset className="space-y-4 border-t border-border pt-6">
+        <legend className="font-display text-lg uppercase">Booking information</legend>
+        <p className="text-xs text-muted-foreground">
+          Sezione che appare sul tuo profilo pubblico con tab cliccabili. Tutti i campi sono
+          opzionali — più info dai, più è semplice ricevere proposte.
+        </p>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Fascia di prezzo (testo libero)">
+            <Input
+              placeholder="es. €400 (duo) — €1.200 (5 elementi)"
+              {...register("price_range")}
+            />
+          </Field>
+          <Field label="Lingue (separate da virgola)">
+            <Input placeholder="es. Italiano, Inglese, Napoletano" {...register("languages")} />
+          </Field>
+          <Field label="Durata minima set (minuti)">
+            <Input type="number" min={0} max={1440} placeholder="60" {...register("gig_min_minutes")} />
+          </Field>
+          <Field label="Durata massima set (minuti)">
+            <Input type="number" min={0} max={1440} placeholder="240" {...register("gig_max_minutes")} />
+          </Field>
+        </div>
+
+        <Field label="Cosa aspettarsi dal live (What to expect)">
+          <Textarea
+            rows={5}
+            placeholder="Stile, atmosfera, mood, parti più cool del set…"
+            {...register("what_to_expect")}
+          />
+        </Field>
+
+        <Field label="About — storia del progetto (versione estesa)">
+          <Textarea
+            rows={5}
+            placeholder="Come è nato il progetto, formazione, esperienze rilevanti…"
+            {...register("about_extended")}
+          />
+        </Field>
+
+        <Field label="Personale / formazione (una persona per riga: Nome — Ruolo)">
+          <Textarea
+            rows={4}
+            placeholder={"Mario Rossi — Voce / chitarra acustica\nLuca Bianchi — Basso\nGiulia Verdi — Batteria"}
+            {...register("personnel")}
+          />
+        </Field>
+
+        <Field label="Set list di esempio">
+          <Textarea
+            rows={5}
+            placeholder={"Brano 1 — Autore\nBrano 2 — Autore\n…"}
+            {...register("set_list")}
+          />
+        </Field>
+
+        <Field label="Influenze musicali (separate da virgola)">
+          <Input
+            placeholder="es. Pino Daniele, Beatles, Coldplay, James Senese"
+            {...register("influences")}
+          />
+        </Field>
+
+        <Field label="Requisiti tecnici di setup (PA, palco, alimentazione…)">
+          <Textarea
+            rows={5}
+            placeholder="Esempio: PA stereo min. 2x500W, monitor a pavimento, 2 prese 230V, palco min 4x3m…"
+            {...register("setup_requirements")}
           />
         </Field>
       </fieldset>

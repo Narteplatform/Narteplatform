@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 
 type AudioTrack = { url: string; title: string };
+type PersonnelMember = { name: string; role: string };
 
 type ProfileUpdate = {
   stage_name: string;
@@ -17,6 +18,17 @@ type ProfileUpdate = {
   videos: string[];
   audio_files: AudioTrack[];
   percorso_artistico: "cover_artist" | "tribute_band" | "progetto_inedito" | null;
+  // Booking information (sezione GigSalad-style)
+  price_range?: string | null;
+  gig_min_minutes?: number | null;
+  gig_max_minutes?: number | null;
+  languages?: string[];
+  what_to_expect?: string | null;
+  about_extended?: string | null;
+  personnel?: PersonnelMember[];
+  set_list?: string | null;
+  influences?: string[];
+  setup_requirements?: string | null;
 };
 
 async function ownsArtist(artistId: string) {

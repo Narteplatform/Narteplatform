@@ -9,6 +9,7 @@ import { Reveal } from "@/components/animations/Reveal";
 import { BookingCalendar, type ViewerRole, type ConfirmedBookingInfo } from "@/components/marketing/BookingCalendar";
 import { PriceBandBadge } from "@/components/marketing/PriceBandBadge";
 import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
+import { BookingInformation } from "@/components/marketing/BookingInformation";
 import type { PriceBand } from "@/lib/supabase/types";
 
 type SocialLinks = {
@@ -156,6 +157,7 @@ export default async function ArtistDetailPage({
     notFound();
   }
 
+  type PersonnelMember = { name: string; role?: string };
   type ArtistRow = {
     id: string;
     slug: string;
@@ -171,6 +173,16 @@ export default async function ArtistDetailPage({
     audio_files?: { url: string; title: string }[] | null;
     social_links?: SocialLinks | string | null;
     price_band?: PriceBand | null;
+    price_range?: string | null;
+    gig_min_minutes?: number | null;
+    gig_max_minutes?: number | null;
+    languages?: string[] | null;
+    what_to_expect?: string | null;
+    about_extended?: string | null;
+    personnel?: PersonnelMember[] | string | null;
+    set_list?: string | null;
+    influences?: string[] | null;
+    setup_requirements?: string | null;
   };
   let artistRaw: ArtistRow | null = null;
   try {
@@ -292,6 +304,21 @@ export default async function ArtistDetailPage({
   const bio = artist.bio ?? null;
   const coverImage = artist.cover_image ?? null;
   const city = artist.city ?? null;
+
+  // Booking information (sezione tabs)
+  let personnelList: PersonnelMember[] = [];
+  try {
+    if (Array.isArray(artist.personnel)) {
+      personnelList = artist.personnel as PersonnelMember[];
+    } else if (typeof artist.personnel === "string" && artist.personnel.trim().length > 0) {
+      const parsed = JSON.parse(artist.personnel);
+      if (Array.isArray(parsed)) personnelList = parsed as PersonnelMember[];
+    }
+  } catch {
+    personnelList = [];
+  }
+  const languages: string[] = Array.isArray(artist.languages) ? artist.languages : [];
+  const influences: string[] = Array.isArray(artist.influences) ? artist.influences : [];
 
   const socials: { key: string; href: string; label: string; icon: React.ReactNode }[] = [];
   if (social.instagram)
@@ -455,24 +482,24 @@ export default async function ArtistDetailPage({
         </div>
       </section>
 
-      {/* BIO + SOCIAL */}
+      {/* BOOKING INFORMATION + SOCIAL */}
       <section className="bg-muted py-16 md:py-24">
         <div className="container-narte grid gap-10 lg:grid-cols-[1.4fr_1fr]">
-          <div className="space-y-10">
+          <div className="space-y-8">
             <Reveal>
-              <div>
-                <p className="accent-label mb-3">bio</p>
-                <h2 className="display-xl text-3xl md:text-5xl">Storia & sound.</h2>
-                {bio ? (
-                  <p className="mt-6 whitespace-pre-wrap text-base leading-relaxed text-muted-foreground">
-                    {bio}
-                  </p>
-                ) : (
-                  <p className="mt-6 text-base text-muted-foreground">
-                    Bio in arrivo.
-                  </p>
-                )}
-              </div>
+              <BookingInformation
+                bio={bio}
+                priceRange={artist.price_range ?? null}
+                gigMinMinutes={artist.gig_min_minutes ?? null}
+                gigMaxMinutes={artist.gig_max_minutes ?? null}
+                languages={languages}
+                whatToExpect={artist.what_to_expect ?? null}
+                aboutExtended={artist.about_extended ?? null}
+                personnel={personnelList}
+                setList={artist.set_list ?? null}
+                influences={influences}
+                setupRequirements={artist.setup_requirements ?? null}
+              />
             </Reveal>
 
             {instruments.length > 0 && (
