@@ -33,7 +33,7 @@ export async function Header() {
           aria-label="Home N'Arte"
           className="flex shrink-0 items-center"
         >
-          <NarteLogo variant="light" width={110} priority className="h-7 w-auto md:h-8" />
+          <NarteLogo variant="dark" width={110} priority className="h-7 w-auto md:h-8" />
         </Link>
 
         <div className="hidden flex-1 max-w-md items-center md:flex">
