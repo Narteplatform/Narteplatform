@@ -66,7 +66,6 @@ export function Footer() {
             <h4 className="narte-label text-notte-40">Aiuto</h4>
             <ul className="mt-4 space-y-2 text-sm">
               <li><Link href="/help" className="transition-opacity hover:opacity-75">Centro Assistenza</Link></li>
-              <li><Link href="/faq" className="transition-opacity hover:opacity-75">F.A.Q.</Link></li>
               <li><Link href="/contatti" className="transition-opacity hover:opacity-75">Contatti</Link></li>
               <li><Link href="/login" className="transition-opacity hover:opacity-75">Accedi</Link></li>
               <li><Link href="/register" className="transition-opacity hover:opacity-75">Iscriviti</Link></li>

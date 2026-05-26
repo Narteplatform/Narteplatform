@@ -34,7 +34,7 @@ export type HelpCategory = {
 
 const PLACEHOLDER_BODY = `
 <p>Questo articolo è in preparazione. Stiamo lavorando per pubblicarlo a breve con tutte le informazioni di cui hai bisogno.</p>
-<p>Nel frattempo, se hai una domanda urgente, puoi <a href="/contatti">contattare il team N'arte</a> o consultare la nostra <a href="/faq">pagina FAQ</a>.</p>
+<p>Nel frattempo, se hai una domanda urgente, puoi <a href="/contatti">contattare il team N'arte</a> o esplorare le altre categorie del <a href="/help">Centro Assistenza</a>.</p>
 `;
 
 function placeholder(slug: string, title: string, excerpt: string): HelpArticle {
