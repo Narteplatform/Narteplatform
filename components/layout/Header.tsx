@@ -45,6 +45,7 @@ export async function Header() {
           <Link href="/artisti" className="transition-opacity hover:opacity-75">Artisti</Link>
           <Link href="/format" className="transition-opacity hover:opacity-75">Format</Link>
           <Link href="/blog" className="transition-opacity hover:opacity-75">Blog</Link>
+          <Link href="/help" className="transition-opacity hover:opacity-75">Aiuto</Link>
           <Link href="/chi-siamo" className="transition-opacity hover:opacity-75">Chi siamo</Link>
           <Link href="/collaborazioni" className="transition-opacity hover:opacity-75">Collaborazioni</Link>
           <Link href="/contatti" className="transition-opacity hover:opacity-75">Contatti</Link>

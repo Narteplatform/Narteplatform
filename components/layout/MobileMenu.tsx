@@ -14,6 +14,7 @@ const NAV_LINKS: { href: string; label: string }[] = [
   { href: "/artisti", label: "Artisti" },
   { href: "/format", label: "Format" },
   { href: "/blog", label: "Blog" },
+  { href: "/help", label: "Centro Assistenza" },
   { href: "/chi-siamo", label: "Chi siamo" },
   { href: "/collaborazioni", label: "Collaborazioni" },
   { href: "/contatti", label: "Contatti" },

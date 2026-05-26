@@ -48,6 +48,8 @@ export function Footer() {
             <ul className="mt-4 space-y-2 text-sm">
               <li><Link href="/eventi" className="transition-opacity hover:opacity-75">Eventi</Link></li>
               <li><Link href="/artisti" className="transition-opacity hover:opacity-75">Artisti</Link></li>
+              <li><Link href="/format" className="transition-opacity hover:opacity-75">Format</Link></li>
+              <li><Link href="/blog" className="transition-opacity hover:opacity-75">Blog</Link></li>
               <li><Link href="/chi-siamo" className="transition-opacity hover:opacity-75">Chi siamo</Link></li>
               <li><Link href="/collaborazioni" className="transition-opacity hover:opacity-75">Collaborazioni</Link></li>
               <li><Link href="/contatti" className="transition-opacity hover:opacity-75">Contatti</Link></li>
@@ -61,8 +63,11 @@ export function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="narte-label text-notte-40">Account</h4>
+            <h4 className="narte-label text-notte-40">Aiuto</h4>
             <ul className="mt-4 space-y-2 text-sm">
+              <li><Link href="/help" className="transition-opacity hover:opacity-75">Centro Assistenza</Link></li>
+              <li><Link href="/faq" className="transition-opacity hover:opacity-75">F.A.Q.</Link></li>
+              <li><Link href="/contatti" className="transition-opacity hover:opacity-75">Contatti</Link></li>
               <li><Link href="/login" className="transition-opacity hover:opacity-75">Accedi</Link></li>
               <li><Link href="/register" className="transition-opacity hover:opacity-75">Iscriviti</Link></li>
             </ul>
