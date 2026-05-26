@@ -29,7 +29,7 @@ set search_path = public
 as $$
   select exists (
     select 1 from public.profiles
-    where id = uid and role = 'consultant'
+    where id = uid and role::text = 'consultant'
   );
 $$;
 
@@ -113,18 +113,18 @@ as $$
 declare
   _superadmin text := current_setting('app.superadmin_email', true);
   _meta_role text := coalesce(new.raw_user_meta_data->>'role', '');
-  _role role_enum := 'user';
+  _role_text text := 'user';
 begin
   if _superadmin is not null and lower(new.email) = lower(_superadmin) then
-    _role := 'superadmin';
+    _role_text := 'superadmin';
   elsif _meta_role = 'organizer' then
-    _role := 'organizer';
+    _role_text := 'organizer';
   elsif _meta_role = 'consultant' then
-    _role := 'consultant';
+    _role_text := 'consultant';
   end if;
 
   insert into public.profiles (id, role, full_name)
-  values (new.id, _role, coalesce(new.raw_user_meta_data->>'full_name', null))
+  values (new.id, _role_text::role_enum, coalesce(new.raw_user_meta_data->>'full_name', null))
   on conflict (id) do update set role = excluded.role;
   return new;
 end;
