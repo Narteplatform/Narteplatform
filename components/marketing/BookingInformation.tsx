@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { CalendarCheck2 } from "lucide-react";
 
@@ -17,6 +19,8 @@ export type BookingInformationProps = {
   setupRequirements: string | null;
 };
 
+type TabId = "profilo" | "personale" | "setlist" | "influenze" | "setup";
+
 function formatDuration(minMin: number | null, maxMin: number | null): string | null {
   if (minMin == null && maxMin == null) return null;
   if (minMin != null && maxMin != null) return `${minMin} – ${maxMin} minuti`;
@@ -29,26 +33,22 @@ export function BookingInformation(props: BookingInformationProps) {
   const duration = formatDuration(props.gigMinMinutes, props.gigMaxMinutes);
   const aboutText = props.aboutExtended ?? props.bio;
   const hasProfile =
-    props.priceRange ||
-    duration ||
+    !!props.priceRange ||
+    !!duration ||
     props.languages.length > 0 ||
-    props.whatToExpect ||
-    aboutText;
-  const hasAnyData =
-    hasProfile ||
-    props.personnel.length > 0 ||
-    props.setList ||
-    props.influences.length > 0 ||
-    props.setupRequirements;
+    !!props.whatToExpect ||
+    !!aboutText;
 
-  if (!hasAnyData) return null;
+  const tabs: { id: TabId; label: string }[] = [];
+  if (hasProfile) tabs.push({ id: "profilo", label: "Profilo" });
+  if (props.personnel.length > 0) tabs.push({ id: "personale", label: "Personale" });
+  if (props.setList) tabs.push({ id: "setlist", label: "Set list" });
+  if (props.influences.length > 0) tabs.push({ id: "influenze", label: "Influenze" });
+  if (props.setupRequirements) tabs.push({ id: "setup", label: "Setup tecnico" });
 
-  const nav: { id: string; label: string }[] = [];
-  if (hasProfile) nav.push({ id: "booking-profilo", label: "Profilo" });
-  if (props.personnel.length > 0) nav.push({ id: "booking-personale", label: "Personale" });
-  if (props.setList) nav.push({ id: "booking-setlist", label: "Set list" });
-  if (props.influences.length > 0) nav.push({ id: "booking-influenze", label: "Influenze" });
-  if (props.setupRequirements) nav.push({ id: "booking-setup", label: "Setup tecnico" });
+  const [active, setActive] = React.useState<TabId | null>(tabs[0]?.id ?? null);
+
+  if (tabs.length === 0 || !active) return null;
 
   return (
     <div className="rounded-2xl bg-white p-6 text-notte md:p-10">
@@ -59,57 +59,72 @@ export function BookingInformation(props: BookingInformationProps) {
         </h2>
       </div>
 
-      {nav.length > 1 && (
-        <nav
-          aria-label="Sezioni informazioni di booking"
-          className="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-b border-notte/10 pb-3"
-        >
-          {nav.map((n, i) => (
-            <a
-              key={n.id}
-              href={`#${n.id}`}
+      <div
+        role="tablist"
+        aria-label="Sezioni informazioni di booking"
+        className="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-b border-notte/10 pb-3"
+      >
+        {tabs.map((t) => {
+          const isActive = t.id === active;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`booking-panel-${t.id}`}
+              id={`booking-tab-${t.id}`}
+              onClick={() => setActive(t.id)}
               className={
                 "text-sm font-medium transition hover:text-azzurro " +
-                (i === 0 ? "text-azzurro" : "text-notte/65")
+                (isActive ? "text-azzurro" : "text-notte/65")
               }
             >
-              {n.label}
-            </a>
-          ))}
-        </nav>
-      )}
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
 
-      {hasProfile && (
-        <section id="booking-profilo" className="scroll-mt-28 pt-7">
-          {(props.priceRange || duration || props.languages.length > 0) && (
-            <dl className="grid gap-x-10 gap-y-3 sm:grid-cols-2">
-              {props.priceRange && (
-                <FactRow label="Fascia di prezzo" value={props.priceRange} />
-              )}
-              {duration && <FactRow label="Durata performance" value={duration} />}
-              {props.languages.length > 0 && (
-                <FactRow label="Lingue" value={props.languages.join(", ")} />
-              )}
-            </dl>
-          )}
+      <div className="mt-7">
+        {active === "profilo" && hasProfile && (
+          <div
+            role="tabpanel"
+            id="booking-panel-profilo"
+            aria-labelledby="booking-tab-profilo"
+          >
+            {(props.priceRange || duration || props.languages.length > 0) && (
+              <dl className="grid gap-x-10 gap-y-3 sm:grid-cols-2">
+                {props.priceRange && (
+                  <FactRow label="Fascia di prezzo" value={props.priceRange} />
+                )}
+                {duration && <FactRow label="Durata performance" value={duration} />}
+                {props.languages.length > 0 && (
+                  <FactRow label="Lingue" value={props.languages.join(", ")} />
+                )}
+              </dl>
+            )}
 
-          {props.whatToExpect && (
-            <SubSection title="Cosa aspettarsi">
-              <p className="whitespace-pre-wrap text-notte/75">{props.whatToExpect}</p>
-            </SubSection>
-          )}
+            {props.whatToExpect && (
+              <SubSection title="Cosa aspettarsi">
+                <p className="whitespace-pre-wrap text-notte/75">{props.whatToExpect}</p>
+              </SubSection>
+            )}
 
-          {aboutText && (
-            <SubSection title="About">
-              <p className="whitespace-pre-wrap text-notte/75">{aboutText}</p>
-            </SubSection>
-          )}
-        </section>
-      )}
+            {aboutText && (
+              <SubSection title="About">
+                <p className="whitespace-pre-wrap text-notte/75">{aboutText}</p>
+              </SubSection>
+            )}
+          </div>
+        )}
 
-      {props.personnel.length > 0 && (
-        <section id="booking-personale" className="scroll-mt-28">
-          <SubSection title="Personale">
+        {active === "personale" && props.personnel.length > 0 && (
+          <div
+            role="tabpanel"
+            id="booking-panel-personale"
+            aria-labelledby="booking-tab-personale"
+          >
             <ul className="grid gap-2 sm:grid-cols-2">
               {props.personnel.map((m, i) => (
                 <li
@@ -128,23 +143,27 @@ export function BookingInformation(props: BookingInformationProps) {
                 </li>
               ))}
             </ul>
-          </SubSection>
-        </section>
-      )}
+          </div>
+        )}
 
-      {props.setList && (
-        <section id="booking-setlist" className="scroll-mt-28">
-          <SubSection title="Set list">
+        {active === "setlist" && props.setList && (
+          <div
+            role="tabpanel"
+            id="booking-panel-setlist"
+            aria-labelledby="booking-tab-setlist"
+          >
             <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-notte/75">
               {props.setList}
             </pre>
-          </SubSection>
-        </section>
-      )}
+          </div>
+        )}
 
-      {props.influences.length > 0 && (
-        <section id="booking-influenze" className="scroll-mt-28">
-          <SubSection title="Influenze">
+        {active === "influenze" && props.influences.length > 0 && (
+          <div
+            role="tabpanel"
+            id="booking-panel-influenze"
+            aria-labelledby="booking-tab-influenze"
+          >
             <ul className="flex flex-wrap gap-2">
               {props.influences.map((it) => (
                 <li
@@ -155,19 +174,21 @@ export function BookingInformation(props: BookingInformationProps) {
                 </li>
               ))}
             </ul>
-          </SubSection>
-        </section>
-      )}
+          </div>
+        )}
 
-      {props.setupRequirements && (
-        <section id="booking-setup" className="scroll-mt-28">
-          <SubSection title="Setup tecnico">
+        {active === "setup" && props.setupRequirements && (
+          <div
+            role="tabpanel"
+            id="booking-panel-setup"
+            aria-labelledby="booking-tab-setup"
+          >
             <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-notte/75">
               {props.setupRequirements}
             </pre>
-          </SubSection>
-        </section>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -180,7 +201,7 @@ function SubSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-8">
+    <div className="mt-8 first:mt-0">
       <h3 className="font-display text-xl uppercase tracking-tight text-notte md:text-2xl">
         {title}
       </h3>
