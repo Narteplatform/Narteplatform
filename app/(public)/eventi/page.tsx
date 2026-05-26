@@ -72,11 +72,11 @@ export default async function EventiPage({
         </div>
       </section>
 
-      {/* TABS IN ARRIVO / PASSATI */}
-      <section className="border-b border-border bg-background py-8">
-        <div className="container-narte">
+      {/* SWITCHER + FILTRI + GRID — uniformato su sfondo bianco */}
+      <section className="bg-white py-10 text-notte md:py-16">
+        <div className="container-narte space-y-8">
           <Reveal>
-            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted p-1">
+            <div className="inline-flex items-center gap-1 rounded-full border border-palco-60 bg-palco/70 p-1">
               {WHEN_TABS.map((t) => {
                 const active = t.v === when;
                 return (
@@ -85,8 +85,8 @@ export default async function EventiPage({
                     href={buildHref({ when: t.v })}
                     className={`inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors ${
                       active
-                        ? "bg-foreground text-background shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "bg-notte text-palco shadow-sm"
+                        : "text-notte/60 hover:text-notte"
                     }`}
                   >
                     {t.label}
@@ -95,12 +95,7 @@ export default async function EventiPage({
               })}
             </div>
           </Reveal>
-        </div>
-      </section>
 
-      {/* CATEGORY FILTERS + GRID */}
-      <section className="bg-muted py-16 md:py-20">
-        <div className="container-narte">
           <Reveal>
             <nav className="flex flex-wrap gap-2">
               {CATEGORIES.map((c) => {
@@ -111,8 +106,8 @@ export default async function EventiPage({
                     href={buildHref({ cat: c.slug })}
                     className={`rounded-full border px-4 py-1.5 text-sm transition ${
                       active
-                        ? "border-foreground bg-foreground text-background"
-                        : "border-border bg-background text-foreground hover:border-foreground"
+                        ? "border-notte bg-notte text-palco"
+                        : "border-palco-60 bg-white text-notte/70 hover:border-notte hover:text-notte"
                     }`}
                   >
                     {c.label}
@@ -122,9 +117,9 @@ export default async function EventiPage({
             </nav>
           </Reveal>
 
-          <div className="mt-10">
+          <div>
             {events.length === 0 ? (
-              <p className="text-muted-foreground">
+              <p className="text-notte/60">
                 {when === "past"
                   ? "Nessun evento passato in questa categoria."
                   : "Nessun evento in arrivo in questa categoria."}

@@ -79,10 +79,10 @@ export default async function ArtistiPage() {
         </div>
       </section>
 
-      <section className="bg-muted py-12 md:py-16">
+      <section className="bg-white py-12 text-notte md:py-16">
         <div className="container-narte">
           {artists.length === 0 ? (
-            <p className="text-center text-muted-foreground">
+            <p className="text-center text-notte/60">
               Nessun artista ancora pubblicato.
             </p>
           ) : (
