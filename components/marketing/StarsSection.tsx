@@ -32,14 +32,14 @@ export async function StarsSection() {
   const isGuest = !viewer;
 
   return (
-    <section className="bg-muted py-20 text-foreground md:py-28">
+    <section className="bg-[#F7F5F2] py-20 text-notte md:py-28">
       <div className="container-narte">
         <Reveal>
           <p className="accent-label mb-3">gli artisti</p>
         </Reveal>
         <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <Reveal delay={0.1}>
-            <h2 className="display-xl text-4xl md:text-6xl">
+            <h2 className="display-xl text-4xl text-notte md:text-6xl">
               Scegli l&apos;artista per le tue esigenze
             </h2>
           </Reveal>
@@ -51,7 +51,7 @@ export async function StarsSection() {
         </div>
 
         {artists.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-notte/60">
             Stiamo aggiornando il roster. Torna a trovarci a breve.
           </p>
         ) : (

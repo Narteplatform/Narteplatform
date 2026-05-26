@@ -27,16 +27,16 @@ export async function CollaborationsSection() {
   if (collabs.length === 0) return null;
 
   return (
-    <section className="border-t border-border bg-muted py-20 md:py-28">
+    <section className="border-t border-palco-60 bg-[#F7F5F2] py-20 text-notte md:py-28">
       <div className="container-narte">
         <Reveal>
           <p className="accent-label mb-3">insieme a noi</p>
         </Reveal>
         <Reveal delay={0.1}>
-          <h2 className="display-xl text-4xl md:text-6xl">Collaborazioni</h2>
+          <h2 className="display-xl text-4xl text-notte md:text-6xl">Collaborazioni</h2>
         </Reveal>
         <Reveal delay={0.2}>
-          <p className="mt-4 max-w-xl text-sm text-muted-foreground md:text-base">
+          <p className="mt-4 max-w-xl text-sm text-notte/70 md:text-base">
             I partner che rendono possibile la nostra missione: portare la musica dal vivo
             nei luoghi più iconici di Napoli e oltre.
           </p>
