@@ -12,10 +12,12 @@ export const dynamic = "force-dynamic";
 
 type Lead = {
   id: string;
-  artist_id: string;
-  event_date: string;
+  artist_id: string | null;
+  source: "booking" | "contatti" | "format" | null;
+  contact_name: string | null;
+  event_date: string | null;
   event_time: string | null;
-  event_location: string;
+  event_location: string | null;
   budget: number | null;
   message: string;
   contact_email: string;
@@ -38,6 +40,18 @@ const STATUS_LABEL: Record<Lead["status"], string> = {
   closed: "Chiuso",
 };
 
+const SOURCE_LABEL: Record<NonNullable<Lead["source"]>, string> = {
+  booking: "Booking",
+  contatti: "Contatti",
+  format: "Format",
+};
+
+const SOURCE_VARIANT: Record<NonNullable<Lead["source"]>, "accent" | "outline" | "dark"> = {
+  booking: "outline",
+  contatti: "accent",
+  format: "dark",
+};
+
 export default async function AdminLeadsPage({
   searchParams,
 }: {
@@ -54,7 +68,7 @@ export default async function AdminLeadsPage({
 
   let q = supabase
     .from("leads")
-    .select("*, artists!inner(stage_name, slug)")
+    .select("*, artists(stage_name, slug)")
     .order("created_at", { ascending: false });
   if (statusFilter) q = q.eq("status", statusFilter);
   if (sp?.tag) q = q.contains("tags", [sp.tag]);
@@ -145,13 +159,20 @@ export default async function AdminLeadsPage({
                     {new Date(l.created_at).toLocaleString("it-IT")}
                   </p>
                   <CardTitle className="text-lg">
-                    {l.artists?.stage_name ?? "—"} <span className="text-muted-foreground font-normal">·</span>{" "}
-                    {l.event_location}
+                    {l.artists?.stage_name ?? l.contact_name ?? "—"}
+                    {l.event_location ? (
+                      <>
+                        {" "}
+                        <span className="text-muted-foreground font-normal">·</span> {l.event_location}
+                      </>
+                    ) : null}
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Data evento: {new Date(l.event_date).toLocaleDateString("it-IT")}
-                    {l.budget != null ? ` · Budget €${Number(l.budget).toFixed(2)}` : ""}
-                  </p>
+                  {(l.event_date || l.budget != null) && (
+                    <p className="text-sm text-muted-foreground">
+                      {l.event_date ? `Data evento: ${new Date(l.event_date).toLocaleDateString("it-IT")}` : ""}
+                      {l.budget != null ? `${l.event_date ? " · " : ""}Budget €${Number(l.budget).toFixed(2)}` : ""}
+                    </p>
+                  )}
                   {l.event_time && (
                     <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Clock className="size-3.5" /> {l.event_time}
@@ -159,6 +180,9 @@ export default async function AdminLeadsPage({
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  <Badge variant={SOURCE_VARIANT[l.source ?? "booking"]}>
+                    {SOURCE_LABEL[l.source ?? "booking"]}
+                  </Badge>
                   <Badge variant={STATUS_VARIANT[l.status]} dot>
                     {STATUS_LABEL[l.status]}
                   </Badge>

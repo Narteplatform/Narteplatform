@@ -12,6 +12,12 @@
 alter table public.leads
   alter column artist_id drop not null;
 
+-- event_date / event_location non più obbligatori (i lead da contatti/format
+-- non sono legati a un evento/data specifica)
+alter table public.leads
+  alter column event_date drop not null,
+  alter column event_location drop not null;
+
 -- colonna source
 alter table public.leads
   add column if not exists source text not null default 'booking';
