@@ -21,31 +21,6 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
   try {
     const supabase = createAdminClient();
 
-    // Crea account auth con email + password (email pre-confermata).
-    // Profile parte con role='user' (default). Diventa 'artist' all'approvazione.
-    const { error: createErr } = await supabase.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-      user_metadata: { full_name: data.name },
-    });
-    if (createErr) {
-      const msg = (createErr.message ?? "").toLowerCase();
-      if (
-        msg.includes("already") ||
-        msg.includes("exist") ||
-        msg.includes("registered") ||
-        msg.includes("duplicate")
-      ) {
-        return {
-          ok: false as const,
-          error: "Email già registrata. Effettua l'accesso con la password esistente.",
-        };
-      }
-      console.error("[application] createUser error", createErr);
-      return { ok: false as const, error: "Impossibile creare l'account. Riprova." };
-    }
-
     const { error } = await supabase.from("artist_applications").insert({
       name: data.name,
       email: data.email,

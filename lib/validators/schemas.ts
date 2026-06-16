@@ -8,16 +8,29 @@ export const leadSchema = z.object({
   message: z.string().min(20, "Almeno 20 caratteri").max(2000),
   contactEmail: z.string().email(),
   contactPhone: z.string().min(6).max(30).optional().or(z.literal("").transform(() => undefined)),
+  // Campi aggiuntivi per tracking (opzionali per compatibilità con form esistenti)
+  source: z.enum(["booking", "contatti", "format"]).default("booking"),
+  contactName: z.string().min(2).max(120).optional().or(z.literal("").transform(() => undefined)),
 });
 export type LeadInput = z.infer<typeof leadSchema>;
+
+// Schema per lead flessibili (contatti/format) — artist_id e data/luogo non obbligatori
+export const flexLeadSchema = z.object({
+  artistId: z.string().uuid().optional(),
+  eventDate: z.string().optional().or(z.literal("").transform(() => undefined)),
+  eventLocation: z.string().max(120).optional().or(z.literal("").transform(() => undefined)),
+  budget: z.coerce.number().positive().optional().or(z.literal("").transform(() => undefined)),
+  message: z.string().min(10, "Almeno 10 caratteri").max(2000),
+  contactEmail: z.string().email(),
+  contactPhone: z.string().min(6).max(30).optional().or(z.literal("").transform(() => undefined)),
+  source: z.enum(["booking", "contatti", "format"]).default("booking"),
+  contactName: z.string().min(2).max(120).optional().or(z.literal("").transform(() => undefined)),
+});
+export type FlexLeadInput = z.infer<typeof flexLeadSchema>;
 
 export const artistApplicationSchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email(),
-  password: z
-    .string()
-    .min(8, "La password deve avere almeno 8 caratteri")
-    .max(100, "Massimo 100 caratteri"),
   stageName: z.string().min(2).max(80),
   genres: z.array(z.string().min(1)).min(1, "Seleziona almeno un genere").max(3, "Massimo 3 generi"),
   bio: z.string().max(2000).optional(),
@@ -55,7 +68,6 @@ export const eventSchema = z.object({
   venue: z.string().max(160).optional(),
   price: z.coerce.number().nonnegative().optional(),
   coverImage: z.string().url().optional().or(z.literal("").transform(() => undefined)),
-  coverImageHome: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   ticketUrl: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   description: z.string().max(4000).optional(),
   featured: z.boolean().optional(),
@@ -63,6 +75,34 @@ export const eventSchema = z.object({
   videos: z.array(z.string().url()).max(20).optional(),
 });
 export type EventInput = z.infer<typeof eventSchema>;
+
+// =========================================
+// Formats
+// =========================================
+export const formatSchema = z.object({
+  title: z.string().min(2).max(120),
+  slug: z.string().min(2).max(120).optional(),
+  tagline: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),
+  description: z.string().max(4000).optional().or(z.literal("").transform(() => undefined)),
+  cover_image: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  gallery: z.array(z.string().url()).max(20).default([]),
+  videos: z.array(z.string().url()).max(10).default([]),
+  icon: z.string().max(60).optional().or(z.literal("").transform(() => undefined)),
+  order_index: z.coerce.number().int().nonnegative().default(0),
+  details: z.record(z.unknown()).optional(),
+  seo_title: z.string().max(120).optional().or(z.literal("").transform(() => undefined)),
+  seo_description: z.string().max(300).optional().or(z.literal("").transform(() => undefined)),
+  published: z.boolean().default(true),
+});
+export type FormatInput = z.infer<typeof formatSchema>;
+
+export const formatInterestSchema = z.object({
+  name: z.string().min(2, "Almeno 2 caratteri").max(120),
+  email: z.string().email("Email non valida"),
+  phone: z.string().min(6).max(40).optional().or(z.literal("").transform(() => undefined)),
+  message: z.string().min(10, "Almeno 10 caratteri").max(2000, "Massimo 2000 caratteri"),
+});
+export type FormatInterestInput = z.infer<typeof formatInterestSchema>;
 
 export const artistSchema = z.object({
   stage_name: z.string().min(2).max(80),

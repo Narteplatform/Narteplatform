@@ -7,7 +7,8 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 import { getSiteUrl } from "@/lib/site-url";
 import { artistSchema, type ArtistInput } from "@/lib/validators/schemas";
-import { sendBookingCancelledByAdminEmail } from "@/lib/emails/send";
+import { sendEmail, sendBookingCancelledByAdminEmail } from "@/lib/emails/send";
+import ArtistApprovedEmail from "@/lib/emails/templates/ArtistApprovedEmail";
 
 async function ensureAdmin() {
   const supabase = await createClient();
@@ -85,6 +86,45 @@ export async function approveApplication(applicationId: string) {
   if (insertErr) return { ok: false as const, error: insertErr.message };
 
   await admin.from("artist_applications").update({ status: "approved" }).eq("id", applicationId);
+
+  // Email brandizzata con magic link per impostare la password
+  const siteUrl = getSiteUrl();
+  let actionLink: string | null = null;
+  try {
+    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+      type: "invite",
+      email: app.email,
+      options: { redirectTo: `${siteUrl}/login` },
+    });
+    if (!linkErr && linkData?.properties?.action_link) {
+      actionLink = linkData.properties.action_link;
+    } else {
+      // Fallback: recovery link se l'utente esiste già
+      const { data: recoveryData } = await admin.auth.admin.generateLink({
+        type: "recovery",
+        email: app.email,
+        options: { redirectTo: `${siteUrl}/login` },
+      });
+      if (recoveryData?.properties?.action_link) {
+        actionLink = recoveryData.properties.action_link;
+      }
+    }
+  } catch (e) {
+    console.error("[approveApplication] generateLink error", e);
+  }
+
+  if (actionLink) {
+    await sendEmail({
+      to: app.email,
+      subject: "Candidatura approvata — N'arte",
+      template: "ArtistApproved",
+      react: ArtistApprovedEmail({
+        applicantName: app.name,
+        stageName: app.stage_name,
+        actionUrl: actionLink,
+      }),
+    });
+  }
 
   revalidatePath("/admin/artisti");
   revalidatePath("/artisti");

@@ -27,6 +27,9 @@ export type EventCategory =
   | "business";
 
 export interface Database {
+  __InternalSupabase: {
+    PostgrestVersion: "12";
+  };
   public: {
     Tables: {
       profiles: {
@@ -311,10 +314,10 @@ export interface Database {
       leads: {
         Row: {
           id: string;
-          artist_id: string;
+          artist_id: string | null;
           requester_user_id: string | null;
-          event_date: string;
-          event_location: string;
+          event_date: string | null;
+          event_location: string | null;
           budget: number | null;
           message: string;
           contact_email: string;
@@ -322,14 +325,16 @@ export interface Database {
           status: LeadStatus;
           tags: string[];
           event_time: string | null;
+          source: string;
+          contact_name: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
-          artist_id: string;
+          artist_id?: string | null;
           requester_user_id?: string | null;
-          event_date: string;
-          event_location: string;
+          event_date?: string | null;
+          event_location?: string | null;
           budget?: number | null;
           message: string;
           contact_email: string;
@@ -337,14 +342,16 @@ export interface Database {
           status?: LeadStatus;
           tags?: string[];
           event_time?: string | null;
+          source?: string;
+          contact_name?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
-          artist_id?: string;
+          artist_id?: string | null;
           requester_user_id?: string | null;
-          event_date?: string;
-          event_location?: string;
+          event_date?: string | null;
+          event_location?: string | null;
           budget?: number | null;
           message?: string;
           contact_email?: string;
@@ -352,7 +359,66 @@ export interface Database {
           status?: LeadStatus;
           tags?: string[];
           event_time?: string | null;
+          source?: string;
+          contact_name?: string | null;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      formats: {
+        Row: {
+          id: string;
+          slug: string;
+          title: string;
+          tagline: string | null;
+          description: string | null;
+          cover_image: string | null;
+          gallery: string[];
+          videos: string[];
+          icon: string | null;
+          order_index: number;
+          details: Json;
+          seo_title: string | null;
+          seo_description: string | null;
+          published: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          title: string;
+          tagline?: string | null;
+          description?: string | null;
+          cover_image?: string | null;
+          gallery?: string[];
+          videos?: string[];
+          icon?: string | null;
+          order_index?: number;
+          details?: Json;
+          seo_title?: string | null;
+          seo_description?: string | null;
+          published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          slug?: string;
+          title?: string;
+          tagline?: string | null;
+          description?: string | null;
+          cover_image?: string | null;
+          gallery?: string[];
+          videos?: string[];
+          icon?: string | null;
+          order_index?: number;
+          details?: Json;
+          seo_title?: string | null;
+          seo_description?: string | null;
+          published?: boolean;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

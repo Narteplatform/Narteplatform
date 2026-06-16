@@ -12,6 +12,9 @@ const BUCKETS = {
   venue: "venue-images",
   audio: "artist-audio",
   "artist-video": "artist-videos",
+  "event-video": "event-videos",
+  "format": "format-covers",
+  "format-video": "event-videos",
 } as const;
 
 type Kind = keyof typeof BUCKETS;
@@ -57,7 +60,7 @@ export async function POST(request: Request) {
     if (!AUDIO_MIME.test(file.type)) {
       return NextResponse.json({ error: "Formato audio non supportato" }, { status: 415 });
     }
-  } else if (kind === "artist-video") {
+  } else if (kind === "artist-video" || kind === "event-video" || kind === "format-video") {
     if (file.size > VIDEO_MAX) {
       return NextResponse.json({ error: "Video troppo grande (max 50MB)" }, { status: 413 });
     }
@@ -77,7 +80,11 @@ export async function POST(request: Request) {
   }
 
   const defaultExt =
-    kind === "audio" ? "mp3" : kind === "artist-video" ? "mp4" : "jpg";
+    kind === "audio"
+      ? "mp3"
+      : kind === "artist-video" || kind === "event-video" || kind === "format-video"
+      ? "mp4"
+      : "jpg";
   const ext =
     (file.type.split("/")[1] || defaultExt).replace(/[^a-z0-9]/gi, "").slice(0, 5) || defaultExt;
   const safeKind = kind.replace(/[^a-z0-9_-]/gi, "_");
