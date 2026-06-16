@@ -151,13 +151,14 @@ export type AuthInput = z.infer<typeof authSchema>;
 export const priceBandEnum = z.enum(["budget", "standard", "premium", "luxury"]);
 export type PriceBand = z.infer<typeof priceBandEnum>;
 
-export const venueTypeEnum = z.enum(["club", "pub", "festival", "teatro", "locale", "altro"]);
+export const venueTypeEnum = z.enum(["club", "pub", "festival", "teatro", "locale", "privato", "altro"]);
 export type VenueType = z.infer<typeof venueTypeEnum>;
 
 export const organizerProfileSchema = z.object({
   display_name: z.string().min(2, "Minimo 2 caratteri").max(120),
   bio: z.string().max(800).optional().or(z.literal("").transform(() => undefined)),
   is_brand: z.boolean().optional(),
+  is_private: z.boolean().optional(),
   avatar_url: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   phone: z.string().max(40).optional().or(z.literal("").transform(() => undefined)),
   website: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),

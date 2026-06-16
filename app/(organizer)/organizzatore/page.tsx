@@ -89,6 +89,8 @@ export default async function OrganizerOverviewPage() {
   return (
     <div className="space-y-8">
       <HeroGreeting
+        greeting="Bentornato"
+        avatarUrl={organizer.avatar_url}
         name={organizer.display_name || user.profile?.full_name || user.email?.split("@")[0]}
         description={hero}
         primary={

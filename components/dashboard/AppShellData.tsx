@@ -650,7 +650,11 @@ async function loadOrganizerShell(userId: string): Promise<{
   }
 
   const organizerRes = await safe(
-    admin.from("organizers").select("id, display_name, avatar_url").eq("user_id", userId).maybeSingle()
+    admin
+      .from("organizers")
+      .select("id, display_name, avatar_url, bio, phone, website, instagram")
+      .eq("user_id", userId)
+      .maybeSingle()
   );
   const organizer = organizerRes?.data ?? null;
 
@@ -740,32 +744,41 @@ async function loadOrganizerShell(userId: string): Promise<{
       badge: unreadChatOrg > 0 ? { label: String(unreadChatOrg), variant: "accent" } : undefined,
     },
     {
-      href: "/organizzatore/feedback",
-      label: "Feedback artisti",
-      icon: <Star className="size-4" />,
-    },
-    {
       href: "/organizzatore/profilo",
       label: "Profilo",
       icon: <UserCog className="size-4" />,
     },
   ];
 
-  const storage: AppShellStorage | undefined = organizer
-    ? {
-        label: "Profilo organizzatore",
-        used: [
-          Boolean(organizer.avatar_url),
-          venuesCount > 0,
-          confermataCount > 0,
-        ].filter(Boolean).length,
-        total: 3,
-        hint: `${venuesCount} strutture · ${confermataCount} eventi confermati`,
-        ctaLabel: venuesCount === 0 ? "Aggiungi struttura" : "Nuova richiesta",
-        ctaHref: venuesCount === 0 ? "/organizzatore/strutture/nuova" : "/artisti",
-        variant: "accent",
-      }
-    : undefined;
+  let storage: AppShellStorage | undefined;
+  if (organizer) {
+    const checks = [
+      Boolean(organizer.avatar_url),
+      Boolean(organizer.bio && organizer.bio.trim().length > 0),
+      Boolean(organizer.phone),
+      Boolean(organizer.website || organizer.instagram),
+      venuesCount > 0,
+    ];
+    const filled = checks.filter(Boolean).length;
+    const complete = filled === checks.length;
+    const missing: string[] = [];
+    if (!organizer.avatar_url) missing.push("foto profilo");
+    if (!(organizer.bio && organizer.bio.trim().length > 0)) missing.push("bio");
+    if (!organizer.phone) missing.push("telefono");
+    if (!(organizer.website || organizer.instagram)) missing.push("sito o Instagram");
+    if (venuesCount === 0) missing.push("una struttura");
+    storage = {
+      label: "Profilo completo",
+      used: filled,
+      total: checks.length,
+      hint: complete
+        ? "Profilo completo al 100%"
+        : `Mancano: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? "…" : ""}`,
+      ctaLabel: venuesCount === 0 ? "Aggiungi struttura" : "Completa profilo",
+      ctaHref: venuesCount === 0 ? "/organizzatore/strutture/nuova" : "/organizzatore/profilo",
+      variant: complete ? "default" : "accent",
+    };
+  }
 
   const recentActivity: AppShellRecent[] = recentReqs.map((r) => ({
     name: new Date(r.event_date).toLocaleDateString("it-IT", { day: "2-digit", month: "short" }),

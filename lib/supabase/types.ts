@@ -10,7 +10,7 @@ export type AvailabilityStatus = "available" | "busy";
 export type PriceBand = "budget" | "standard" | "premium" | "luxury";
 export type ArtistTier = "free" | "pro" | "max";
 export type ArtistPath = "cover_artist" | "tribute_band" | "progetto_inedito";
-export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "altro";
+export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "privato" | "altro";
 export type BookingStatus = "pending" | "in_trattativa" | "confermata" | "rifiutata" | "annullata";
 export type ChatMessageKind = "text" | "offer" | "system" | "image" | "document" | "voice";
 export type ChatOfferStatus = "pending" | "accepted" | "rejected" | "superseded";
@@ -529,6 +529,7 @@ export interface Database {
           avatar_url: string | null;
           bio: string | null;
           is_brand: boolean;
+          is_private: boolean;
           phone: string | null;
           website: string | null;
           instagram: string | null;
@@ -542,6 +543,7 @@ export interface Database {
           avatar_url?: string | null;
           bio?: string | null;
           is_brand?: boolean;
+          is_private?: boolean;
           phone?: string | null;
           website?: string | null;
           instagram?: string | null;
@@ -555,6 +557,7 @@ export interface Database {
           avatar_url?: string | null;
           bio?: string | null;
           is_brand?: boolean;
+          is_private?: boolean;
           phone?: string | null;
           website?: string | null;
           instagram?: string | null;

@@ -434,11 +434,15 @@ export default async function ArtistDetailPage({
 
             <Reveal delay={0.25}>
               <div className="mt-5 flex flex-wrap items-center gap-3 text-sm">
-                <span className="text-muted-foreground">Fascia di prezzo:</span>
-                <PriceBandBadge
-                  band={artist.price_band ?? "standard"}
-                  canSee={viewerRole === "organizer" || viewerRole === "superadmin"}
-                />
+                {viewerRole !== "artist" && (
+                  <>
+                    <span className="text-muted-foreground">Fascia di prezzo:</span>
+                    <PriceBandBadge
+                      band={artist.price_band ?? "standard"}
+                      canSee={viewerRole === "organizer" || viewerRole === "superadmin"}
+                    />
+                  </>
+                )}
                 <FavoriteToggle
                   artist={{
                     slug: artist.slug,

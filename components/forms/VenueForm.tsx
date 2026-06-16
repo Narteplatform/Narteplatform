@@ -56,6 +56,7 @@ const TYPES: { value: VenueType; label: string }[] = [
   { value: "festival", label: "Festival" },
   { value: "teatro", label: "Teatro" },
   { value: "locale", label: "Locale" },
+  { value: "privato", label: "Privato" },
   { value: "altro", label: "Altro" },
 ];
 

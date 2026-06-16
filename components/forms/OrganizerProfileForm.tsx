@@ -13,6 +13,7 @@ type Existing = {
   display_name: string;
   bio: string | null;
   is_brand: boolean;
+  is_private: boolean;
   avatar_url: string | null;
   phone: string | null;
   website: string | null;
@@ -23,6 +24,7 @@ type FormValues = {
   display_name: string;
   bio: string;
   is_brand: boolean;
+  is_private: boolean;
   avatar_url: string;
   phone: string;
   website: string;
@@ -33,11 +35,12 @@ export function OrganizerProfileForm({ organizer }: { organizer: Existing }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  const { register, handleSubmit, control, watch } = useForm<FormValues>({
+  const { register, handleSubmit, control, watch, setValue } = useForm<FormValues>({
     defaultValues: {
       display_name: organizer.display_name,
       bio: organizer.bio ?? "",
       is_brand: organizer.is_brand,
+      is_private: organizer.is_private,
       avatar_url: organizer.avatar_url ?? "",
       phone: organizer.phone ?? "",
       website: organizer.website ?? "",
@@ -46,6 +49,7 @@ export function OrganizerProfileForm({ organizer }: { organizer: Existing }) {
   });
 
   const isBrand = watch("is_brand");
+  const isPrivate = watch("is_private");
 
   const onSubmit = (values: FormValues) => {
     start(async () => {
@@ -55,6 +59,7 @@ export function OrganizerProfileForm({ organizer }: { organizer: Existing }) {
         display_name: values.display_name,
         bio: values.bio || undefined,
         is_brand: values.is_brand,
+        is_private: values.is_private,
         avatar_url: values.avatar_url || undefined,
         phone: values.phone || undefined,
         website: values.website || undefined,
@@ -97,6 +102,34 @@ export function OrganizerProfileForm({ organizer }: { organizer: Existing }) {
               <span>Gestisco le strutture sotto un unico brand</span>
             </label>
           </div>
+        </div>
+        <div>
+          <Label>Tipo di organizzatore</Label>
+          <div className="mt-1 flex flex-wrap gap-4 text-sm">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="radio"
+                name="organizer_kind"
+                className="size-4"
+                checked={!isPrivate}
+                onChange={() => setValue("is_private", false)}
+              />
+              <span>Struttura</span>
+            </label>
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="radio"
+                name="organizer_kind"
+                className="size-4"
+                checked={isPrivate}
+                onChange={() => setValue("is_private", true)}
+              />
+              <span>Privato</span>
+            </label>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Indica se organizzi come privato o come struttura/locale.
+          </p>
         </div>
         <div>
           <Label htmlFor="bio">{isBrand ? "Bio del brand" : "Su di me"}</Label>

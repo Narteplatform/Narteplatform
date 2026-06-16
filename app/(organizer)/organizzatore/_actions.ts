@@ -40,6 +40,7 @@ export async function updateOrganizerProfile(input: OrganizerProfileInput) {
       display_name: parsed.data.display_name,
       bio: parsed.data.bio ?? null,
       is_brand: parsed.data.is_brand ?? false,
+      is_private: parsed.data.is_private ?? false,
       avatar_url: parsed.data.avatar_url ?? null,
       phone: parsed.data.phone ?? null,
       website: parsed.data.website ?? null,
