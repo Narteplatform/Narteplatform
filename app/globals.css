@@ -41,8 +41,8 @@
   --color-info: var(--color-azzurro);
 
   /* ---- FONTS ---- */
-  --font-sans: var(--font-sans), "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: var(--font-display), "Fraunces", Georgia, serif;
+  --font-sans: var(--font-sans), "DIN 2014", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-display), Georgia, serif;
 
   /* ---- RADIUS ---- */
   --radius-sm: 4px;
@@ -94,13 +94,13 @@
   }
   .font-display {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
   }
   .display-xl {
     font-family: var(--font-display);
     font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1.05;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
   }
   .display-italic {
     font-family: var(--font-display);

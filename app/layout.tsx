@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
-import { DM_Sans, Fraunces } from "next/font/google";
+import localFont from "next/font/local";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-sans",
+const ignazio = localFont({
+  src: "../public/fonts/Ignazio.ttf",
+  variable: "--font-display",
   display: "swap",
+  weight: "400 900",
 });
 
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "900"],
-  style: ["normal", "italic"],
-  variable: "--font-display",
+const din2014 = localFont({
+  src: [
+    { path: "../public/fonts/DIN2014-Regular.woff2", format: "woff2" },
+    { path: "../public/fonts/DIN2014-Regular.woff", format: "woff" },
+    { path: "../public/fonts/DIN2014-Regular.ttf", format: "truetype" },
+  ],
+  variable: "--font-sans",
   display: "swap",
 });
 
@@ -52,7 +54,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="it" className={`${dmSans.variable} ${fraunces.variable}`}>
+    <html lang="it" className={`${din2014.variable} ${ignazio.variable}`}>
       <head>
         <meta httpEquiv="cache-control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="pragma" content="no-cache" />
