@@ -432,6 +432,9 @@ export interface Database {
           bio: string | null;
           links: Json;
           status: ArtistStatus;
+          video_url: string | null;
+          video_path: string | null;
+          instruments: string[];
           created_at: string;
         };
         Insert: {
@@ -443,6 +446,9 @@ export interface Database {
           bio?: string | null;
           links?: Json;
           status?: ArtistStatus;
+          video_url?: string | null;
+          video_path?: string | null;
+          instruments?: string[];
           created_at?: string;
         };
         Update: {
@@ -454,6 +460,9 @@ export interface Database {
           bio?: string | null;
           links?: Json;
           status?: ArtistStatus;
+          video_url?: string | null;
+          video_path?: string | null;
+          instruments?: string[];
           created_at?: string;
         };
         Relationships: [];

@@ -15,6 +15,7 @@ const BUCKETS = {
   "event-video": "event-videos",
   "format": "format-covers",
   "format-video": "event-videos",
+  "blog": "blog-covers",
 } as const;
 
 type Kind = keyof typeof BUCKETS;
