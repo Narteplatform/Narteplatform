@@ -143,7 +143,7 @@ async function loadEvents(cat: string, when: When) {
   const nowIso = new Date().toISOString();
   let q = supabase
     .from("events")
-    .select("slug, title, city, date, price, cover_image, cover_image_home");
+    .select("slug, title, city, date, price, cover_image");
   if (cat !== "all") q = q.eq("category", cat as never);
   if (when === "past") {
     q = q.lt("date", nowIso).order("date", { ascending: false });
@@ -158,6 +158,5 @@ async function loadEvents(cat: string, when: When) {
     date: e.date,
     price: e.price,
     coverImage: e.cover_image,
-    coverImageHome: e.cover_image_home,
   }));
 }

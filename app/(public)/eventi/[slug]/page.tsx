@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Ticket } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { Reveal } from "@/components/animations/Reveal";
@@ -36,16 +36,15 @@ export default async function EventDetailPage({
         <div className="container-narte relative z-10 grid items-start gap-8 md:grid-cols-2 md:gap-10 lg:gap-14">
           {/* COVER CARD — aspect ratio fisso 4:5 per tutti gli eventi, sticky su md+ */}
           <Reveal>
-            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border bg-muted md:sticky md:top-28">
+            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border bg-notte md:sticky md:top-28">
               {event.cover_image ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={event.cover_image}
                   alt={event.title}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                 />
               ) : null}
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               <span className="absolute left-4 top-4 inline-flex items-center rounded-full bg-black/50 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-white backdrop-blur-sm">
                 {event.category}
               </span>
@@ -95,7 +94,7 @@ export default async function EventDetailPage({
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <Ticket className="size-4" /> Acquista biglietti
+                      <ArrowRight className="size-4" /> Scopri di più
                     </Link>
                   </Button>
                 </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search, RotateCcw } from "lucide-react";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { Search, ChevronDown, RotateCcw, Check } from "lucide-react";
 import { ArtistCard } from "@/components/marketing/ArtistCard";
+import { Badge } from "@/components/ui/Badge";
 import type { PriceBand } from "@/lib/supabase/types";
 
 export type ExplorerArtist = {
@@ -14,6 +15,7 @@ export type ExplorerArtist = {
   genre: string[];
   instruments: string[];
   price_band: PriceBand;
+  tier?: string;
 };
 
 const ROLE_GROUPS: { key: string; label: string; match: (instr: string) => boolean }[] = [
@@ -29,6 +31,120 @@ const ROLE_GROUPS: { key: string; label: string; match: (instr: string) => boole
   { key: "trombettista", label: "Trombettista", match: (i) => /tromba|trombett|trumpet/i.test(i) },
   { key: "violinista", label: "Violinista", match: (i) => /violin/i.test(i) },
 ];
+
+// Dropdown with multi-select checkboxes
+function FilterDropdown({
+  label,
+  options,
+  selected,
+  onToggle,
+  onClear,
+}: {
+  label: string;
+  options: { key: string; label: string; count: number }[];
+  selected: string[];
+  onToggle: (key: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
+  const activeCount = selected.length;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={[
+          "inline-flex h-10 items-center gap-2 rounded-full border px-4 text-xs font-semibold uppercase tracking-wider transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azzurro focus-visible:ring-offset-2",
+          activeCount > 0
+            ? "border-azzurro bg-azzurro text-white"
+            : "border-notte/30 bg-white text-notte hover:border-notte",
+        ].join(" ")}
+      >
+        <span>{label}</span>
+        {activeCount > 0 && (
+          <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-white/25 px-1 text-[10px] font-bold">
+            {activeCount}
+          </span>
+        )}
+        <ChevronDown
+          className={`size-3.5 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          aria-multiselectable="true"
+          className="absolute left-0 top-full z-50 mt-2 min-w-[200px] max-w-[260px] overflow-hidden rounded-xl border border-border bg-white shadow-lg"
+        >
+          {activeCount > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  onClear();
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-corallo hover:bg-corallo/5"
+              >
+                <RotateCcw className="size-3" /> Deseleziona tutti
+              </button>
+              <div className="h-px bg-border" />
+            </>
+          )}
+          <ul className="max-h-64 overflow-y-auto p-1">
+            {options.map((opt) => {
+              const isSelected = selected.includes(opt.key);
+              return (
+                <li key={opt.key}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => onToggle(opt.key)}
+                    className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <span
+                        className={[
+                          "inline-flex size-4 shrink-0 items-center justify-center rounded border",
+                          isSelected
+                            ? "border-azzurro bg-azzurro text-white"
+                            : "border-border bg-white",
+                        ].join(" ")}
+                        aria-hidden="true"
+                      >
+                        {isSelected && <Check className="size-2.5" strokeWidth={3} />}
+                      </span>
+                      <span className="text-notte">{opt.label}</span>
+                    </span>
+                    <span className="text-[11px] text-palco-40">{opt.count}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ArtistsExplorer({
   artists,
@@ -69,10 +185,34 @@ export function ArtistsExplorer({
         .sort((a, b) => a.localeCompare(b, "it")),
     [genreCounts]
   );
+
   const availableRoles = useMemo(
     () => ROLE_GROUPS.filter((r) => (roleCounts.get(r.key) ?? 0) > 0),
     [roleCounts]
   );
+
+  const categoryOptions = useMemo(
+    () =>
+      availableRoles.map((r) => ({
+        key: r.key,
+        label: r.label,
+        count: roleCounts.get(r.key) ?? 0,
+      })),
+    [availableRoles, roleCounts]
+  );
+
+  const genreOptions = useMemo(
+    () =>
+      allGenres.map((g) => ({
+        key: g,
+        label: g,
+        count: genreCounts.get(g) ?? 0,
+      })),
+    [allGenres, genreCounts]
+  );
+
+  const hasFilters =
+    genreFilters.length > 0 || roleFilters.length > 0 || query.length > 0;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -97,8 +237,13 @@ export function ArtistsExplorer({
     });
   }, [artists, genreFilters, roleFilters, query]);
 
-  const hasFilters =
-    genreFilters.length > 0 || roleFilters.length > 0 || query.length > 0;
+  // Top artists: tier='max', shown as a dedicated section when no filters active
+  const topArtists = useMemo(
+    () => artists.filter((a) => a.tier === "max"),
+    [artists]
+  );
+
+  const showTopSection = topArtists.length > 0 && !hasFilters;
 
   function toggle(list: string[], setList: (v: string[]) => void, value: string) {
     if (list.includes(value)) setList(list.filter((x) => x !== value));
@@ -113,85 +258,107 @@ export function ArtistsExplorer({
 
   return (
     <div>
-      <div className="rounded-2xl border border-border bg-background p-5 md:p-6">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      {/* SEARCH + FILTER BAR */}
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-notte px-4 py-3 md:px-5 md:py-4">
+        {/* Search */}
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-palco/50" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cerca per nome o città…"
-            className="h-11 w-full rounded-full border border-border bg-muted pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/30"
+            className="h-10 w-full rounded-full border border-notte-60 bg-notte-80 pl-10 pr-4 text-sm text-palco placeholder:text-palco/40 focus:outline-none focus:ring-2 focus:ring-azzurro focus:ring-offset-1 focus:ring-offset-notte"
             aria-label="Cerca artista"
           />
         </div>
 
-        <div className="mt-6 space-y-6">
-          {availableRoles.length > 0 && (
-            <FilterGroup
-              label="Tipologia artista"
-              hint="Ruolo principale — seleziona uno o più: cantante, chitarrista, DJ…"
-              activeCount={roleFilters.length}
+        {/* Dropdown filters */}
+        <div className="flex shrink-0 items-center gap-2">
+          {categoryOptions.length > 0 && (
+            <FilterDropdown
+              label="Categoria"
+              options={categoryOptions}
+              selected={roleFilters}
+              onToggle={(key) => toggle(roleFilters, setRoleFilters, key)}
               onClear={() => setRoleFilters([])}
-            >
-              {availableRoles.map((r) => (
-                <Chip
-                  key={r.key}
-                  active={roleFilters.includes(r.key)}
-                  onClick={() => toggle(roleFilters, setRoleFilters, r.key)}
-                  count={roleCounts.get(r.key) ?? 0}
-                >
-                  {r.label}
-                </Chip>
-              ))}
-            </FilterGroup>
+            />
           )}
-
-          {allGenres.length > 0 && (
-            <FilterGroup
-              label="Generi musicali"
-              hint="Stile sonoro — multi-selezione attiva"
-              activeCount={genreFilters.length}
+          {genreOptions.length > 0 && (
+            <FilterDropdown
+              label="Genere"
+              options={genreOptions}
+              selected={genreFilters}
+              onToggle={(key) => toggle(genreFilters, setGenreFilters, key)}
               onClear={() => setGenreFilters([])}
-            >
-              {allGenres.map((g) => (
-                <Chip
-                  key={g}
-                  active={genreFilters.includes(g)}
-                  onClick={() => toggle(genreFilters, setGenreFilters, g)}
-                  count={genreCounts.get(g) ?? 0}
-                >
-                  {g}
-                </Chip>
-              ))}
-            </FilterGroup>
+            />
           )}
-          {(roleFilters.length > 0 || genreFilters.length > 0) && (
-            <p className="text-xs text-muted-foreground">
-              Filtro combinato: gli artisti devono corrispondere ad almeno una tipologia
-              selezionata <strong>e</strong> ad almeno un genere selezionato.
-            </p>
-          )}
-        </div>
-
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4 text-xs">
-          <span className="text-muted-foreground">
-            {filtered.length} {filtered.length === 1 ? "artista" : "artisti"}
-            {hasFilters ? " (filtrati)" : ""}
-          </span>
           {hasFilters && (
             <button
               type="button"
               onClick={reset}
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background px-3 py-1.5 uppercase tracking-wide transition hover:border-accent hover:text-accent"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-notte-60 px-3 text-xs font-semibold uppercase tracking-wider text-palco/70 transition hover:border-corallo hover:text-corallo"
+              aria-label="Azzera tutti i filtri"
             >
-              <RotateCcw className="size-3" /> Reset filtri
+              <RotateCcw className="size-3" />
+              <span className="hidden sm:inline">Reset</span>
             </button>
           )}
         </div>
+
+        {/* Counter */}
+        <span className="hidden shrink-0 text-xs text-palco/50 sm:block">
+          {filtered.length} {filtered.length === 1 ? "artista" : "artisti"}
+          {hasFilters ? " trovati" : ""}
+        </span>
       </div>
 
-      <div className="mt-10">
+      {/* Mobile counter */}
+      <p className="mt-2 text-xs text-muted-foreground sm:hidden">
+        {filtered.length} {filtered.length === 1 ? "artista" : "artisti"}
+        {hasFilters ? " trovati" : ""}
+      </p>
+
+      {/* TOP ARTIST ROW — shown only when no filters are active */}
+      {showTopSection && (
+        <div className="mt-10">
+          <div className="mb-4 flex items-center gap-3">
+            <p className="font-display text-sm uppercase tracking-tight text-notte">Top Artist</p>
+            <Badge variant="accent">TOP</Badge>
+          </div>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {topArtists.map((a) => {
+              const roleLabel =
+                ROLE_GROUPS.find((g) => (a.instruments ?? []).some((i) => g.match(i)))?.label ??
+                null;
+              return (
+                <div key={a.id} className="relative">
+                  <ArtistCard
+                    slug={a.slug}
+                    stageName={a.stage_name}
+                    city={a.city}
+                    coverImage={a.cover_image}
+                    genres={a.genre}
+                    priceBand={a.price_band}
+                    canSeePrice={canSeePrice}
+                    isGuest={isGuest}
+                    category={roleLabel}
+                  />
+                  <span className="pointer-events-none absolute right-3 top-3 z-10">
+                    <Badge variant="accent">TOP</Badge>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-10 mb-4 flex items-center gap-3">
+            <p className="font-display text-sm uppercase tracking-tight text-notte">Tutti gli artisti</p>
+          </div>
+        </div>
+      )}
+
+      {/* RESULTS GRID */}
+      <div className={showTopSection ? "" : "mt-10"}>
         {filtered.length === 0 ? (
           <p className="text-center text-muted-foreground">
             Nessun artista corrisponde ai filtri selezionati.
@@ -202,99 +369,31 @@ export function ArtistsExplorer({
               const roleLabel =
                 ROLE_GROUPS.find((g) => (a.instruments ?? []).some((i) => g.match(i)))?.label ??
                 null;
+              const isTop = a.tier === "max";
               return (
-                <ArtistCard
-                  key={a.id}
-                  slug={a.slug}
-                  stageName={a.stage_name}
-                  city={a.city}
-                  coverImage={a.cover_image}
-                  genres={a.genre}
-                  priceBand={a.price_band}
-                  canSeePrice={canSeePrice}
-                  isGuest={isGuest}
-                  category={roleLabel}
-                />
+                <div key={a.id} className="relative">
+                  <ArtistCard
+                    slug={a.slug}
+                    stageName={a.stage_name}
+                    city={a.city}
+                    coverImage={a.cover_image}
+                    genres={a.genre}
+                    priceBand={a.price_band}
+                    canSeePrice={canSeePrice}
+                    isGuest={isGuest}
+                    category={roleLabel}
+                  />
+                  {isTop && (
+                    <span className="pointer-events-none absolute right-3 top-3 z-10">
+                      <Badge variant="accent">TOP</Badge>
+                    </span>
+                  )}
+                </div>
               );
             })}
           </div>
         )}
       </div>
     </div>
-  );
-}
-
-function FilterGroup({
-  label,
-  hint,
-  activeCount,
-  onClear,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  activeCount: number;
-  onClear: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="font-display text-sm uppercase tracking-tight">{label}</span>
-          {hint ? (
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              {hint}
-            </span>
-          ) : null}
-        </div>
-        {activeCount > 0 && (
-          <button
-            type="button"
-            onClick={onClear}
-            className="text-[11px] uppercase tracking-wider text-muted-foreground hover:text-accent"
-          >
-            Pulisci ({activeCount})
-          </button>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
-  );
-}
-
-function Chip({
-  active,
-  onClick,
-  count,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  count?: number;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors ${
-        active
-          ? "border-accent bg-accent text-accent-foreground"
-          : "border-border bg-background text-foreground hover:border-accent hover:text-accent"
-      }`}
-    >
-      <span>{children}</span>
-      {typeof count === "number" && (
-        <span
-          className={`inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-semibold ${
-            active ? "bg-accent-foreground/20" : "bg-muted text-muted-foreground"
-          }`}
-        >
-          {count}
-        </span>
-      )}
-    </button>
   );
 }

@@ -9,7 +9,7 @@ async function getEvents(limit = 8): Promise<EventCardProps[]> {
     const supabase = createAdminClient();
     const { data } = await supabase
       .from("events")
-      .select("slug, title, city, date, price, cover_image, cover_image_home")
+      .select("slug, title, city, date, price, cover_image")
       .order("date", { ascending: true })
       .limit(limit);
     return (data ?? []).map((e) => ({
@@ -19,7 +19,6 @@ async function getEvents(limit = 8): Promise<EventCardProps[]> {
       date: e.date,
       price: e.price,
       coverImage: e.cover_image,
-      coverImageHome: e.cover_image_home,
     }));
   } catch {
     return [];

@@ -48,6 +48,8 @@ type Pill = {
 export function EventInfoCards({ date, endAt, city, venue, price }: Props) {
   const [open, setOpen] = useState<string | null>(null);
 
+  const isPast = new Date(endAt ?? date) < new Date();
+
   const startTime = formatTime(date);
   const endTime = endAt ? formatTime(endAt) : null;
   const orarioLabel = endTime ? `${startTime} – ${endTime}` : startTime;
@@ -107,21 +109,25 @@ export function EventInfoCards({ date, endAt, city, venue, price }: Props) {
         </div>
       ),
     },
-    {
-      key: "price",
-      icon: <Euro className="size-4" />,
-      label: formatPrice(price),
-      detailTitle: "Prezzo",
-      detail: (
-        <p className="text-sm">
-          {price == null
-            ? "Prezzo non comunicato."
-            : Number(price) === 0
-              ? "Ingresso gratuito."
-              : `Biglietto a partire da € ${Number(price).toFixed(2)}`}
-        </p>
-      ),
-    },
+    ...(!isPast
+      ? [
+          {
+            key: "price",
+            icon: <Euro className="size-4" />,
+            label: formatPrice(price),
+            detailTitle: "Prezzo",
+            detail: (
+              <p className="text-sm">
+                {price == null
+                  ? "Prezzo non comunicato."
+                  : Number(price) === 0
+                    ? "Ingresso gratuito."
+                    : `Biglietto a partire da € ${Number(price).toFixed(2)}`}
+              </p>
+            ),
+          } satisfies Pill,
+        ]
+      : []),
   ];
 
   const active = pills.find((p) => p.key === open);

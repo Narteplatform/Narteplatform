@@ -17,12 +17,13 @@ export default async function ArtistiPage() {
     genre: string[] | null;
     instruments?: string[] | null;
     price_band?: PriceBand | null;
+    tier?: string | null;
   };
   let rows: ArtistRow[] = [];
   {
     const full = await supabase
       .from("artists")
-      .select("id, slug, stage_name, city, genre, instruments, cover_image, price_band")
+      .select("id, slug, stage_name, city, genre, instruments, cover_image, price_band, tier")
       .eq("status", "approved")
       .order("stage_name", { ascending: true });
     if (full.error) {
@@ -53,6 +54,7 @@ export default async function ArtistiPage() {
     genre: (a.genre ?? []) as string[],
     instruments: (a.instruments ?? []) as string[],
     price_band: (a.price_band ?? "standard") as PriceBand,
+    tier: (a.tier ?? "standard") as string,
   }));
 
   return (

@@ -8,7 +8,6 @@ export type EventCardProps = {
   date: string | Date;
   price: number | null;
   coverImage: string | null;
-  coverImageHome?: string | null;
 };
 
 export function EventCard({
@@ -18,9 +17,8 @@ export function EventCard({
   date,
   price,
   coverImage,
-  coverImageHome,
 }: EventCardProps) {
-  const cardImg = coverImageHome || coverImage;
+  const cardImg = coverImage;
   return (
     <Link
       href={`/eventi/${slug}`}
