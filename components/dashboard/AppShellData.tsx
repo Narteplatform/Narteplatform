@@ -1,6 +1,7 @@
 import {
   Building2,
   CalendarDays,
+  ClipboardList,
   FileText,
   Inbox,
   LayoutDashboard,
@@ -106,7 +107,7 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     safe(admin.from("events").select("id", { count: "exact", head: true })),
     safe(admin.from("artist_applications").select("id", { count: "exact", head: true }).eq("status", "pending")),
     safe(admin.from("artists").select("id", { count: "exact", head: true }).eq("status", "approved")),
-    safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "new")),
+    safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "new").in("source", ["format", "contatti"])),
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "contacted")),
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "closed")),
     safe(
@@ -176,6 +177,11 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
         { href: "/admin/leads?status=closed", label: "Chiusi", count: c(closedLeads) },
       ],
     },
+    richieste: {
+      href: "/admin/richieste",
+      label: "Richieste",
+      icon: <ClipboardList className="size-4" />,
+    },
     chat: {
       href: "/admin/chat",
       label: "Chat",
@@ -232,6 +238,7 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     "artisti",
     "generi",
     "leads",
+    "richieste",
     "chat",
     "consulenza",
     "blog",
@@ -283,7 +290,7 @@ async function loadArtistShell(userId: string): Promise<{
   const artistRes = await safe(
     admin
       .from("artists")
-      .select("id, stage_name, cover_image, bio, gallery, videos, genre")
+      .select("id, stage_name, cover_image, bio, gallery, videos, genre, price_range, languages")
       .eq("user_id", userId)
       .maybeSingle()
   );
@@ -375,10 +382,6 @@ async function loadArtistShell(userId: string): Promise<{
       href: "/dashboard/profilo-artista",
       label: "Profilo artista",
       icon: <Sparkles className="size-4" />,
-      children: [
-        { href: "/dashboard/profilo-artista", label: "Dati & media" },
-        { href: "/dashboard/profilo-artista/video", label: "Video" },
-      ],
     },
     {
       href: "/dashboard/calendario",
@@ -408,7 +411,7 @@ async function loadArtistShell(userId: string): Promise<{
     },
     {
       href: "/dashboard/feedback",
-      label: "Feedback ricevuti",
+      label: "Feedback",
       icon: <Star className="size-4" />,
     },
     {
@@ -420,19 +423,43 @@ async function loadArtistShell(userId: string): Promise<{
 
   let storage: AppShellStorage | undefined;
   if (artist) {
+    type ArtistRow = {
+      cover_image?: string | null;
+      bio?: string | null;
+      gallery?: unknown[];
+      videos?: unknown[];
+      genre?: unknown[];
+      price_range?: string | null;
+      languages?: unknown[];
+    };
+    const a = artist as unknown as ArtistRow;
     const checks = [
-      Boolean(artist.cover_image),
-      Boolean(artist.bio && artist.bio.trim().length > 30),
-      (artist.gallery?.length ?? 0) >= 3,
-      (artist.videos?.length ?? 0) >= 1,
-      (artist.genre?.length ?? 0) >= 1,
+      Boolean(a.cover_image),
+      Boolean(a.bio && a.bio.trim().length > 30),
+      (a.gallery?.length ?? 0) >= 3,
+      (a.videos?.length ?? 0) >= 1,
+      (a.genre?.length ?? 0) >= 1,
+      Boolean(a.price_range),
+      (a.languages?.length ?? 0) > 0,
     ];
     const filled = checks.filter(Boolean).length;
+    const missing: string[] = [];
+    if (!a.cover_image) missing.push("foto copertina");
+    if (!a.bio || a.bio.trim().length <= 30) missing.push("bio");
+    if ((a.gallery?.length ?? 0) < 3) missing.push("galleria (min 3)");
+    if ((a.videos?.length ?? 0) < 1) missing.push("video");
+    if ((a.genre?.length ?? 0) < 1) missing.push("genere");
+    if (!a.price_range) missing.push("fascia prezzo");
+    if ((a.languages?.length ?? 0) === 0) missing.push("lingue");
+    const hint =
+      missing.length > 0
+        ? `Mancano: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? "…" : ""}`
+        : "Profilo completo al 100%";
     storage = {
       label: "Profilo completo",
       used: filled,
       total: checks.length,
-      hint: `Galleria ${artist.gallery?.length ?? 0} foto · Video ${artist.videos?.length ?? 0}`,
+      hint,
       ctaLabel: "Completa profilo",
       ctaHref: "/dashboard/profilo-artista",
       variant: filled === checks.length ? "default" : "accent",
@@ -544,7 +571,7 @@ async function loadConsultantShell(userId: string): Promise<{
     },
     {
       href: consultantId ? `/admin/consulenza/consulenti/${consultantId}` : "/admin/consulenza",
-      label: "I miei slot",
+      label: "Calendario",
       icon: <CalendarDays className="size-4" />,
       badge: futureSlots > 0 ? { label: String(futureSlots) } : undefined,
     },
@@ -602,8 +629,7 @@ export async function AdminAppShell({
       }}
       navSections={navSections}
       storage={storage}
-      recentActivity={recentActivity}
-      whatsNewHref={isConsultant ? "/admin/consulenza" : "/admin"}
+      recentActivity={[]}
     >
       {children}
     </AppShell>

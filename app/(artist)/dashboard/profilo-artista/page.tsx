@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { ArtistProfileForm } from "@/components/forms/ArtistProfileForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import type { ArtistVideoItem } from "@/components/forms/VideoUpload";
 
 export const metadata = { title: "Profilo artista — N'arte" };
 export const dynamic = "force-dynamic";
@@ -32,11 +33,25 @@ export default async function ArtistProfileEditPage() {
     );
   }
 
-  const { data: genresData } = await supabase
-    .from("genres")
-    .select("name")
-    .order("order_index");
+  const [{ data: genresData }, { data: videosData }] = await Promise.all([
+    supabase.from("genres").select("name").order("order_index"),
+    supabase
+      .from("artist_videos")
+      .select("id, url, storage_path, title, size_bytes, mime_type, created_at")
+      .eq("artist_id", artist.id)
+      .order("created_at", { ascending: false }),
+  ]);
+
   const genreOptions = (genresData ?? []).map((g) => g.name as string);
+  const initialVideos: ArtistVideoItem[] = (videosData ?? []).map((v) => ({
+    id: v.id,
+    url: v.url,
+    storage_path: v.storage_path,
+    title: v.title,
+    size_bytes: v.size_bytes,
+    mime_type: v.mime_type,
+    created_at: v.created_at,
+  }));
 
   return (
     <div className="space-y-6">
@@ -64,7 +79,12 @@ export default async function ArtistProfileEditPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ArtistProfileForm artist={artist} genreOptions={genreOptions} />
+          <ArtistProfileForm
+            artist={artist}
+            genreOptions={genreOptions}
+            artistId={artist.id}
+            initialVideos={initialVideos}
+          />
         </CardContent>
       </Card>
     </div>

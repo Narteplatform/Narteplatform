@@ -9,6 +9,7 @@ import {
   ConsultationStatusSelect,
   ConsultationNotes,
 } from "@/components/admin/ConsultationRow";
+import { AssignConsultantSelect } from "@/components/admin/AssignConsultantSelect";
 
 export const metadata = { title: "Slot confermati — N'arte Admin" };
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ type Row = {
   admin_notes: string | null;
   created_at: string;
   user_id: string | null;
+  slot_id: string | null;
   consultant_slots: {
     slot_at: string;
     duration_min: number;
@@ -52,7 +54,7 @@ export default async function AdminConsulenzaConfermatiPage({
   let q = admin
     .from("consultations")
     .select(
-      "id, name, email, phone, needs, status, admin_notes, created_at, user_id, consultant_slots!inner(slot_at, duration_min, consultant_id)"
+      "id, name, email, phone, needs, status, admin_notes, created_at, user_id, slot_id, consultant_slots!inner(slot_at, duration_min, consultant_id)"
     )
     .eq("status", "confirmed");
   if (isConsultant && consultantId) {
@@ -108,6 +110,17 @@ export default async function AdminConsulenzaConfermatiPage({
     }[]) {
       consultantsMap.set(c.id, c);
     }
+  }
+
+  // #12 — Consulenti attivi per l'assegnazione degli slot legacy (solo superadmin).
+  let activeConsultants: { id: string; name: string }[] = [];
+  if (!isConsultant) {
+    const { data: ac } = await admin
+      .from("consultants")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+    activeConsultants = (ac ?? []) as { id: string; name: string }[];
   }
 
   const artistsMap = new Map<string, { stage_name: string; slug: string; cover_image: string | null }>();
@@ -300,9 +313,18 @@ export default async function AdminConsulenzaConfermatiPage({
                             </div>
                           </>
                         ) : (
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            Consulente non assegnato (slot legacy).
-                          </p>
+                          <div className="mt-2 space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              Consulente non assegnato (slot legacy).
+                            </p>
+                            {/* #12 — Assegna un consulente reale (solo superadmin) */}
+                            {!isConsultant && r.slot_id && (
+                              <AssignConsultantSelect
+                                slotId={r.slot_id}
+                                consultants={activeConsultants}
+                              />
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

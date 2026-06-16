@@ -33,10 +33,13 @@ export const artistApplicationSchema = z.object({
   email: z.string().email(),
   stageName: z.string().min(2).max(80),
   genres: z.array(z.string().min(1)).min(1, "Seleziona almeno un genere").max(3, "Massimo 3 generi"),
+  instruments: z.array(z.string()).max(3, "Massimo 3 strumenti").optional().default([]),
   bio: z.string().max(2000).optional(),
   instagram: z.string().max(120).optional(),
   spotify: z.string().max(200).optional(),
   website: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  video_url: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  video_path: z.string().max(500).optional().or(z.literal("").transform(() => undefined)),
 });
 export type ArtistApplicationInput = z.infer<typeof artistApplicationSchema>;
 
@@ -245,6 +248,7 @@ export const ADMIN_PAGE_KEYS = [
   "artisti",
   "generi",
   "leads",
+  "richieste",
   "chat",
   "consulenza",
   "blog",

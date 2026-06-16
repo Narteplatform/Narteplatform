@@ -18,6 +18,10 @@ export interface HeroGreetingProps {
   secondary?: HeroGreetingCTA;
   illustration?: ReactNode;
   className?: string;
+  /** Sovrascrive il saluto temporale generato da greetingPrefix(). */
+  greeting?: string;
+  /** Mostra un avatar dell'utente al posto dell'icona Sparkles nel badge. */
+  avatarUrl?: string | null;
 }
 
 function greetingPrefix(): string {
@@ -35,8 +39,23 @@ export function HeroGreeting({
   secondary,
   illustration,
   className,
+  greeting,
+  avatarUrl,
 }: HeroGreetingProps) {
   const display = name?.trim() || "ciao";
+  const saluto = greeting ?? greetingPrefix();
+
+  const badgeContent = avatarUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={avatarUrl}
+      alt={display}
+      className="size-full rounded-2xl object-cover"
+    />
+  ) : (
+    illustration ?? <Sparkles className="size-6" />
+  );
+
   return (
     <section
       className={cn(
@@ -46,11 +65,11 @@ export function HeroGreeting({
     >
       <div className="flex items-center gap-4 md:gap-5 min-w-0">
         <span className="hidden size-14 shrink-0 items-center justify-center rounded-2xl bg-background text-foreground sm:inline-flex">
-          {illustration ?? <Sparkles className="size-6" />}
+          {badgeContent}
         </span>
         <div className="min-w-0">
           <h1 className="font-display text-2xl leading-tight tracking-tight sm:text-3xl">
-            {greetingPrefix()}, {display}!
+            {saluto}, {display}!
           </h1>
           {description && (
             <p className="mt-1 max-w-xl text-sm text-muted-foreground">{description}</p>

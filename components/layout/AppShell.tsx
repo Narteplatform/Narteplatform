@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   HelpCircle,
   LogOut,
-  MessageCircle,
   Menu,
   Settings,
   Sparkles,
@@ -74,6 +73,7 @@ export interface AppShellProps {
   storage?: AppShellStorage;
   recentActivity?: AppShellRecent[];
   whatsNewHref?: string;
+  showSearch?: boolean;
   children: React.ReactNode;
 }
 
@@ -99,6 +99,7 @@ export function AppShell({
   storage,
   recentActivity,
   whatsNewHref,
+  showSearch = false,
   children,
 }: AppShellProps) {
   const pathname = usePathname() ?? "/";
@@ -112,6 +113,7 @@ export function AppShell({
       navSections={navSections}
       pathname={pathname}
       storage={storage}
+      showSearch={showSearch}
       onNavigate={() => setDrawerOpen(false)}
     />
   );
@@ -234,6 +236,7 @@ function SidebarContent({
   navSections,
   pathname,
   storage,
+  showSearch = false,
   onNavigate,
 }: {
   brand: React.ReactNode;
@@ -242,6 +245,7 @@ function SidebarContent({
   navSections: NavSection[];
   pathname: string;
   storage?: AppShellStorage;
+  showSearch?: boolean;
   onNavigate: () => void;
 }) {
   return (
@@ -264,9 +268,11 @@ function SidebarContent({
         </button>
       </div>
 
-      <div className="px-4 pt-4">
-        <SearchInput placeholder="Cerca…" variant="sidebar" />
-      </div>
+      {showSearch && (
+        <div className="px-4 pt-4">
+          <SearchInput placeholder="Cerca…" variant="sidebar" />
+        </div>
+      )}
 
       <nav aria-label="Sidebar principale" className="flex-1 overflow-y-auto px-3 py-4 narte-scrollbar">
         <ul className="flex flex-col gap-1">
@@ -281,7 +287,7 @@ function SidebarContent({
         </ul>
       </nav>
 
-      {storage && (
+      {storage && storage.used < storage.total && (
         <div className="hidden px-4 pb-3 md:block">
           <StorageBlock storage={storage} onNavigate={onNavigate} />
         </div>
@@ -289,13 +295,6 @@ function SidebarContent({
 
       <div className="mt-auto border-t border-border">
         <div className="flex flex-col gap-1 px-3 py-3 text-sm">
-          <Link
-            href="mailto:boostcreativeai@gmail.com?subject=Feedback%20N%27arte"
-            onClick={onNavigate}
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <MessageCircle className="size-4" /> Feedback
-          </Link>
           <Link
             href="/contatti"
             onClick={onNavigate}

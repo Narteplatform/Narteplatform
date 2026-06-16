@@ -6,9 +6,9 @@ import { HeroGreeting } from "@/components/dashboard/HeroGreeting";
 import { ActivityList } from "@/components/dashboard/ActivityFeed";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { KpiCard } from "@/components/ui/KpiCard";
-import { ScrollArea } from "@/components/ui/ScrollArea";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 
 export const metadata = { title: "Overview — N'arte" };
 export const dynamic = "force-dynamic";
@@ -27,6 +27,7 @@ export default async function ArtistOverviewPage() {
     return (
       <div className="space-y-6">
         <HeroGreeting
+          greeting="Bentornato"
           name={user.profile?.full_name ?? user.email?.split("@")[0]}
           description="Nessun profilo artista collegato al tuo account. Contatta l'amministratore per attivarlo."
         />
@@ -106,7 +107,9 @@ export default async function ArtistOverviewPage() {
   return (
     <div className="space-y-8">
       <HeroGreeting
+        greeting="Bentornato"
         name={artist.stage_name}
+        avatarUrl={artist.cover_image}
         description={heroDescription}
         primary={{
           label: "Pagina pubblica",
@@ -157,19 +160,10 @@ export default async function ArtistOverviewPage() {
                 Nessuna foto ancora. Aggiungi qualche scatto dal profilo artista.
               </p>
             ) : (
-              <ScrollArea snap className="-mx-2 px-2">
-                <div className="flex gap-3 pb-2">
-                  {gallery.slice(0, 12).map((src: string, i: number) => (
-                    <div
-                      key={`${src}-${i}`}
-                      className="relative h-44 w-44 shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-muted"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt="" className="h-full w-full object-cover" />
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
+              <ImageLightbox
+                images={gallery.slice(0, 12)}
+                gridClassName="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6"
+              />
             )}
           </CardContent>
         </Card>

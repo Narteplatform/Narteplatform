@@ -7,6 +7,12 @@ import { updateArtistStatus } from "@/app/(admin)/admin/artisti/_actions";
 
 const STATUSES = ["pending", "approved", "rejected"] as const;
 
+const STATUS_LABEL: Record<(typeof STATUSES)[number], string> = {
+  pending: "In attesa",
+  approved: "Approvato",
+  rejected: "Rifiutato",
+};
+
 export function ArtistStatusToggle({
   artistId,
   status,
@@ -32,7 +38,7 @@ export function ArtistStatusToggle({
             })
           }
         >
-          {s}
+          {STATUS_LABEL[s]}
         </Button>
       ))}
     </div>

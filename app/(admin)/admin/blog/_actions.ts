@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { formatContentToSeoHtml, deriveSeoMeta } from "@/lib/blog/seo-format";
 
 async function ensureSuperadmin() {
   const supabase = await createClient();
@@ -47,6 +48,27 @@ const postSchema = z.object({
 
 export type BlogPostInput = z.infer<typeof postSchema>;
 
+/**
+ * Prepara contenuto e meta SEO senza mai alterare le parole:
+ * - se il contenuto è testo semplice viene formattato in HTML (idempotente:
+ *   formatContentToSeoHtml restituisce l'input invariato se è già HTML).
+ * - se seo_title/seo_description mancano vengono derivati da titolo + testo.
+ */
+function buildSeoFields(d: {
+  title: string;
+  content: string;
+  seoTitle?: string;
+  seoDescription?: string;
+}): { content: string; seoTitle: string; seoDescription: string } {
+  const content = formatContentToSeoHtml(d.content);
+  const derived = deriveSeoMeta(d.title, content);
+  return {
+    content,
+    seoTitle: d.seoTitle?.trim() ? d.seoTitle.trim() : derived.seoTitle,
+    seoDescription: d.seoDescription?.trim() ? d.seoDescription.trim() : derived.seoDescription,
+  };
+}
+
 export async function createBlogPost(input: BlogPostInput) {
   const ctx = await ensureSuperadmin();
   if (!ctx.ok) return ctx;
@@ -69,6 +91,7 @@ export async function createBlogPost(input: BlogPostInput) {
     slug = `${baseSlug}-${n}`;
   }
 
+  const seo = buildSeoFields(d);
   const { data, error } = await admin
     .from("blog_posts")
     .insert({
@@ -76,9 +99,9 @@ export async function createBlogPost(input: BlogPostInput) {
       title: d.title,
       excerpt: d.excerpt ?? null,
       cover_image: d.coverImage ?? null,
-      content: d.content,
-      seo_title: d.seoTitle ?? null,
-      seo_description: d.seoDescription ?? null,
+      content: seo.content,
+      seo_title: seo.seoTitle,
+      seo_description: seo.seoDescription,
       author_name: d.authorName || "N'arte",
       published_at: d.publish ? new Date().toISOString() : null,
     })
@@ -135,6 +158,7 @@ export async function updateBlogPost(id: string, input: BlogPostInput) {
     published_at = null;
   }
 
+  const seo = buildSeoFields(d);
   const { error } = await admin
     .from("blog_posts")
     .update({
@@ -142,9 +166,9 @@ export async function updateBlogPost(id: string, input: BlogPostInput) {
       title: d.title,
       excerpt: d.excerpt ?? null,
       cover_image: d.coverImage ?? null,
-      content: d.content,
-      seo_title: d.seoTitle ?? null,
-      seo_description: d.seoDescription ?? null,
+      content: seo.content,
+      seo_title: seo.seoTitle,
+      seo_description: seo.seoDescription,
       author_name: d.authorName || "N'arte",
       published_at,
     })

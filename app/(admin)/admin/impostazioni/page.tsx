@@ -4,6 +4,7 @@ import { ADMIN_PAGE_KEYS, type AdminPageKey } from "@/lib/validators/schemas";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { InviteSuperadminForm } from "@/components/admin/InviteSuperadminForm";
 import { PermissionsMatrix, type SuperadminRow } from "@/components/admin/PermissionsMatrix";
+import { GenerateConsultantCredentials } from "@/components/admin/GenerateConsultantCredentials";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Impostazioni — N'arte Admin" };
@@ -52,6 +53,19 @@ export default async function ImpostazioniPage() {
     };
   });
 
+  // Consulenti senza account di login: candidabili per la generazione credenziali.
+  const { data: consultantsRaw } = await admin
+    .from("consultants")
+    .select("id, name, email, user_id")
+    .is("user_id", null)
+    .order("name", { ascending: true });
+  const consultants = ((consultantsRaw ?? []) as {
+    id: string;
+    name: string;
+    email: string | null;
+    user_id: string | null;
+  }[]).map((c) => ({ id: c.id, name: c.name, email: c.email }));
+
   return (
     <div className="space-y-6">
       <header>
@@ -84,6 +98,19 @@ export default async function ImpostazioniPage() {
         </CardHeader>
         <CardContent>
           <PermissionsMatrix rows={rows} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Credenziali consulente</CardTitle>
+          <CardDescription>
+            Genera email e password per l'accesso di un consulente. La password viene creata
+            automaticamente e mostrata una sola volta: copiala e inviala al consulente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <GenerateConsultantCredentials consultants={consultants} />
         </CardContent>
       </Card>
     </div>

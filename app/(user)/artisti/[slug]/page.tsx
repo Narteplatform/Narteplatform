@@ -311,10 +311,34 @@ export default async function ArtistDetailPage({
   let personnelList: PersonnelMember[] = [];
   try {
     if (Array.isArray(artist.personnel)) {
-      personnelList = artist.personnel as PersonnelMember[];
+      // Nuovo formato: array di oggetti { name, role? } — o vecchio array di stringhe
+      personnelList = (artist.personnel as (PersonnelMember | string)[]).map((item) => {
+        if (item && typeof item === "object" && "name" in item) {
+          return item as PersonnelMember;
+        }
+        if (typeof item === "string") {
+          const [name, ...rest] = item.split("—");
+          return { name: (name ?? "").trim(), role: rest.join("—").trim() };
+        }
+        return null;
+      }).filter((m): m is PersonnelMember => m !== null && (m.name?.trim().length ?? 0) > 0);
     } else if (typeof artist.personnel === "string" && artist.personnel.trim().length > 0) {
-      const parsed = JSON.parse(artist.personnel);
-      if (Array.isArray(parsed)) personnelList = parsed as PersonnelMember[];
+      // Prova prima JSON (vecchio salvataggio come stringa JSON)
+      try {
+        const parsed = JSON.parse(artist.personnel);
+        if (Array.isArray(parsed)) personnelList = parsed as PersonnelMember[];
+      } catch {
+        // Vecchio formato textarea: "Nome — Ruolo\nNome — Ruolo"
+        personnelList = artist.personnel
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line) => {
+            const [name, ...rest] = line.split("—");
+            return { name: (name ?? "").trim(), role: rest.join("—").trim() };
+          })
+          .filter((m) => m.name.length > 0);
+      }
     }
   } catch {
     personnelList = [];

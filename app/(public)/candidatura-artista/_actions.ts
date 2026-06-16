@@ -26,16 +26,18 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
       email: data.email,
       stage_name: data.stageName,
       genre: data.genres,
+      instruments: data.instruments ?? [],
       bio: data.bio ?? null,
       links: {
         ...(data.instagram ? { instagram: data.instagram } : {}),
         ...(data.spotify ? { spotify: data.spotify } : {}),
         ...(data.website ? { website: data.website } : {}),
       },
+      video_url: data.video_url ?? null,
+      video_path: data.video_path ?? null,
     });
     if (error) return { ok: false as const, error: "Errore salvataggio candidatura" };
-  } catch (e) {
-    console.error("[application] server error", e);
+  } catch {
     return { ok: false as const, error: "Errore server" };
   }
 

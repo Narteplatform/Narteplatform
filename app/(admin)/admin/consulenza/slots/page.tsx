@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth/guards";
+import { requireRole } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { SlotsManager } from "@/components/admin/SlotsManager";
 
@@ -10,8 +9,8 @@ export const metadata = { title: "Slot consulenza — N'arte Admin" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminConsulenzaSlotsPage() {
-  const me = await getCurrentUser();
-  if (me?.profile?.role === "consultant") redirect("/admin/consulenza");
+  // #15 — Gestione slot legacy: solo superadmin.
+  await requireRole("superadmin");
   const admin = createAdminClient();
   const { data: slotsRaw } = await admin
     .from("consultant_slots")

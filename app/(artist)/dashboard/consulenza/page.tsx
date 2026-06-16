@@ -22,21 +22,52 @@ export default async function ArtistConsulenzaPage() {
     .select("id, name, role, bio, avatar_url")
     .eq("is_active", true)
     .order("name", { ascending: true });
-  const consultants = (consRaw ?? []) as unknown as CalendarConsultant[];
+  const realConsultants = (consRaw ?? []) as unknown as CalendarConsultant[];
 
-  const ids = consultants.map((c) => c.id);
-  let slotsAll: { id: string; slot_at: string; duration_min: number; consultant_id: string }[] = [];
-  if (ids.length > 0) {
+  const ids = realConsultants.map((c) => c.id);
+
+  // #11 — Includi anche gli slot legacy (consultant_id IS NULL): sono prenotabili
+  // sotto un consulente generico "Consulente N'arte".
+  const LEGACY_CONSULTANT_ID = "legacy-narte";
+  type RawSlot = {
+    id: string;
+    slot_at: string;
+    duration_min: number;
+    consultant_id: string | null;
+  };
+  let slotsAll: RawSlot[] = [];
+  {
+    const orFilter =
+      ids.length > 0
+        ? `consultant_id.is.null,consultant_id.in.(${ids.join(",")})`
+        : "consultant_id.is.null";
     const { data: slotsRaw } = await admin
       .from("consultant_slots")
       .select("id, slot_at, duration_min, consultant_id")
       .eq("is_active", true)
       .gte("slot_at", nowIso)
-      .in("consultant_id", ids)
+      .or(orFilter)
       .order("slot_at", { ascending: true })
       .limit(500);
-    slotsAll = ((slotsRaw ?? []) as unknown as typeof slotsAll);
+    slotsAll = (slotsRaw ?? []) as unknown as RawSlot[];
   }
+
+  // Espone un consulente generico solo se esistono slot legacy.
+  const hasLegacy = slotsAll.some((s) => s.consultant_id === null);
+  const consultants: CalendarConsultant[] = [
+    ...realConsultants,
+    ...(hasLegacy
+      ? [
+          {
+            id: LEGACY_CONSULTANT_ID,
+            name: "Consulente N'arte",
+            role: "Team N'arte",
+            bio: "Un consulente del team N'arte ti ricontatterà nello slot scelto.",
+            avatar_url: null,
+          } satisfies CalendarConsultant,
+        ]
+      : []),
+  ];
 
   // Mappa slot prenotati
   let bookedSet = new Set<string>();
@@ -50,9 +81,15 @@ export default async function ArtistConsulenzaPage() {
   }
 
   const slots: CalendarSlot[] = slotsAll.map((s) => ({
-    ...s,
+    id: s.id,
+    slot_at: s.slot_at,
+    duration_min: s.duration_min,
+    // Gli slot legacy (consultant_id NULL) vengono raggruppati sotto il consulente generico.
+    consultant_id: s.consultant_id ?? LEGACY_CONSULTANT_ID,
     is_booked: bookedSet.has(s.id),
   }));
+
+  const hasAvailability = consultants.length > 0 && slots.length > 0;
 
   return (
     <div className="space-y-6">
@@ -74,9 +111,9 @@ export default async function ArtistConsulenzaPage() {
           <CardTitle className="text-base">Calendario disponibilità</CardTitle>
         </CardHeader>
         <CardContent>
-          {consultants.length === 0 ? (
+          {!hasAvailability ? (
             <p className="text-sm text-muted-foreground">
-              Nessun consulente attivo al momento.
+              Nessuno slot disponibile al momento.
             </p>
           ) : (
             <ArtistConsulenzaCalendar consultants={consultants} slots={slots} />

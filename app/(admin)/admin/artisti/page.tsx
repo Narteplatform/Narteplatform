@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/Table";
 import { ApplicationActions } from "@/components/admin/ApplicationActions";
 import { DeleteArtistButton } from "@/components/admin/DeleteArtistButton";
+import { AutoRefresh } from "@/components/admin/AutoRefresh";
 import { cn } from "@/lib/utils";
 
 type Filter = "all" | "approved" | "pending" | "rejected";
@@ -73,6 +74,7 @@ export default async function AdminArtistsPage({
 
   return (
     <div className="space-y-6">
+      <AutoRefresh />
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl tracking-tight">Artisti</h1>
@@ -130,6 +132,16 @@ export default async function AdminArtistsPage({
                       <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
                         {a.bio}
                       </p>
+                    )}
+                    {a.video_url && (
+                      <video
+                        controls
+                        preload="metadata"
+                        src={a.video_url}
+                        className="aspect-video w-full rounded-xl border border-border bg-black object-cover"
+                      >
+                        Il tuo browser non supporta la riproduzione video.
+                      </video>
                     )}
                     <div className="mt-auto pt-2 border-t border-border">
                       <ApplicationActions applicationId={a.id} />

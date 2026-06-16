@@ -5,7 +5,7 @@ import { Upload, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
 
-type Kind = "artist" | "event" | "event_home" | "avatar" | "venue" | "format";
+type Kind = "artist" | "event" | "event_home" | "avatar" | "venue" | "format" | "blog";
 
 const SIZES: Record<Kind, { w: number; h: number; aspect: string }> = {
   artist: { w: 900, h: 1200, aspect: "3 / 4" },
@@ -14,6 +14,7 @@ const SIZES: Record<Kind, { w: number; h: number; aspect: string }> = {
   avatar: { w: 400, h: 400, aspect: "1 / 1" },
   venue: { w: 1600, h: 900, aspect: "16 / 9" },
   format: { w: 900, h: 1200, aspect: "3 / 4" },
+  blog: { w: 1600, h: 900, aspect: "16 / 9" },
 };
 
 type Props = {

@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { ImageUpload } from "@/components/forms/ImageUpload";
+import { formatContentToSeoHtml } from "@/lib/blog/seo-format";
 import {
   createBlogPost,
   updateBlogPost,
@@ -40,6 +42,12 @@ export function BlogPostForm({ initial }: { initial?: Initial }) {
 
   function update<K extends keyof typeof form>(key: K, value: typeof form[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function optimizeSeo() {
+    const optimized = formatContentToSeoHtml(form.content);
+    update("content", optimized);
+    setTab("preview");
   }
 
   function submit() {
@@ -108,22 +116,28 @@ export function BlogPostForm({ initial }: { initial?: Initial }) {
         />
       </Field>
 
-      <Field label="Cover image (URL)">
-        <input
-          type="url"
-          value={form.coverImage}
-          onChange={(e) => update("coverImage", e.target.value)}
-          placeholder="https://..."
-          className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-        />
-      </Field>
+      <ImageUpload
+        label="Cover image"
+        value={form.coverImage}
+        onChange={(url) => update("coverImage", url)}
+        kind="blog"
+      />
 
       <div>
         <div className="mb-2 flex items-center gap-2">
           <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Contenuto (HTML)
           </label>
-          <div className="ml-auto inline-flex rounded-md border border-border">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={optimizeSeo}
+          >
+            Ottimizza per SEO
+          </Button>
+          <div className="inline-flex rounded-md border border-border">
             <button
               type="button"
               onClick={() => setTab("edit")}

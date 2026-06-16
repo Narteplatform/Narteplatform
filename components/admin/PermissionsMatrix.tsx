@@ -8,11 +8,12 @@ import { updatePagePermissions, removeSuperadmin } from "@/app/(admin)/admin/imp
 const PAGE_LABELS: Record<AdminPageKey, string> = {
   overview: "Overview",
   eventi: "Eventi",
+  format: "Format",
   artisti: "Artisti",
   generi: "Generi",
   leads: "Lead",
+  richieste: "Richieste",
   chat: "Chat",
-  messaggi: "Messaggi",
   consulenza: "Consulenza",
   blog: "Blog",
   email: "Email",

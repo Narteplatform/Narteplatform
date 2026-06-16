@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, UserCircle } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
-import { getCurrentUser, getConsultantForUser } from "@/lib/auth/guards";
+import { requireRole, getConsultantForUser } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -9,6 +9,7 @@ import {
   ConsultationStatusSelect,
   ConsultationNotes,
 } from "@/components/admin/ConsultationRow";
+import { AssignConsultantSelect } from "@/components/admin/AssignConsultantSelect";
 
 export const metadata = { title: "Consulenza — N'arte Admin" };
 export const dynamic = "force-dynamic";
@@ -41,9 +42,10 @@ export default async function AdminConsulenzaPage({
     ? (sp.status as Status)
     : null;
 
-  const currentUser = await getCurrentUser();
-  const isConsultant = currentUser?.profile?.role === "consultant";
-  const consultantRow = isConsultant ? await getConsultantForUser(currentUser!.id) : null;
+  // #15 — Accesso consentito a superadmin e consultant.
+  const currentUser = await requireRole(["superadmin", "consultant"]);
+  const isConsultant = currentUser.profile?.role === "consultant";
+  const consultantRow = isConsultant ? await getConsultantForUser(currentUser.id) : null;
 
   // Se è consultant, restringe agli slot del consulente
   let slotIdFilter: string[] | null = null;
@@ -68,7 +70,9 @@ export default async function AdminConsulenzaPage({
 
   let q = admin
     .from("consultations")
-    .select("id, name, email, phone, needs, status, admin_notes, created_at, slot_id, consultant_slots(slot_at, duration_min)")
+    .select(
+      "id, name, email, phone, needs, status, admin_notes, created_at, slot_id, consultant_slots(slot_at, duration_min, consultant_id)"
+    )
     .order("created_at", { ascending: false });
   if (filter) q = q.eq("status", filter);
   if (slotIdFilter) q = q.in("slot_id", slotIdFilter);
@@ -84,9 +88,39 @@ export default async function AdminConsulenzaPage({
     admin_notes: string | null;
     created_at: string;
     slot_id: string | null;
-    consultant_slots: { slot_at: string; duration_min: number } | null;
+    consultant_slots: { slot_at: string; duration_min: number; consultant_id: string | null } | null;
   };
   const rows = (rowsRaw ?? []) as unknown as Row[];
+
+  // #10 — Lookup consulenti per mostrare nome/ruolo per ogni appuntamento.
+  const consultantIds = Array.from(
+    new Set(
+      rows
+        .map((r) => r.consultant_slots?.consultant_id)
+        .filter((v): v is string => Boolean(v))
+    )
+  );
+  const consultantsMap = new Map<string, { name: string; role: string | null }>();
+  if (consultantIds.length > 0) {
+    const { data: cs } = await admin
+      .from("consultants")
+      .select("id, name, role")
+      .in("id", consultantIds);
+    for (const c of (cs ?? []) as { id: string; name: string; role: string | null }[]) {
+      consultantsMap.set(c.id, { name: c.name, role: c.role });
+    }
+  }
+
+  // #12 — Elenco consulenti attivi per assegnare gli slot legacy (solo superadmin).
+  let activeConsultants: { id: string; name: string }[] = [];
+  if (!isConsultant) {
+    const { data: ac } = await admin
+      .from("consultants")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+    activeConsultants = (ac ?? []) as { id: string; name: string }[];
+  }
 
   return (
     <div className="space-y-6">
@@ -144,6 +178,10 @@ export default async function AdminConsulenzaPage({
                       timeStyle: "short",
                     })
                   : "Slot rimosso";
+                // #10 — Consulente associato all'appuntamento (via consultant_slots.consultant_id).
+                const cId = r.consultant_slots?.consultant_id ?? null;
+                const consultant = cId ? consultantsMap.get(cId) ?? null : null;
+                const hasSlot = Boolean(r.slot_id);
                 return (
                   <div
                     key={r.id}
@@ -160,6 +198,27 @@ export default async function AdminConsulenzaPage({
                         </Badge>
                         <ConsultationStatusSelect consultationId={r.id} status={r.status} />
                       </div>
+                    </div>
+                    {/* #10 — Consulente assegnato */}
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                        <UserCircle className="size-3.5" />
+                        {consultant ? (
+                          <span className="text-foreground">
+                            {consultant.name}
+                            {consultant.role ? ` · ${consultant.role}` : ""}
+                          </span>
+                        ) : (
+                          <span>Consulente N&apos;arte — non assegnato</span>
+                        )}
+                      </span>
+                      {/* #12 — Assegnazione consulente per slot legacy (solo superadmin) */}
+                      {!isConsultant && !consultant && hasSlot && r.slot_id && (
+                        <AssignConsultantSelect
+                          slotId={r.slot_id}
+                          consultants={activeConsultants}
+                        />
+                      )}
                     </div>
                     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
                       <a

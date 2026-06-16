@@ -40,14 +40,14 @@ const STATUS_LABEL: Record<Lead["status"], string> = {
   closed: "Chiuso",
 };
 
-const SOURCE_LABEL: Record<NonNullable<Lead["source"]>, string> = {
-  booking: "Booking",
+type LeadSource = "format" | "contatti";
+
+const SOURCE_LABEL: Record<LeadSource, string> = {
   contatti: "Contatti",
   format: "Format",
 };
 
-const SOURCE_VARIANT: Record<NonNullable<Lead["source"]>, "accent" | "outline" | "dark"> = {
-  booking: "outline",
+const SOURCE_VARIANT: Record<LeadSource, "accent" | "dark"> = {
   contatti: "accent",
   format: "dark",
 };
@@ -69,6 +69,7 @@ export default async function AdminLeadsPage({
   let q = supabase
     .from("leads")
     .select("*, artists(stage_name, slug)")
+    .in("source", ["format", "contatti"])
     .order("created_at", { ascending: false });
   if (statusFilter) q = q.eq("status", statusFilter);
   if (sp?.tag) q = q.contains("tags", [sp.tag]);
@@ -90,7 +91,7 @@ export default async function AdminLeadsPage({
       <header>
         <h1 className="font-display text-2xl tracking-tight">Lead</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Tutte le richieste di booking ricevute. Aggiorna stato e aggiungi tag per organizzare la
+          Lead raccolti dai form contatti e format. Aggiorna stato e aggiungi tag per organizzare la
           pipeline.
         </p>
       </header>
@@ -180,8 +181,8 @@ export default async function AdminLeadsPage({
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={SOURCE_VARIANT[l.source ?? "booking"]}>
-                    {SOURCE_LABEL[l.source ?? "booking"]}
+                  <Badge variant={SOURCE_VARIANT[(l.source as LeadSource) ?? "contatti"]}>
+                    {SOURCE_LABEL[(l.source as LeadSource) ?? "contatti"]}
                   </Badge>
                   <Badge variant={STATUS_VARIANT[l.status]} dot>
                     {STATUS_LABEL[l.status]}

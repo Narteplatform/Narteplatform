@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { Plus, Trash2 } from "lucide-react";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { ImageUpload } from "@/components/forms/ImageUpload";
 import { GalleryUpload } from "@/components/forms/GalleryUpload";
 import { AudioUpload, type AudioTrack } from "@/components/forms/AudioUpload";
+import { VideoUpload, type ArtistVideoItem } from "@/components/forms/VideoUpload";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
+import { BUDGET_RANGES } from "@/lib/constants/budget-ranges";
 import { updateArtistProfile } from "@/app/(artist)/dashboard/_actions";
 
 type PersonnelMember = { name: string; role: string };
@@ -34,7 +37,7 @@ type Artist = {
   languages?: string[] | null;
   what_to_expect?: string | null;
   about_extended?: string | null;
-  personnel?: PersonnelMember[] | null;
+  personnel?: PersonnelMember[] | string[] | string | null;
   set_list?: string | null;
   influences?: string[] | null;
   setup_requirements?: string | null;
@@ -46,12 +49,77 @@ const PERCORSO_LABEL: Record<"cover_artist" | "tribute_band" | "progetto_inedito
   progetto_inedito: "Progetto inedito",
 };
 
+const LANGUAGE_OPTIONS = [
+  "Italiano",
+  "Dialetto",
+  "Inglese",
+  "Francese",
+  "Spagnolo",
+].map((l) => ({ value: l, label: l }));
+
+const GIG_MIN_OPTIONS = [30, 60, 90, 120];
+const GIG_MAX_OPTIONS = [30, 60, 90, 120, 150, 180];
+
 function readLink(links: unknown, key: string): string {
   if (links && typeof links === "object" && !Array.isArray(links)) {
     const v = (links as Record<string, unknown>)[key];
     return typeof v === "string" ? v : "";
   }
   return "";
+}
+
+/** Migra personnel dal vecchio formato (stringa "Nome — Ruolo" per riga o array di stringhe)
+ *  al nuovo formato oggetto { name, role }[]. */
+function normalisePersonnel(
+  raw: PersonnelMember[] | string[] | string | null | undefined
+): PersonnelMember[] {
+  if (!raw) return [];
+
+  // Nuovo formato: array di oggetti { name, role }
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => {
+        if (item && typeof item === "object" && "name" in item) {
+          return { name: String((item as PersonnelMember).name ?? "").trim(), role: String((item as PersonnelMember).role ?? "").trim() };
+        }
+        // vecchio formato: array di stringhe "Nome — Ruolo"
+        if (typeof item === "string") {
+          const [name, ...rest] = item.split("—");
+          return { name: (name ?? "").trim(), role: rest.join("—").trim() };
+        }
+        return null;
+      })
+      .filter((m): m is PersonnelMember => m !== null && m.name.length > 0);
+  }
+
+  // Formato stringa (textarea legacy)
+  if (typeof raw === "string") {
+    return raw
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [name, ...rest] = line.split("—");
+        return { name: (name ?? "").trim(), role: rest.join("—").trim() };
+      })
+      .filter((m) => m.name.length > 0);
+  }
+
+  return [];
+}
+
+function splitLines(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function splitCsv(text: string): string[] {
+  return text
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 type FormValues = {
@@ -75,57 +143,34 @@ type FormValues = {
   price_range: string;
   gig_min_minutes: string;
   gig_max_minutes: string;
-  languages: string;
+  languages: string[];
   what_to_expect: string;
   about_extended: string;
-  personnel: string;
+  personnel: PersonnelMember[];
   set_list: string;
   influences: string;
   setup_requirements: string;
 };
 
-function splitLines(text: string): string[] {
-  return text
-    .split(/\r?\n/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function splitCsv(text: string): string[] {
-  return text
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function parsePersonnel(text: string): PersonnelMember[] {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [name, ...rest] = line.split("—");
-      const role = rest.join("—").trim();
-      return { name: (name ?? "").trim(), role };
-    })
-    .filter((m) => m.name);
-}
-
-function personnelToText(list: PersonnelMember[] | null | undefined): string {
-  if (!list) return "";
-  return list.map((m) => (m.role ? `${m.name} — ${m.role}` : m.name)).join("\n");
-}
-
 export function ArtistProfileForm({
   artist,
   genreOptions,
+  artistId,
+  initialVideos,
 }: {
   artist: Artist;
   genreOptions: string[];
+  artistId: string;
+  initialVideos: ArtistVideoItem[];
 }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { isSubmitting },
+  } = useForm<FormValues>({
     defaultValues: {
       stage_name: artist.stage_name,
       bio: artist.bio ?? "",
@@ -143,18 +188,28 @@ export function ArtistProfileForm({
       videos: (artist.videos ?? []).join("\n"),
       audio_files: (artist.audio_files ?? []) as AudioTrack[],
       percorso_artistico: (artist.percorso_artistico ?? "") as FormValues["percorso_artistico"],
-      price_range: artist.price_range ?? "",
+      price_range: (() => {
+        const raw = artist.price_range ?? "";
+        // Se già un value valido di BUDGET_RANGES, usalo direttamente
+        if (BUDGET_RANGES.some((r) => r.value === raw)) return raw;
+        // Se è una label, cerca il value corrispondente
+        const byLabel = BUDGET_RANGES.find((r) => r.label === raw);
+        return byLabel ? byLabel.value : "";
+      })(),
       gig_min_minutes: artist.gig_min_minutes != null ? String(artist.gig_min_minutes) : "",
       gig_max_minutes: artist.gig_max_minutes != null ? String(artist.gig_max_minutes) : "",
-      languages: (artist.languages ?? []).join(", "),
+      languages: artist.languages ?? [],
       what_to_expect: artist.what_to_expect ?? "",
       about_extended: artist.about_extended ?? "",
-      personnel: personnelToText(artist.personnel),
+      personnel: normalisePersonnel(artist.personnel),
       set_list: artist.set_list ?? "",
       influences: (artist.influences ?? []).join(", "),
       setup_requirements: artist.setup_requirements ?? "",
     },
   });
+
+  const { fields: personnelFields, append: appendPersonnel, remove: removePersonnel } =
+    useFieldArray({ control, name: "personnel" });
 
   const tier = artist.tier ?? "free";
   const canEditPercorso = tier === "pro" || tier === "max";
@@ -164,7 +219,7 @@ export function ArtistProfileForm({
 
   async function onSubmit(values: FormValues) {
     setError(null);
-    const res = await updateArtistProfile(artist.id, {
+    const res = await updateArtistProfile(artistId, {
       stage_name: values.stage_name,
       bio: values.bio || null,
       genre: values.genre,
@@ -187,17 +242,19 @@ export function ArtistProfileForm({
           ? null
           : values.percorso_artistico
         : null,
-      price_range: values.price_range.trim() || null,
+      price_range: values.price_range.trim()
+        ? (BUDGET_RANGES.find((r) => r.value === values.price_range)?.label ?? values.price_range.trim())
+        : null,
       gig_min_minutes: values.gig_min_minutes.trim()
         ? Math.max(0, Math.min(1440, Number(values.gig_min_minutes)))
         : null,
       gig_max_minutes: values.gig_max_minutes.trim()
         ? Math.max(0, Math.min(1440, Number(values.gig_max_minutes)))
         : null,
-      languages: splitCsv(values.languages),
+      languages: values.languages,
       what_to_expect: values.what_to_expect.trim() || null,
       about_extended: values.about_extended.trim() || null,
-      personnel: parsePersonnel(values.personnel),
+      personnel: values.personnel.filter((m) => m.name.trim().length > 0),
       set_list: values.set_list.trim() || null,
       influences: splitCsv(values.influences),
       setup_requirements: values.setup_requirements.trim() || null,
@@ -343,6 +400,9 @@ export function ArtistProfileForm({
             {...register("videos")}
           />
         </Field>
+        <div className="pt-2">
+          <VideoUpload artistId={artistId} initialVideos={initialVideos} />
+        </div>
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
@@ -353,20 +413,63 @@ export function ArtistProfileForm({
         </p>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Fascia di prezzo (testo libero)">
-            <Input
-              placeholder="es. €400 (duo) — €1.200 (5 elementi)"
+          <Field label="Fascia di prezzo">
+            <select
               {...register("price_range")}
+              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+            >
+              <option value="">— Non specificata —</option>
+              {BUDGET_RANGES.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Lingue">
+            <Controller
+              control={control}
+              name="languages"
+              render={({ field }) => (
+                <MultiSelect
+                  options={LANGUAGE_OPTIONS}
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                  placeholder="Seleziona le lingue…"
+                  searchPlaceholder="Cerca lingua…"
+                  emptyText="Nessuna lingua trovata"
+                />
+              )}
             />
           </Field>
-          <Field label="Lingue (separate da virgola)">
-            <Input placeholder="es. Italiano, Inglese, Napoletano" {...register("languages")} />
+
+          <Field label="Durata minima set">
+            <select
+              {...register("gig_min_minutes")}
+              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+            >
+              <option value="">— Non specificata —</option>
+              {GIG_MIN_OPTIONS.map((m) => (
+                <option key={m} value={String(m)}>
+                  {m} minuti
+                </option>
+              ))}
+            </select>
           </Field>
-          <Field label="Durata minima set (minuti)">
-            <Input type="number" min={0} max={1440} placeholder="60" {...register("gig_min_minutes")} />
-          </Field>
-          <Field label="Durata massima set (minuti)">
-            <Input type="number" min={0} max={1440} placeholder="240" {...register("gig_max_minutes")} />
+
+          <Field label="Durata massima set">
+            <select
+              {...register("gig_max_minutes")}
+              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+            >
+              <option value="">— Non specificata —</option>
+              {GIG_MAX_OPTIONS.map((m) => (
+                <option key={m} value={String(m)}>
+                  {m} minuti
+                </option>
+              ))}
+            </select>
           </Field>
         </div>
 
@@ -386,13 +489,53 @@ export function ArtistProfileForm({
           />
         </Field>
 
-        <Field label="Personale / formazione (una persona per riga: Nome — Ruolo)">
-          <Textarea
-            rows={4}
-            placeholder={"Mario Rossi — Voce / chitarra acustica\nLuca Bianchi — Basso\nGiulia Verdi — Batteria"}
-            {...register("personnel")}
-          />
-        </Field>
+        {/* Personale / formazione — field array */}
+        <div className="space-y-2">
+          <Label>Personale / formazione</Label>
+          <div className="space-y-2">
+            {personnelFields.map((fieldItem, index) => (
+              <div key={fieldItem.id} className="flex items-center gap-2">
+                <Input
+                  placeholder="Nome"
+                  {...register(`personnel.${index}.name`)}
+                  className="flex-1"
+                />
+                <select
+                  {...register(`personnel.${index}.role`)}
+                  className="h-10 flex-1 rounded-md border border-border bg-background px-3 text-sm"
+                >
+                  <option value="">— Ruolo —</option>
+                  {INSTRUMENT_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => removePersonnel(index)}
+                  aria-label="Rimuovi membro"
+                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition hover:border-destructive hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => appendPersonnel({ name: "", role: "" })}
+          >
+            <Plus className="size-4" /> Aggiungi membro
+          </Button>
+          {personnelFields.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              Nessun membro aggiunto. Clicca &quot;Aggiungi membro&quot; per inserire nome e ruolo.
+            </p>
+          )}
+        </div>
 
         <Field label="Set list di esempio">
           <Textarea

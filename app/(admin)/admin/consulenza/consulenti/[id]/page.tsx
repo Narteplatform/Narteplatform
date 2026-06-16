@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
-import { getCurrentUser, getConsultantForUser } from "@/lib/auth/guards";
+import { requireRole, getConsultantForUser } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -41,11 +41,11 @@ export default async function ConsultantDetailPage({
   const { id } = await params;
   const admin = createAdminClient();
 
-  // Access control: consultant può vedere solo il proprio detail
-  const currentUser = await getCurrentUser();
-  const isConsultant = currentUser?.profile?.role === "consultant";
+  // #15 — Accesso a superadmin e consultant; il consultant vede SOLO il proprio detail.
+  const currentUser = await requireRole(["superadmin", "consultant"]);
+  const isConsultant = currentUser.profile?.role === "consultant";
   if (isConsultant) {
-    const own = await getConsultantForUser(currentUser!.id);
+    const own = await getConsultantForUser(currentUser.id);
     if (!own || own.id !== id) redirect("/admin/consulenza");
   }
 
