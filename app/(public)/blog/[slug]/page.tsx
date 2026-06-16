@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Reveal } from "@/components/animations/Reveal";
+import { ReadingProgress } from "@/components/blog/ReadingProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,16 @@ type Post = {
   updated_at: string;
 };
 
+type PostCard = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  cover_image: string | null;
+  author_name: string;
+  published_at: string;
+};
+
 async function getPost(slug: string) {
   const admin = createAdminClient();
   const { data } = await admin
@@ -33,6 +44,18 @@ async function getPost(slug: string) {
     .not("published_at", "is", null)
     .maybeSingle();
   return data as unknown as Post | null;
+}
+
+async function getRelatedPosts(currentId: string): Promise<PostCard[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("blog_posts")
+    .select("id, slug, title, excerpt, cover_image, author_name, published_at")
+    .not("published_at", "is", null)
+    .neq("id", currentId)
+    .order("published_at", { ascending: false })
+    .limit(3);
+  return (data ?? []) as unknown as PostCard[];
 }
 
 export async function generateMetadata({
@@ -76,6 +99,8 @@ export default async function BlogPostPage({
   const post = await getPost(slug);
   if (!post) notFound();
 
+  const relatedPosts = await getRelatedPosts(post.id);
+
   const publishedDate = new Date(post.published_at);
 
   const jsonLd = {
@@ -95,6 +120,9 @@ export default async function BlogPostPage({
 
   return (
     <article className="bg-background pt-28 pb-24">
+      {/* #19 — Barra di avanzamento lettura */}
+      <ReadingProgress />
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -152,24 +180,63 @@ export default async function BlogPostPage({
         </div>
       </Reveal>
 
-      <Reveal delay={0.2}>
-        <div className="container-narte mt-20 max-w-3xl">
-          <div className="rounded-2xl border border-accent/40 bg-accent/5 p-8 text-center">
-            <h2 className="font-display text-2xl uppercase tracking-tight">
-              Trova l&apos;artista per il tuo prossimo evento
+      {/* #20 — Articoli correlati */}
+      {relatedPosts.length > 0 && (
+        <section className="container-narte mt-24">
+          <Reveal>
+            <span className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
+              Continua a leggere
+            </span>
+            <h2 className="mt-3 font-display text-3xl uppercase leading-tight tracking-tight md:text-4xl">
+              Articoli correlati
             </h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Esplora gli artisti emergenti N&apos;arte e invia la tua richiesta in pochi click.
-            </p>
-            <Link
-              href="/artisti"
-              className="mt-5 inline-flex items-center rounded-full bg-accent px-6 py-3 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:opacity-90"
-            >
-              Sfoglia gli artisti
-            </Link>
+          </Reveal>
+          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {relatedPosts.map((p, i) => (
+              <Reveal key={p.id} delay={i * 0.05}>
+                <Link
+                  href={`/blog/${p.slug}`}
+                  className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition hover:-translate-y-1 hover:border-accent"
+                >
+                  <div className="relative aspect-[16/10] overflow-hidden bg-muted">
+                    {p.cover_image ? (
+                      <Image
+                        src={p.cover_image}
+                        alt={p.title}
+                        fill
+                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center font-display text-2xl text-muted-foreground">
+                        N&apos;arte
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col gap-3 p-6">
+                    <time className="text-xs uppercase tracking-wider text-muted-foreground">
+                      {new Date(p.published_at).toLocaleDateString("it-IT", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </time>
+                    <h3 className="font-display text-xl uppercase leading-tight tracking-tight transition-colors group-hover:text-accent">
+                      {p.title}
+                    </h3>
+                    {p.excerpt && (
+                      <p className="text-sm text-muted-foreground line-clamp-3">{p.excerpt}</p>
+                    )}
+                    <span className="mt-auto text-xs font-semibold uppercase tracking-wider text-accent">
+                      Leggi l&apos;articolo →
+                    </span>
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
           </div>
-        </div>
-      </Reveal>
+        </section>
+      )}
     </article>
   );
 }

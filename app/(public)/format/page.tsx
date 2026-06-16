@@ -1,51 +1,43 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Music2, Mic, Sparkles, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { createAdminClient } from "@/lib/supabase/server";
 import { Reveal } from "@/components/animations/Reveal";
+import { FormatInterestForm } from "@/components/marketing/FormatInterestForm";
 
 export const metadata: Metadata = {
   title: "Format — N'arte",
   description:
-    "I tre format N'arte: contenitori di musica live curati per club, festival e brand. Scopri come portare un format N'arte nel tuo evento.",
+    "I format N'arte: contenitori di musica live curati per club, festival e brand. Scopri come portare un format N'arte nel tuo evento.",
   alternates: { canonical: "/format" },
 };
 
-type Format = {
-  key: string;
+export const dynamic = "force-dynamic";
+
+type FormatRow = {
+  id: string;
+  slug: string;
   title: string;
-  tagline: string;
-  description: string;
-  icon: typeof Music2;
+  tagline: string | null;
+  description: string | null;
+  cover_image: string | null;
+  icon: string | null;
+  order_index: number;
 };
 
-const FORMATS: Format[] = [
-  {
-    key: "format-1",
-    title: "Format 1",
-    tagline: "Placeholder — definire titolo",
-    description:
-      "Descrizione del primo format N'arte. Aggiorna questo contenuto inserendo concept, target, durata indicativa e tipologia di location ideale.",
-    icon: Music2,
-  },
-  {
-    key: "format-2",
-    title: "Format 2",
-    tagline: "Placeholder — definire titolo",
-    description:
-      "Descrizione del secondo format N'arte. Aggiorna questo contenuto inserendo concept, target, durata indicativa e tipologia di location ideale.",
-    icon: Mic,
-  },
-  {
-    key: "format-3",
-    title: "Format 3",
-    tagline: "Placeholder — definire titolo",
-    description:
-      "Descrizione del terzo format N'arte. Aggiorna questo contenuto inserendo concept, target, durata indicativa e tipologia di location ideale.",
-    icon: Sparkles,
-  },
-];
+async function getFormats(): Promise<FormatRow[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("formats")
+    .select("id, slug, title, tagline, description, cover_image, icon, order_index")
+    .eq("published", true)
+    .order("order_index", { ascending: true });
+  return (data ?? []) as unknown as FormatRow[];
+}
 
-export default function FormatPage() {
+export default async function FormatPage() {
+  const formats = await getFormats();
+
   return (
     <div className="bg-background pt-32 pb-24">
       <section className="container-narte">
@@ -63,50 +55,64 @@ export default function FormatPage() {
           </p>
         </Reveal>
 
-        <div className="mt-16 grid gap-6 md:grid-cols-3">
-          {FORMATS.map((f, i) => {
-            const Icon = f.icon;
-            return (
-              <Reveal key={f.key} delay={i * 0.08}>
-                <article className="card-lift group flex h-full flex-col gap-5 rounded-2xl border border-border bg-card p-7">
-                  <div className="inline-flex size-12 items-center justify-center rounded-full bg-accent/10 text-accent">
-                    <Icon className="size-6" />
-                  </div>
+        {formats.length === 0 ? (
+          <Reveal delay={0.1}>
+            <p className="mt-16 text-center text-muted-foreground">
+              Nessun format disponibile al momento.
+            </p>
+          </Reveal>
+        ) : (
+          <div className="mt-16 grid gap-6 md:grid-cols-3">
+            {formats.map((f, i) => (
+              <Reveal key={f.id} delay={i * 0.08}>
+                <Link
+                  href={`/format/${f.slug}`}
+                  className="card-lift group flex h-full flex-col gap-5 rounded-2xl border border-border bg-card p-7 transition hover:-translate-y-1 hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  {f.cover_image ? (
+                    <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-muted">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={f.cover_image}
+                        alt={f.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </div>
+                  ) : (
+                    <div className="inline-flex size-12 items-center justify-center rounded-full bg-accent/10 text-accent">
+                      <span className="font-display text-xl uppercase">
+                        {f.icon ?? f.title.slice(0, 1)}
+                      </span>
+                    </div>
+                  )}
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-                      {f.tagline}
-                    </p>
+                    {f.tagline && (
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+                        {f.tagline}
+                      </p>
+                    )}
                     <h2 className="mt-2 font-display text-2xl uppercase leading-tight tracking-tight group-hover:text-accent">
                       {f.title}
                     </h2>
                   </div>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    {f.description}
-                  </p>
-                  <span className="mt-auto inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Dettagli in arrivo
+                  {f.description && (
+                    <p className="text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                      {f.description}
+                    </p>
+                  )}
+                  <span className="mt-auto inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent">
+                    Scopri <ArrowRight className="size-3.5" />
                   </span>
-                </article>
+                </Link>
               </Reveal>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
 
+        {/* #17 — Form interesse format */}
         <Reveal delay={0.2}>
-          <div className="mt-20 rounded-2xl border border-accent/40 bg-accent/5 p-8 text-center md:p-12">
-            <h2 className="font-display text-2xl uppercase tracking-tight md:text-3xl">
-              Vuoi portare un format N&apos;arte nel tuo locale o festival?
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground md:text-base">
-              Scrivici per ricevere il dossier completo con artisti, tecnical rider e
-              modalità di ingaggio.
-            </p>
-            <Link
-              href="/contatti"
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:opacity-90"
-            >
-              Contattaci <ArrowRight className="size-4" />
-            </Link>
+          <div className="mt-24">
+            <FormatInterestForm />
           </div>
         </Reveal>
       </section>

@@ -6,9 +6,9 @@ import {
   LayoutDashboard,
   Mail,
   MessageCircle,
-  MessageSquare,
   Phone,
   Settings,
+  Shapes,
   Sparkles,
   Star,
   Tags,
@@ -99,7 +99,6 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     newLeads,
     contactedLeads,
     closedLeads,
-    contactMessages,
     recentArtists,
   ] = await Promise.all([
     safe(admin.from("events").select("id", { count: "exact", head: true }).gte("date", today)),
@@ -110,7 +109,6 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "new")),
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "contacted")),
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "closed")),
-    safe(admin.from("contact_messages").select("id", { count: "exact", head: true })),
     safe(
       admin
         .from("artists")
@@ -123,7 +121,6 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
 
   const c = (n: { count: number | null } | null) => n?.count ?? 0;
   const newLeadsCount = c(newLeads);
-  const messagesCount = c(contactMessages);
   const activeChats = await safe(getActiveConversationsCountSuperadmin()).then((v) => v ?? 0);
   const pendingConsultations = await safe(
     admin
@@ -147,6 +144,11 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
         { href: "/admin/eventi?filter=upcoming", label: "Prossimi", count: c(upcomingEvents) },
         { href: "/admin/eventi?filter=past", label: "Passati", count: c(pastEvents) },
       ],
+    },
+    format: {
+      href: "/admin/format",
+      label: "Format",
+      icon: <Shapes className="size-4" />,
     },
     artisti: {
       href: "/admin/artisti",
@@ -179,12 +181,6 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       label: "Chat",
       icon: <MessageCircle className="size-4" />,
       badge: activeChats > 0 ? { label: String(activeChats), variant: "accent" } : undefined,
-    },
-    messaggi: {
-      href: "/admin/messaggi",
-      label: "Messaggi",
-      icon: <MessageSquare className="size-4" />,
-      badge: messagesCount > 0 ? { label: String(messagesCount) } : undefined,
     },
     consulenza: {
       href: "/admin/consulenza",
@@ -232,11 +228,11 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
   const ORDER: AdminPageKey[] = [
     "overview",
     "eventi",
+    "format",
     "artisti",
     "generi",
     "leads",
     "chat",
-    "messaggi",
     "consulenza",
     "blog",
     "email",
@@ -454,10 +450,10 @@ function defaultAdminNav(): NavSection[] {
   return [
     { href: "/admin", label: "Overview", icon: <LayoutDashboard className="size-4" />, exact: true },
     { href: "/admin/eventi", label: "Eventi", icon: <CalendarDays className="size-4" /> },
+    { href: "/admin/format", label: "Format", icon: <Shapes className="size-4" /> },
     { href: "/admin/artisti", label: "Artisti", icon: <Users className="size-4" /> },
     { href: "/admin/generi", label: "Generi", icon: <Tags className="size-4" /> },
     { href: "/admin/leads", label: "Lead", icon: <Inbox className="size-4" /> },
-    { href: "/admin/messaggi", label: "Messaggi", icon: <MessageSquare className="size-4" /> },
     { href: "/admin/profilo", label: "Profilo", icon: <UserCog className="size-4" /> },
   ];
 }

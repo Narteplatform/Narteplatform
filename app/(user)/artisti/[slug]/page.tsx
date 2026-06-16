@@ -10,6 +10,8 @@ import { BookingCalendar, type ViewerRole, type ConfirmedBookingInfo } from "@/c
 import { PriceBandBadge } from "@/components/marketing/PriceBandBadge";
 import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
 import { BookingInformation } from "@/components/marketing/BookingInformation";
+import { ArtistToolsSocialTabs } from "@/components/marketing/ArtistToolsSocialTabs";
+import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 import type { PriceBand } from "@/lib/supabase/types";
 
 type SocialLinks = {
@@ -482,11 +484,17 @@ export default async function ArtistDetailPage({
         </div>
       </section>
 
-      {/* BOOKING INFORMATION + SOCIAL */}
-      <section className="bg-white py-16 md:py-24">
-        <div className="container-narte grid gap-10 lg:grid-cols-[1.4fr_1fr]">
-          <div className="space-y-8">
-            <Reveal>
+      {/* #10 — BOOKING INFORMATION: sezione bianca full-width */}
+      <section className="w-full bg-white py-16 md:py-24">
+        <div className="container-narte">
+          <Reveal>
+            <p className="accent-label mb-3">booking</p>
+            <h2 className="font-display text-3xl uppercase tracking-tight text-notte md:text-5xl">
+              Informazioni di booking
+            </h2>
+          </Reveal>
+          <Reveal delay={0.12}>
+            <div className="mt-10">
               <BookingInformation
                 bio={bio}
                 priceRange={artist.price_range ?? null}
@@ -500,56 +508,39 @@ export default async function ArtistDetailPage({
                 influences={influences}
                 setupRequirements={artist.setup_requirements ?? null}
               />
-            </Reveal>
-
-            {instruments.length > 0 && (
-              <Reveal delay={0.1}>
-                <div className="rounded-2xl border border-border bg-background p-6 md:p-8">
-                  <p className="accent-label mb-3">strumenti</p>
-                  <h3 className="font-display text-xl uppercase md:text-2xl">Setup live.</h3>
-                  <ul className="mt-4 flex flex-wrap gap-2">
-                    {instruments.map((i) => (
-                      <li
-                        key={i}
-                        className="rounded-full border border-border bg-muted px-3 py-1 text-xs lowercase"
-                      >
-                        {i}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </Reveal>
-            )}
-          </div>
-
-          {socials.length > 0 && (
-            <Reveal delay={0.15}>
-              <div className="rounded-2xl border border-border bg-background p-6 md:p-8 lg:sticky lg:top-28 lg:self-start">
-                <p className="accent-label mb-3">social</p>
-                <h3 className="font-display text-xl uppercase md:text-2xl">Seguilo online.</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Tutti i canali ufficiali di {artist.stage_name}.
-                </p>
-                <ul className="mt-6 grid gap-2 sm:grid-cols-2">
-                  {socials.map((s) => (
-                    <li key={s.key}>
-                      <a
-                        href={s.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 rounded-xl border border-border bg-muted px-4 py-3 text-sm transition hover:border-accent hover:text-accent"
-                      >
-                        <span className="text-accent">{s.icon}</span>
-                        <span className="font-medium">{s.label}</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Reveal>
-          )}
+            </div>
+          </Reveal>
         </div>
       </section>
+
+      {/* #11 — STRUMENTI & SOCIAL: sezione blu full-width con tab */}
+      {(instruments.length > 0 || socials.length > 0) && (
+        <section className="w-full bg-notte py-16 md:py-24">
+          <div className="container-narte">
+            <Reveal>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
+                artista
+              </p>
+              <h2 className="font-display text-3xl uppercase tracking-tight text-white md:text-4xl">
+                {instruments.length > 0 && socials.length > 0
+                  ? "Strumenti & Social"
+                  : instruments.length > 0
+                  ? "Strumenti"
+                  : "Social"}
+              </h2>
+            </Reveal>
+            <Reveal delay={0.12}>
+              <div className="mt-10">
+                <ArtistToolsSocialTabs
+                  instruments={instruments}
+                  socials={socials}
+                  artistName={artist.stage_name}
+                />
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      )}
 
       {/* AUDIO */}
       {audioTracks.length > 0 && (
@@ -580,7 +571,7 @@ export default async function ArtistDetailPage({
         </section>
       )}
 
-      {/* GALLERY */}
+      {/* #12 — GALLERY con lightbox cliccabile */}
       {gallery.length > 0 && (
         <section className="border-t border-border py-16 md:py-24">
           <div className="container-narte">
@@ -588,20 +579,14 @@ export default async function ArtistDetailPage({
               <p className="accent-label mb-3">galleria</p>
             </Reveal>
             <Reveal delay={0.1}>
-              <h2 className="display-xl text-3xl md:text-5xl">Live & shooting.</h2>
+              <h2 className="display-xl text-3xl md:text-5xl">Live &amp; shooting.</h2>
             </Reveal>
             <Reveal delay={0.2}>
-              <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                {gallery.map((src, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={`${src}-${i}`}
-                    src={src}
-                    alt=""
-                    className="aspect-square w-full rounded-xl object-cover"
-                  />
-                ))}
-              </div>
+              <ImageLightbox
+                images={gallery}
+                className="mt-8"
+                gridClassName="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"
+              />
             </Reveal>
           </div>
         </section>

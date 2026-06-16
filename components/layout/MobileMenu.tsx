@@ -41,7 +41,15 @@ export function MobileMenu({ isLoggedIn, role }: Props) {
   }, [open]);
 
   const dashHref =
-    role === "superadmin" ? "/admin" : role === "artist" ? "/dashboard" : "/artisti";
+    role === "superadmin"
+      ? "/admin"
+      : role === "artist"
+      ? "/dashboard"
+      : role === "organizer"
+      ? "/organizzatore"
+      : role === "consultant"
+      ? "/admin"
+      : "/artisti";
   const dashLabel =
     role === "superadmin"
       ? "Admin"
@@ -49,6 +57,8 @@ export function MobileMenu({ isLoggedIn, role }: Props) {
       ? "Dashboard"
       : role === "organizer"
       ? "Area Organizzatore"
+      : role === "consultant"
+      ? "Consulenza"
       : "Area Riservata";
 
   return (

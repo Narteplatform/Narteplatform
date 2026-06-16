@@ -15,6 +15,10 @@ export async function Header() {
       ? "/admin"
       : role === "artist"
       ? "/dashboard"
+      : role === "organizer"
+      ? "/organizzatore"
+      : role === "consultant"
+      ? "/admin"
       : "/artisti";
   const dashLabel =
     role === "superadmin"
@@ -23,6 +27,8 @@ export async function Header() {
       ? "Dashboard"
       : role === "organizer"
       ? "Organizzatore"
+      : role === "consultant"
+      ? "Consulenza"
       : "Area Riservata";
 
   return (

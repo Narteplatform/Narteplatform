@@ -8,52 +8,49 @@ import { Button } from "@/components/ui/Button";
 import { ImageUpload } from "@/components/forms/ImageUpload";
 import { GalleryUpload } from "@/components/forms/GalleryUpload";
 import { EventVideoUpload } from "@/components/forms/EventVideoUpload";
-import { createEvent, updateEvent } from "@/app/(admin)/admin/eventi/_actions";
-
-const CATEGORIES = [
-  "music", "clubs", "festivals", "dating", "culture", "art", "food", "workshops", "comedy", "business",
-] as const;
+import { createFormat, updateFormat } from "@/app/(admin)/admin/format/_actions";
 
 type Values = {
   title: string;
-  category: (typeof CATEGORIES)[number];
-  date: string;
-  endAt: string;
-  city: string;
-  venue: string;
-  price: string;
-  coverImage: string;
-  ticketUrl: string;
+  tagline: string;
   description: string;
-  featured: boolean;
+  icon: string;
+  order_index: string;
+  cover_image: string;
   gallery: string[];
   videos: string[];
+  seo_title: string;
+  seo_description: string;
+  published: boolean;
 };
 
-export function EventForm({
+export function FormatForm({
   defaultValues,
-  eventId,
+  formatId,
 }: {
   defaultValues?: Partial<Values>;
-  eventId?: string;
+  formatId?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<Values>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { isSubmitting },
+  } = useForm<Values>({
     defaultValues: {
       title: "",
-      category: "music",
-      date: "",
-      endAt: "",
-      city: "",
-      venue: "",
-      price: "",
-      coverImage: "",
-      ticketUrl: "",
+      tagline: "",
       description: "",
-      featured: false,
+      icon: "",
+      order_index: "0",
+      cover_image: "",
       gallery: [],
       videos: [],
+      seo_title: "",
+      seo_description: "",
+      published: true,
       ...defaultValues,
     },
   });
@@ -62,76 +59,68 @@ export function EventForm({
     setError(null);
     const payload = {
       title: values.title,
-      category: values.category,
-      date: values.date,
-      endAt: values.endAt || undefined,
-      city: values.city,
-      venue: values.venue || undefined,
-      price: values.price ? Number(values.price) : undefined,
-      coverImage: values.coverImage || undefined,
-      ticketUrl: values.ticketUrl || undefined,
+      tagline: values.tagline || undefined,
       description: values.description || undefined,
-      featured: values.featured,
+      icon: values.icon || undefined,
+      order_index: Number(values.order_index) || 0,
+      cover_image: values.cover_image || undefined,
       gallery: values.gallery,
       videos: values.videos,
+      seo_title: values.seo_title || undefined,
+      seo_description: values.seo_description || undefined,
+      published: values.published,
     };
-    const res = eventId ? await updateEvent(eventId, payload) : await createEvent(payload);
+    const res = formatId
+      ? await updateFormat(formatId, payload)
+      : await createFormat(payload);
     if (!res.ok) {
       setError(res.error ?? "Errore");
       return;
     }
-    router.push("/admin/eventi");
+    router.push("/admin/format");
     router.refresh();
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <Field label="Titolo"><Input {...register("title", { required: true })} /></Field>
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Categoria">
-          <select
-            {...register("category")}
-            className="h-11 w-full rounded-md border border-border bg-background px-4 text-sm"
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+        <Field label="Titolo">
+          <Input {...register("title", { required: true })} />
         </Field>
-        <Field label="Inizio">
-          <Input type="datetime-local" {...register("date", { required: true })} />
+        <Field label="Icona (emoji o testo breve)">
+          <Input placeholder="es. 🎸 oppure DJ" {...register("icon")} />
         </Field>
-        <Field label="Fine (opzionale)">
-          <Input type="datetime-local" {...register("endAt")} />
-        </Field>
-        <Field label="Città"><Input {...register("city", { required: true })} /></Field>
-        <Field label="Venue"><Input {...register("venue")} /></Field>
-        <Field label="Prezzo (€)"><Input type="number" min="0" step="0.01" {...register("price")} /></Field>
-        <Field label="Link biglietti"><Input type="url" placeholder="https://…" {...register("ticketUrl")} /></Field>
       </div>
+
+      <Field label="Tagline">
+        <Input placeholder="Sottotitolo breve del format" {...register("tagline")} />
+      </Field>
+
+      <Field label="Ordine (intero, crescente)">
+        <Input type="number" min="0" step="1" {...register("order_index")} />
+      </Field>
 
       <fieldset className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4">
         <legend className="px-2 font-display text-sm uppercase tracking-wide">
-          Immagine evento
+          Immagine di copertina
         </legend>
         <Controller
           control={control}
-          name="coverImage"
+          name="cover_image"
           render={({ field }) => (
             <ImageUpload
-              label="Immagine evento (3:4 portrait)"
+              label="Immagine verticale (3:4 portrait)"
               value={field.value ?? ""}
               onChange={field.onChange}
-              kind="event"
+              kind="format"
             />
           )}
         />
-        <p className="px-1 text-xs text-muted-foreground">
-          L&apos;immagine viene usata sia per la card nella lista che per l&apos;hero della pagina singola.
-        </p>
       </fieldset>
 
-      <Field label="Descrizione"><Textarea rows={6} {...register("description")} /></Field>
+      <Field label="Descrizione">
+        <Textarea rows={6} {...register("description")} />
+      </Field>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
         <legend className="font-display text-lg uppercase">Galleria</legend>
@@ -140,7 +129,7 @@ export function EventForm({
           name="gallery"
           render={({ field }) => (
             <GalleryUpload
-              label="Foto evento (caricamento diretto)"
+              label="Foto del format (caricamento diretto)"
               value={field.value ?? []}
               onChange={field.onChange}
             />
@@ -157,19 +146,32 @@ export function EventForm({
             <EventVideoUpload
               value={field.value ?? []}
               onChange={field.onChange}
-              kind="event-video"
+              kind="format-video"
             />
           )}
         />
       </fieldset>
 
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4">
+        <legend className="px-2 font-display text-sm uppercase tracking-wide">SEO</legend>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="SEO Title">
+            <Input placeholder="Titolo per motori di ricerca" {...register("seo_title")} />
+          </Field>
+          <Field label="SEO Description">
+            <Input placeholder="Descrizione per motori di ricerca" {...register("seo_description")} />
+          </Field>
+        </div>
+      </fieldset>
+
       <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" {...register("featured")} />
-        In evidenza in home
+        <input type="checkbox" {...register("published")} />
+        Pubblicato (visibile sul sito)
       </label>
+
       {error && <p className="text-sm text-red-600">{error}</p>}
       <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Salvataggio..." : eventId ? "Aggiorna" : "Crea evento"}
+        {isSubmitting ? "Salvataggio..." : formatId ? "Aggiorna format" : "Crea format"}
       </Button>
     </form>
   );

@@ -241,11 +241,11 @@ export type ChatOfferInput = z.infer<typeof chatOfferSchema>;
 export const ADMIN_PAGE_KEYS = [
   "overview",
   "eventi",
+  "format",
   "artisti",
   "generi",
   "leads",
   "chat",
-  "messaggi",
   "consulenza",
   "blog",
   "email",

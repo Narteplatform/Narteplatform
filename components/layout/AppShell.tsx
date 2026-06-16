@@ -501,12 +501,16 @@ function UserCard({ user, onNavigate }: { user: AppShellUser; onNavigate: () => 
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <form action="/logout" method="post" className="w-full">
-              <button type="submit" className="flex w-full items-center gap-2 text-left">
-                <LogOut className="size-4" /> Esci
-              </button>
-            </form>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              fetch("/logout", { method: "POST" }).finally(() => {
+                window.location.href = "/login";
+              });
+            }}
+            className="cursor-pointer"
+          >
+            <LogOut className="size-4" /> Esci
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

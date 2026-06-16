@@ -77,12 +77,11 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
               venue: event.venue ?? "",
               price: event.price?.toString() ?? "",
               coverImage: event.cover_image ?? "",
-              coverImageHome: event.cover_image_home ?? "",
               ticketUrl: event.ticket_url ?? "",
               description: event.description ?? "",
               featured: event.featured,
               gallery: event.gallery ?? [],
-              videos: (event.videos ?? []).join("\n"),
+              videos: event.videos ?? [],
             }}
             eventId={event.id}
           />

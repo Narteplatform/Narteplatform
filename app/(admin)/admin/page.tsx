@@ -21,7 +21,7 @@ export default async function AdminOverviewPage() {
   }
   const supabase = createAdminClient();
 
-  const [eventsRes, artistsRes, leadsRes, applicationsRes, recentEventsRes, recentLeadsRes, recentMessagesRes] =
+  const [eventsRes, artistsRes, leadsRes, applicationsRes, recentEventsRes, recentLeadsRes] =
     await Promise.all([
       supabase.from("events").select("id", { count: "exact", head: true }),
       supabase.from("artists").select("id", { count: "exact", head: true }).eq("status", "approved"),
@@ -36,36 +36,20 @@ export default async function AdminOverviewPage() {
         .from("leads")
         .select("id, contact_email, event_location, message, created_at")
         .order("created_at", { ascending: false })
-        .limit(5),
-      supabase
-        .from("contact_messages")
-        .select("id, name, subject, message, created_at")
-        .order("created_at", { ascending: false })
-        .limit(5),
+        .limit(8),
     ]);
 
   const newLeads = leadsRes.count ?? 0;
   const pendingApps = applicationsRes.count ?? 0;
   const recentEvents = recentEventsRes.data ?? [];
 
-  const activityItems = [
-    ...(recentLeadsRes.data ?? []).map((l) => ({
-      kind: "lead" as const,
-      id: l.id,
-      primaryName: l.contact_email,
-      detail: `${l.event_location || "—"} · ${l.message?.slice(0, 80) ?? ""}`,
-      createdAt: l.created_at,
-    })),
-    ...(recentMessagesRes.data ?? []).map((m) => ({
-      kind: "message" as const,
-      id: m.id,
-      primaryName: m.name,
-      detail: `${m.subject ?? "Senza oggetto"} · ${m.message?.slice(0, 80) ?? ""}`,
-      createdAt: m.created_at,
-    })),
-  ]
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-    .slice(0, 8);
+  const activityItems = (recentLeadsRes.data ?? []).map((l) => ({
+    kind: "lead" as const,
+    id: l.id,
+    primaryName: l.contact_email,
+    detail: `${l.event_location || "—"} · ${l.message?.slice(0, 80) ?? ""}`,
+    createdAt: l.created_at,
+  }));
 
   const heroDescription = (() => {
     const parts: string[] = [];
