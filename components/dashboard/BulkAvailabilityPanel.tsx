@@ -79,7 +79,7 @@ export function BulkAvailabilityPanel({ artistId, defaultSlots }: Props) {
     <div className="rounded-lg border border-border bg-muted/40 p-4">
       <header className="mb-3 flex items-center gap-2">
         <CalendarRange className="size-4 text-azzurro" />
-        <h3 className="font-display text-sm uppercase tracking-wide">Modifica in massa</h3>
+        <h3 className="font-display text-sm">Modifica in massa</h3>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2">

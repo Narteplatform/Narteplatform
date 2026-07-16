@@ -146,7 +146,7 @@ export function ArtistConsultationBooker({ consultants }: { consultants: Consult
             className="w-full max-w-md rounded-2xl bg-background p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-display text-xl uppercase tracking-tight">
+            <h3 className="font-display text-xl">
               Conferma appuntamento
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">

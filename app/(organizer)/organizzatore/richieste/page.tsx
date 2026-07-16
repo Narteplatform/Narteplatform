@@ -79,7 +79,7 @@ export default async function OrganizerRequestsPage({
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="font-display text-3xl uppercase tracking-tight">Richieste inviate</h1>
+        <h1 className="font-display text-3xl">Richieste inviate</h1>
         <p className="text-sm text-muted-foreground">
           Tutte le date richieste agli artisti. L'artista accetta la trattativa, poi confermi
           tu la prenotazione finale.

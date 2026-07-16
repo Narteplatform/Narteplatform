@@ -266,7 +266,7 @@ export function ArtistConsulenzaCalendar({
                 : "";
               return (
                 <>
-                  <h3 className="font-display text-xl uppercase tracking-tight">
+                  <h3 className="font-display text-xl">
                     Conferma appuntamento
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">

@@ -258,7 +258,7 @@ export function AvailabilityCalendar({
               <X className="size-4" />
             </button>
             <p className="accent-label">{isOpenBusy ? "occupato" : "disponibile"}</p>
-            <h3 className="mt-1 font-display text-2xl uppercase">{formatHuman(openIso)}</h3>
+            <h3 className="mt-1 font-display text-2xl">{formatHuman(openIso)}</h3>
 
             <div className="mt-5 space-y-3">
               <Button
@@ -277,7 +277,7 @@ export function AvailabilityCalendar({
             {!isOpenBusy && (
               <div className="mt-6 space-y-4 border-t border-border pt-5">
                 <header>
-                  <h4 className="font-display text-base uppercase">Slot orari specifici</h4>
+                  <h4 className="font-display text-base">Slot orari specifici</h4>
                   <p className="text-xs text-muted-foreground">
                     Se aggiungi slot qui, questi <strong>sostituiscono</strong> gli slot
                     generali per questo giorno. Se non aggiungi nulla, valgono i generali.

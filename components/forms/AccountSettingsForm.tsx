@@ -53,7 +53,7 @@ export function AccountSettingsForm({
     <div className="grid gap-10 md:grid-cols-2">
       <section className="space-y-4">
         <header>
-          <h2 className="font-display text-2xl uppercase">Profilo</h2>
+          <h2 className="font-display text-2xl">Profilo</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Email account: <span className="font-mono">{email}</span>
           </p>
@@ -88,7 +88,7 @@ export function AccountSettingsForm({
 
       <section className="space-y-4">
         <header>
-          <h2 className="font-display text-2xl uppercase">Password</h2>
+          <h2 className="font-display text-2xl">Password</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Imposta una nuova password per accedere alla piattaforma.
           </p>

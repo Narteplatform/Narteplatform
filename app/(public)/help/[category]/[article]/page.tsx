@@ -62,7 +62,7 @@ export default async function HelpArticlePage({ params }: { params: Params }) {
               <span className="truncate text-foreground">{art.title}</span>
             </nav>
 
-            <h1 className="mt-8 font-display text-3xl uppercase leading-tight tracking-tight md:text-5xl">
+            <h1 className="mt-8 font-display text-3xl leading-tight md:text-5xl">
               {art.title}
             </h1>
             <p className="mt-4 max-w-3xl text-base text-muted-foreground md:text-lg">
@@ -145,7 +145,7 @@ export default async function HelpArticlePage({ params }: { params: Params }) {
                       href={`/help/${cat.slug}/${r.slug}`}
                       className="group block rounded-lg border border-border bg-card p-3 transition hover:border-accent"
                     >
-                      <p className="font-display text-sm uppercase leading-tight tracking-tight group-hover:text-accent">
+                      <p className="font-display text-sm leading-tight group-hover:text-accent">
                         {r.title}
                       </p>
                       {r.placeholder && (

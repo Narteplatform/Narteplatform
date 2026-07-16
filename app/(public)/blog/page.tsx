@@ -44,7 +44,7 @@ export default async function BlogIndexPage() {
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
             Blog
           </span>
-          <h1 className="mt-4 font-display text-4xl uppercase leading-tight tracking-tight md:text-6xl">
+          <h1 className="mt-4 font-display text-4xl leading-tight md:text-6xl">
             Storie, guide e ispirazione
             <br />
             dalla scena live italiana
@@ -90,7 +90,7 @@ export default async function BlogIndexPage() {
                         year: "numeric",
                       })}
                     </time>
-                    <h2 className="font-display text-xl uppercase leading-tight tracking-tight transition-colors group-hover:text-accent">
+                    <h2 className="font-display text-xl leading-tight transition-colors group-hover:text-accent">
                       {p.title}
                     </h2>
                     {p.excerpt && (

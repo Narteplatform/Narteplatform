@@ -111,7 +111,7 @@ export function EventForm({
       </div>
 
       <fieldset className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4">
-        <legend className="px-2 font-display text-sm uppercase tracking-wide">
+        <legend className="px-2 font-display text-sm">
           Immagine evento
         </legend>
         <Controller
@@ -134,7 +134,7 @@ export function EventForm({
       <Field label="Descrizione"><Textarea rows={6} {...register("description")} /></Field>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
-        <legend className="font-display text-lg uppercase">Galleria</legend>
+        <legend className="font-display text-lg">Galleria</legend>
         <Controller
           control={control}
           name="gallery"
@@ -149,7 +149,7 @@ export function EventForm({
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
-        <legend className="font-display text-lg uppercase">Video</legend>
+        <legend className="font-display text-lg">Video</legend>
         <Controller
           control={control}
           name="videos"

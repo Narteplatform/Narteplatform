@@ -67,11 +67,11 @@ export default async function CollaborazioniPage() {
                       className="h-12 w-auto object-contain"
                     />
                   ) : (
-                    <div className="flex h-12 items-center font-display text-lg uppercase text-muted-foreground">
+                    <div className="flex h-12 items-center font-display text-lg text-muted-foreground">
                       {c.name}
                     </div>
                   )}
-                  <h3 className="mt-6 font-display text-xl uppercase transition group-hover:text-accent">
+                  <h3 className="mt-6 font-display text-xl transition group-hover:text-accent">
                     {c.name}
                   </h3>
                   {c.description && (

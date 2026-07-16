@@ -60,7 +60,7 @@ export default async function CandidaturaPage() {
               <h1 className="display-xl text-4xl md:text-6xl lg:text-7xl">Sei un artista?</h1>
             </Reveal>
             <Reveal delay={0.15}>
-              <p className="mt-5 font-display text-lg uppercase tracking-tight text-accent md:text-xl">
+              <p className="mt-5 font-display text-lg text-accent md:text-xl">
                 Dai luce al tuo talento.
               </p>
             </Reveal>
@@ -79,7 +79,7 @@ export default async function CandidaturaPage() {
                       {b.icon}
                     </span>
                     <div>
-                      <h3 className="font-display text-base uppercase md:text-lg">{b.title}</h3>
+                      <h3 className="font-display text-base md:text-lg">{b.title}</h3>
                       <p className="mt-1.5 text-sm text-muted-foreground">{b.desc}</p>
                     </div>
                   </article>
@@ -92,7 +92,7 @@ export default async function CandidaturaPage() {
           <div className="lg:sticky lg:top-28 lg:self-start">
             <Reveal delay={0.15}>
               <div className="rounded-2xl border border-border bg-background p-6 shadow-sm md:p-8">
-                <h2 className="font-display text-2xl uppercase tracking-tight md:text-3xl">
+                <h2 className="font-display text-2xl md:text-3xl">
                   Inviaci la tua candidatura.
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">

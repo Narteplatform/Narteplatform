@@ -269,7 +269,7 @@ export function ArtistProfileForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl space-y-6">
       <fieldset className="space-y-4">
-        <legend className="font-display text-lg uppercase">Identità</legend>
+        <legend className="font-display text-lg">Identità</legend>
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Nome d'arte"><Input {...register("stage_name", { required: true })} /></Field>
           <Field label="Città"><Input {...register("city")} /></Field>
@@ -346,7 +346,7 @@ export function ArtistProfileForm({
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
-        <legend className="font-display text-lg uppercase">Immagine principale</legend>
+        <legend className="font-display text-lg">Immagine principale</legend>
         <Controller
           control={control}
           name="cover_image"
@@ -362,7 +362,7 @@ export function ArtistProfileForm({
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
-        <legend className="font-display text-lg uppercase">Galleria foto</legend>
+        <legend className="font-display text-lg">Galleria foto</legend>
         <Controller
           control={control}
           name="gallery"
@@ -377,7 +377,7 @@ export function ArtistProfileForm({
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
-        <legend className="font-display text-lg uppercase">Tracce audio</legend>
+        <legend className="font-display text-lg">Tracce audio</legend>
         <Controller
           control={control}
           name="audio_files"
@@ -392,7 +392,7 @@ export function ArtistProfileForm({
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
-        <legend className="font-display text-lg uppercase">Video</legend>
+        <legend className="font-display text-lg">Video</legend>
         <Field label="URL video YouTube/Vimeo, una per riga">
           <Textarea
             rows={3}
@@ -406,7 +406,7 @@ export function ArtistProfileForm({
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
-        <legend className="font-display text-lg uppercase">Booking information</legend>
+        <legend className="font-display text-lg">Booking information</legend>
         <p className="text-xs text-muted-foreground">
           Sezione che appare sul tuo profilo pubblico con tab cliccabili. Tutti i campi sono
           opzionali — più info dai, più è semplice ricevere proposte.
@@ -562,7 +562,7 @@ export function ArtistProfileForm({
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
-        <legend className="font-display text-lg uppercase">Social</legend>
+        <legend className="font-display text-lg">Social</legend>
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Instagram"><Input placeholder="@handle o link" {...register("instagram")} /></Field>
           <Field label="Facebook"><Input placeholder="link Facebook" {...register("facebook")} /></Field>

@@ -21,7 +21,7 @@ export default async function OrganizerVenuesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl uppercase tracking-tight">Strutture</h1>
+          <h1 className="font-display text-3xl">Strutture</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Locali e venue che gestisci. Vengono mostrati all'artista come "luogo confermato".
           </p>
@@ -70,7 +70,7 @@ export default async function OrganizerVenuesPage() {
                 )}
               </div>
               <div className="space-y-1 p-4">
-                <h3 className="font-display text-lg uppercase">{v.name}</h3>
+                <h3 className="font-display text-lg">{v.name}</h3>
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
                   <MapPin className="size-3" /> {v.city ?? "—"}
                   {v.capacity ? ` · ${v.capacity} pax` : ""}

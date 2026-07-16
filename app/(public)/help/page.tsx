@@ -32,7 +32,7 @@ export default function HelpHomePage() {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
               Centro Assistenza
             </p>
-            <h1 className="mt-4 font-display text-4xl uppercase leading-tight tracking-tight md:text-6xl">
+            <h1 className="mt-4 font-display text-4xl leading-tight md:text-6xl">
               Come possiamo aiutarti?
             </h1>
             <p className="mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
@@ -51,7 +51,7 @@ export default function HelpHomePage() {
       {/* CATEGORIES */}
       <section className="container-narte mt-20">
         <Reveal>
-          <h2 className="font-display text-2xl uppercase tracking-tight md:text-3xl">
+          <h2 className="font-display text-2xl md:text-3xl">
             Sfoglia per categoria
           </h2>
         </Reveal>
@@ -66,7 +66,7 @@ export default function HelpHomePage() {
                   <CategoryIcon name={c.icon} className="size-5" />
                 </div>
                 <div>
-                  <h3 className="font-display text-lg uppercase leading-tight tracking-tight group-hover:text-accent">
+                  <h3 className="font-display text-lg leading-tight group-hover:text-accent">
                     {c.title}
                   </h3>
                   <p className="mt-2 text-sm text-muted-foreground line-clamp-3">
@@ -86,7 +86,7 @@ export default function HelpHomePage() {
       {/* POPULAR */}
       <section className="container-narte mt-24">
         <Reveal>
-          <h2 className="font-display text-2xl uppercase tracking-tight md:text-3xl">
+          <h2 className="font-display text-2xl md:text-3xl">
             Articoli più letti
           </h2>
         </Reveal>
@@ -100,7 +100,7 @@ export default function HelpHomePage() {
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
                   {p.category.title}
                 </p>
-                <h3 className="mt-2 font-display text-base uppercase leading-tight tracking-tight group-hover:text-accent">
+                <h3 className="mt-2 font-display text-base leading-tight group-hover:text-accent">
                   {p.article.title}
                 </h3>
                 <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
@@ -120,7 +120,7 @@ export default function HelpHomePage() {
               <div className="inline-flex size-10 items-center justify-center rounded-full bg-accent/10 text-accent">
                 <MessageCircle className="size-5" />
               </div>
-              <h3 className="mt-4 font-display text-xl uppercase tracking-tight">
+              <h3 className="mt-4 font-display text-xl">
                 Non trovi quello che cerchi?
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
@@ -137,7 +137,7 @@ export default function HelpHomePage() {
               <div className="inline-flex size-10 items-center justify-center rounded-full bg-accent text-accent-foreground">
                 <Phone className="size-5" />
               </div>
-              <h3 className="mt-4 font-display text-xl uppercase tracking-tight">
+              <h3 className="mt-4 font-display text-xl">
                 Vuoi parlare con un consulente?
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">

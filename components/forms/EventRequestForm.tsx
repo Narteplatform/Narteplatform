@@ -57,7 +57,7 @@ export function EventRequestForm() {
   if (success) {
     return (
       <div className="rounded-xl border border-azzurro/30 bg-azzurro-subtle p-8 text-center text-notte">
-        <p className="font-display text-2xl uppercase tracking-tight text-azzurro">Grazie!</p>
+        <p className="font-display text-2xl text-azzurro">Grazie!</p>
         <p className="mt-2 text-sm text-notte/70">
           Abbiamo ricevuto la tua richiesta. Ti risponderemo entro 48 ore via email.
         </p>

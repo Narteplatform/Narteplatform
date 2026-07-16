@@ -68,7 +68,7 @@ function LogoCell({ collab }: { collab: Collab }) {
           className="max-h-full max-w-full object-contain"
         />
       ) : (
-        <span className="font-display text-base uppercase tracking-tight text-foreground">
+        <span className="font-display text-base text-foreground">
           {collab.name}
         </span>
       )}

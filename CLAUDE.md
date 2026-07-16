@@ -25,7 +25,8 @@ Piattaforma personale per la gestione di eventi musicali e booking di artisti em
 
 Vedere `docs/DESIGN_SYSTEM.md` per i dettagli completi.
 
-- Tipografia display: `--font-display` (Archivo Black) all-caps
+- Tipografia display: `--font-display` (Space Grotesk 700) in Sentence case, tracking stretto
+- Tipografia body: `--font-sans` (Open Sans 400)
 - Colori: bianco `#FFFFFF`, nero `#0B0B0B`, accento arancio `#FF5722`, grigio `#F4F4F4`
 - Animazioni di reveal: opacity 0→1 + y 24→0, durata 0.6s, easing `[0.22, 1, 0.36, 1]`
 - Sempre rispettare `prefers-reduced-motion`

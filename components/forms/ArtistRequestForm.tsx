@@ -36,7 +36,7 @@ export function ArtistRequestForm({
   if (done) {
     return (
       <div className="border border-foreground p-4">
-        <p className="font-display text-lg uppercase">Richiesta inviata</p>
+        <p className="font-display text-lg">Richiesta inviata</p>
         <p className="mt-2 text-sm text-muted-foreground">
           L&apos;artista riceverà la tua richiesta via email.
         </p>

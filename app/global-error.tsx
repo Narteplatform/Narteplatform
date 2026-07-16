@@ -18,7 +18,7 @@ export default function GlobalError({
       <body
         style={{
           margin: 0,
-          fontFamily: "Inter, system-ui, sans-serif",
+          fontFamily: '"Open Sans", system-ui, sans-serif',
           background: "#0b0b0b",
           color: "#fff",
           minHeight: "100vh",
@@ -42,9 +42,10 @@ export default function GlobalError({
           </p>
           <h1
             style={{
-              fontFamily: "var(--font-display, Inter), sans-serif",
+              fontFamily: '"Space Grotesk", "Open Sans", sans-serif',
               fontSize: 40,
-              textTransform: "uppercase",
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
               margin: "12px 0 16px",
             }}
           >

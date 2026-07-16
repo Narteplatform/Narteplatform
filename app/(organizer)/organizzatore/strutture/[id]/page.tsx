@@ -23,7 +23,7 @@ export default async function EditVenuePage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl uppercase tracking-tight">{venue.name}</h1>
+        <h1 className="font-display text-3xl">{venue.name}</h1>
         <p className="mt-2 text-sm text-muted-foreground">Modifica i dettagli della struttura.</p>
       </div>
       <VenueForm venue={venue} />

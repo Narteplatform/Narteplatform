@@ -41,8 +41,8 @@
   --color-info: var(--color-azzurro);
 
   /* ---- FONTS ---- */
-  --font-sans: var(--font-sans), "DIN 2014", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: var(--font-display), Georgia, serif;
+  --font-sans: var(--font-sans-family), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-display-family), var(--font-sans-family), system-ui, sans-serif;
 
   /* ---- RADIUS ---- */
   --radius-sm: 4px;
@@ -94,17 +94,18 @@
   }
   .font-display {
     font-family: var(--font-display);
-    letter-spacing: -0.01em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
   .display-xl {
     font-family: var(--font-display);
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     line-height: 1.08;
   }
+  /* Space Grotesk non ha un corsivo reale: la distinzione passa dal colore. */
   .display-italic {
     font-family: var(--font-display);
-    font-style: italic;
     font-weight: 700;
     color: var(--color-azzurro);
   }
@@ -143,8 +144,8 @@
   }
   .blog-prose h2 {
     font-family: var(--font-display);
-    text-transform: uppercase;
-    letter-spacing: -0.01em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
     font-size: 1.75rem;
     line-height: 1.15;
     margin-top: 3rem;
@@ -152,7 +153,8 @@
   }
   .blog-prose h3 {
     font-family: var(--font-display);
-    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: -0.02em;
     font-size: 1.25rem;
     margin-top: 2.25rem;
     margin-bottom: 0.75rem;

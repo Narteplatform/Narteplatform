@@ -21,7 +21,7 @@ export function LocationPicker({ defaultCity = "Roma" }: { defaultCity?: string 
           aria-expanded={open}
           className="flex w-full items-center justify-between px-6 pb-6 pt-2 text-left"
         >
-          <span className="font-display text-3xl uppercase md:text-5xl">{city}</span>
+          <span className="font-display text-3xl md:text-5xl">{city}</span>
           <ChevronDown
             className={`size-8 transition-transform ${open ? "rotate-180" : ""}`}
             aria-hidden
@@ -32,7 +32,7 @@ export function LocationPicker({ defaultCity = "Roma" }: { defaultCity?: string 
             {CITIES.map((c) => (
               <li key={c}>
                 <button
-                  className="flex w-full items-center justify-start bg-foreground px-6 py-4 text-left font-display text-xl uppercase hover:bg-foreground/80"
+                  className="flex w-full items-center justify-start bg-foreground px-6 py-4 text-left font-display text-xl hover:bg-foreground/80"
                   onClick={() => {
                     setCity(c);
                     setOpen(false);

@@ -145,7 +145,7 @@ export default async function BlogPostPage({
             <span className="mx-2 text-border">·</span>
             {post.author_name}
           </p>
-          <h1 className="mt-4 font-display text-4xl uppercase leading-tight tracking-tight md:text-5xl lg:text-6xl">
+          <h1 className="mt-4 font-display text-4xl leading-tight md:text-5xl lg:text-6xl">
             {post.title}
           </h1>
           {post.excerpt && (
@@ -187,7 +187,7 @@ export default async function BlogPostPage({
             <span className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
               Continua a leggere
             </span>
-            <h2 className="mt-3 font-display text-3xl uppercase leading-tight tracking-tight md:text-4xl">
+            <h2 className="mt-3 font-display text-3xl leading-tight md:text-4xl">
               Articoli correlati
             </h2>
           </Reveal>
@@ -221,7 +221,7 @@ export default async function BlogPostPage({
                         year: "numeric",
                       })}
                     </time>
-                    <h3 className="font-display text-xl uppercase leading-tight tracking-tight transition-colors group-hover:text-accent">
+                    <h3 className="font-display text-xl leading-tight transition-colors group-hover:text-accent">
                       {p.title}
                     </h3>
                     {p.excerpt && (

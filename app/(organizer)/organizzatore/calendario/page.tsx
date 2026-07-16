@@ -59,7 +59,7 @@ export default async function OrganizerCalendarPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl uppercase tracking-tight">Calendario</h1>
+          <h1 className="font-display text-3xl">Calendario</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Eventi confermati. Le date sono sincronizzate con il calendario pubblico
             dell'artista appena confermi una trattativa.

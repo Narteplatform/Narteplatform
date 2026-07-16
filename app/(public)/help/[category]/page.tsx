@@ -60,7 +60,7 @@ export default async function HelpCategoryPage({ params }: { params: Params }) {
                 <CategoryIcon name={c.icon} className="size-6" />
               </div>
               <div>
-                <h1 className="font-display text-3xl uppercase leading-tight tracking-tight md:text-5xl">
+                <h1 className="font-display text-3xl leading-tight md:text-5xl">
                   {c.title}
                 </h1>
                 <p className="mt-3 max-w-2xl text-base text-muted-foreground">
@@ -99,7 +99,7 @@ export default async function HelpCategoryPage({ params }: { params: Params }) {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h2 className="font-display text-base uppercase tracking-tight group-hover:text-accent">
+                    <h2 className="font-display text-base group-hover:text-accent">
                       {a.title}
                     </h2>
                     <p className="mt-1 text-sm text-muted-foreground line-clamp-2">

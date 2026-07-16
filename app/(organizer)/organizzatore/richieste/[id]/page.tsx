@@ -76,7 +76,7 @@ export default async function OrganizerRequestDetailPage({
             ) : null}
           </div>
           <div>
-            <CardTitle className="font-display uppercase">
+            <CardTitle className="font-display">
               {artist?.stage_name ?? "Artista"}
             </CardTitle>
             <p className="text-xs text-muted-foreground">

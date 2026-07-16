@@ -88,7 +88,7 @@ export function OfferCard({
         )}
       >
         <div className="flex items-center justify-between gap-2 mb-2.5">
-          <div className={cn("font-display text-sm uppercase tracking-wide", isOwn ? "text-white" : "text-notte")}>
+          <div className={cn("font-display text-sm", isOwn ? "text-white" : "text-notte")}>
             Offerta
           </div>
           <Badge variant={badge.variant} dot>{badge.label}</Badge>

@@ -78,7 +78,7 @@ export function OrganizerProfileForm({ organizer }: { organizer: Existing }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       <fieldset className="space-y-4">
-        <legend className="font-display text-sm uppercase tracking-wider">Identità</legend>
+        <legend className="font-display text-sm">Identità</legend>
         <Controller
           control={control}
           name="avatar_url"
@@ -147,7 +147,7 @@ export function OrganizerProfileForm({ organizer }: { organizer: Existing }) {
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="font-display text-sm uppercase tracking-wider">Contatti</legend>
+        <legend className="font-display text-sm">Contatti</legend>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label htmlFor="phone">Telefono</Label>

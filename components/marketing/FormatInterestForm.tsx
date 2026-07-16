@@ -61,7 +61,7 @@ export function FormatInterestForm() {
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
             Interessi
           </span>
-          <h2 className="mt-4 font-display text-2xl uppercase tracking-tight md:text-3xl">
+          <h2 className="mt-4 font-display text-2xl md:text-3xl">
             Vuoi portare un format N&apos;arte nel tuo locale o festival?
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -75,7 +75,7 @@ export function FormatInterestForm() {
           {done ? (
             <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-background p-8 text-center">
               <CheckCircle2 className="size-10 text-success" />
-              <p className="font-display text-xl uppercase">Richiesta inviata!</p>
+              <p className="font-display text-xl">Richiesta inviata!</p>
               <p className="text-sm text-muted-foreground">
                 Abbiamo ricevuto il tuo messaggio e ti risponderemo a breve.
               </p>

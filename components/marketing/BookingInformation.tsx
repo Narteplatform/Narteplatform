@@ -202,7 +202,7 @@ function SubSection({
 }) {
   return (
     <div className="mt-8 first:mt-0">
-      <h3 className="font-display text-xl uppercase tracking-tight text-notte md:text-2xl">
+      <h3 className="font-display text-xl text-notte md:text-2xl">
         {title}
       </h3>
       <div className="mt-3">{children}</div>

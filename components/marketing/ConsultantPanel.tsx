@@ -65,7 +65,7 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
     return (
       <div className="rounded-2xl border border-accent/40 bg-accent/5 p-8 text-center">
         <CheckCircle2 className="mx-auto size-12 text-accent" />
-        <h3 className="mt-4 font-display text-2xl uppercase">Richiesta inviata!</h3>
+        <h3 className="mt-4 font-display text-2xl">Richiesta inviata!</h3>
         <p className="mt-2 text-muted-foreground">
           Riceverai una email di conferma. Un consulente N&apos;arte ti contatterà a breve per
           finalizzare l&apos;appuntamento.
@@ -81,7 +81,7 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
         <span className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent">
           <Sparkles className="size-3.5" /> Gratuito
         </span>
-        <h2 className="mt-5 font-display text-3xl uppercase tracking-tight md:text-5xl">
+        <h2 className="mt-5 font-display text-3xl md:text-5xl">
           Parla con un consulente N&apos;arte.
         </h2>
         <p className="mt-4 text-base text-muted-foreground md:text-lg">
@@ -110,7 +110,7 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
           <span className="inline-flex size-10 items-center justify-center rounded-full bg-accent/15 text-accent">
             <Phone className="size-5" />
           </span>
-          <h3 className="font-display text-xl uppercase tracking-tight">Prenota la tua chiamata</h3>
+          <h3 className="font-display text-xl">Prenota la tua chiamata</h3>
         </div>
 
         <div className="mt-5 grid gap-3">
@@ -175,7 +175,7 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
             className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-background p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 id="slot-dialog-title" className="font-display text-2xl uppercase tracking-tight">
+            <h3 id="slot-dialog-title"className="font-display text-2xl">
               Scegli uno slot
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">

@@ -27,7 +27,7 @@ export function ContactForm() {
   if (done) {
     return (
       <div className="border border-foreground p-6">
-        <p className="font-display text-xl uppercase">Messaggio ricevuto</p>
+        <p className="font-display text-xl">Messaggio ricevuto</p>
         <p className="mt-2 text-sm text-muted-foreground">Ti risponderemo a breve.</p>
       </div>
     );

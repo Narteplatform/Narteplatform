@@ -186,7 +186,7 @@ export function ImageUpload({ label, value, onChange, kind = "artist" }: Props) 
           <div className="relative w-full max-w-2xl space-y-4 bg-background p-6 shadow-2xl sm:rounded-lg">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-display text-lg uppercase">Ritaglia e centra</p>
+                <p className="font-display text-lg">Ritaglia e centra</p>
                 <p className="text-xs text-muted-foreground">
                   Trascina per spostare · usa lo zoom per ridimensionare. Output{" "}
                   {target.w}×{target.h}.

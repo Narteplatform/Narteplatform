@@ -107,7 +107,7 @@ export default async function FormatDetailPage({
               </p>
             </Reveal>
             <Reveal delay={0.1}>
-              <h1 className="mt-4 font-display text-4xl uppercase leading-tight tracking-tight md:text-5xl lg:text-6xl">
+              <h1 className="mt-4 font-display text-4xl leading-tight md:text-5xl lg:text-6xl">
                 {format.title}
               </h1>
             </Reveal>

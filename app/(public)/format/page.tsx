@@ -45,7 +45,7 @@ export default async function FormatPage() {
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
             Format
           </span>
-          <h1 className="mt-4 font-display text-4xl uppercase leading-tight tracking-tight md:text-6xl">
+          <h1 className="mt-4 font-display text-4xl leading-tight md:text-6xl">
             I format N&apos;arte
           </h1>
           <p className="mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
@@ -91,7 +91,7 @@ export default async function FormatPage() {
                         {f.tagline}
                       </p>
                     )}
-                    <h2 className="mt-2 font-display text-2xl uppercase leading-tight tracking-tight group-hover:text-accent">
+                    <h2 className="mt-2 font-display text-2xl leading-tight group-hover:text-accent">
                       {f.title}
                     </h2>
                   </div>

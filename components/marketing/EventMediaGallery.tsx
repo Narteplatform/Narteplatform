@@ -104,7 +104,7 @@ export function EventMediaGallery({ gallery, videos }: Props) {
 
       {videos.length > 0 && (
         <div>
-          <h3 className="font-display text-base uppercase">Video</h3>
+          <h3 className="font-display text-base">Video</h3>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {videos.map((url) => {
               const thumb = videoThumb(url);

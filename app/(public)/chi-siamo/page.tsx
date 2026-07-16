@@ -40,7 +40,7 @@ export default function ChiSiamoPage() {
           <Reveal>
             <article className="h-full rounded-2xl border border-border bg-background p-8 md:p-10">
               <p className="accent-label mb-3">missione</p>
-              <h2 className="font-display text-2xl uppercase md:text-3xl">
+              <h2 className="font-display text-2xl md:text-3xl">
                 Dare voce a chi crea cultura.
               </h2>
               <p className="mt-4 text-base leading-relaxed text-muted-foreground">
@@ -54,7 +54,7 @@ export default function ChiSiamoPage() {
           <Reveal delay={0.1}>
             <article className="h-full rounded-2xl border border-border bg-background p-8 md:p-10">
               <p className="accent-label mb-3">cosa facciamo</p>
-              <h2 className="font-display text-2xl uppercase md:text-3xl">
+              <h2 className="font-display text-2xl md:text-3xl">
                 Un ecosistema completo.
               </h2>
               <ul className="mt-4 space-y-2 text-base text-muted-foreground">

@@ -58,7 +58,7 @@ export function OrganizerCalendar({ events }: { events: Event[] }) {
         >
           <ChevronLeft className="size-4" />
         </Button>
-        <p className="font-display text-sm uppercase tracking-wider">{monthLabel}</p>
+        <p className="font-display text-sm">{monthLabel}</p>
         <Button
           type="button"
           variant="ghost"

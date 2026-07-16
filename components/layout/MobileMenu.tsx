@@ -83,7 +83,7 @@ export function MobileMenu({ isLoggedIn, role }: Props) {
           />
           <aside className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col overflow-y-auto bg-background text-foreground shadow-2xl">
             <div className="flex h-20 shrink-0 items-center justify-between border-b border-border px-5">
-              <span className="font-display text-base uppercase tracking-tight">Menu</span>
+              <span className="font-display text-base">Menu</span>
               <button
                 type="button"
                 aria-label="Chiudi menu"
@@ -100,7 +100,7 @@ export function MobileMenu({ isLoggedIn, role }: Props) {
                   key={l.href}
                   href={l.href}
                   onClick={() => setOpen(false)}
-                  className="rounded-xl px-3 py-3 font-display text-lg uppercase tracking-tight transition-colors hover:bg-muted"
+                  className="rounded-xl px-3 py-3 font-display text-lg transition-colors hover:bg-muted"
                 >
                   {l.label}
                 </Link>

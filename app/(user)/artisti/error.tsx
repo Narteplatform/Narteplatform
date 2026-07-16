@@ -17,7 +17,7 @@ export default function ArtistiErrorBoundary({
   return (
     <main className="container-narte flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
       <p className="accent-label mb-3">errore</p>
-      <h1 className="font-display text-3xl uppercase md:text-5xl">
+      <h1 className="font-display text-3xl md:text-5xl">
         Qualcosa è andato storto
       </h1>
       <p className="mt-4 max-w-lg text-sm text-muted-foreground">

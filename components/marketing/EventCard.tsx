@@ -42,7 +42,7 @@ export function EventCard({
         <span>{formatEventDate(date)}</span>
         <span className="text-muted-foreground">{formatPrice(price)}</span>
       </div>
-      <h3 className="mt-1 font-display text-lg uppercase">{title}</h3>
+      <h3 className="mt-1 font-display text-lg">{title}</h3>
       <p className="text-sm text-muted-foreground">{city}</p>
     </Link>
   );

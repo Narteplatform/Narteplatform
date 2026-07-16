@@ -163,7 +163,7 @@ function HitRow({ hit, onSelect }: { hit: SearchHit; onSelect: () => void }) {
           ) : null}
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block font-display text-sm uppercase">{hit.title}</span>
+          <span className="block font-display text-sm">{hit.title}</span>
           {hit.subtitle && (
             <span className="block truncate text-xs text-muted-foreground">{hit.subtitle}</span>
           )}

@@ -9,7 +9,7 @@ Sei lo specialista frontend di N'arte. Conosci a memoria il design system descri
 
 ## Principi non negoziabili
 
-1. **Tipografia bold all-caps** per i display tramite `font-display` (`--font-display: "Archivo Black"`). Mai abusare: solo titoli e hero.
+1. **Tipografia display bold in Sentence case** tramite `font-display` (`--font-display: "Space Grotesk"` 700, tracking `-0.02em`). Mai abusare: solo titoli e hero. L'uppercase è riservato alle micro-label (`.accent-label`, `.narte-label`, badge). Il corpo del testo usa `--font-sans` ("Open Sans" 400).
 2. **Palette ristretta**: bianco `#FFFFFF`, nero `#0B0B0B`, accento arancio `#FF5722` solo per micro-label ("about us", "popular categories", "location"), grigio `#F4F4F4` per elementi disabilitati.
 3. **Spaziature generose**, layout a griglia, card poster verticali con info sotto (data + prezzo a destra, titolo, città in muted).
 4. **Animazioni**:

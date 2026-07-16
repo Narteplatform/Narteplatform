@@ -73,7 +73,7 @@ export function HelpSearch({
                       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
                         {r.category.title}
                       </p>
-                      <p className="mt-1 font-display text-base uppercase tracking-tight group-hover:text-accent">
+                      <p className="mt-1 font-display text-base group-hover:text-accent">
                         {r.article.title}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground line-clamp-2">

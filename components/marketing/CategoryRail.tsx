@@ -22,7 +22,7 @@ export function CategoryRail() {
         <p className="accent-label mb-4">popular categories</p>
       </Reveal>
       <Reveal delay={0.1}>
-        <div className="flex flex-wrap gap-x-3 gap-y-2 font-display text-2xl uppercase text-muted-foreground md:text-4xl">
+        <div className="flex flex-wrap gap-x-3 gap-y-2 font-display text-2xl text-muted-foreground md:text-4xl">
           {CATEGORIES.map((c, i) => (
             <Link
               key={c.slug}

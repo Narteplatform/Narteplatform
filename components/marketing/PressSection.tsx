@@ -45,7 +45,7 @@ export function PressSection() {
                   </span>
                 </div>
                 <div className="flex flex-1 flex-col gap-3 p-5">
-                  <h3 className="font-display text-lg uppercase leading-tight md:text-xl">
+                  <h3 className="font-display text-lg leading-tight md:text-xl">
                     {p.title}
                   </h3>
                   <p className="text-sm text-muted-foreground">{p.excerpt}</p>

@@ -1,22 +1,18 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Open_Sans, Space_Grotesk } from "next/font/google";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
-const ignazio = localFont({
-  src: "../public/fonts/Ignazio.ttf",
-  variable: "--font-display",
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--font-display-family",
   display: "swap",
-  weight: "400 900",
 });
 
-const din2014 = localFont({
-  src: [
-    { path: "../public/fonts/DIN2014-Regular.woff2", format: "woff2" },
-    { path: "../public/fonts/DIN2014-Regular.woff", format: "woff" },
-    { path: "../public/fonts/DIN2014-Regular.ttf", format: "truetype" },
-  ],
-  variable: "--font-sans",
+const openSans = Open_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans-family",
   display: "swap",
 });
 
@@ -54,7 +50,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="it" className={`${din2014.variable} ${ignazio.variable}`}>
+    <html lang="it" className={`${openSans.variable} ${spaceGrotesk.variable}`}>
       <head>
         <meta httpEquiv="cache-control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="pragma" content="no-cache" />

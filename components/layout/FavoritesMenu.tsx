@@ -51,7 +51,7 @@ export function FavoritesMenu() {
         <div className="absolute right-0 top-full z-50 mt-3 w-[320px] origin-top-right overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <div>
-              <p className="font-display text-sm uppercase tracking-wider">
+              <p className="font-display text-sm">
                 I miei preferiti
               </p>
               <p className="text-xs text-muted-foreground">
@@ -107,7 +107,7 @@ export function FavoritesMenu() {
                         ) : null}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate font-display text-sm uppercase">
+                        <p className="truncate font-display text-sm">
                           {a.stage_name}
                         </p>
                         {a.city && (

@@ -14,7 +14,7 @@ export function EventGrid({
   return (
     <section className="container-narte py-12">
       <div className="mb-6 flex items-end justify-between">
-        <h2 className="font-display text-3xl uppercase md:text-5xl">{title}</h2>
+        <h2 className="font-display text-3xl md:text-5xl">{title}</h2>
         {seeAllHref && (
           <Link href={seeAllHref} className="text-sm underline-offset-4 hover:underline">
             see all

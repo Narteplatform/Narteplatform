@@ -323,7 +323,7 @@ export function ArtistsExplorer({
       {showTopSection && (
         <div className="mt-10">
           <div className="mb-4 flex items-center gap-3">
-            <p className="font-display text-sm uppercase tracking-tight text-notte">Top Artist</p>
+            <p className="font-display text-sm text-notte">Top Artist</p>
             <Badge variant="accent">TOP</Badge>
           </div>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
@@ -352,7 +352,7 @@ export function ArtistsExplorer({
             })}
           </div>
           <div className="mt-10 mb-4 flex items-center gap-3">
-            <p className="font-display text-sm uppercase tracking-tight text-notte">Tutti gli artisti</p>
+            <p className="font-display text-sm text-notte">Tutti gli artisti</p>
           </div>
         </div>
       )}

@@ -66,7 +66,7 @@ export default async function ArtistDetailPage({
                   className="h-full w-full scale-110 object-cover blur-2xl"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center font-display text-6xl uppercase text-foreground/30">
+                <div className="flex h-full w-full items-center justify-center font-display text-6xl text-foreground/30">
                   ?
                 </div>
               )}
@@ -474,7 +474,7 @@ export default async function ArtistDetailPage({
                 <div className="flex items-baseline justify-between gap-3">
                   <p className="accent-label">calendario</p>
                 </div>
-                <h2 className="mt-1 font-display text-xl uppercase md:text-2xl">
+                <h2 className="mt-1 font-display text-xl md:text-2xl">
                   Disponibilità &amp; booking
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -517,7 +517,7 @@ export default async function ArtistDetailPage({
         <div className="container-narte">
           <Reveal>
             <p className="accent-label mb-3">booking</p>
-            <h2 className="font-display text-3xl uppercase tracking-tight text-notte md:text-5xl">
+            <h2 className="font-display text-3xl text-notte md:text-5xl">
               Informazioni di booking
             </h2>
           </Reveal>
@@ -549,7 +549,7 @@ export default async function ArtistDetailPage({
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
                 artista
               </p>
-              <h2 className="font-display text-3xl uppercase tracking-tight text-white md:text-4xl">
+              <h2 className="font-display text-3xl text-white md:text-4xl">
                 {instruments.length > 0 && socials.length > 0
                   ? "Strumenti & Social"
                   : instruments.length > 0
@@ -587,7 +587,7 @@ export default async function ArtistDetailPage({
                     key={`${t.url}-${i}`}
                     className="flex flex-col gap-2 rounded-2xl border border-border bg-muted p-4"
                   >
-                    <p className="font-display text-sm uppercase tracking-tight">
+                    <p className="font-display text-sm">
                       {t.title || `Traccia ${i + 1}`}
                     </p>
                     <audio controls preload="none" src={t.url} className="w-full" />

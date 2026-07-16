@@ -50,7 +50,7 @@ export function ArtistApplicationForm({
   if (done) {
     return (
       <div className="rounded-xl border border-accent/40 bg-accent/5 p-6">
-        <p className="font-display text-xl uppercase">Candidatura inviata</p>
+        <p className="font-display text-xl">Candidatura inviata</p>
         <p className="mt-2 text-sm text-muted-foreground">
           Abbiamo ricevuto la tua candidatura. Riceverai un&apos;email quando sarà approvata
           con le istruzioni per impostare la password e accedere alla tua dashboard artista.

@@ -138,7 +138,7 @@ export function VenueForm({ venue }: { venue?: Existing }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       <fieldset className="space-y-4">
-        <legend className="font-display text-sm uppercase tracking-wider">Identità</legend>
+        <legend className="font-display text-sm">Identità</legend>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label htmlFor="name">Nome struttura *</Label>
@@ -166,7 +166,7 @@ export function VenueForm({ venue }: { venue?: Existing }) {
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="font-display text-sm uppercase tracking-wider">Location</legend>
+        <legend className="font-display text-sm">Location</legend>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label htmlFor="address">Indirizzo</Label>
@@ -192,7 +192,7 @@ export function VenueForm({ venue }: { venue?: Existing }) {
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="font-display text-sm uppercase tracking-wider">Media</legend>
+        <legend className="font-display text-sm">Media</legend>
         <Controller
           control={control}
           name="cover_image"
@@ -219,7 +219,7 @@ export function VenueForm({ venue }: { venue?: Existing }) {
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="font-display text-sm uppercase tracking-wider">Contatti</legend>
+        <legend className="font-display text-sm">Contatti</legend>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label htmlFor="website">Sito</Label>

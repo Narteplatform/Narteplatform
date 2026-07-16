@@ -101,7 +101,7 @@ export function FormatForm({
       </Field>
 
       <fieldset className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4">
-        <legend className="px-2 font-display text-sm uppercase tracking-wide">
+        <legend className="px-2 font-display text-sm">
           Immagine di copertina
         </legend>
         <Controller
@@ -123,7 +123,7 @@ export function FormatForm({
       </Field>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
-        <legend className="font-display text-lg uppercase">Galleria</legend>
+        <legend className="font-display text-lg">Galleria</legend>
         <Controller
           control={control}
           name="gallery"
@@ -138,7 +138,7 @@ export function FormatForm({
       </fieldset>
 
       <fieldset className="space-y-4 border-t border-border pt-6">
-        <legend className="font-display text-lg uppercase">Video</legend>
+        <legend className="font-display text-lg">Video</legend>
         <Controller
           control={control}
           name="videos"
@@ -153,7 +153,7 @@ export function FormatForm({
       </fieldset>
 
       <fieldset className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4">
-        <legend className="px-2 font-display text-sm uppercase tracking-wide">SEO</legend>
+        <legend className="px-2 font-display text-sm">SEO</legend>
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="SEO Title">
             <Input placeholder="Titolo per motori di ricerca" {...register("seo_title")} />

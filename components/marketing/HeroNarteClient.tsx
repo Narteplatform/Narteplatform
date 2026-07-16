@@ -287,7 +287,7 @@ export function HeroNarteClient() {
                               ) : null}
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate font-display text-sm uppercase">
+                              <span className="block truncate font-display text-sm">
                                 {h.title}
                               </span>
                               {h.subtitle && (

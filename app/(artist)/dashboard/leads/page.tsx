@@ -318,7 +318,7 @@ export default async function ArtistLeadsPage({
 
       {leads && leads.length > 0 && (
         <section className="space-y-3 pt-6 border-t border-border">
-          <h2 className="font-display text-sm uppercase tracking-wider text-muted-foreground">
+          <h2 className="font-display text-sm text-muted-foreground">
             Richieste legacy (senza profilo organizzatore)
           </h2>
           <div className="space-y-4">

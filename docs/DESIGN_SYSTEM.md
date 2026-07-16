@@ -1,6 +1,6 @@
 # Design System
 
-Il design replica la reference fornita: tipografia bold all-caps, layout monocromatico con accenti arancio, hero "EVENT GUIDE" con immagine clip-path nel testo.
+Il design replica la reference fornita: tipografia display bold in Sentence case, layout monocromatico con accenti, hero "EVENT GUIDE" con immagine clip-path nel testo.
 
 ## Tokens
 
@@ -14,15 +14,26 @@ Definiti in `app/globals.css` tramite `@theme`:
 | `--color-muted-foreground` | `#6B6B6B` | Testo secondario |
 | `--color-border` | `#E5E5E5` | Bordi |
 | `--color-accent` | `#FF5722` | Solo micro-label ("about us", "popular categories", "location") |
-| `--font-sans` | Inter | Body |
-| `--font-display` | Archivo Black | Display all-caps |
+| `--font-sans` | Open Sans | Body, sottotitoli |
+| `--font-display` | Space Grotesk 700 | Titoli e headline |
 | `--radius-pill` | `999px` | Bottoni pill |
+
+I due font arrivano da `next/font/google` in `app/layout.tsx` e vengono esposti come
+`--font-display-family` / `--font-sans-family`; `@theme` li avvolge con i fallback in
+`--font-display` / `--font-sans`. Non referenziare mai le variabili `*-family` direttamente.
 
 ## Tipografia
 
-- **Display** (`.font-display` / `.display-xl`): Archivo Black, all-caps, tracking stretto (`-0.02em`), line-height 0.9 per il display gigante. Usato per hero, titoli sezione, bottoni di CTA.
-- **Body**: Inter 400/500. 14px-16px per il testo, 12px per micro-label.
-- **Accent label** (`.accent-label`): arancio, 14px, lowercase. Usato per il piccolo eyebrow sopra i titoli di sezione.
+- **Display** (`.font-display`): Space Grotesk 700, Sentence case, tracking `-0.02em`. Usato per hero, titoli sezione, bottoni di CTA. Il peso bold e il tracking arrivano dalla classe: non serve aggiungere `font-bold` o `tracking-tight` a mano.
+- **Display gigante** (`.display-xl`): come sopra ma tracking `-0.03em` e line-height `1.08`.
+- **Display accento** (`.display-italic`): Space Grotesk 700 in azzurro. Non è un corsivo — Space Grotesk non ne ha uno reale, la distinzione passa dal colore.
+- **Body**: Open Sans 400. 14px-16px per il testo, 12px per micro-label.
+- **Accent label** (`.accent-label`): azzurro, 12px, uppercase, tracking `0.12em`. Eyebrow sopra i titoli di sezione.
+- **Narte label** (`.narte-label`): 11px, uppercase, tracking `0.1em`, grigio `--color-palco-40`. Micro-label secondaria.
+
+> L'uppercase è riservato alle micro-label (`.accent-label`, `.narte-label`, badge). I titoli
+> vanno in Sentence case: le minuscole sono la parte caratteristica di Space Grotesk.
+> Unica eccezione: le iniziali-avatar generate con `slice()`, che restano `uppercase`.
 
 ## Componenti chiave
 

@@ -54,7 +54,7 @@ export default function ContattiPage() {
                       <span className="block text-xs uppercase tracking-wider text-muted-foreground">
                         Email
                       </span>
-                      <span className="block truncate font-display text-base uppercase">
+                      <span className="block truncate font-display text-base">
                         boostcreativeai@gmail.com
                       </span>
                     </span>
@@ -74,7 +74,7 @@ export default function ContattiPage() {
                       <span className="block text-xs uppercase tracking-wider text-muted-foreground">
                         Instagram
                       </span>
-                      <span className="block font-display text-base uppercase">@narte</span>
+                      <span className="block font-display text-base">@narte</span>
                     </span>
                   </a>
                 </li>
@@ -87,7 +87,7 @@ export default function ContattiPage() {
                       <span className="block text-xs uppercase tracking-wider text-muted-foreground">
                         Base operativa
                       </span>
-                      <span className="block font-display text-base uppercase">Napoli, IT</span>
+                      <span className="block font-display text-base">Napoli, IT</span>
                     </span>
                   </div>
                 </li>
@@ -97,7 +97,7 @@ export default function ContattiPage() {
 
           <Reveal delay={0.2}>
             <div className="rounded-2xl border border-border bg-background p-6 md:p-8">
-              <h2 className="font-display text-xl uppercase">Form di contatto</h2>
+              <h2 className="font-display text-xl">Form di contatto</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Compila i campi: ti rispondiamo via email.
               </p>

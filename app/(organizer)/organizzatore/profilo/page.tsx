@@ -8,7 +8,7 @@ export default async function OrganizerProfilePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl uppercase tracking-tight">Profilo</h1>
+        <h1 className="font-display text-3xl">Profilo</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Le informazioni che gli artisti vedranno quando ricevono una tua richiesta.
         </p>

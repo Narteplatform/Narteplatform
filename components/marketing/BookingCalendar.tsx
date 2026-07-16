@@ -328,7 +328,7 @@ export function BookingCalendar({
             <div className="flex h-full min-h-[220px] flex-col items-center justify-center text-center">
               <CalendarCheck2 className="size-8 text-muted-foreground" />
               <p className="accent-label mt-4">seleziona</p>
-              <p className="mt-2 font-display text-lg uppercase">
+              <p className="mt-2 font-display text-lg">
                 Scegli un giorno
               </p>
               <p className="mt-2 max-w-xs text-sm text-muted-foreground">
@@ -338,7 +338,7 @@ export function BookingCalendar({
           ) : (
             <>
               <p className="accent-label">data scelta</p>
-              <h3 className="mt-1 font-display text-lg uppercase md:text-xl">
+              <h3 className="mt-1 font-display text-lg md:text-xl">
                 {formatHuman(selectedISO)}
               </h3>
 
@@ -354,7 +354,7 @@ export function BookingCalendar({
                     className="mt-3 flex w-full items-center justify-between gap-3 rounded-xl border border-foreground/20 bg-background px-4 py-4 text-left transition-colors hover:border-accent hover:bg-accent/5"
                   >
                     <span>
-                      <span className="block font-display text-sm uppercase">
+                      <span className="block font-display text-sm">
                         Disponibile in qualunque orario
                       </span>
                       <span className="mt-1 block text-xs text-muted-foreground">
@@ -377,7 +377,7 @@ export function BookingCalendar({
                             className="flex w-full items-center justify-between gap-3 rounded-xl border border-foreground/20 bg-background px-4 py-3 text-left transition-colors hover:border-accent hover:bg-accent/5"
                           >
                             <span>
-                              <span className="block font-display text-sm uppercase">
+                              <span className="block font-display text-sm">
                                 {normalizeTime(s.start_time)}–{normalizeTime(s.end_time)}
                               </span>
                               {s.label && (
@@ -435,7 +435,7 @@ export function BookingCalendar({
                   <CheckCircle2 className="size-9" />
                 </div>
                 <p className="accent-label mt-6">richiesta inviata</p>
-                <h3 className="mt-2 font-display text-2xl uppercase md:text-3xl">
+                <h3 className="mt-2 font-display text-2xl md:text-3xl">
                   Richiesta d&apos;interesse inviata correttamente
                 </h3>
                 <p className="mt-3 max-w-md text-sm text-muted-foreground">
@@ -459,7 +459,7 @@ export function BookingCalendar({
             ) : (
               <>
                 <p className="accent-label">interessato</p>
-                <h3 className="mt-1 font-display text-2xl uppercase md:text-3xl">
+                <h3 className="mt-1 font-display text-2xl md:text-3xl">
                   {artistName} — {formatHuman(selectedISO)}
                 </h3>
                 <p className="mt-2 text-sm text-muted-foreground">
