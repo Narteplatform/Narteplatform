@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Reveal } from "@/components/animations/Reveal";
+import { PageHero } from "@/components/marketing/PageHero";
 import { Button } from "@/components/ui/Button";
 
 export const metadata = { title: "Chi siamo — N'arte" };
@@ -7,32 +8,23 @@ export const metadata = { title: "Chi siamo — N'arte" };
 export default function ChiSiamoPage() {
   return (
     <>
-      {/* HERO */}
-      <section className="relative overflow-hidden border-b border-border pt-24 pb-12 md:pt-32 md:pb-16">
-        <div
-          aria-hidden="true"
-          className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/3 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"
-        />
-        <div className="container-narte relative z-10 text-center">
-          <Reveal>
-            <p className="accent-label mb-4">chi siamo</p>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <h1 className="display-xl text-5xl md:text-7xl lg:text-8xl">
-              Una piattaforma per chi vive
-              <br />
-              di musica e cultura.
-            </h1>
-          </Reveal>
-          <Reveal delay={0.2}>
-            <p className="mx-auto mt-8 max-w-2xl text-base text-muted-foreground md:text-lg">
-              N&apos;arte nasce a Napoli per dare visibilità ad artisti emergenti e raccontare gli
-              eventi musicali e culturali che organizziamo. Curiamo ogni esperienza con
-              attenzione: dal sound design alla scenografia.
-            </p>
-          </Reveal>
-        </div>
-      </section>
+      <PageHero
+        label="chi siamo"
+        title={
+          <>
+            Una piattaforma per chi vive
+            <br />
+            di musica e cultura.
+          </>
+        }
+        description={
+          <>
+            N&apos;arte nasce a Napoli per dare visibilità ad artisti emergenti e raccontare gli
+            eventi musicali e culturali che organizziamo. Curiamo ogni esperienza con
+            attenzione: dal sound design alla scenografia.
+          </>
+        }
+      />
 
       {/* MISSIONE / COSA FACCIAMO */}
       <section className="bg-muted py-20 md:py-28">

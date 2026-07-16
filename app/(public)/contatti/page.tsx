@@ -1,33 +1,23 @@
 import { Mail, Instagram, MapPin } from "lucide-react";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { Reveal } from "@/components/animations/Reveal";
+import { PageHero } from "@/components/marketing/PageHero";
 
 export const metadata = { title: "Contatti — N'arte" };
 
 export default function ContattiPage() {
   return (
     <>
-      {/* HERO */}
-      <section className="relative overflow-hidden border-b border-border pt-24 pb-12 md:pt-32 md:pb-16">
-        <div
-          aria-hidden="true"
-          className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"
-        />
-        <div className="container-narte relative z-10 text-center">
-          <Reveal>
-            <p className="accent-label mb-4">contatti</p>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <h1 className="display-xl text-5xl md:text-7xl lg:text-8xl">Parliamone.</h1>
-          </Reveal>
-          <Reveal delay={0.2}>
-            <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground md:text-lg">
-              Per booking, collaborazioni o richieste generiche scrivici. Rispondiamo in genere
-              entro 48 ore.
-            </p>
-          </Reveal>
-        </div>
-      </section>
+      <PageHero
+        label="contatti"
+        title="Parliamone."
+        description={
+          <>
+            Per booking, collaborazioni o richieste generiche scrivici. Rispondiamo in genere
+            entro 48 ore.
+          </>
+        }
+      />
 
       {/* FORM + INFO */}
       <section className="bg-muted py-20 md:py-28">

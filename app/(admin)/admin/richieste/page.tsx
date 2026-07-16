@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { HighlightedBooking } from "@/components/booking/HighlightedBooking";
 import { minToBudgetLabel } from "@/lib/constants/budget-ranges";
 import type { BookingStatus } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,7 @@ const TABS: { v: "" | BookingStatus; label: string }[] = [
 export default async function AdminRichiestePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; highlight?: string }>;
 }) {
   await requireAdminPageAccess("richieste");
   const sp = await searchParams;
@@ -55,6 +56,8 @@ export default async function AdminRichiestePage({
     sp?.status && (ALL_STATUSES as string[]).includes(sp.status)
       ? (sp.status as BookingStatus)
       : null;
+  // Arriva dal pulsante "Vedi booking confermato" in chat.
+  const highlightId = sp?.highlight ?? null;
 
   const supabase = createAdminClient();
 
@@ -136,7 +139,8 @@ export default async function AdminRichiestePage({
             const budgetLabel = minToBudgetLabel(budgetRaw);
 
             return (
-              <Card key={r.id}>
+              <HighlightedBooking key={r.id} id={r.id} active={highlightId === r.id}>
+              <Card>
                 <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
                   <div className="space-y-1.5 min-w-0">
                     <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -176,6 +180,7 @@ export default async function AdminRichiestePage({
                   </Badge>
                 </CardHeader>
               </Card>
+              </HighlightedBooking>
             );
           })}
         </div>

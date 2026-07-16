@@ -40,12 +40,19 @@ export function MessageList({
   viewerRole: "artist" | "organizer" | "superadmin";
   readOnly: boolean;
 }) {
-  const bookingLinkBase =
-    viewerRole === "artist"
-      ? "/dashboard/leads"
-      : viewerRole === "organizer"
-      ? "/organizzatore/richieste"
-      : undefined;
+  // Ogni ruolo ha una destinazione diversa per lo stesso booking: l'organizer
+  // ha una pagina di dettaglio, artista e superadmin hanno solo la lista, dove
+  // la riga viene raggiunta e evidenziata via ?highlight=.
+  const bookingHrefFor = (bookingRequestId: string) => {
+    switch (viewerRole) {
+      case "artist":
+        return `/dashboard/leads?status=confermata&highlight=${bookingRequestId}`;
+      case "organizer":
+        return `/organizzatore/richieste/${bookingRequestId}`;
+      case "superadmin":
+        return `/admin/richieste?status=confermata&highlight=${bookingRequestId}`;
+    }
+  };
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -94,7 +101,11 @@ export function MessageList({
                     msg={m}
                     canRespond={canRespond}
                     readOnly={readOnly || viewerRole === "superadmin"}
-                    bookingLinkBase={bookingLinkBase}
+                    bookingHref={
+                      m.offerBookingRequestId
+                        ? bookingHrefFor(m.offerBookingRequestId)
+                        : undefined
+                    }
                     isOwn={isOwn}
                     tick={tick}
                   />

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Reveal } from "@/components/animations/Reveal";
+import { PageHero } from "@/components/marketing/PageHero";
 import { FormatInterestForm } from "@/components/marketing/FormatInterestForm";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Format — N'arte",
@@ -13,6 +14,18 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Colori delle card, assegnati ciclicamente su order_index: un format nuovo
+ * prende il colore successivo. Non sono token del design system perché sono
+ * identità dei singoli format, non ruoli semantici.
+ */
+const CARD_GRADIENTS = [
+  "bg-[linear-gradient(160deg,#4a7fb5_0%,#2c5c8f_100%)]",
+  "bg-[linear-gradient(160deg,#5395cf_0%,#3d7ab5_100%)]",
+  "bg-[linear-gradient(160deg,#1c3049_0%,#0d1b2a_100%)]",
+  "bg-[linear-gradient(160deg,#dc5a2e_0%,#b8431f_100%)]",
+] as const;
 
 type FormatRow = {
   id: string;
@@ -39,70 +52,45 @@ export default async function FormatPage() {
   const formats = await getFormats();
 
   return (
-    <div className="bg-background pt-32 pb-24">
-      <section className="container-narte">
-        <Reveal>
-          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-            Format
-          </span>
-          <h1 className="mt-4 font-display text-4xl leading-tight md:text-6xl">
-            I format N&apos;arte
-          </h1>
-          <p className="mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
+    <>
+      <PageHero
+        label="format"
+        title="I format"
+        description={
+          <>
             Contenitori di musica live curati da N&apos;arte: format pensati per club,
             festival e brand che vogliono offrire al pubblico un&apos;esperienza riconoscibile
             e di qualità.
-          </p>
-        </Reveal>
+          </>
+        }
+      />
 
+      <section className="container-narte py-16 md:py-24">
         {formats.length === 0 ? (
-          <Reveal delay={0.1}>
-            <p className="mt-16 text-center text-muted-foreground">
+          <Reveal>
+            <p className="text-center text-muted-foreground">
               Nessun format disponibile al momento.
             </p>
           </Reveal>
         ) : (
-          <div className="mt-16 grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {formats.map((f, i) => (
               <Reveal key={f.id} delay={i * 0.08}>
                 <Link
                   href={`/format/${f.slug}`}
-                  className="card-lift group flex h-full flex-col gap-5 rounded-2xl border border-border bg-card p-7 transition hover:-translate-y-1 hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                >
-                  {f.cover_image ? (
-                    <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-muted">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={f.cover_image}
-                        alt={f.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    </div>
-                  ) : (
-                    <div className="inline-flex size-12 items-center justify-center rounded-full bg-accent/10 text-accent">
-                      <span className="font-display text-xl uppercase">
-                        {f.icon ?? f.title.slice(0, 1)}
-                      </span>
-                    </div>
+                  className={cn(
+                    "group flex aspect-[4/5] flex-col justify-end rounded-3xl p-8 text-palco transition duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-md)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
+                    CARD_GRADIENTS[i % CARD_GRADIENTS.length]
                   )}
-                  <div>
-                    {f.tagline && (
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-                        {f.tagline}
-                      </p>
-                    )}
-                    <h2 className="mt-2 font-display text-2xl leading-tight group-hover:text-accent">
-                      {f.title}
-                    </h2>
-                  </div>
+                >
+                  <h2 className="font-display text-4xl leading-none">{f.title}</h2>
                   {f.description && (
-                    <p className="text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                    <p className="mt-4 text-base leading-relaxed text-palco/85 line-clamp-4">
                       {f.description}
                     </p>
                   )}
-                  <span className="mt-auto inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent">
-                    Scopri <ArrowRight className="size-3.5" />
-                  </span>
+                  <hr className="mt-6 border-palco/25" />
+                  {f.tagline && <p className="mt-4 text-sm text-palco">{f.tagline}</p>}
                 </Link>
               </Reveal>
             ))}
@@ -116,6 +104,6 @@ export default async function FormatPage() {
           </div>
         </Reveal>
       </section>
-    </div>
+    </>
   );
 }

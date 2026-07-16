@@ -51,14 +51,15 @@ export function OfferCard({
   msg,
   canRespond,
   readOnly,
-  bookingLinkBase,
+  bookingHref,
   isOwn = false,
   tick = "delivered",
 }: {
   msg: ChatMessage;
   canRespond: boolean;
   readOnly: boolean;
-  bookingLinkBase?: string;
+  /** Href completo verso il booking confermato; undefined = nessun link. */
+  bookingHref?: string;
   isOwn?: boolean;
   tick?: TickState;
 }) {
@@ -146,9 +147,9 @@ export function OfferCard({
             </Button>
           </div>
         )}
-        {status === "accepted" && msg.offerBookingRequestId && bookingLinkBase && (
+        {status === "accepted" && bookingHref && (
           <Button asChild size="sm" variant={isOwn ? "outline" : "default"} className={cn("mt-3 w-full", isOwn && "bg-white/10 text-white border-white/30 hover:bg-white/20")}>
-            <Link href={`${bookingLinkBase}/${msg.offerBookingRequestId}`}>
+            <Link href={bookingHref}>
               <ExternalLink className="size-3.5" /> Vedi booking confermato
             </Link>
           </Button>

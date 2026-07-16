@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, MessageCircle, Phone } from "lucide-react";
 import { Reveal } from "@/components/animations/Reveal";
+import { PageHero } from "@/components/marketing/PageHero";
 import { CategoryIcon } from "@/lib/help/icons";
 import { HelpSearch } from "@/components/help/HelpSearch";
 import { HELP_CATEGORIES, popularArticles } from "@/lib/help/content";
@@ -21,32 +22,18 @@ export default function HelpHomePage() {
 
   return (
     <div className="bg-background pb-24">
-      {/* HERO */}
-      <section className="relative overflow-hidden border-b border-border pt-32 pb-16 md:pt-40 md:pb-24">
-        <div
-          aria-hidden="true"
-          className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/2 h-[700px] w-[900px] -translate-x-1/2 -translate-y-1/2"
-        />
-        <div className="container-narte relative z-10">
-          <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-              Centro Assistenza
-            </p>
-            <h1 className="mt-4 font-display text-4xl leading-tight md:text-6xl">
-              Come possiamo aiutarti?
-            </h1>
-            <p className="mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
-              Guide, tutorial e risposte rapide su N&apos;arte. Cerca un argomento o sfoglia
-              le categorie qui sotto.
-            </p>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <div className="mt-10 max-w-2xl">
-              <HelpSearch index={index} />
-            </div>
-          </Reveal>
-        </div>
-      </section>
+      <PageHero
+        label="aiuto"
+        title="Aiuto"
+        description={
+          <>
+            Guide, tutorial e risposte rapide su N&apos;arte. Cerca un argomento o sfoglia
+            le categorie qui sotto.
+          </>
+        }
+      >
+        <HelpSearch index={index} />
+      </PageHero>
 
       {/* CATEGORIES */}
       <section className="container-narte mt-20">

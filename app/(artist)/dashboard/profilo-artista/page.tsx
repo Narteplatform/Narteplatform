@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { ArtistProfileForm } from "@/components/forms/ArtistProfileForm";
+import { AccountSettingsForm } from "@/components/forms/AccountSettingsForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import type { ArtistVideoItem } from "@/components/forms/VideoUpload";
@@ -37,7 +38,7 @@ export default async function ArtistProfileEditPage() {
     supabase.from("genres").select("name").order("order_index"),
     supabase
       .from("artist_videos")
-      .select("id, url, storage_path, title, size_bytes, mime_type, created_at")
+      .select("id, url, storage_path, title, duration_ms, size_bytes, mime_type, created_at")
       .eq("artist_id", artist.id)
       .order("created_at", { ascending: false }),
   ]);
@@ -48,6 +49,7 @@ export default async function ArtistProfileEditPage() {
     url: v.url,
     storage_path: v.storage_path,
     title: v.title,
+    duration_ms: v.duration_ms,
     size_bytes: v.size_bytes,
     mime_type: v.mime_type,
     created_at: v.created_at,
@@ -84,6 +86,26 @@ export default async function ArtistProfileEditPage() {
             genreOptions={genreOptions}
             artistId={artist.id}
             initialVideos={initialVideos}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Account — Card sorella e non fieldset dentro ArtistProfileForm:
+          AccountSettingsForm ha i propri <form>, annidarli sarebbe HTML non valido. */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Account</CardTitle>
+          <CardDescription>
+            Nome visualizzato, foto profilo e password di accesso alla piattaforma.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AccountSettingsForm
+            email={user.email ?? ""}
+            defaults={{
+              fullName: user.profile?.full_name ?? "",
+              avatarUrl: user.profile?.avatar_url ?? "",
+            }}
           />
         </CardContent>
       </Card>

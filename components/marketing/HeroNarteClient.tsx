@@ -161,11 +161,13 @@ export function HeroNarteClient() {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-center opacity-25"
+          className="object-cover object-center opacity-45"
         />
+        {/* Il gradiente resta carico in alto e in basso (header e fondo sezione)
+            e si alleggerisce al centro, dove passa il titolo. */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-b from-notte/85 via-notte/75 to-notte/95"
+          className="absolute inset-0 bg-gradient-to-b from-notte/70 via-notte/55 to-notte/85"
         />
       </div>
 

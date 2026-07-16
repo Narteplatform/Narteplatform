@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Reveal } from "@/components/animations/Reveal";
+import { PageHero } from "@/components/marketing/PageHero";
 
 export const metadata: Metadata = {
   title: "Blog — N'arte",
@@ -38,24 +39,20 @@ export default async function BlogIndexPage() {
   const posts = (data ?? []) as unknown as Post[];
 
   return (
-    <div className="bg-background pt-32 pb-24">
-      <section className="container-narte">
-        <Reveal>
-          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-            Blog
-          </span>
-          <h1 className="mt-4 font-display text-4xl leading-tight md:text-6xl">
-            Storie, guide e ispirazione
-            <br />
-            dalla scena live italiana
-          </h1>
-          <p className="mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
+    <>
+      <PageHero
+        label="blog"
+        title="Blog"
+        description={
+          <>
             Consigli pratici per organizzatori, ritratti di artisti emergenti e
             approfondimenti sui format musicali N&apos;arte.
-          </p>
-        </Reveal>
+          </>
+        }
+      />
 
-        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="container-narte py-16 md:py-24">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {posts.length === 0 ? (
             <p className="col-span-full text-center text-muted-foreground">
               Nessun articolo pubblicato al momento.
@@ -106,6 +103,6 @@ export default async function BlogIndexPage() {
           )}
         </div>
       </section>
-    </div>
+    </>
   );
 }

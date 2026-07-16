@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EventCard } from "@/components/marketing/EventCard";
+import { PageHero } from "@/components/marketing/PageHero";
 import { StaggerList, Reveal } from "@/components/animations/Reveal";
 
 const CATEGORIES = [
@@ -50,27 +51,16 @@ export default async function EventiPage({
 
   return (
     <>
-      {/* HERO */}
-      <section className="relative overflow-hidden border-b border-border pt-24 pb-10 md:pt-32 md:pb-14">
-        <div
-          aria-hidden="true"
-          className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"
-        />
-        <div className="container-narte relative z-10 text-center">
-          <Reveal>
-            <p className="accent-label mb-4">cosa succede</p>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <h1 className="display-xl text-5xl md:text-7xl lg:text-8xl">Eventi</h1>
-          </Reveal>
-          <Reveal delay={0.2}>
-            <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground md:text-lg">
-              Tutti gli eventi musicali e culturali organizzati da N&apos;arte o ai quali
-              partecipiamo.
-            </p>
-          </Reveal>
-        </div>
-      </section>
+      <PageHero
+        label="cosa succede"
+        title="Eventi"
+        description={
+          <>
+            Tutti gli eventi musicali e culturali organizzati da N&apos;arte o ai quali
+            partecipiamo.
+          </>
+        }
+      />
 
       {/* SWITCHER + FILTRI + GRID — uniformato su sfondo bianco */}
       <section className="bg-white py-10 text-notte md:py-16">

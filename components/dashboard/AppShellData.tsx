@@ -10,9 +10,9 @@ import {
   Phone,
   Settings,
   Shapes,
-  Sparkles,
   Star,
   Tags,
+  User,
   UserCog,
   Users,
 } from "lucide-react";
@@ -25,6 +25,11 @@ import { AppShell, type AppShellRecent, type AppShellStorage, type NavSection } 
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getAllowedAdminPages, isRootSuperadminEmail } from "@/lib/admin/permissions";
+import {
+  computeProfileCompletion,
+  PROFILE_COMPLETION_COLUMNS,
+  type ProfileCompletionSource,
+} from "@/lib/artist/profile-completion";
 import type { AdminPageKey } from "@/lib/validators/schemas";
 
 function ShellBrand({ suffix }: { suffix?: string }) {
@@ -40,8 +45,6 @@ function ShellBrand({ suffix }: { suffix?: string }) {
   );
 }
 
-const ADMIN_EVENT_QUOTA = 25;
-
 type AppShellUser = {
   id: string;
   email: string;
@@ -53,13 +56,6 @@ type AppShellUser = {
 function todayIso() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
-}
-
-function plus30daysIso() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 30);
   return d.toISOString().slice(0, 10);
 }
 
@@ -75,7 +71,6 @@ function safe<T>(p: PromiseLike<T>): Promise<T | null> {
 
 async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boolean }): Promise<{
   navSections: NavSection[];
-  storage: AppShellStorage;
   recentActivity: AppShellRecent[];
 }> {
   let admin;
@@ -85,7 +80,6 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     console.error("[AppShellData] createAdminClient failed:", err);
     return {
       navSections: defaultAdminNav(),
-      storage: defaultAdminStorage(0),
       recentActivity: [],
     };
   }
@@ -94,7 +88,6 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
   const [
     upcomingEvents,
     pastEvents,
-    eventsTotal,
     pendingApplications,
     approvedArtists,
     newLeads,
@@ -104,7 +97,6 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
   ] = await Promise.all([
     safe(admin.from("events").select("id", { count: "exact", head: true }).gte("date", today)),
     safe(admin.from("events").select("id", { count: "exact", head: true }).lt("date", today)),
-    safe(admin.from("events").select("id", { count: "exact", head: true })),
     safe(admin.from("artist_applications").select("id", { count: "exact", head: true }).eq("status", "pending")),
     safe(admin.from("artists").select("id", { count: "exact", head: true }).eq("status", "approved")),
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "new").in("source", ["format", "contatti"])),
@@ -252,22 +244,12 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     return sectionsByKey[k] !== null;
   }).map((k) => sectionsByKey[k]!) as NavSection[];
 
-  const usedEvents = c(eventsTotal);
-  const storage: AppShellStorage = {
-    label: "Eventi pubblicati",
-    used: usedEvents,
-    total: ADMIN_EVENT_QUOTA,
-    hint: `${usedEvents} di ${ADMIN_EVENT_QUOTA} eventi attivi`,
-    ctaLabel: "Crea evento",
-    ctaHref: "/admin/eventi/new",
-  };
-
   const recentActivity: AppShellRecent[] = (recentArtists?.data ?? []).map((a) => ({
     src: a.cover_image ?? null,
     name: a.stage_name,
   }));
 
-  return { navSections, storage, recentActivity };
+  return { navSections, recentActivity };
 }
 
 async function loadArtistShell(userId: string): Promise<{
@@ -290,41 +272,19 @@ async function loadArtistShell(userId: string): Promise<{
   const artistRes = await safe(
     admin
       .from("artists")
-      .select("id, stage_name, cover_image, bio, gallery, videos, genre, price_range, languages")
+      .select(`id, stage_name, ${PROFILE_COMPLETION_COLUMNS}`)
       .eq("user_id", userId)
       .maybeSingle()
   );
   const artist = artistRes?.data ?? null;
 
-  const today = todayIso();
-  const horizon = plus30daysIso();
-
-  let availableCount = 0;
-  let busyCount = 0;
   let newLeads = 0;
   let contactedLeads = 0;
   let closedLeads = 0;
   let recentLeads: { contact_email: string; event_location: string }[] = [];
 
   if (artist) {
-    const [available, busy, leadsNew, leadsContacted, leadsClosed, recent] = await Promise.all([
-      safe(
-        admin
-          .from("artist_availability")
-          .select("id", { count: "exact", head: true })
-          .eq("artist_id", artist.id)
-          .eq("status", "available")
-          .gte("date", today)
-          .lte("date", horizon)
-      ),
-      safe(
-        admin
-          .from("artist_availability")
-          .select("id", { count: "exact", head: true })
-          .eq("artist_id", artist.id)
-          .eq("status", "busy")
-          .gte("date", today)
-      ),
+    const [leadsNew, leadsContacted, leadsClosed, recent] = await Promise.all([
       safe(
         admin
           .from("leads")
@@ -355,8 +315,6 @@ async function loadArtistShell(userId: string): Promise<{
           .limit(4)
       ),
     ]);
-    availableCount = available?.count ?? 0;
-    busyCount = busy?.count ?? 0;
     newLeads = leadsNew?.count ?? 0;
     contactedLeads = leadsContacted?.count ?? 0;
     closedLeads = leadsClosed?.count ?? 0;
@@ -381,16 +339,12 @@ async function loadArtistShell(userId: string): Promise<{
     {
       href: "/dashboard/profilo-artista",
       label: "Profilo artista",
-      icon: <Sparkles className="size-4" />,
+      icon: <User className="size-4" />,
     },
     {
       href: "/dashboard/calendario",
       label: "Calendario",
       icon: <CalendarDays className="size-4" />,
-      children: [
-        { href: "/dashboard/calendario?view=available", label: "Disponibili 30gg", count: availableCount },
-        { href: "/dashboard/calendario?view=busy", label: "Occupate", count: busyCount },
-      ],
     },
     {
       href: "/dashboard/leads",
@@ -414,55 +368,21 @@ async function loadArtistShell(userId: string): Promise<{
       label: "Feedback",
       icon: <Star className="size-4" />,
     },
-    {
-      href: "/dashboard/profilo",
-      label: "Profilo account",
-      icon: <UserCog className="size-4" />,
-    },
   ];
 
   let storage: AppShellStorage | undefined;
   if (artist) {
-    type ArtistRow = {
-      cover_image?: string | null;
-      bio?: string | null;
-      gallery?: unknown[];
-      videos?: unknown[];
-      genre?: unknown[];
-      price_range?: string | null;
-      languages?: unknown[];
-    };
-    const a = artist as unknown as ArtistRow;
-    const checks = [
-      Boolean(a.cover_image),
-      Boolean(a.bio && a.bio.trim().length > 30),
-      (a.gallery?.length ?? 0) >= 3,
-      (a.videos?.length ?? 0) >= 1,
-      (a.genre?.length ?? 0) >= 1,
-      Boolean(a.price_range),
-      (a.languages?.length ?? 0) > 0,
-    ];
-    const filled = checks.filter(Boolean).length;
-    const missing: string[] = [];
-    if (!a.cover_image) missing.push("foto copertina");
-    if (!a.bio || a.bio.trim().length <= 30) missing.push("bio");
-    if ((a.gallery?.length ?? 0) < 3) missing.push("galleria (min 3)");
-    if ((a.videos?.length ?? 0) < 1) missing.push("video");
-    if ((a.genre?.length ?? 0) < 1) missing.push("genere");
-    if (!a.price_range) missing.push("fascia prezzo");
-    if ((a.languages?.length ?? 0) === 0) missing.push("lingue");
-    const hint =
-      missing.length > 0
-        ? `Mancano: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? "…" : ""}`
-        : "Profilo completo al 100%";
+    const completion = computeProfileCompletion(
+      artist as unknown as ProfileCompletionSource
+    );
     storage = {
       label: "Profilo completo",
-      used: filled,
-      total: checks.length,
-      hint,
+      used: completion.filled,
+      total: completion.total,
+      hint: completion.hint,
       ctaLabel: "Completa profilo",
       ctaHref: "/dashboard/profilo-artista",
-      variant: filled === checks.length ? "default" : "accent",
+      variant: completion.isComplete ? "default" : "accent",
     };
   }
 
@@ -488,22 +408,10 @@ function defaultAdminNav(): NavSection[] {
 function defaultArtistNav(): NavSection[] {
   return [
     { href: "/dashboard/overview", label: "Overview", icon: <LayoutDashboard className="size-4" />, exact: true },
-    { href: "/dashboard/profilo-artista", label: "Profilo artista", icon: <Sparkles className="size-4" /> },
+    { href: "/dashboard/profilo-artista", label: "Profilo artista", icon: <User className="size-4" /> },
     { href: "/dashboard/calendario", label: "Calendario", icon: <CalendarDays className="size-4" /> },
     { href: "/dashboard/leads", label: "Richieste", icon: <Inbox className="size-4" /> },
-    { href: "/dashboard/profilo", label: "Profilo account", icon: <UserCog className="size-4" /> },
   ];
-}
-
-function defaultAdminStorage(used: number): AppShellStorage {
-  return {
-    label: "Eventi pubblicati",
-    used,
-    total: ADMIN_EVENT_QUOTA,
-    hint: `${used} di ${ADMIN_EVENT_QUOTA} eventi attivi`,
-    ctaLabel: "Crea evento",
-    ctaHref: "/admin/eventi/new",
-  };
 }
 
 async function loadConsultantShell(userId: string): Promise<{
@@ -601,7 +509,7 @@ export async function AdminAppShell({
 }) {
   const isConsultant = user.role === "consultant";
   let navSections: NavSection[];
-  let storage: AppShellStorage | undefined;
+  let storage: AppShellStorage | undefined = undefined;
   let recentActivity: AppShellRecent[];
   try {
     if (isConsultant) {
@@ -609,12 +517,12 @@ export async function AdminAppShell({
     } else {
       const isRoot = isRootSuperadminEmail(user.email);
       const allowed = await getAllowedAdminPages(user.id, user.email);
-      ({ navSections, storage, recentActivity } = await loadAdminShell({ allowed, isRoot }));
+      ({ navSections, recentActivity } = await loadAdminShell({ allowed, isRoot }));
     }
   } catch (err) {
     console.error("[AppShellData] loadAdminShell crashed:", err);
     navSections = isConsultant ? defaultConsultantNav() : defaultAdminNav();
-    storage = isConsultant ? undefined : defaultAdminStorage(0);
+    storage = undefined;
     recentActivity = [];
   }
   return (

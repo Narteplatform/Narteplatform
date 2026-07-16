@@ -62,7 +62,9 @@ export default async function EventDetailPage({
           </div>
 
           {/* COLONNA TESTO — titolo, info, descrizione e CTA insieme: è la
-              descrizione a dare a questa colonna l'altezza della card. */}
+              descrizione a dare a questa colonna l'altezza della card, che la
+              eguaglia con md:h-full. Con descrizioni corte il pavimento è il
+              md:min-h-[520px] della cover. */}
           <div className="flex flex-col">
             <Reveal>
               <p className="accent-label">evento</p>
@@ -87,11 +89,8 @@ export default async function EventDetailPage({
 
             {event.description && (
               <Reveal delay={0.25}>
-                <div className="mt-8 rounded-2xl border border-border bg-muted p-5 md:p-6">
-                  <p className="accent-label mb-3">descrizione</p>
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground md:text-base">
-                    {event.description}
-                  </div>
+                <div className="mt-8 max-w-prose whitespace-pre-wrap text-base leading-relaxed text-palco/90 md:text-lg">
+                  {event.description}
                 </div>
               </Reveal>
             )}

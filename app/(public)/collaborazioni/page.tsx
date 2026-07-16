@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { Reveal, StaggerList } from "@/components/animations/Reveal";
+import { StaggerList } from "@/components/animations/Reveal";
+import { PageHero } from "@/components/marketing/PageHero";
 
 export const metadata = { title: "Collaborazioni — N'arte" };
 
@@ -18,29 +19,16 @@ export default async function CollaborazioniPage() {
 
   return (
     <>
-      {/* HERO */}
-      <section className="relative overflow-hidden border-b border-border pt-24 pb-12 md:pt-32 md:pb-16">
-        <div
-          aria-hidden="true"
-          className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"
-        />
-        <div className="container-narte relative z-10 text-center">
-          <Reveal>
-            <p className="accent-label mb-4">collaborazioni</p>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <h1 className="display-xl text-5xl md:text-7xl lg:text-8xl">
-              Le realtà con cui costruiamo cultura.
-            </h1>
-          </Reveal>
-          <Reveal delay={0.2}>
-            <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
-              Partner, location e sponsor che rendono possibile la nostra missione: portare
-              musica e cultura nei luoghi più iconici di Napoli e oltre.
-            </p>
-          </Reveal>
-        </div>
-      </section>
+      <PageHero
+        label="collaborazioni"
+        title="Le realtà con cui costruiamo cultura."
+        description={
+          <>
+            Partner, location e sponsor che rendono possibile la nostra missione: portare
+            musica e cultura nei luoghi più iconici di Napoli e oltre.
+          </>
+        }
+      />
 
       {/* GRID */}
       <section className="bg-muted py-20 md:py-28">

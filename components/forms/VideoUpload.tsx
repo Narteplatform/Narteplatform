@@ -5,22 +5,32 @@ import { Upload, X, Film } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Input";
 import { addArtistVideo, deleteArtistVideo } from "@/app/(artist)/dashboard/_actions";
+import { probeVideo } from "@/lib/upload/probeVideo";
+import { putWithProgress, UploadAbortedError } from "@/lib/upload/putWithProgress";
+import {
+  MAX_VIDEO_BYTES,
+  MAX_VIDEO_PER_ARTIST,
+  VIDEO_ACCEPT_ATTR,
+  formatMb,
+  guessVideoMime,
+  isAllowedVideoMime,
+} from "@/lib/upload/video-limits";
 
 export type ArtistVideoItem = {
   id: string;
   url: string;
   storage_path: string;
   title: string | null;
+  duration_ms: number | null;
   size_bytes: number | null;
   mime_type: string | null;
   created_at: string;
 };
 
-type UploadResult = {
-  url: string;
+type SignResponse = {
+  signedUrl: string;
   path: string;
-  contentType: string;
-  size: number;
+  publicUrl: string;
 };
 
 type Props = {
@@ -28,18 +38,92 @@ type Props = {
   initialVideos: ArtistVideoItem[];
 };
 
-const ACCEPT = "video/mp4,video/webm,video/quicktime";
-const MAX = 50 * 1024 * 1024;
+const MOV_HELP =
+  "I file .mov non sono supportati: usano quasi sempre il codec HEVC, che non si riproduce su Chrome, Firefox e Android. Esporta il video in MP4. Su iPhone: Impostazioni → Fotocamera → Formati → «Massima compatibilità».";
 
 export function VideoUpload({ artistId, initialVideos }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const [videos, setVideos] = useState<ArtistVideoItem[]>(initialVideos);
-  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<{ name: string; pct: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const uploading = progress !== null;
+  const slotsLeft = MAX_VIDEO_PER_ARTIST - videos.length;
+
   function pick() {
     inputRef.current?.click();
+  }
+
+  async function uploadOne(file: File, currentCount: number) {
+    if (currentCount >= MAX_VIDEO_PER_ARTIST) {
+      throw new Error(
+        `Puoi caricare al massimo ${MAX_VIDEO_PER_ARTIST} video. Eliminane uno per caricarne un altro.`
+      );
+    }
+
+    const mime = guessVideoMime(file);
+    if (mime === "video/quicktime") throw new Error(MOV_HELP);
+    if (!mime || !isAllowedVideoMime(mime)) {
+      throw new Error(`"${file.name}": formato non supportato. Carica un MP4 o un WebM.`);
+    }
+    if (file.size > MAX_VIDEO_BYTES) {
+      throw new Error(
+        `"${file.name}" pesa ${formatMb(file.size)} e supera il limite di ${formatMb(
+          MAX_VIDEO_BYTES
+        )}.`
+      );
+    }
+
+    // Meglio scoprire ora che il browser non decodifica il file, non dopo
+    // averne trasferiti decine di MB.
+    const { durationMs, playable } = await probeVideo(file);
+    if (!playable) {
+      const proceed = window.confirm(
+        `"${file.name}" non sembra riproducibile in questo browser: probabilmente usa un codec non supportato (es. HEVC).\n\nSe lo carichi, molti visitatori non riusciranno a vederlo. Consigliamo di riesportarlo in MP4 (H.264).\n\nCaricarlo lo stesso?`
+      );
+      if (!proceed) return null;
+    }
+
+    const signRes = await fetch("/api/upload/video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        artistId,
+        fileName: file.name,
+        contentType: mime,
+        size: file.size,
+      }),
+    });
+    if (!signRes.ok) {
+      const j = (await signRes.json().catch(() => ({}))) as { error?: string };
+      throw new Error(j.error ?? `Impossibile avviare il caricamento (${signRes.status})`);
+    }
+    const { signedUrl, path, publicUrl } = (await signRes.json()) as SignResponse;
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setProgress({ name: file.name, pct: 0 });
+
+    await putWithProgress({
+      signedUrl,
+      file,
+      signal: controller.signal,
+      onProgress: ({ pct }) => setProgress({ name: file.name, pct }),
+    });
+
+    const ack = await addArtistVideo({
+      artist_id: artistId,
+      url: publicUrl,
+      storage_path: path,
+      size_bytes: file.size,
+      mime_type: mime,
+      duration_ms: durationMs,
+      title: file.name.replace(/\.[^.]+$/, "").slice(0, 120),
+    });
+    if (!ack.ok) throw new Error(ack.error);
+    return (ack.video ?? null) as ArtistVideoItem | null;
   }
 
   async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
@@ -47,46 +131,32 @@ export function VideoUpload({ artistId, initialVideos }: Props) {
     e.target.value = "";
     if (files.length === 0) return;
     setError(null);
-    setUploading(true);
+
     try {
+      // Sequenziale: upload paralleli si contendono l'uplink e rischiano di
+      // fallire tutti insieme.
+      let count = videos.length;
       for (const file of files) {
-        if (file.size > MAX) {
-          setError(`"${file.name}" supera 50MB.`);
-          continue;
-        }
-        if (!ACCEPT.split(",").includes(file.type)) {
-          setError(`"${file.name}" formato non supportato (mp4/webm/mov).`);
-          continue;
-        }
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("kind", "artist-video");
-        const res = await fetch("/api/upload", { method: "POST", body: fd });
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}));
-          throw new Error(j.error ?? `Upload fallito (${res.status})`);
-        }
-        const { url, path, contentType, size } = (await res.json()) as UploadResult;
-        const ack = await addArtistVideo({
-          artist_id: artistId,
-          url,
-          storage_path: path,
-          size_bytes: size,
-          mime_type: contentType,
-          title: file.name.replace(/\.[^.]+$/, "").slice(0, 120),
-        });
-        if (!ack.ok) {
-          throw new Error(ack.error);
-        }
-        if (ack.video) {
-          setVideos((prev) => [ack.video!, ...prev]);
+        const video = await uploadOne(file, count);
+        if (video) {
+          count += 1;
+          setVideos((prev) => [video, ...prev]);
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Errore upload");
+      if (err instanceof UploadAbortedError) {
+        setError("Caricamento annullato.");
+      } else {
+        setError(err instanceof Error ? err.message : "Errore durante il caricamento");
+      }
     } finally {
-      setUploading(false);
+      abortRef.current = null;
+      setProgress(null);
     }
+  }
+
+  function cancel() {
+    abortRef.current?.abort();
   }
 
   function remove(videoId: string) {
@@ -104,7 +174,10 @@ export function VideoUpload({ artistId, initialVideos }: Props) {
 
   return (
     <div className="space-y-3">
-      <Label>I tuoi video (max 50MB ciascuno, mp4/webm/mov)</Label>
+      <Label>
+        I tuoi video (max {MAX_VIDEO_PER_ARTIST}, fino a {formatMb(MAX_VIDEO_BYTES)} ciascuno,
+        MP4 o WebM)
+      </Label>
 
       {videos.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -118,6 +191,7 @@ export function VideoUpload({ artistId, initialVideos }: Props) {
                 className="aspect-video w-full bg-black"
                 controls
                 preload="metadata"
+                playsInline
               />
               <button
                 type="button"
@@ -138,22 +212,62 @@ export function VideoUpload({ artistId, initialVideos }: Props) {
         </div>
       )}
 
+      {progress && (
+        <div className="space-y-2 rounded-xl border border-border bg-muted p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-sm">{progress.name}</p>
+            <Button type="button" variant="ghost" size="sm" onClick={cancel}>
+              Annulla
+            </Button>
+          </div>
+          <div
+            role="progressbar"
+            aria-valuenow={progress.pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Caricamento di ${progress.name}`}
+            className="h-2 w-full overflow-hidden rounded-full bg-background"
+          >
+            <div
+              className="h-full rounded-full bg-accent transition-all duration-200"
+              style={{ width: `${progress.pct}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {progress.pct}% — non chiudere questa pagina finché il caricamento non è completo.
+          </p>
+        </div>
+      )}
+
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPT}
+        accept={VIDEO_ACCEPT_ATTR}
         multiple
         className="hidden"
         onChange={onFiles}
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={pick} disabled={uploading}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={pick}
+          disabled={uploading || slotsLeft <= 0}
+        >
           <Upload className="size-4" /> {uploading ? "Caricamento…" : "Carica video"}
         </Button>
-        {videos.length === 0 && (
-          <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-            <Film className="size-3.5" /> Mostra al meglio le tue performance.
+        {slotsLeft <= 0 ? (
+          <span className="text-xs text-muted-foreground">
+            Hai raggiunto il massimo di {MAX_VIDEO_PER_ARTIST} video. Eliminane uno per
+            caricarne un altro.
           </span>
+        ) : (
+          videos.length === 0 && (
+            <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <Film className="size-3.5" /> Mostra al meglio le tue performance.
+            </span>
+          )
         )}
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}

@@ -462,7 +462,7 @@ function UserCard({ user, onNavigate }: { user: AppShellUser; onNavigate: () => 
           : "Utente";
   const profileHref =
     user.role === "artist"
-      ? "/dashboard/profilo"
+      ? "/dashboard/profilo-artista"
       : user.role === "organizer"
         ? "/organizzatore/profilo"
         : "/admin/profilo";

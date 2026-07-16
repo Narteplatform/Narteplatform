@@ -34,7 +34,8 @@ export async function updateAccountProfile(input: AccountProfileInput) {
   if (error) return { ok: false as const, error: error.message };
 
   revalidatePath("/admin/profilo");
-  revalidatePath("/dashboard/profilo");
+  revalidatePath("/dashboard/profilo-artista");
+  revalidatePath("/organizzatore/profilo");
   return { ok: true as const };
 }
 

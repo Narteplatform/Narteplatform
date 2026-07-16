@@ -284,6 +284,20 @@ export default async function ArtistDetailPage({
     console.error("[ArtistDetailPage] confirmed bookings fetch error", e);
   }
 
+  // Video caricati dall'artista dal proprio dispositivo (artist_videos), distinti
+  // dagli URL YouTube/Vimeo in artists.videos.
+  let uploadedVideos: { id: string; url: string; title: string | null }[] = [];
+  try {
+    const { data } = await supabase
+      .from("artist_videos")
+      .select("id, url, title")
+      .eq("artist_id", artist.id)
+      .order("created_at", { ascending: false });
+    uploadedVideos = (data ?? []) as { id: string; url: string; title: string | null }[];
+  } catch (e) {
+    console.error("[ArtistDetailPage] artist_videos fetch error", e);
+  }
+
   let social: SocialLinks = {};
   try {
     if (typeof artist.social_links === "string") {
@@ -621,7 +635,7 @@ export default async function ArtistDetailPage({
       )}
 
       {/* VIDEOS */}
-      {videos.length > 0 && (
+      {(videos.length > 0 || uploadedVideos.length > 0) && (
         <section className="border-t border-border bg-muted py-16 md:py-24">
           <div className="container-narte">
             <Reveal>
@@ -630,22 +644,53 @@ export default async function ArtistDetailPage({
             <Reveal delay={0.1}>
               <h2 className="display-xl text-3xl md:text-5xl">Performance.</h2>
             </Reveal>
-            <Reveal delay={0.2}>
-              <ul className="mt-8 grid gap-3 md:grid-cols-2">
-                {videos.map((v) => (
-                  <li key={v}>
-                    <a
-                      href={v}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block truncate rounded-2xl border border-border bg-background p-4 text-sm transition hover:border-accent hover:text-accent"
+
+            {uploadedVideos.length > 0 && (
+              <Reveal delay={0.2}>
+                <div className="mt-8 grid gap-4 md:grid-cols-2">
+                  {uploadedVideos.map((v) => (
+                    <figure
+                      key={v.id}
+                      className="overflow-hidden rounded-2xl border border-border bg-black"
                     >
-                      ▶︎ {v}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
+                      {/* preload="metadata" è obbligatorio: senza, ogni visita
+                          scaricherebbe i video interi. */}
+                      <video
+                        src={v.url}
+                        controls
+                        preload="metadata"
+                        playsInline
+                        className="aspect-video w-full bg-black"
+                      />
+                      {v.title && (
+                        <figcaption className="truncate border-t border-border bg-background px-4 py-2 text-sm">
+                          {v.title}
+                        </figcaption>
+                      )}
+                    </figure>
+                  ))}
+                </div>
+              </Reveal>
+            )}
+
+            {videos.length > 0 && (
+              <Reveal delay={0.25}>
+                <ul className="mt-8 grid gap-3 md:grid-cols-2">
+                  {videos.map((v) => (
+                    <li key={v}>
+                      <a
+                        href={v}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block truncate rounded-2xl border border-border bg-background p-4 text-sm transition hover:border-accent hover:text-accent"
+                      >
+                        ▶︎ {v}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </Reveal>
+            )}
           </div>
         </section>
       )}

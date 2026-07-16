@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { Input, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { ImageUpload } from "@/components/forms/ImageUpload";
 import {
   updateAccountProfile,
   changePassword,
@@ -23,6 +24,7 @@ export function AccountSettingsForm({
   const [pwMsg, setPwMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   const profileForm = useForm<ProfileValues>({ defaultValues: defaults });
+  const { control: profileControl } = profileForm;
   const pwForm = useForm<PasswordValues>({ defaultValues: { password: "" } });
 
   async function onSaveProfile(values: ProfileValues) {
@@ -62,13 +64,18 @@ export function AccountSettingsForm({
           <Field label="Nome completo">
             <Input {...profileForm.register("fullName", { required: true })} />
           </Field>
-          <Field label="URL avatar">
-            <Input
-              type="url"
-              placeholder="https://…"
-              {...profileForm.register("avatarUrl")}
-            />
-          </Field>
+          <Controller
+            control={profileControl}
+            name="avatarUrl"
+            render={({ field }) => (
+              <ImageUpload
+                label="Foto profilo"
+                kind="avatar"
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
           {profileMsg && (
             <p
               className={

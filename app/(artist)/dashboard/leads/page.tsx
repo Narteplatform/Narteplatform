@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ArtistRequestActions } from "@/components/organizer/ArtistRequestActions";
+import { HighlightedBooking } from "@/components/booking/HighlightedBooking";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import type { BookingStatus } from "@/lib/supabase/types";
@@ -35,9 +36,11 @@ const TABS: { v: "pending" | "in_trattativa" | "confermata"; label: string }[] =
 export default async function ArtistLeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; highlight?: string }>;
 }) {
   const sp = await searchParams;
+  // Arriva dal pulsante "Vedi booking confermato" in chat.
+  const highlightId = sp?.highlight ?? null;
   const user = await requireRole(["artist", "superadmin"]);
   const supabase = createAdminClient();
 
@@ -181,7 +184,8 @@ export default async function ArtistLeadsPage({
               const org = orgs.get(b.organizer_id);
               const ven = b.venue_id ? vens.get(b.venue_id) : null;
               return (
-                <Card key={b.id}>
+                <HighlightedBooking key={b.id} id={b.id} active={highlightId === b.id}>
+                <Card>
                   <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
                     <div className="space-y-1.5">
                       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -310,6 +314,7 @@ export default async function ArtistLeadsPage({
                     </form>
                   </CardContent>
                 </Card>
+                </HighlightedBooking>
               );
             })}
           </div>

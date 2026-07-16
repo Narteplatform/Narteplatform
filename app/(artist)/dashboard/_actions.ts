@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import {
+  ARTIST_VIDEO_BUCKET,
+  MAX_VIDEO_PER_ARTIST,
+  isAllowedVideoMime,
+} from "@/lib/upload/video-limits";
 
 type AudioTrack = { url: string; title: string };
 type PersonnelMember = { name: string; role: string };
@@ -226,11 +231,38 @@ export async function addArtistVideo(input: {
   storage_path: string;
   size_bytes: number;
   mime_type: string;
+  duration_ms?: number | null;
   title?: string;
 }) {
   const user = await ownsArtist(input.artist_id);
   if (!user) return { ok: false as const, error: "Non autorizzato" };
+
+  // url e storage_path arrivano dal client: senza questi controlli si potrebbe
+  // creare una riga che punta a un file altrui o a un host esterno.
+  if (!input.storage_path.startsWith(`${user.id}/`)) {
+    return { ok: false as const, error: "Percorso del file non valido" };
+  }
+  const expectedPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${ARTIST_VIDEO_BUCKET}/`;
+  if (!input.url.startsWith(expectedPrefix)) {
+    return { ok: false as const, error: "URL del video non valido" };
+  }
+  if (!isAllowedVideoMime(input.mime_type)) {
+    return { ok: false as const, error: "Formato video non supportato" };
+  }
+
   const admin = createAdminClient();
+
+  const { count } = await admin
+    .from("artist_videos")
+    .select("id", { count: "exact", head: true })
+    .eq("artist_id", input.artist_id);
+  if ((count ?? 0) >= MAX_VIDEO_PER_ARTIST) {
+    return {
+      ok: false as const,
+      error: `Hai già ${MAX_VIDEO_PER_ARTIST} video. Eliminane uno per caricarne un altro.`,
+    };
+  }
+
   const { data, error } = await admin
     .from("artist_videos")
     .insert({
@@ -239,14 +271,34 @@ export async function addArtistVideo(input: {
       storage_path: input.storage_path,
       size_bytes: input.size_bytes,
       mime_type: input.mime_type,
+      duration_ms: input.duration_ms ?? null,
       title: input.title ?? null,
     })
-    .select("id, artist_id, url, storage_path, title, size_bytes, mime_type, created_at")
+    .select(
+      "id, artist_id, url, storage_path, title, duration_ms, size_bytes, mime_type, created_at"
+    )
     .single();
   if (error || !data) return { ok: false as const, error: error?.message ?? "Errore" };
-  revalidatePath("/dashboard/profilo-artista/video");
-  revalidatePath("/artisti");
+  await revalidateArtistVideoPaths(input.artist_id);
   return { ok: true as const, video: data };
+}
+
+/**
+ * /dashboard/profilo-artista/video è solo un redirect: revalidarlo non aggiorna
+ * nulla. Le pagine che mostrano davvero i video sono l'editor del profilo e la
+ * pagina pubblica dell'artista.
+ */
+async function revalidateArtistVideoPaths(artistId: string) {
+  revalidatePath("/dashboard/profilo-artista");
+  revalidatePath("/dashboard/overview");
+  revalidatePath("/artisti");
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("artists")
+    .select("slug")
+    .eq("id", artistId)
+    .maybeSingle();
+  if (data?.slug) revalidatePath(`/artisti/${data.slug}`);
 }
 
 export async function deleteArtistVideo(videoId: string) {
@@ -261,12 +313,11 @@ export async function deleteArtistVideo(videoId: string) {
   if (!user) return { ok: false as const, error: "Non autorizzato" };
 
   if (video.storage_path) {
-    await admin.storage.from("artist-videos").remove([video.storage_path]);
+    await admin.storage.from(ARTIST_VIDEO_BUCKET).remove([video.storage_path]);
   }
   const { error } = await admin.from("artist_videos").delete().eq("id", videoId);
   if (error) return { ok: false as const, error: error.message };
-  revalidatePath("/dashboard/profilo-artista/video");
-  revalidatePath("/artisti");
+  await revalidateArtistVideoPaths(video.artist_id);
   return { ok: true as const };
 }
 

@@ -4,7 +4,7 @@ import { HowItWorks } from "@/components/marketing/HowItWorks";
 import { StarsSection } from "@/components/marketing/StarsSection";
 import { EventsSection } from "@/components/marketing/EventsSection";
 import { CollaborationsSection } from "@/components/marketing/CollaborationsSection";
-import { PressSection } from "@/components/marketing/PressSection";
+import { BlogSection } from "@/components/marketing/BlogSection";
 import { EventRequestSection } from "@/components/marketing/EventRequestSection";
 
 export default function HomePage() {
@@ -16,7 +16,7 @@ export default function HomePage() {
       <StarsSection />
       <EventsSection />
       <CollaborationsSection />
-      <PressSection />
+      <BlogSection />
       <EventRequestSection />
     </>
   );

@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { HeroGreeting } from "@/components/dashboard/HeroGreeting";
 import { ActivityList } from "@/components/dashboard/ActivityFeed";
+import { ProfileCompletionCard } from "@/components/dashboard/ProfileCompletionCard";
+import type { ProfileCompletionSource } from "@/lib/artist/profile-completion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { Button } from "@/components/ui/Button";
@@ -118,6 +120,8 @@ export default async function ArtistOverviewPage() {
         }}
         secondary={{ label: "Modifica profilo", href: "/dashboard/profilo-artista" }}
       />
+
+      <ProfileCompletionCard artist={artist as unknown as ProfileCompletionSource} />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiCard
