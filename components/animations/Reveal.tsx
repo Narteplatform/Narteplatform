@@ -14,7 +14,9 @@ type RevealProps = HTMLMotionProps<"div"> & {
 
 export function Reveal({ children, delay = 0, y = 24, duration = 0.6, ...rest }: RevealProps) {
   const reduce = useReducedMotion();
-  if (reduce) return <div>{children}</div>;
+  // Senza className qui, i layout che passano classi a <Reveal> (es. h-full)
+  // si rompono per chi ha prefers-reduced-motion attivo.
+  if (reduce) return <div className={rest.className}>{children}</div>;
   return (
     <motion.div
       initial={{ opacity: 0, y }}
