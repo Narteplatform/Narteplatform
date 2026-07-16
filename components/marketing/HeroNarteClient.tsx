@@ -170,31 +170,26 @@ export function HeroNarteClient() {
       </div>
 
       <div className="container-narte relative z-10 flex min-h-[88svh] flex-col items-center justify-center px-6 py-24 text-center md:py-32">
-        <motion.p
-          {...titleAnim(0.02)}
-          className="accent-label text-azzurro-light"
-        >
-          community musicale napoletana
-        </motion.p>
-
         <motion.h1
           {...titleAnim(0.1)}
-          className="font-display tracking-tight"
+          className="font-display tracking-[-0.045em]"
           style={{ lineHeight: 0.95 }}
         >
-          <span className="mt-5 block text-5xl font-black text-palco sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+          {/* Space Grotesk arriva a 700: font-black (900) e italic non hanno un
+              taglio reale, il browser li sintetizzerebbe. L'accento è il colore. */}
+          <span className="block text-5xl font-bold text-palco sm:text-6xl md:text-7xl lg:text-[5.5rem]">
             La tua musica
           </span>
-          <span className="mt-2 block text-5xl font-bold italic text-azzurro-light sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+          <span className="mt-2 block text-5xl font-bold text-azzurro-light sm:text-6xl md:text-7xl lg:text-[5.5rem]">
             merita un palco.
           </span>
         </motion.h1>
 
         <motion.p
           {...titleAnim(0.2)}
-          className="mt-6 max-w-xl text-base text-palco/75 md:text-lg"
+          className="mt-5 max-w-xl text-base text-palco/75 md:max-w-none md:whitespace-nowrap md:text-lg"
         >
-          Prenota artisti emergenti di Napoli per il tuo locale, festival o evento privato.
+          Prenota artisti emergenti per il tuo locale, festival o evento privato.
         </motion.p>
 
         {/* Search bar */}

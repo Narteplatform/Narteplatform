@@ -10,10 +10,11 @@ export function AboutBlock() {
           <p className="accent-label mb-6">chi siamo</p>
         </Reveal>
         <Reveal delay={0.1}>
-          <h2 className="display-xl mx-auto max-w-4xl text-3xl text-notte md:text-5xl lg:text-6xl">
-            Dal 2018 portiamo la musica dal vivo a Napoli
-            <br />
-            oltre 100 artisti emergenti, 30+ location iconiche.
+          {/* text-balance distribuisce le righe in modo simmetrico da solo:
+              un <br /> fisso si spezzava male alle larghezze intermedie. */}
+          <h2 className="display-xl mx-auto max-w-3xl text-balance text-3xl text-notte md:text-5xl lg:text-6xl">
+            Dal 2018 portiamo la musica dal vivo a Napoli: oltre 100 artisti emergenti, 30+
+            location iconiche.
           </h2>
         </Reveal>
         <Reveal delay={0.2}>

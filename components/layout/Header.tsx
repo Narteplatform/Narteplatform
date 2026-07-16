@@ -46,7 +46,9 @@ export async function Header() {
           <SearchBar />
         </div>
 
-        <nav className="hidden items-center gap-6 text-sm font-medium text-foreground/85 lg:flex">
+        {/* shrink-0 + nowrap: senza, la SearchBar in flex-1 comprime la nav
+            e le voci di due parole ("Chi siamo") vanno a capo. */}
+        <nav className="hidden shrink-0 items-center gap-6 whitespace-nowrap text-sm font-medium text-foreground/85 lg:flex">
           <Link href="/eventi" className="transition-opacity hover:opacity-75">Eventi</Link>
           <Link href="/artisti" className="transition-opacity hover:opacity-75">Artisti</Link>
           <Link href="/format" className="transition-opacity hover:opacity-75">Format</Link>
