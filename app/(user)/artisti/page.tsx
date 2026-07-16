@@ -21,10 +21,16 @@ export default async function ArtistiPage() {
   };
   let rows: ArtistRow[] = [];
   {
+    // Ranking per piano. `artist_tier_enum` è dichiarato ('free','pro','max') e
+    // Postgres ordina gli enum per ordine di dichiarazione: `tier desc` è quindi
+    // già max → pro → free, senza bisogno di una colonna di peso.
+    // ArtistsExplorer filtra client-side preservando l'ordine dell'array, per
+    // cui questo order copre tutto il roster e la ricerca a valle.
     const full = await supabase
       .from("artists")
       .select("id, slug, stage_name, city, genre, instruments, cover_image, price_band, tier")
       .eq("status", "approved")
+      .order("tier", { ascending: false })
       .order("stage_name", { ascending: true });
     if (full.error) {
       console.error("[ArtistiPage] full select error", full.error);

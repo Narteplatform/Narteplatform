@@ -3,10 +3,10 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
   ARTIST_VIDEO_BUCKET,
   MAX_VIDEO_BYTES,
-  MAX_VIDEO_PER_ARTIST,
   formatMb,
   isAllowedVideoMime,
 } from "@/lib/upload/video-limits";
+import { checkCollectionLimit, getEntitlements } from "@/lib/billing/entitlements";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,15 +81,17 @@ export async function POST(request: Request) {
 
   // Il tetto va verificato anche qui: il client può essere aggirato, e senza
   // questo controllo il file finirebbe comunque nello storage a nostre spese.
+  // Questa è la seconda porta d'ingresso dei video (l'altra è addArtistVideo):
+  // qui si concede la signed URL, quindi il gate deve precedere l'upload, non
+  // seguirlo.
+  const ent = await getEntitlements(artistId);
   const { count } = await admin
     .from("artist_videos")
     .select("id", { count: "exact", head: true })
     .eq("artist_id", artistId);
-  if ((count ?? 0) >= MAX_VIDEO_PER_ARTIST) {
-    return NextResponse.json(
-      { error: `Hai già ${MAX_VIDEO_PER_ARTIST} video. Eliminane uno per caricarne un altro.` },
-      { status: 409 }
-    );
+  const videoCheck = checkCollectionLimit(ent, "video", count ?? 0, (count ?? 0) + 1);
+  if (!videoCheck.ok) {
+    return NextResponse.json({ error: videoCheck.error }, { status: 409 });
   }
 
   // Stesso schema di /api/upload: il prefisso user.id è l'invariante su cui si

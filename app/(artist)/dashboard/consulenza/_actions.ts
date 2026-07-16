@@ -6,6 +6,7 @@ import { createElement } from "react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/emails/send";
 import ConsultationRequestEmail from "@/lib/emails/templates/ConsultationRequestEmail";
+import { checkMonthlyQuota, getEntitlementsForUser } from "@/lib/billing/entitlements";
 
 const ADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "boostcreativeai@gmail.com";
 
@@ -39,6 +40,20 @@ export async function bookConsultationAsArtist(input: {
   const role = (profile as { role?: string } | null)?.role;
   if (role !== "artist" && role !== "superadmin") {
     return { ok: false as const, error: "Solo artisti possono prenotare con auto-conferma" };
+  }
+
+  // Quota di piano. Il superadmin non ha un profilo artista collegato e non
+  // viene limitato: prenota per conto del team.
+  if (role === "artist") {
+    const ctx = await getEntitlementsForUser(user.id);
+    if (ctx) {
+      const quota = await checkMonthlyQuota(
+        { artistId: ctx.artistId, userId: user.id },
+        ctx.entitlements,
+        "consultation"
+      );
+      if (!quota.ok) return { ok: false as const, error: quota.error };
+    }
   }
 
   const { data: slot } = await admin

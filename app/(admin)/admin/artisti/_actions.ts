@@ -19,25 +19,48 @@ async function ensureAdmin() {
   return { ok: true as const, user };
 }
 
-const tierSchema = z.enum(["free", "pro", "max"]);
+const tierOverrideSchema = z.object({
+  tier: z.enum(["free", "pro", "max"]),
+  expiresAt: z.string().datetime().nullable().optional(),
+  reason: z.string().max(500).nullable().optional(),
+});
 
-export async function updateArtistTier(
-  artistId: string,
-  tier: z.infer<typeof tierSchema>
-) {
+export type TierOverrideInput = z.infer<typeof tierOverrideSchema>;
+
+/**
+ * Concede (o revoca) un override manuale del piano — un omaggio, una
+ * partnership, un comp.
+ *
+ * NON scrive `artists.tier`: quella colonna è una cache derivata, protetta a
+ * livello DB dal trigger di 0038, e ricalcolata da `compute_artist_tier()` =
+ * coalesce(override valido, subscription Stripe live, free). Scriverla
+ * direttamente — come faceva la versione precedente — significava che il primo
+ * webhook Stripe successivo avrebbe cancellato l'omaggio senza lasciare traccia.
+ *
+ * `tier: "free"` = "nessun override", non "declassa": se l'artista ha una
+ * subscription attiva quella continua a valere. Per togliere un piano pagato si
+ * cancella la subscription su Stripe.
+ */
+export async function updateArtistTier(artistId: string, input: TierOverrideInput) {
   const ctx = await ensureAdmin();
   if (!ctx.ok) return ctx;
-  if (!tierSchema.safeParse(tier).success) {
-    return { ok: false as const, error: "Tier non valido" };
-  }
+
+  const parsed = tierOverrideSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "Dati override non validi" };
+
   const admin = createAdminClient();
-  const updates: { tier: "free" | "pro" | "max"; percorso_artistico?: null } = { tier };
-  if (tier === "free") updates.percorso_artistico = null;
-  const { error } = await admin.from("artists").update(updates).eq("id", artistId);
+  const { error } = await admin.rpc("admin_set_artist_tier", {
+    p_artist_id: artistId,
+    p_tier: parsed.data.tier,
+    p_expires_at: parsed.data.expiresAt ?? null,
+    p_reason: parsed.data.reason ?? null,
+  });
   if (error) return { ok: false as const, error: error.message };
+
   revalidatePath(`/admin/artisti/${artistId}`);
   revalidatePath("/admin/artisti");
   revalidatePath("/dashboard/profilo-artista");
+  revalidatePath("/artisti");
   return { ok: true as const };
 }
 

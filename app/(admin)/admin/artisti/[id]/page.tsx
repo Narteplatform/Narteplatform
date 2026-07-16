@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
+import type { ArtistTier } from "@/lib/supabase/types";
 import { ArtistStatusToggle } from "@/components/admin/ArtistStatusToggle";
 import { ArtistEditForm } from "@/components/admin/ArtistEditForm";
 import { ArtistTierSelect } from "@/components/admin/ArtistTierSelect";
@@ -55,6 +56,14 @@ export default async function AdminArtistDetailPage({
   if (!artist) notFound();
 
   const social = (artist.social_links ?? {}) as SocialLinks;
+  // Cast come il resto del file: `artist` risolve a `never` per la deriva nota
+  // dei tipi Supabase (next.config.ts → typescript.ignoreBuildErrors).
+  const tierFields = artist as unknown as {
+    tier: ArtistTier | null;
+    tier_override: ArtistTier | null;
+    tier_override_expires_at: string | null;
+    tier_override_reason: string | null;
+  };
   const genreOptions = (genresData ?? []).map((g) => g.name as string);
   type ConfirmedRow = {
     id: string;
@@ -123,7 +132,10 @@ export default async function AdminArtistDetailPage({
         <CardContent className="pt-2 space-y-2">
           <ArtistTierSelect
             artistId={artist.id}
-            tier={(artist as { tier?: "free" | "pro" | "max" }).tier ?? "free"}
+            effectiveTier={tierFields.tier ?? "free"}
+            override={tierFields.tier_override ?? null}
+            overrideExpiresAt={tierFields.tier_override_expires_at ?? null}
+            overrideReason={tierFields.tier_override_reason ?? null}
           />
           <p className="text-xs text-muted-foreground">
             Il campo <em>Percorso artistico</em> (cover artist, tribute band,

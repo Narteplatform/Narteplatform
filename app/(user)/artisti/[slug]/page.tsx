@@ -12,7 +12,8 @@ import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
 import { BookingInformation } from "@/components/marketing/BookingInformation";
 import { ArtistToolsSocialTabs } from "@/components/marketing/ArtistToolsSocialTabs";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
-import type { PriceBand } from "@/lib/supabase/types";
+import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
+import { entitlementsFor } from "@/lib/billing/plans";
 
 type SocialLinks = {
   instagram?: string | null;
@@ -175,6 +176,7 @@ export default async function ArtistDetailPage({
     audio_files?: { url: string; title: string }[] | null;
     social_links?: SocialLinks | string | null;
     price_band?: PriceBand | null;
+    tier?: ArtistTier | null;
     price_range?: string | null;
     gig_min_minutes?: number | null;
     gig_max_minutes?: number | null;
@@ -308,13 +310,33 @@ export default async function ArtistDetailPage({
   } catch {
     social = {};
   }
-  const gallery: string[] = Array.isArray(artist.gallery) ? artist.gallery : [];
-  const videos: string[] = Array.isArray(artist.videos) ? artist.videos : [];
-  const audioTracks: { url: string; title: string }[] = Array.isArray(artist.audio_files)
-    ? (artist.audio_files as { url: string; title: string }[]).filter(
-        (t) => t && typeof t.url === "string"
-      )
-    : [];
+  // Soft cap di piano: il contenuto oltre il limite non viene mai cancellato,
+  // semplicemente non compare sul profilo pubblico. L'artista continua a
+  // vederlo nel proprio editor (marcato come non visibile) e un upgrade lo
+  // ripristina all'istante. `slice` su un limite Infinity restituisce l'array
+  // intero, quindi Pro/Max non sono toccati.
+  const ent = entitlementsFor(artist.tier ?? "free");
+
+  const gallery: string[] = (Array.isArray(artist.gallery) ? artist.gallery : []).slice(
+    0,
+    ent.galleryMax
+  );
+  // `videos` (URL YouTube/Vimeo) e `uploadedVideos` (file su artist_videos)
+  // sono due collezioni distinte ma un'unica feature di piano: vanno cappate
+  // insieme, altrimenti un artista Free continuerebbe a mostrare i suoi
+  // YouTube dopo il downgrade.
+  const videos: string[] = ent.videoMax === 0
+    ? []
+    : (Array.isArray(artist.videos) ? artist.videos : []).slice(0, ent.videoMax);
+  if (ent.videoMax === 0) uploadedVideos = [];
+  else uploadedVideos = uploadedVideos.slice(0, ent.videoMax);
+  const audioTracks: { url: string; title: string }[] = (
+    Array.isArray(artist.audio_files)
+      ? (artist.audio_files as { url: string; title: string }[]).filter(
+          (t) => t && typeof t.url === "string"
+        )
+      : []
+  ).slice(0, ent.audioMax);
   const instruments: string[] = Array.isArray(artist.instruments) ? artist.instruments : [];
   const genres: string[] = Array.isArray(artist.genre) ? artist.genre : [];
   const bio = artist.bio ?? null;

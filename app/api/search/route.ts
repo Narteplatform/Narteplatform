@@ -23,11 +23,14 @@ export async function GET(request: Request) {
   const supabase = createAdminClient();
 
   const [{ data: artists }, { data: events }] = await Promise.all([
+    // `tier desc` prima del limit: con solo 5 risultati la priorità di piano
+    // deve decidere CHI entra nei 5, non solo come sono ordinati.
     supabase
       .from("artists")
       .select("slug, stage_name, city, cover_image, genre, status")
       .eq("status", "approved")
       .or(`stage_name.ilike.${like},city.ilike.${like}`)
+      .order("tier", { ascending: false })
       .limit(5),
     supabase
       .from("events")

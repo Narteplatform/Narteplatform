@@ -2,11 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import {
-  ARTIST_VIDEO_BUCKET,
-  MAX_VIDEO_PER_ARTIST,
-  isAllowedVideoMime,
-} from "@/lib/upload/video-limits";
+import { ARTIST_VIDEO_BUCKET, isAllowedVideoMime } from "@/lib/upload/video-limits";
+import { entitlementsFor } from "@/lib/billing/plans";
+import { checkCollectionLimit, getEntitlements } from "@/lib/billing/entitlements";
+import type { ArtistTier } from "@/lib/supabase/types";
 
 type AudioTrack = { url: string; title: string };
 type PersonnelMember = { name: string; role: string };
@@ -71,18 +70,45 @@ export async function updateArtistProfile(artistId: string, update: ProfileUpdat
 
   const admin = createAdminClient();
 
-  // percorso_artistico solo per tier pro/max — verifica server-side
+  // Stato corrente: serve per la regola del delta. Senza `currentCount` un
+  // artista sceso a Free con la gallery piena resterebbe bloccato anche solo
+  // per cambiare la bio.
+  const { data: currentRow } = await admin
+    .from("artists")
+    .select("tier, gallery, audio_files, percorso_artistico")
+    .eq("id", artistId)
+    .maybeSingle();
+  const current = currentRow as {
+    tier?: ArtistTier;
+    gallery?: string[] | null;
+    audio_files?: AudioTrack[] | null;
+    percorso_artistico?: ProfileUpdate["percorso_artistico"];
+  } | null;
+
+  const ent = entitlementsFor(current?.tier ?? "free");
+
+  const galleryCheck = checkCollectionLimit(
+    ent,
+    "gallery",
+    current?.gallery?.length ?? 0,
+    update.gallery.length
+  );
+  if (!galleryCheck.ok) return { ok: false as const, error: galleryCheck.error };
+
+  const audioCheck = checkCollectionLimit(
+    ent,
+    "audio",
+    current?.audio_files?.length ?? 0,
+    update.audio_files.length
+  );
+  if (!audioCheck.ok) return { ok: false as const, error: audioCheck.error };
+
+  // percorso_artistico: gate di scrittura. Chi non ha il piano non può
+  // IMPOSTARLO, ma un valore già presente non viene toccato — il downgrade
+  // nasconde, non cancella (vedi 0040_relax_percorso_trigger.sql).
   let payload: ProfileUpdate = update;
-  if (payload.percorso_artistico) {
-    const { data: artistRow } = await admin
-      .from("artists")
-      .select("tier")
-      .eq("id", artistId)
-      .maybeSingle();
-    const tier = (artistRow as { tier?: string } | null)?.tier ?? "free";
-    if (tier !== "pro" && tier !== "max") {
-      payload = { ...payload, percorso_artistico: null };
-    }
+  if (!ent.canSetPercorso) {
+    payload = { ...payload, percorso_artistico: current?.percorso_artistico ?? null };
   }
 
   const { error } = await admin
@@ -252,16 +278,13 @@ export async function addArtistVideo(input: {
 
   const admin = createAdminClient();
 
+  const ent = await getEntitlements(input.artist_id);
   const { count } = await admin
     .from("artist_videos")
     .select("id", { count: "exact", head: true })
     .eq("artist_id", input.artist_id);
-  if ((count ?? 0) >= MAX_VIDEO_PER_ARTIST) {
-    return {
-      ok: false as const,
-      error: `Hai già ${MAX_VIDEO_PER_ARTIST} video. Eliminane uno per caricarne un altro.`,
-    };
-  }
+  const videoCheck = checkCollectionLimit(ent, "video", count ?? 0, (count ?? 0) + 1);
+  if (!videoCheck.ok) return { ok: false as const, error: videoCheck.error };
 
   const { data, error } = await admin
     .from("artist_videos")

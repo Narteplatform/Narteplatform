@@ -74,6 +74,9 @@ export interface Database {
           price_band: PriceBand;
           status: ArtistStatus;
           tier: ArtistTier;
+          tier_override: ArtistTier | null;
+          tier_override_expires_at: string | null;
+          tier_override_reason: string | null;
           percorso_artistico: ArtistPath | null;
           price_range: string | null;
           gig_min_minutes: number | null;
@@ -1033,6 +1036,23 @@ export interface Database {
         Args: { p_message_id: string };
         Returns: Json;
       };
+      compute_artist_tier: {
+        Args: { p_artist_id: string };
+        Returns: ArtistTier;
+      };
+      sync_artist_tier: {
+        Args: { p_artist_id: string };
+        Returns: ArtistTier;
+      };
+      admin_set_artist_tier: {
+        Args: {
+          p_artist_id: string;
+          p_tier: ArtistTier;
+          p_expires_at?: string | null;
+          p_reason?: string | null;
+        };
+        Returns: ArtistTier;
+      };
     };
     Enums: {
       role_enum: Role;
@@ -1045,6 +1065,8 @@ export interface Database {
       booking_status_enum: BookingStatus;
       chat_message_kind: ChatMessageKind;
       chat_offer_status: ChatOfferStatus;
+      artist_tier_enum: ArtistTier;
+      artist_path_enum: ArtistPath;
     };
     CompositeTypes: { [_ in never]: never };
   };
