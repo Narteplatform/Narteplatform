@@ -25,6 +25,30 @@ const CTA_LABEL: Record<ArtistTier, string> = {
 };
 
 /**
+ * Stile per piano. Le card "piene" (Pro corallo, Max azzurro) hanno sfondo a
+ * gradiente e quindi TUTTO il testo e gli elementi in bianco, per leggibilità.
+ * `ctaText` è il colore del testo del pulsante bianco, in tinta con la card.
+ */
+const CARD_STYLE: Record<
+  ArtistTier,
+  { filled: boolean; gradient: string; ctaText: string; recommended: boolean }
+> = {
+  free: { filled: false, gradient: "", ctaText: "", recommended: false },
+  pro: {
+    filled: true,
+    gradient: "from-corallo-light via-corallo to-corallo-dark",
+    ctaText: "text-corallo-dark",
+    recommended: true,
+  },
+  max: {
+    filled: true,
+    gradient: "from-azzurro-light via-azzurro to-azzurro-dark",
+    ctaText: "text-azzurro-dark",
+    recommended: false,
+  },
+};
+
+/**
  * Vista a card dei piani per la home: tre schede affiancate con listino,
  * checklist e la scheda "Più scelto" (Pro) evidenziata col gradiente corallo.
  * Il confronto completo resta la tabella su /prezzi e nella dashboard.
@@ -69,28 +93,33 @@ export function HomePricing() {
       {/* Schede piano */}
       <div className="grid items-stretch gap-6 md:grid-cols-3">
         {TIERS.map((tier) => {
-          const highlight = tier === "pro";
+          const style = CARD_STYLE[tier];
+          const filled = style.filled;
           const cents = PLAN_PRICES_CENTS[tier][interval];
           return (
             <div
               key={tier}
               className={cn(
                 "relative flex flex-col rounded-2xl border p-7 transition-all duration-220 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                highlight
-                  ? "border-transparent bg-gradient-to-br from-corallo-light via-corallo to-corallo-dark text-white shadow-[var(--shadow-brand)] md:-translate-y-3"
+                filled
+                  ? cn(
+                      "border-transparent bg-gradient-to-br text-white shadow-[var(--shadow-brand)]",
+                      style.gradient,
+                      style.recommended && "md:-translate-y-3"
+                    )
                   : "border-border bg-surface text-notte shadow-[var(--shadow-sm)] hover:-translate-y-1 hover:shadow-[var(--shadow-md)]"
               )}
             >
-              {highlight && (
+              {style.recommended && (
                 <span className="absolute right-6 top-7 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-white backdrop-blur">
                   Più scelto
                 </span>
               )}
 
-              <h3 className={cn("font-display text-lg tracking-tight", highlight ? "text-white" : "text-notte")}>
+              <h3 className={cn("font-display text-lg tracking-tight", filled ? "text-white" : "text-notte")}>
                 {PLAN_LABELS[tier]}
               </h3>
-              <p className={cn("mt-1 text-sm", highlight ? "text-white/80" : "text-notte/60")}>
+              <p className={cn("mt-1 text-sm", filled ? "text-white/80" : "text-notte/60")}>
                 {PLAN_TAGLINES[tier]}
               </p>
 
@@ -99,12 +128,12 @@ export function HomePricing() {
                   {cents === 0 ? "Gratis" : formatPrice(cents)}
                 </span>
                 {cents > 0 && (
-                  <span className={cn("pb-1 text-sm", highlight ? "text-white/70" : "text-notte/50")}>
+                  <span className={cn("pb-1 text-sm", filled ? "text-white/70" : "text-notte/50")}>
                     /{interval === "month" ? "mese" : "anno"}
                   </span>
                 )}
               </div>
-              <p className={cn("mt-1 min-h-[1.25rem] text-xs", highlight ? "text-white/70" : "text-notte/50")}>
+              <p className={cn("mt-1 min-h-[1.25rem] text-xs", filled ? "text-white/70" : "text-notte/50")}>
                 {cents === 0
                   ? "Per sempre, senza carta"
                   : interval === "year"
@@ -113,10 +142,13 @@ export function HomePricing() {
               </p>
 
               <div className="mt-6">
-                {highlight ? (
+                {filled ? (
                   <Link
                     href={CTA_HREF}
-                    className="inline-flex h-12 w-full items-center justify-center rounded-md bg-white px-5 text-sm font-semibold text-corallo-dark transition hover:bg-palco"
+                    className={cn(
+                      "inline-flex h-12 w-full items-center justify-center rounded-md bg-white px-5 text-sm font-semibold transition hover:bg-palco",
+                      style.ctaText
+                    )}
                   >
                     {CTA_LABEL[tier]}
                   </Link>
@@ -127,7 +159,7 @@ export function HomePricing() {
                 )}
               </div>
 
-              <div className={cn("my-6 h-px w-full", highlight ? "bg-white/20" : "bg-border")} />
+              <div className={cn("my-6 h-px w-full", filled ? "bg-white/20" : "bg-border")} />
 
               <ul className="flex flex-1 flex-col gap-3 text-sm">
                 {PLAN_CARD_HIGHLIGHTS[tier].map((feat) => (
@@ -135,12 +167,12 @@ export function HomePricing() {
                     <span
                       className={cn(
                         "mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full",
-                        highlight ? "bg-white/20 text-white" : "bg-azzurro/10 text-azzurro"
+                        filled ? "bg-white/20 text-white" : "bg-azzurro/10 text-azzurro"
                       )}
                     >
                       <Check className="size-3" />
                     </span>
-                    <span className={cn(highlight ? "text-white/90" : "text-notte/80")}>{feat}</span>
+                    <span className={cn(filled ? "text-white/90" : "text-notte/80")}>{feat}</span>
                   </li>
                 ))}
               </ul>
