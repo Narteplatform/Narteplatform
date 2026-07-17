@@ -24,10 +24,25 @@
 -- =========================================
 -- subscriptions: da artist_id a user_id
 -- =========================================
--- Il trigger vecchio ragiona su new.artist_id: va rimosso prima di toccare le
--- colonne, altrimenti fallisce al primo insert.
+-- ⚠️  ORDINE VINCOLANTE. Tutto ciò che dipende da `artist_id` va rimosso PRIMA
+--     della colonna, altrimenti Postgres rifiuta con 2BP01 ("cannot drop column
+--     ... because other objects depend on it"). Non si usa `drop column ...
+--     cascade`: porterebbe via silenziosamente qualunque oggetto dipendente,
+--     inclusi quelli che non conosciamo. Meglio elencarli e sapere cosa cade.
+
+-- 1. Il trigger vecchio ragiona su new.artist_id.
 drop trigger if exists subscriptions_sync_tier_trg on public.subscriptions;
 
+-- 2. La policy di 0039 legge artist_id: è la dipendenza che blocca il drop.
+drop policy if exists "subscriptions read own artist" on public.subscriptions;
+drop policy if exists "subscriptions read self" on public.subscriptions;
+
+-- 3. Gli indici su artist_id cadrebbero da soli col drop della colonna, ma
+--    toglierli qui rende esplicito cosa sparisce.
+drop index if exists public.subscriptions_artist_idx;
+drop index if exists public.subscriptions_live_idx;
+
+-- 4. Ora la colonna è libera.
 alter table public.subscriptions
   drop column if exists artist_id;
 
@@ -45,9 +60,7 @@ alter table public.subscriptions
   add constraint subscriptions_user_id_fkey
   foreign key (user_id) references auth.users(id) on delete cascade;
 
-drop index if exists public.subscriptions_artist_idx;
-drop index if exists public.subscriptions_live_idx;
-
+-- Indici e policy ricreati sulla nuova chiave (i vecchi sono già caduti sopra).
 create index if not exists subscriptions_user_idx
   on public.subscriptions(user_id);
 
@@ -55,8 +68,6 @@ create index if not exists subscriptions_live_idx
   on public.subscriptions(user_id)
   where status in ('trialing', 'active', 'past_due');
 
-drop policy if exists "subscriptions read own artist" on public.subscriptions;
-drop policy if exists "subscriptions read self" on public.subscriptions;
 create policy "subscriptions read self"
   on public.subscriptions for select
   using (user_id = auth.uid() or public.is_superadmin(auth.uid()));
