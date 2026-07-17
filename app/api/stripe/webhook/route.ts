@@ -212,7 +212,29 @@ export async function POST(request: Request) {
     // recente. Rileggendo da Stripe si persiste sempre l'ultimo stato reale, e
     // il problema dell'ordinamento sparisce per costruzione. Costa una chiamata
     // per evento: su questi volumi, un prezzo che vale la correttezza.
-    const sub = await getStripe().subscriptions.retrieve(subId);
+    let sub: Stripe.Subscription;
+    try {
+      sub = await getStripe().subscriptions.retrieve(subId);
+    } catch (e) {
+      // Subscription inesistente su Stripe (cancellata e purgata, oggetto di
+      // un altro account, id malformato). È un errore NON RITENTABILE: rispondere
+      // 500 farebbe ritentare Stripe per giorni su qualcosa che non tornerà mai.
+      // Si registra e si chiude con 200.
+      const err = e as { statusCode?: number; code?: string; message?: string };
+      if (err.statusCode === 404 || err.code === "resource_missing") {
+        console.error("[stripe/webhook] subscription inesistente, evento chiuso", {
+          subscription: subId,
+          type: event.type,
+        });
+        await admin
+          .from("stripe_webhook_events")
+          .update({ processed_at: new Date().toISOString(), error: `subscription ${subId} inesistente su Stripe` })
+          .eq("id", event.id);
+        return NextResponse.json({ received: true, skipped: "subscription-missing" });
+      }
+      throw e; // errore di rete o 5xx di Stripe: quello sì va ritentato
+    }
+
     const result = await upsertSubscription(sub, event);
 
     await admin
