@@ -4,8 +4,12 @@ Non-discoverable landmines for agents working on N'arte. For stack/architecture 
 
 ## Setup landmines
 
-- **Supabase CLI is not installed and not linked.** Use `npx supabase` for one-off commands. `supabase login` is interactive (browser) and won't work non-interactively. The DB password is **not** stored anywhere — never assume `supabase db push` works.
-- **Migrations are applied via the SQL Editor**, not the CLI. New SQL goes in `supabase/migrations/000N_*.sql`; tell the user to paste it at https://supabase.com/dashboard/project/nppzchkgzltcokvxcpji/sql/new.
+- **Supabase CLI is not installed and not linked.** Use `npx supabase` for one-off commands. `supabase login` is interactive (browser) and won't work non-interactively. Never assume `supabase db push` works.
+- **Migrations: `npm run db:apply` works ONLY if `DATABASE_URL` is set** in `.env.local` with the real DB password (Supabase → Settings → Database). By default it's the `YOUR_DB_PASSWORD` placeholder and the script exits 1 with instructions. Without it, migrations go through the SQL Editor: https://supabase.com/dashboard/project/nppzchkgzltcokvxcpji/sql/new
+  - Use the **pooler connection string in session mode (port 5432)**. The direct `db.<ref>.supabase.co` host is IPv6-only without the IPv4 add-on and fails with `ENETUNREACH` from most networks. Transaction mode (6543) can't run all the DDL here.
+  - The script tracks applied files in `public.schema_migrations` and runs each **once**. On a DB already migrated by hand, run `npm run db:apply -- --baseline` first, or it will try to re-run everything — including `0002/0016/0030/0032/0037_seed_*.sql`, and `0030_seed_booking_info.sql` has no `on conflict` guard.
+  - It stops at the first failure and rolls that file back; later migrations are not applied. `--status` and `--dry-run` are read-only.
+- **The SQL Editor runs a whole script as one implicit transaction.** A failure anywhere rolls back the entire file — so a half-applied migration is not a state you normally have to clean up.
 - **Smoke-test connection with `npm run db:check`** before any DB-touching task. It hits all 8 tables + buckets + admin auth API.
 
 ## Type-system landmines
