@@ -235,9 +235,14 @@ begin
    where user_id = new.user_id;
 
   if v_count >= v_max then
+    -- Messaggio letto da un utente vero, in italiano: la concordanza al
+    -- singolare va gestita ("1 profilo", non "1 profili").
     raise exception
-      'Il piano % consente % profili artista: l''account ne ha già %.',
-      upper(v_tier::text), v_max, v_count
+      'Il piano % consente % %: l''account ne ha già %. Passa a un piano superiore per aggiungerne altri.',
+      upper(v_tier::text),
+      v_max,
+      case when v_max = 1 then 'profilo artista' else 'profili artista' end,
+      v_count
       using errcode = '23514';
   end if;
 
