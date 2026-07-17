@@ -24,11 +24,18 @@ if (!key) {
 }
 const stripe = new Stripe(key, { apiVersion: "2026-06-24.dahlia" });
 
-// Guardia: questo script non deve MAI girare per sbaglio sull'account live.
-if (key.startsWith("sk_live_")) {
-  console.error("🚨 Chiave LIVE rilevata. Questo script è pensato per il test mode.");
-  console.error("   Per creare i price in produzione, fallo consapevolmente dalla dashboard Stripe.");
+// Guardia: con una chiave LIVE lo script crea prodotti/price VERI, che poi
+// incasseranno denaro reale. Non deve mai partire in live per sbaglio, quindi
+// serve il flag esplicito --live.
+const allowLive = process.argv.includes("--live");
+if (key.startsWith("sk_live_") && !allowLive) {
+  console.error("🚨 Chiave LIVE rilevata. Questo crea i price in PRODUZIONE (denaro reale).");
+  console.error("   Se è ciò che vuoi, rilancia con il flag esplicito:");
+  console.error("     node --env-file=.env.local scripts/stripe-setup-prices.mjs --live");
   process.exit(1);
+}
+if (key.startsWith("sk_live_") && allowLive) {
+  console.log("🔴 MODALITÀ LIVE — sto creando prodotti e price REALI sull'account di produzione.\n");
 }
 
 const PLANS = [
