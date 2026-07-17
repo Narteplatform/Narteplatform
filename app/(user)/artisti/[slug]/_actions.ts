@@ -57,14 +57,14 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
 
     const { data: artist, error: artistErr } = await admin
       .from("artists")
-      .select("id, stage_name, status, user_id")
+      .select("id, stage_name, status, is_public, user_id")
       .eq("id", data.artistId)
       .maybeSingle();
     if (artistErr) {
       console.error("[booking]", rid, "step=artist-lookup-fail", artistErr);
       return publicError(rid, isProd ? "Artista non disponibile" : artistErr.message);
     }
-    if (!artist || artist.status !== "approved") {
+    if (!artist || !artist.is_public) {
       console.warn("[booking]", rid, "step=artist-not-approved", {
         found: !!artist,
         status: artist?.status,

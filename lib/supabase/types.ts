@@ -77,6 +77,10 @@ export interface Database {
           tier_override: ArtistTier | null;
           tier_override_expires_at: string | null;
           tier_override_reason: string | null;
+          plan_suspended: boolean;
+          plan_suspended_at: string | null;
+          /** Colonna generata: status = 'approved' and not plan_suspended. Sola lettura. */
+          is_public: boolean;
           percorso_artistico: ArtistPath | null;
           price_range: string | null;
           gig_min_minutes: number | null;

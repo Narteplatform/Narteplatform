@@ -46,7 +46,7 @@ export default async function ArtistDetailPage({
       .from("artists")
       .select("stage_name, cover_image, genre, instruments")
       .eq("slug", slug)
-      .eq("status", "approved")
+      .eq("is_public", true)
       .maybeSingle();
     if (!locked) notFound();
     return (
@@ -194,7 +194,7 @@ export default async function ArtistDetailPage({
       .from("artists")
       .select("*")
       .eq("slug", slug)
-      .eq("status", "approved")
+      .eq("is_public", true)
       .maybeSingle();
     if (r.error) console.error("[ArtistDetailPage] artists select error", r.error);
     artistRaw = (r.data as unknown as ArtistRow) ?? null;

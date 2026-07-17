@@ -12,7 +12,7 @@ async function getStars(limit = 8): Promise<ArtistCardProps[]> {
     const { data } = await supabase
       .from("artists")
       .select("slug, stage_name, city, cover_image, genre")
-      .eq("status", "approved")
+      .eq("is_public", true)
       .order("created_at", { ascending: false })
       .limit(limit);
     return (data ?? []).map((a) => ({

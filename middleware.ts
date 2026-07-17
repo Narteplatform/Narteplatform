@@ -147,6 +147,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/health|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif)$).*)",
+    // `api/stripe` escluso: il webhook non ha cookie di sessione, quindi il
+    // refresh auth qui sarebbe puro spreco — e Stripe considera fallito un
+    // webhook che non risponde entro ~20s, ritentandolo.
+    "/((?!_next/static|_next/image|favicon.ico|api/health|api/stripe|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif)$).*)",
   ],
 };

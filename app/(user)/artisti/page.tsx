@@ -29,7 +29,7 @@ export default async function ArtistiPage() {
     const full = await supabase
       .from("artists")
       .select("id, slug, stage_name, city, genre, instruments, cover_image, price_band, tier")
-      .eq("status", "approved")
+      .eq("is_public", true)
       .order("tier", { ascending: false })
       .order("stage_name", { ascending: true });
     if (full.error) {
@@ -37,7 +37,7 @@ export default async function ArtistiPage() {
       const minimal = await supabase
         .from("artists")
         .select("id, slug, stage_name, city, genre, cover_image")
-        .eq("status", "approved")
+        .eq("is_public", true)
         .order("stage_name", { ascending: true });
       if (minimal.error) console.error("[ArtistiPage] minimal select error", minimal.error);
       rows = ((minimal.data ?? []) as unknown) as ArtistRow[];

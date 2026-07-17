@@ -62,7 +62,7 @@ export async function POST(req: Request) {
 
     const { data: artist, error: artistErr } = await admin
       .from("artists")
-      .select("id, stage_name, status")
+      .select("id, stage_name, status, is_public")
       .eq("id", data.artistId)
       .maybeSingle();
 
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    if (!artist || artist.status !== "approved") {
+    if (!artist || !artist.is_public) {
       console.warn("[booking-api]", rid, "step=artist-not-approved", {
         found: !!artist,
         status: artist?.status,

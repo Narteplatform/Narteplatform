@@ -72,12 +72,12 @@ export async function POST(req: Request) {
     // --- Load artist
     const { data: artist, error: artistErr } = await admin
       .from("artists")
-      .select("id, stage_name, status, user_id")
+      .select("id, stage_name, status, is_public, user_id")
       .eq("id", data.artistId)
       .maybeSingle();
     if (artistErr) return fail(rid, "artist-lookup", artistErr.message, 500);
     if (!artist) return fail(rid, "artist-missing", "Artista non trovato");
-    if (artist.status !== "approved")
+    if (!artist.is_public)
       return fail(rid, "artist-not-approved", "Artista non disponibile");
 
     // --- Current user (if any)

@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     supabase
       .from("artists")
       .select("slug, stage_name, city, cover_image, genre, status")
-      .eq("status", "approved")
+      .eq("is_public", true)
       .or(`stage_name.ilike.${like},city.ilike.${like}`)
       .order("tier", { ascending: false })
       .limit(5),
