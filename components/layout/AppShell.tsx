@@ -74,6 +74,13 @@ export interface AppShellProps {
   recentActivity?: AppShellRecent[];
   whatsNewHref?: string;
   showSearch?: boolean;
+  /**
+   * Controllo di contesto reso nella topbar, sempre visibile.
+   * Usato dall'area artista per il selettore del profilo attivo: non è
+   * un'azione ma il contesto di tutto ciò che la pagina mostra, quindi sta
+   * accanto al breadcrumb e non fra i pulsanti a destra.
+   */
+  topbarSlot?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -100,6 +107,7 @@ export function AppShell({
   recentActivity,
   whatsNewHref,
   showSearch = false,
+  topbarSlot,
   children,
 }: AppShellProps) {
   const pathname = usePathname() ?? "/";
@@ -149,6 +157,12 @@ export function AppShell({
               <Menu className="size-4" />
             </button>
             <Breadcrumb pathname={pathname} brand={brand} />
+            {topbarSlot && (
+              <>
+                <span aria-hidden className="hidden h-5 w-px shrink-0 bg-border sm:block" />
+                <div className="min-w-0 shrink-0">{topbarSlot}</div>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

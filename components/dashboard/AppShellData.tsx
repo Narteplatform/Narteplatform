@@ -24,7 +24,10 @@ import type { ReactNode } from "react";
 import { AppShell, type AppShellRecent, type AppShellStorage, type NavSection } from "@/components/layout/AppShell";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { createAdminClient } from "@/lib/supabase/server";
-import { resolveActiveArtist } from "@/lib/artist/current";
+import { getArtistContext, type OwnedArtist } from "@/lib/artist/current";
+import { getAccountEntitlements } from "@/lib/billing/entitlements";
+import { isUnlimited } from "@/lib/billing/plans";
+import { ArtistProfileSwitcher } from "@/components/dashboard/ArtistProfileSwitcher";
 import { getAllowedAdminPages, isRootSuperadminEmail } from "@/lib/admin/permissions";
 import {
   computeProfileCompletion,
@@ -253,10 +256,18 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
   return { navSections, recentActivity };
 }
 
+/** Contesto del selettore di profilo reso nella topbar. */
+type ArtistProfilesContext = {
+  owned: OwnedArtist[];
+  activeId: string | null;
+  canCreateMore: boolean;
+};
+
 async function loadArtistShell(userId: string): Promise<{
   navSections: NavSection[];
   storage: AppShellStorage | undefined;
   recentActivity: AppShellRecent[];
+  profiles: ArtistProfilesContext;
 }> {
   let admin;
   try {
@@ -267,13 +278,27 @@ async function loadArtistShell(userId: string): Promise<{
       navSections: defaultArtistNav(),
       storage: undefined,
       recentActivity: [],
+      profiles: { owned: [], activeId: null, canCreateMore: false },
     };
   }
 
-  // Profilo ATTIVO. Con più profili sullo stesso account, un
-  // .eq("user_id", …).maybeSingle() qui non sceglierebbe: andrebbe in errore
-  // (PGRST116) e la shell dell'intera dashboard resterebbe senza dati.
-  const activeArtist = await safe(resolveActiveArtist(userId));
+  // Profili dell'account e profilo ATTIVO, in una sola risoluzione: servono sia
+  // ai dati della shell sia al selettore in topbar.
+  // Con più profili, un .eq("user_id", …).maybeSingle() qui non sceglierebbe:
+  // andrebbe in errore (PGRST116) e la shell dell'intera dashboard resterebbe
+  // senza dati.
+  const ctx = await safe(getArtistContext(userId));
+  const owned = ctx?.owned ?? [];
+  const activeArtist = ctx?.active ?? null;
+
+  const accountEnt = await safe(getAccountEntitlements(userId));
+  const maxProfiles = accountEnt?.artistProfilesMax ?? 1;
+  const profiles: ArtistProfilesContext = {
+    owned,
+    activeId: activeArtist?.id ?? null,
+    canCreateMore: isUnlimited(maxProfiles) || owned.length < maxProfiles,
+  };
+
   const artistRes = activeArtist
     ? await safe(
         admin
@@ -402,7 +427,7 @@ async function loadArtistShell(userId: string): Promise<{
     name: l.event_location ?? l.contact_email,
   }));
 
-  return { navSections, storage, recentActivity };
+  return { navSections, storage, recentActivity, profiles };
 }
 
 function defaultAdminNav(): NavSection[] {
@@ -764,13 +789,15 @@ export async function ArtistAppShell({
   let navSections: NavSection[];
   let storage: AppShellStorage | undefined;
   let recentActivity: AppShellRecent[];
+  let profiles: ArtistProfilesContext;
   try {
-    ({ navSections, storage, recentActivity } = await loadArtistShell(user.id));
+    ({ navSections, storage, recentActivity, profiles } = await loadArtistShell(user.id));
   } catch (err) {
     console.error("[AppShellData] loadArtistShell crashed:", err);
     navSections = defaultArtistNav();
     storage = undefined;
     recentActivity = [];
+    profiles = { owned: [], activeId: null, canCreateMore: false };
   }
   return (
     <AppShell
@@ -785,6 +812,13 @@ export async function ArtistAppShell({
       navSections={navSections}
       storage={storage}
       recentActivity={recentActivity}
+      topbarSlot={
+        <ArtistProfileSwitcher
+          owned={profiles.owned}
+          activeId={profiles.activeId}
+          canCreateMore={profiles.canCreateMore}
+        />
+      }
     >
       {children}
     </AppShell>
