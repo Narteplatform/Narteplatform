@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Mail,
   MessageCircle,
+  CreditCard,
   Phone,
   Settings,
   Shapes,
@@ -404,6 +405,11 @@ async function loadArtistShell(userId: string): Promise<{
       href: "/dashboard/feedback",
       label: "Feedback",
       icon: <Star className="size-4" />,
+    },
+    {
+      href: "/dashboard/abbonamento",
+      label: "Abbonamento",
+      icon: <CreditCard className="size-4" />,
     },
   ];
 

@@ -59,6 +59,7 @@ export function Footer() {
             <h4 className="narte-label text-notte-40">Per gli artisti</h4>
             <ul className="mt-4 space-y-2 text-sm">
               <li><Link href="/candidatura-artista" className="transition-opacity hover:opacity-75">Candidati</Link></li>
+              <li><Link href="/prezzi" className="transition-opacity hover:opacity-75">Piani e prezzi</Link></li>
               <li><Link href="/login" className="transition-opacity hover:opacity-75">Area artista</Link></li>
             </ul>
           </div>
