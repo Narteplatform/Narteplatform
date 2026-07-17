@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import {
   PLAN_CARD_HIGHLIGHTS,
@@ -25,35 +24,36 @@ const CTA_LABEL: Record<ArtistTier, string> = {
 };
 
 /**
- * Stile per piano. Le card "piene" (Pro corallo, Max azzurro) hanno sfondo a
- * gradiente e quindi TUTTO il testo e gli elementi in bianco, per leggibilità.
- * `ctaText` è il colore del testo del pulsante bianco, in tinta con la card.
+ * Stile per piano nella sezione scura della home. Tutte le card hanno testo
+ * bianco per leggibilità: Free è una card "glass" translucida, Pro il gradiente
+ * corallo, Max il gradiente azzurro (colore branding diverso da Pro).
  */
 const CARD_STYLE: Record<
   ArtistTier,
-  { filled: boolean; gradient: string; ctaText: string; recommended: boolean }
+  { card: string; cta: string; check: string; recommended: boolean }
 > = {
-  free: { filled: false, gradient: "", ctaText: "", recommended: false },
+  free: {
+    card: "border-white/12 bg-white/[0.06]",
+    cta: "border border-white/25 text-white hover:bg-white/10",
+    check: "bg-white/15 text-white",
+    recommended: false,
+  },
   pro: {
-    filled: true,
-    gradient: "from-corallo-light via-corallo to-corallo-dark",
-    ctaText: "text-corallo-dark",
+    card:
+      "border-transparent bg-gradient-to-br from-corallo-light via-corallo to-corallo-dark shadow-[var(--shadow-brand)] md:-translate-y-3",
+    cta: "bg-white text-corallo-dark hover:bg-palco",
+    check: "bg-white/20 text-white",
     recommended: true,
   },
   max: {
-    filled: true,
-    gradient: "from-azzurro-light via-azzurro to-azzurro-dark",
-    ctaText: "text-azzurro-dark",
+    card:
+      "border-transparent bg-gradient-to-br from-azzurro-light via-azzurro to-azzurro-dark shadow-[var(--shadow-brand)]",
+    cta: "bg-white text-azzurro-dark hover:bg-palco",
+    check: "bg-white/20 text-white",
     recommended: false,
   },
 };
 
-/**
- * Vista a card dei piani per la home: tre schede affiancate con listino,
- * checklist e la scheda "Più scelto" (Pro) evidenziata col gradiente corallo.
- * Il confronto completo resta la tabella su /prezzi e nella dashboard.
- * Listino e funzioni arrivano da lib/billing/plans.ts (fonte unica).
- */
 export function HomePricing() {
   const [interval, setInterval] = useState<BillingInterval>("year");
 
@@ -61,7 +61,7 @@ export function HomePricing() {
     <div className="space-y-10">
       {/* Toggle mensile/annuale */}
       <div className="flex justify-center">
-        <div className="inline-flex items-center gap-1 rounded-full border border-border bg-surface p-1 shadow-[var(--shadow-sm)]">
+        <div className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 p-1">
           {(["month", "year"] as const).map((i) => (
             <button
               key={i}
@@ -70,8 +70,8 @@ export function HomePricing() {
               className={cn(
                 "inline-flex h-9 items-center gap-2 rounded-full px-5 text-sm font-medium transition",
                 interval === i
-                  ? "bg-notte text-palco shadow-sm"
-                  : "text-notte/60 hover:text-notte"
+                  ? "bg-white text-notte shadow-sm"
+                  : "text-white/60 hover:text-white"
               )}
             >
               {i === "month" ? "Mensile" : "Annuale"}
@@ -79,7 +79,7 @@ export function HomePricing() {
                 <span
                   className={cn(
                     "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-                    interval === "year" ? "bg-palco/25 text-palco" : "bg-corallo/15 text-corallo-dark"
+                    interval === "year" ? "bg-notte/10 text-notte" : "bg-corallo/30 text-white"
                   )}
                 >
                   −{annualDiscountPercent("pro")}%
@@ -94,20 +94,13 @@ export function HomePricing() {
       <div className="grid items-stretch gap-6 md:grid-cols-3">
         {TIERS.map((tier) => {
           const style = CARD_STYLE[tier];
-          const filled = style.filled;
           const cents = PLAN_PRICES_CENTS[tier][interval];
           return (
             <div
               key={tier}
               className={cn(
-                "relative flex flex-col rounded-2xl border p-7 transition-all duration-220 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                filled
-                  ? cn(
-                      "border-transparent bg-gradient-to-br text-white shadow-[var(--shadow-brand)]",
-                      style.gradient,
-                      style.recommended && "md:-translate-y-3"
-                    )
-                  : "border-border bg-surface text-notte shadow-[var(--shadow-sm)] hover:-translate-y-1 hover:shadow-[var(--shadow-md)]"
+                "relative flex flex-col rounded-2xl border p-7 text-white transition-all duration-220 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                style.card
               )}
             >
               {style.recommended && (
@@ -116,24 +109,20 @@ export function HomePricing() {
                 </span>
               )}
 
-              <h3 className={cn("font-display text-lg tracking-tight", filled ? "text-white" : "text-notte")}>
-                {PLAN_LABELS[tier]}
-              </h3>
-              <p className={cn("mt-1 text-sm", filled ? "text-white/80" : "text-notte/60")}>
-                {PLAN_TAGLINES[tier]}
-              </p>
+              <h3 className="font-display text-lg tracking-tight text-white">{PLAN_LABELS[tier]}</h3>
+              <p className="mt-1 text-sm text-white/75">{PLAN_TAGLINES[tier]}</p>
 
               <div className="mt-6 flex items-end gap-1">
                 <span className="font-display text-4xl leading-none tracking-tight">
                   {cents === 0 ? "Gratis" : formatPrice(cents)}
                 </span>
                 {cents > 0 && (
-                  <span className={cn("pb-1 text-sm", filled ? "text-white/70" : "text-notte/50")}>
+                  <span className="pb-1 text-sm text-white/60">
                     /{interval === "month" ? "mese" : "anno"}
                   </span>
                 )}
               </div>
-              <p className={cn("mt-1 min-h-[1.25rem] text-xs", filled ? "text-white/70" : "text-notte/50")}>
+              <p className="mt-1 min-h-[1.25rem] text-xs text-white/65">
                 {cents === 0
                   ? "Per sempre, senza carta"
                   : interval === "year"
@@ -141,25 +130,17 @@ export function HomePricing() {
                     : `oppure ${formatPrice(PLAN_PRICES_CENTS[tier].year)}/anno (−${annualDiscountPercent(tier)}%)`}
               </p>
 
-              <div className="mt-6">
-                {filled ? (
-                  <Link
-                    href={CTA_HREF}
-                    className={cn(
-                      "inline-flex h-12 w-full items-center justify-center rounded-md bg-white px-5 text-sm font-semibold transition hover:bg-palco",
-                      style.ctaText
-                    )}
-                  >
-                    {CTA_LABEL[tier]}
-                  </Link>
-                ) : (
-                  <Button asChild variant="outline" size="lg" className="w-full">
-                    <Link href={CTA_HREF}>{CTA_LABEL[tier]}</Link>
-                  </Button>
+              <Link
+                href={CTA_HREF}
+                className={cn(
+                  "mt-6 inline-flex h-12 w-full items-center justify-center rounded-md px-5 text-sm font-semibold transition",
+                  style.cta
                 )}
-              </div>
+              >
+                {CTA_LABEL[tier]}
+              </Link>
 
-              <div className={cn("my-6 h-px w-full", filled ? "bg-white/20" : "bg-border")} />
+              <div className="my-6 h-px w-full bg-white/15" />
 
               <ul className="flex flex-1 flex-col gap-3 text-sm">
                 {PLAN_CARD_HIGHLIGHTS[tier].map((feat) => (
@@ -167,12 +148,12 @@ export function HomePricing() {
                     <span
                       className={cn(
                         "mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full",
-                        filled ? "bg-white/20 text-white" : "bg-azzurro/10 text-azzurro"
+                        style.check
                       )}
                     >
                       <Check className="size-3" />
                     </span>
-                    <span className={cn(filled ? "text-white/90" : "text-notte/80")}>{feat}</span>
+                    <span className="text-white/90">{feat}</span>
                   </li>
                 ))}
               </ul>
