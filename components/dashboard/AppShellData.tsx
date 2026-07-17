@@ -24,6 +24,7 @@ import type { ReactNode } from "react";
 import { AppShell, type AppShellRecent, type AppShellStorage, type NavSection } from "@/components/layout/AppShell";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveActiveArtist } from "@/lib/artist/current";
 import { getAllowedAdminPages, isRootSuperadminEmail } from "@/lib/admin/permissions";
 import {
   computeProfileCompletion,
@@ -269,13 +270,19 @@ async function loadArtistShell(userId: string): Promise<{
     };
   }
 
-  const artistRes = await safe(
-    admin
-      .from("artists")
-      .select(`id, stage_name, ${PROFILE_COMPLETION_COLUMNS}`)
-      .eq("user_id", userId)
-      .maybeSingle()
-  );
+  // Profilo ATTIVO. Con più profili sullo stesso account, un
+  // .eq("user_id", …).maybeSingle() qui non sceglierebbe: andrebbe in errore
+  // (PGRST116) e la shell dell'intera dashboard resterebbe senza dati.
+  const activeArtist = await safe(resolveActiveArtist(userId));
+  const artistRes = activeArtist
+    ? await safe(
+        admin
+          .from("artists")
+          .select(`id, stage_name, ${PROFILE_COMPLETION_COLUMNS}`)
+          .eq("id", activeArtist.id)
+          .maybeSingle()
+      )
+    : null;
   const artist = artistRes?.data ?? null;
 
   let newLeads = 0;
@@ -340,6 +347,11 @@ async function loadArtistShell(userId: string): Promise<{
       href: "/dashboard/profilo-artista",
       label: "Profilo artista",
       icon: <User className="size-4" />,
+    },
+    {
+      href: "/dashboard/profili",
+      label: "I tuoi profili",
+      icon: <Users className="size-4" />,
     },
     {
       href: "/dashboard/calendario",

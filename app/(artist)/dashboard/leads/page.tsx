@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Clock, Mail, Phone, Building2, MapPin } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
+import { resolveActiveArtist } from "@/lib/artist/current";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ArtistRequestActions } from "@/components/organizer/ArtistRequestActions";
@@ -44,11 +45,8 @@ export default async function ArtistLeadsPage({
   const user = await requireRole(["artist", "superadmin"]);
   const supabase = createAdminClient();
 
-  const { data: artist } = await supabase
-    .from("artists")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // Profilo ATTIVO: le richieste arrivano al singolo profilo.
+  const artist = await resolveActiveArtist(user.id);
 
   if (!artist) {
     return (

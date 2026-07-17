@@ -1040,6 +1040,14 @@ export interface Database {
         Args: { p_artist_id: string };
         Returns: ArtistTier;
       };
+      account_tier: {
+        Args: { p_user_id: string };
+        Returns: ArtistTier;
+      };
+      sync_account_tiers: {
+        Args: { p_user_id: string };
+        Returns: undefined;
+      };
       sync_artist_tier: {
         Args: { p_artist_id: string };
         Returns: ArtistTier;

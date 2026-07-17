@@ -7,6 +7,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/emails/send";
 import ConsultationRequestEmail from "@/lib/emails/templates/ConsultationRequestEmail";
 import { checkMonthlyQuota, getEntitlementsForUser } from "@/lib/billing/entitlements";
+import { resolveActiveArtist } from "@/lib/artist/current";
 
 const ADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "boostcreativeai@gmail.com";
 
@@ -79,12 +80,9 @@ export async function bookConsultationAsArtist(input: {
   // Recupera nome artista
   let displayName = (profile as { full_name?: string | null } | null)?.full_name ?? null;
   if (!displayName) {
-    const { data: artist } = await admin
-      .from("artists")
-      .select("stage_name")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    displayName = (artist as { stage_name?: string } | null)?.stage_name ?? "Artista";
+    // Profilo attivo: con più profili, .maybeSingle() qui andrebbe in errore.
+    const active = await resolveActiveArtist(user.id);
+    displayName = active?.stage_name ?? "Artista";
   }
 
   const { error } = await admin.from("consultations").insert({

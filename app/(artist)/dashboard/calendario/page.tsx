@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
+import { resolveActiveArtist } from "@/lib/artist/current";
 import { AvailabilityCalendar } from "@/components/forms/AvailabilityCalendar";
 import { BulkAvailabilityPanel } from "@/components/dashboard/BulkAvailabilityPanel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -10,11 +11,8 @@ export default async function CalendarioPage() {
   const user = await requireRole(["artist", "superadmin"]);
   const supabase = createAdminClient();
 
-  const { data: artist } = await supabase
-    .from("artists")
-    .select("id, stage_name")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // Profilo ATTIVO: il calendario è per-profilo, non per-account.
+  const artist = await resolveActiveArtist(user.id);
 
   if (!artist) {
     return (

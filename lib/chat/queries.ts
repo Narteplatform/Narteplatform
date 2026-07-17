@@ -161,18 +161,23 @@ async function rowsToConversations(
 const CONV_SELECT =
   "id, artist_id, organizer_id, last_message_at, artists!inner(id, stage_name, cover_image, user_id), organizers!inner(id, display_name, avatar_url, user_id)";
 
+/**
+ * Conversazioni di TUTTI i profili dell'account, non solo di quello attivo.
+ *
+ * Scelta deliberata: un account può avere fino a 5 profili, e filtrare sul solo
+ * profilo attivo nasconderebbe i messaggi arrivati agli altri. Un organizzatore
+ * che scrive e non riceve risposta perché l'artista aveva "l'altro profilo
+ * selezionato" è esattamente il danno che questa piattaforma deve evitare.
+ */
 export async function getConversationsForArtist(userId: string): Promise<ConversationItem[]> {
   const admin = createAdminClient();
-  const { data: artist } = await admin
-    .from("artists")
-    .select("id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!artist) return [];
+  const { data: owned } = await admin.from("artists").select("id").eq("user_id", userId);
+  const ids = ((owned ?? []) as unknown as { id: string }[]).map((a) => a.id);
+  if (ids.length === 0) return [];
   const { data } = await admin
     .from("conversations")
     .select(CONV_SELECT)
-    .eq("artist_id", artist.id)
+    .in("artist_id", ids)
     .order("last_message_at", { ascending: false });
   return rowsToConversations((data as unknown as ConvRow[]) ?? [], "artist");
 }
@@ -325,16 +330,16 @@ export async function getUnreadCountForUser(
 ): Promise<number> {
   const admin = createAdminClient();
   if (role === "artist") {
-    const { data: a } = await admin
-      .from("artists")
-      .select("id")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (!a) return 0;
+    // Somma su TUTTI i profili dell'account: un badge che conta solo il profilo
+    // attivo direbbe "0 non letti" mentre un organizzatore aspetta risposta su
+    // un altro profilo.
+    const { data: owned } = await admin.from("artists").select("id").eq("user_id", userId);
+    const ids = ((owned ?? []) as unknown as { id: string }[]).map((a) => a.id);
+    if (ids.length === 0) return 0;
     const { data } = await admin
       .from("messages")
       .select("id, conversations!inner(artist_id)")
-      .eq("conversations.artist_id", a.id)
+      .in("conversations.artist_id", ids)
       .eq("sender_role", "organizer")
       .is("read_by_artist_at", null);
     return data?.length ?? 0;

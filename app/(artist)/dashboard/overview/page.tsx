@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarDays, ExternalLink, Image as ImageIcon, Inbox, Video } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
+import { getActiveArtistRow } from "@/lib/artist/current";
 import { HeroGreeting } from "@/components/dashboard/HeroGreeting";
 import { ActivityList } from "@/components/dashboard/ActivityFeed";
 import { ProfileCompletionCard } from "@/components/dashboard/ProfileCompletionCard";
@@ -19,11 +20,8 @@ export default async function ArtistOverviewPage() {
   const user = await requireRole(["artist", "superadmin"]);
   const supabase = createAdminClient();
 
-  const { data: artist } = await supabase
-    .from("artists")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // Profilo ATTIVO, non "il" profilo: un account può averne fino a 5.
+  const artist = await getActiveArtistRow(user.id);
 
   if (!artist) {
     return (

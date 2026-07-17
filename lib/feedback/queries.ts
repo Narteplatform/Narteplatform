@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveActiveArtist } from "@/lib/artist/current";
 
 export type FeedbackRow = {
   id: string;
@@ -15,12 +16,11 @@ export type FeedbackRow = {
 /** Feedback ricevuti da un artista (user logged in). */
 export async function getFeedbackForArtistUser(userId: string) {
   const admin = createAdminClient();
-  const { data: artist } = await admin
-    .from("artists")
-    .select("id, stage_name")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!artist) return { artist: null, feedback: [] as (FeedbackRow & { organizer_name: string })[] };
+  // Profilo ATTIVO: le recensioni sono per-profilo, e con più profili
+  // .eq("user_id", …).maybeSingle() andrebbe in errore (PGRST116).
+  const active = await resolveActiveArtist(userId);
+  if (!active) return { artist: null, feedback: [] as (FeedbackRow & { organizer_name: string })[] };
+  const artist = { id: active.id, stage_name: active.stage_name };
 
   const { data } = await admin
     .from("feedback")

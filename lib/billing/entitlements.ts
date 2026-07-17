@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveActiveArtist } from "@/lib/artist/current";
 import type { ArtistTier } from "@/lib/supabase/types";
 import {
   ENTITLEMENTS,
@@ -39,21 +40,37 @@ export async function getEntitlements(artistId: string): Promise<Entitlements> {
 }
 
 /**
- * Entitlement a partire dall'utente autenticato. `null` se l'utente non ha un
- * profilo artista collegato.
+ * Entitlement dell'ACCOUNT, non di un singolo profilo.
+ *
+ * L'abbonamento appartiene all'account (0042): serve per le decisioni che non
+ * riguardano un artista specifico — in primis quanti profili si possono creare.
+ *
+ * Differenza da `getEntitlements(artistId)`: qui gli override per-artista NON
+ * contano. Un omaggio del superadmin su un profilo sblocca le feature di quel
+ * profilo, ma non dà all'account il diritto di crearne altri: altrimenti
+ * regalare Pro a un artista regalerebbe di riflesso uno slot profilo in più.
+ */
+export async function getAccountEntitlements(userId: string): Promise<Entitlements> {
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("account_tier", { p_user_id: userId });
+  if (error) return entitlementsFor("free");
+  return entitlementsFor((data as ArtistTier | null) ?? "free");
+}
+
+/**
+ * Entitlement del profilo ATTIVO dell'utente. `null` se l'account non ha
+ * profili artista.
+ *
+ * Un account può avere più profili: `.maybeSingle()` qui non sceglierebbe, andrebbe
+ * in errore (PGRST116). La scelta di quale profilo sia quello attivo spetta a
+ * lib/artist/current.ts, che valida il cookie contro la proprietà.
  */
 export async function getEntitlementsForUser(
   userId: string
 ): Promise<{ artistId: string; entitlements: Entitlements } | null> {
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from("artists")
-    .select("id, tier")
-    .eq("user_id", userId)
-    .maybeSingle();
-  const row = data as ({ id: string } & ArtistTierRow) | null;
-  if (!row) return null;
-  return { artistId: row.id, entitlements: entitlementsFor(row.tier ?? "free") };
+  const active = await resolveActiveArtist(userId);
+  if (!active) return null;
+  return { artistId: active.id, entitlements: entitlementsFor(active.tier ?? "free") };
 }
 
 export type LimitCheck = { ok: true } | { ok: false; error: string };

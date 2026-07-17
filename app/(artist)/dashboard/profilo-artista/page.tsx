@@ -2,6 +2,7 @@ import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
+import { getActiveArtistRow } from "@/lib/artist/current";
 import { ArtistProfileForm } from "@/components/forms/ArtistProfileForm";
 import { AccountSettingsForm } from "@/components/forms/AccountSettingsForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -15,11 +16,8 @@ export default async function ArtistProfileEditPage() {
   const user = await requireRole(["artist", "superadmin"]);
   const supabase = createAdminClient();
 
-  const { data: artist } = await supabase
-    .from("artists")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // Profilo ATTIVO, non "il" profilo: un account può averne fino a 5.
+  const artist = await getActiveArtistRow(user.id);
 
   if (!artist) {
     return (

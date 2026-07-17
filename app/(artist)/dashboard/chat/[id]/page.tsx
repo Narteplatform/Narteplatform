@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/guards";
+import { getOwnedArtists } from "@/lib/artist/current";
 import { ConversationList } from "@/components/chat/ConversationList";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import {
@@ -7,7 +8,6 @@ import {
   getConversationsForArtist,
   getMessages,
 } from "@/lib/chat/queries";
-import { createAdminClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Chat — N'arte" };
 export const dynamic = "force-dynamic";
@@ -23,13 +23,11 @@ export default async function ArtistChatDetailPage({
   const meta = await getConversationMeta(id);
   if (!meta) notFound();
 
-  const admin = createAdminClient();
-  const { data: artist } = await admin
-    .from("artists")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  const isOwn = artist?.id === meta.artist.id;
+  // Si controllano TUTTI i profili posseduti, non solo quello attivo: un
+  // account con più artisti deve poter aprire le conversazioni di ciascuno
+  // senza dover prima cambiare profilo.
+  const owned = await getOwnedArtists(user.id);
+  const isOwn = owned.some((a) => a.id === meta.artist.id);
   const isSuper = user.profile?.role === "superadmin";
   if (!isOwn && !isSuper) notFound();
 
