@@ -50,6 +50,12 @@ let ok = 0;
 let skipped = 0;
 let failed = 0;
 
+// Un valore localhost NON deve mai finire su production/preview: NEXT_PUBLIC_SITE_URL
+// in .env.local è `http://localhost:3000` (giusto per il dev locale), ma spinto in
+// produzione romperebbe OGNI redirect del sito — login, logout, checkout Stripe,
+// portale. Un valore localhost è legittimo solo nell'ambiente `development`.
+const isLocalhost = (v) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(v);
+
 for (const name of EXPORTABLE) {
   const value = env[name];
   if (!value || value.startsWith("TODO") || value.startsWith("YOUR_")) {
@@ -58,6 +64,11 @@ for (const name of EXPORTABLE) {
     continue;
   }
   for (const envName of ENVIRONMENTS) {
+    if (isLocalhost(value) && envName !== "development") {
+      console.log(`⏭️  ${name} → ${envName}: skip (valore localhost, non va in ${envName})`);
+      skipped++;
+      continue;
+    }
     // Rimuove eventuale valore esistente (idempotente)
     spawnSync("vercel", ["env", "rm", name, envName, "--yes"], { stdio: "pipe" });
     // Aggiunge il nuovo valore via stdin
