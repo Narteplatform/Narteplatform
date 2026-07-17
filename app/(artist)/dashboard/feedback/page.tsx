@@ -1,15 +1,32 @@
-import { Star } from "lucide-react";
+import { Lock, Star } from "lucide-react";
+import Link from "next/link";
 import { requireRole } from "@/lib/auth/guards";
 import { getFeedbackForArtistUser } from "@/lib/feedback/queries";
+import { getEntitlements } from "@/lib/billing/entitlements";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { PlatformFeedbackForm } from "@/components/feedback/PlatformFeedbackForm";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Feedback ricevuti — N'arte Artist" };
 
+type ReviewRow = {
+  id: string;
+  rating: number;
+  body: string;
+  created_at: string;
+  organizer_name: string;
+};
+
 export default async function ArtistFeedbackPage() {
   const user = await requireRole(["artist", "superadmin"]);
-  const { artist, feedback } = await getFeedbackForArtistUser(user.id);
+  // Cast come nel resto del progetto: le query di lib/feedback/queries.ts
+  // risolvono a `never` per la deriva nota dei tipi Supabase
+  // (next.config.ts → typescript.ignoreBuildErrors).
+  const { artist, feedback } = (await getFeedbackForArtistUser(user.id)) as unknown as {
+    artist: { id: string; stage_name: string } | null;
+    feedback: ReviewRow[];
+  };
 
   if (!artist) {
     return (
@@ -20,6 +37,17 @@ export default async function ArtistFeedbackPage() {
       </Card>
     );
   }
+
+  // Il sistema di recensioni è incluso nei piani Pro e Max.
+  //
+  // Le recensioni si RACCOLGONO sempre, per tutti i piani: il gate è solo in
+  // lettura. Se non si raccogliessero per i Free, l'artista che passa a Pro
+  // troverebbe la sezione vuota — cioè nulla — proprio nel momento in cui deve
+  // vedere il valore di ciò che ha appena pagato. Così invece l'upgrade svela
+  // di colpo tutto lo storico già accumulato. È lo stesso principio del soft
+  // cap su foto e audio: si nasconde, non si distrugge.
+  const ent = await getEntitlements(artist.id);
+  const canSeeReviews = ent.canReceiveReviews;
 
   const avg =
     feedback.length === 0
@@ -52,7 +80,30 @@ export default async function ArtistFeedbackPage() {
         <h2 className="font-display text-lg tracking-tight">Recensioni ricevute</h2>
       </header>
 
-      {feedback.length > 0 && (
+      {!canSeeReviews && (
+        <Card>
+          <CardContent className="space-y-3 py-10 text-center">
+            <Lock className="mx-auto size-6 text-muted-foreground" />
+            <p className="font-display text-lg tracking-tight">
+              {feedback.length === 0
+                ? "Le recensioni sono incluse nei piani Pro e Max"
+                : feedback.length === 1
+                  ? "Hai 1 recensione in attesa"
+                  : `Hai ${feedback.length} recensioni in attesa`}
+            </p>
+            <p className="mx-auto max-w-md text-sm text-muted-foreground">
+              {feedback.length === 0
+                ? "Gli organizzatori possono già recensirti dopo ogni evento confermato: le recensioni vengono raccolte fin da ora e le vedrai tutte passando a Pro."
+                : "Gli organizzatori ti hanno già recensito dopo i tuoi eventi. Passa a Pro per leggerle e mostrarle sul tuo profilo."}
+            </p>
+            <Button asChild>
+              <Link href="/dashboard/abbonamento">Passa a Pro</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {canSeeReviews && feedback.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-3">
           <Card>
             <CardContent className="py-5">
@@ -82,13 +133,15 @@ export default async function ArtistFeedbackPage() {
         </div>
       )}
 
-      {feedback.length === 0 ? (
+      {canSeeReviews && feedback.length === 0 && (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
             Nessun feedback ancora ricevuto. Apparirà qui dopo gli eventi confermati.
           </CardContent>
         </Card>
-      ) : (
+      )}
+
+      {canSeeReviews && feedback.length > 0 && (
         <div className="space-y-3">
           {feedback.map((f) => (
             <Card key={f.id}>

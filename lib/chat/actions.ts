@@ -9,6 +9,7 @@ import {
   type ChatOfferInput,
 } from "@/lib/validators/schemas";
 import { sendBookingConfirmedEmail } from "@/lib/emails/send";
+import { getEntitlements } from "@/lib/billing/entitlements";
 import type { Role } from "@/lib/supabase/types";
 import {
   getConversationsForArtist,
@@ -27,7 +28,7 @@ type ActionResult<T = unknown> = ({ ok: true } & T) | ActionErr;
 async function resolveConversationRole(
   conversationId: string,
   userId: string,
-): Promise<{ role: Role | null; isParty: boolean; isSuperadmin: boolean }> {
+): Promise<{ role: Role | null; isParty: boolean; isSuperadmin: boolean; artistId: string | null }> {
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
@@ -38,15 +39,44 @@ async function resolveConversationRole(
 
   const { data: c } = await admin
     .from("conversations")
-    .select("id, artists!inner(user_id), organizers!inner(user_id)")
+    .select("id, artist_id, artists!inner(user_id), organizers!inner(user_id)")
     .eq("id", conversationId)
     .maybeSingle();
-  if (!c) return { role: null, isParty: false, isSuperadmin };
+  if (!c) return { role: null, isParty: false, isSuperadmin, artistId: null };
+  const artistId = (c as unknown as { artist_id: string | null }).artist_id ?? null;
   const artistUserId = (c as unknown as { artists: { user_id: string | null } | null }).artists?.user_id ?? null;
   const orgUserId = (c as unknown as { organizers: { user_id: string } | null }).organizers?.user_id ?? null;
-  if (artistUserId === userId) return { role: "artist", isParty: true, isSuperadmin };
-  if (orgUserId === userId) return { role: "organizer", isParty: true, isSuperadmin };
-  return { role: null, isParty: false, isSuperadmin };
+  if (artistUserId === userId) return { role: "artist", isParty: true, isSuperadmin, artistId };
+  if (orgUserId === userId) return { role: "organizer", isParty: true, isSuperadmin, artistId };
+  return { role: null, isParty: false, isSuperadmin, artistId };
+}
+
+/**
+ * Paywall della chat: la negoziazione è inclusa nei piani Pro e Max.
+ *
+ * Vale SOLO per l'artista. L'organizzatore non paga mai e non va mai fermato:
+ * la conversazione si apre comunque, lui scrive senza attriti e l'artista Free
+ * riceve la mail di notifica. Il paywall scatta quando l'artista prova a
+ * rispondere — cioè nel momento di massimo valore percepito, con un ingaggio
+ * vero dall'altra parte del messaggio.
+ *
+ * Usa il tier dell'ARTISTA e non quello dell'account, così un omaggio del
+ * superadmin su un singolo profilo (tier_override) sblocca la chat per quel
+ * profilo.
+ */
+async function assertArtistCanChat(
+  role: Role | null,
+  artistId: string | null,
+  isSuperadmin: boolean,
+): Promise<ActionResult | null> {
+  if (role !== "artist" || isSuperadmin || !artistId) return null;
+  const ent = await getEntitlements(artistId);
+  if (ent.canUseChat) return null;
+  return {
+    ok: false,
+    error:
+      "La chat con locali e organizzatori è inclusa nei piani Pro e Max. Passa a Pro per rispondere.",
+  };
 }
 
 export async function openOrCreateConversation(
@@ -100,8 +130,13 @@ export async function sendMessage(input: ChatMessageInput): Promise<ActionResult
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Non autorizzato" };
 
-  const { role, isParty } = await resolveConversationRole(parsed.data.conversation_id, user.id);
+  const { role, isParty, isSuperadmin, artistId } = await resolveConversationRole(
+    parsed.data.conversation_id,
+    user.id,
+  );
   if (!isParty || !role) return { ok: false, error: "Non sei parte di questa conversazione" };
+  const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
+  if (gate) return gate;
 
   const admin = createAdminClient();
   const since = new Date(Date.now() - 500).toISOString();
@@ -135,8 +170,13 @@ export async function sendOffer(input: ChatOfferInput): Promise<ActionResult> {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Non autorizzato" };
 
-  const { role, isParty } = await resolveConversationRole(parsed.data.conversation_id, user.id);
+  const { role, isParty, isSuperadmin, artistId } = await resolveConversationRole(
+    parsed.data.conversation_id,
+    user.id,
+  );
   if (!isParty || !role) return { ok: false, error: "Non sei parte di questa conversazione" };
+  const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
+  if (gate) return gate;
 
   const admin = createAdminClient();
   await admin
@@ -189,8 +229,13 @@ export async function respondToOffer(
     if (msg.sender_id === user.id) {
       return { ok: false, error: "Non puoi rispondere alla tua offerta" };
     }
-    const { isParty } = await resolveConversationRole(msg.conversation_id, user.id);
+    const { isParty, role, isSuperadmin, artistId } = await resolveConversationRole(
+      msg.conversation_id,
+      user.id,
+    );
     if (!isParty) return { ok: false, error: "Non autorizzato" };
+    const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
+    if (gate) return gate;
 
     const { error: updErr } = await admin
       .from("messages")
@@ -198,6 +243,24 @@ export async function respondToOffer(
       .eq("id", messageId);
     if (updErr) return { ok: false, error: updErr.message };
     return { ok: true };
+  }
+
+  // Accettare un'offerta crea un booking confermato: è l'atto conclusivo della
+  // negoziazione, quindi passa dallo stesso paywall del resto della chat.
+  // accept_offer_v2 è security definer e non conosce i piani: il gate va qui.
+  {
+    const { data: msg } = await admin
+      .from("messages")
+      .select("conversation_id")
+      .eq("id", messageId)
+      .maybeSingle();
+    if (!msg) return { ok: false, error: "Offerta non trovata" };
+    const { role, isSuperadmin, artistId } = await resolveConversationRole(
+      (msg as { conversation_id: string }).conversation_id,
+      user.id,
+    );
+    const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
+    if (gate) return gate;
   }
 
   // Accept via RPC security definer
@@ -247,8 +310,13 @@ export async function sendAttachment(input: {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Non autorizzato" };
 
-  const { role, isParty } = await resolveConversationRole(input.conversation_id, user.id);
+  const { role, isParty, isSuperadmin, artistId } = await resolveConversationRole(
+    input.conversation_id,
+    user.id,
+  );
   if (!isParty || !role) return { ok: false, error: "Non sei parte di questa conversazione" };
+  const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
+  if (gate) return gate;
 
   const admin = createAdminClient();
   const { error } = await admin.from("messages").insert({
