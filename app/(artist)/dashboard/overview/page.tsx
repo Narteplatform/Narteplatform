@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { PlanBadge } from "@/components/billing/PlanBadge";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 
 export const metadata = { title: "Overview — N'arte" };
@@ -110,6 +111,7 @@ export default async function ArtistOverviewPage() {
         greeting="Bentornato"
         name={artist.stage_name}
         avatarUrl={artist.cover_image}
+        badge={<PlanBadge tier={artist.tier} />}
         description={heroDescription}
         primary={{
           label: "Pagina pubblica",

@@ -25,7 +25,9 @@ import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { Progress } from "@/components/ui/Progress";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Button } from "@/components/ui/Button";
+import { PlanBadge } from "@/components/billing/PlanBadge";
 import { cn } from "@/lib/utils";
+import type { ArtistTier } from "@/lib/supabase/types";
 
 export type NavSubItem = {
   href: string;
@@ -69,6 +71,8 @@ export interface AppShellProps {
   brand: React.ReactNode;
   brandHref: string;
   user: AppShellUser;
+  /** Piano dell'artista, mostrato come etichetta nella pillola profilo. Assente per admin/organizer. */
+  planTier?: ArtistTier;
   navSections: NavSection[];
   storage?: AppShellStorage;
   recentActivity?: AppShellRecent[];
@@ -102,6 +106,7 @@ export function AppShell({
   brand,
   brandHref,
   user,
+  planTier,
   navSections,
   storage,
   recentActivity,
@@ -117,7 +122,6 @@ export function AppShell({
     <SidebarContent
       brand={brand}
       brandHref={brandHref}
-      user={user}
       navSections={navSections}
       pathname={pathname}
       storage={storage}
@@ -185,6 +189,7 @@ export function AppShell({
                 </Link>
               </Button>
             )}
+            <TopbarUser user={user} planTier={planTier} />
           </div>
         </header>
 
@@ -246,7 +251,6 @@ function prettifySegment(seg: string): string {
 function SidebarContent({
   brand,
   brandHref,
-  user,
   navSections,
   pathname,
   storage,
@@ -255,7 +259,6 @@ function SidebarContent({
 }: {
   brand: React.ReactNode;
   brandHref: string;
-  user: AppShellUser;
   navSections: NavSection[];
   pathname: string;
   storage?: AppShellStorage;
@@ -317,7 +320,6 @@ function SidebarContent({
             <HelpCircle className="size-4" /> Help Center
           </Link>
         </div>
-        <UserCard user={user} onNavigate={onNavigate} />
       </div>
     </div>
   );
@@ -465,7 +467,12 @@ function StorageBlock({
   );
 }
 
-function UserCard({ user, onNavigate }: { user: AppShellUser; onNavigate: () => void }) {
+/**
+ * Pillola profilo, resa in alto a destra nella topbar (sticky) e quindi sempre
+ * visibile durante la navigazione, su tutte le shell (admin, artista,
+ * organizzatore). `planTier` mostra l'etichetta del piano solo per l'artista.
+ */
+function TopbarUser({ user, planTier }: { user: AppShellUser; planTier?: ArtistTier }) {
   const roleLabel =
     user.role === "superadmin"
       ? "Superadmin"
@@ -481,52 +488,52 @@ function UserCard({ user, onNavigate }: { user: AppShellUser; onNavigate: () => 
         ? "/organizzatore/profilo"
         : "/admin/profilo";
   return (
-    <div className="border-t border-border p-3">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-muted"
-          >
-            <Avatar src={user.avatarUrl} name={user.name ?? user.email} size="md" />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-foreground">
-                {user.name || user.email}
-              </span>
-              <span className="block truncate text-[11px] uppercase tracking-wide text-muted-foreground">
-                {roleLabel}
-              </span>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Menu profilo"
+          className="flex items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-2 text-left transition hover:bg-muted"
+        >
+          <Avatar src={user.avatarUrl} name={user.name ?? user.email} size="sm" />
+          <span className="hidden min-w-0 max-w-[9rem] flex-col leading-tight sm:flex">
+            <span className="truncate text-sm font-medium text-foreground">
+              {user.name || user.email}
             </span>
-            <Settings className="size-4 text-muted-foreground" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" side="top" className="w-56">
-          <div className="px-3 py-2 text-xs text-muted-foreground">{user.email}</div>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href={profileHref} onClick={onNavigate}>
-              <Settings className="size-4" /> Profilo
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/" onClick={onNavigate}>
-              <ChevronLeft className="size-4" /> Vai al sito
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              fetch("/logout", { method: "POST" }).finally(() => {
-                window.location.href = "/login";
-              });
-            }}
-            className="cursor-pointer"
-          >
-            <LogOut className="size-4" /> Esci
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+            <span className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+              {roleLabel}
+            </span>
+          </span>
+          {planTier && <PlanBadge tier={planTier} />}
+          <Settings className="size-4 shrink-0 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" side="bottom" className="w-56">
+        <div className="px-3 py-2 text-xs text-muted-foreground">{user.email}</div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={profileHref}>
+            <Settings className="size-4" /> Profilo
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/">
+            <ChevronLeft className="size-4" /> Vai al sito
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            fetch("/logout", { method: "POST" }).finally(() => {
+              window.location.href = "/login";
+            });
+          }}
+          className="cursor-pointer"
+        >
+          <LogOut className="size-4" /> Esci
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

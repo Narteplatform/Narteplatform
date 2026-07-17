@@ -28,6 +28,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { getArtistContext, type OwnedArtist } from "@/lib/artist/current";
 import { getAccountEntitlements } from "@/lib/billing/entitlements";
 import { isUnlimited } from "@/lib/billing/plans";
+import type { ArtistTier } from "@/lib/supabase/types";
 import { ArtistProfileSwitcher } from "@/components/dashboard/ArtistProfileSwitcher";
 import { getAllowedAdminPages, isRootSuperadminEmail } from "@/lib/admin/permissions";
 import {
@@ -269,6 +270,7 @@ async function loadArtistShell(userId: string): Promise<{
   storage: AppShellStorage | undefined;
   recentActivity: AppShellRecent[];
   profiles: ArtistProfilesContext;
+  planTier: ArtistTier | null;
 }> {
   let admin;
   try {
@@ -280,6 +282,7 @@ async function loadArtistShell(userId: string): Promise<{
       storage: undefined,
       recentActivity: [],
       profiles: { owned: [], activeId: null, canCreateMore: false },
+      planTier: null,
     };
   }
 
@@ -433,7 +436,7 @@ async function loadArtistShell(userId: string): Promise<{
     name: l.event_location ?? l.contact_email,
   }));
 
-  return { navSections, storage, recentActivity, profiles };
+  return { navSections, storage, recentActivity, profiles, planTier: activeArtist?.tier ?? null };
 }
 
 function defaultAdminNav(): NavSection[] {
@@ -796,14 +799,16 @@ export async function ArtistAppShell({
   let storage: AppShellStorage | undefined;
   let recentActivity: AppShellRecent[];
   let profiles: ArtistProfilesContext;
+  let planTier: ArtistTier | null;
   try {
-    ({ navSections, storage, recentActivity, profiles } = await loadArtistShell(user.id));
+    ({ navSections, storage, recentActivity, profiles, planTier } = await loadArtistShell(user.id));
   } catch (err) {
     console.error("[AppShellData] loadArtistShell crashed:", err);
     navSections = defaultArtistNav();
     storage = undefined;
     recentActivity = [];
     profiles = { owned: [], activeId: null, canCreateMore: false };
+    planTier = null;
   }
   return (
     <AppShell
@@ -815,6 +820,7 @@ export async function ArtistAppShell({
         role: "artist",
         avatarUrl: user.avatarUrl ?? null,
       }}
+      planTier={planTier ?? undefined}
       navSections={navSections}
       storage={storage}
       recentActivity={recentActivity}

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/Table";
 import { ApplicationActions } from "@/components/admin/ApplicationActions";
 import { DeleteArtistButton } from "@/components/admin/DeleteArtistButton";
+import { ArtistTierQuickAssign } from "@/components/admin/ArtistTierQuickAssign";
 import { AutoRefresh } from "@/components/admin/AutoRefresh";
 import { cn } from "@/lib/utils";
 
@@ -62,7 +63,7 @@ export default async function AdminArtistsPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("artists")
-      .select("id, slug, stage_name, status, city, cover_image, genre")
+      .select("id, slug, stage_name, status, city, cover_image, genre, tier, tier_override")
       .order("stage_name"),
   ]);
 
@@ -201,17 +202,18 @@ export default async function AdminArtistsPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40%]">Artista</TableHead>
+                <TableHead className="w-[36%]">Artista</TableHead>
                 <TableHead>Città</TableHead>
                 <TableHead>Generi</TableHead>
                 <TableHead>Stato</TableHead>
+                <TableHead>Piano</TableHead>
                 <TableHead className="text-right">Azioni</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredArtists.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                     Nessun artista trovato.{" "}
                     <Link href="/admin/artisti/new" className="underline">
                       Aggiungi il primo
@@ -244,6 +246,13 @@ export default async function AdminArtistsPage({
                       <Badge variant={STATUS_VARIANT[a.status] ?? "muted"} dot>
                         {STATUS_LABEL[a.status] ?? a.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <ArtistTierQuickAssign
+                        artistId={a.id}
+                        tier={a.tier}
+                        hasOverride={a.tier_override != null}
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1.5">

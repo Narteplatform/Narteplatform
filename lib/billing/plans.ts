@@ -236,6 +236,23 @@ export const PLAN_LABELS: Record<ArtistTier, string> = {
   max: "N'arte Max",
 };
 
+/** Etichetta breve per i badge (FREE / PRO / MAX). */
+export const PLAN_SHORT_LABELS: Record<ArtistTier, string> = {
+  free: "Free",
+  pro: "Pro",
+  max: "Max",
+};
+
+/**
+ * Variante del <Badge> per ciascun piano. Una sola definizione alimenta il
+ * badge del roster admin, dell'overview artista e della pillola profilo.
+ */
+export const PLAN_BADGE_VARIANT: Record<ArtistTier, "muted" | "default" | "accent"> = {
+  free: "muted",
+  pro: "default",
+  max: "accent",
+};
+
 export const PAID_TIERS = ["pro", "max"] as const;
 export type PaidTier = (typeof PAID_TIERS)[number];
 
@@ -252,6 +269,12 @@ export type PlanFeatureRow = {
   /** `false` rende un trattino, `true` una spunta. */
   values: Record<ArtistTier, string | boolean>;
   hint?: string;
+  /**
+   * Riga-differenziatore, mostrata sempre nella vista compatta della tabella.
+   * Le righe senza `primary` (in genere uguali su tutti i piani) restano dietro
+   * il toggle "Mostra tutte le funzioni".
+   */
+  primary?: boolean;
 };
 
 export const PLAN_FEATURES: PlanFeatureRow[] = [
@@ -279,10 +302,12 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
   {
     label: "Foto in gallery",
     values: { free: "3", pro: "Fino a 10", max: "Fino a 30" },
+    primary: true,
   },
   {
     label: "Video",
     values: { free: "1", pro: "Fino a 3", max: "Fino a 3" },
+    primary: true,
   },
   {
     label: "File audio",
@@ -292,10 +317,12 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
     label: "Chat privata con locali e organizzatori",
     values: { free: false, pro: true, max: true },
     hint: "Con il piano Free ricevi la richiesta e la mail, ma per negoziare in chat serve Pro.",
+    primary: true,
   },
   {
     label: "Sistema di recensioni",
     values: { free: false, pro: true, max: true },
+    primary: true,
   },
   {
     label: "Verificato N'arte",
@@ -306,10 +333,12 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
     label: "Profili artista creabili",
     values: { free: "1", pro: "2", max: "5" },
     hint: "L'abbonamento è dell'account: tutti i profili che crei ereditano i benefici del piano.",
+    primary: true,
   },
   {
     label: "Posizione nei risultati",
     values: { free: "Standard", pro: "Priorità", max: "Top artist in evidenza" },
+    primary: true,
   },
   {
     label: "Percorso artistico",
@@ -320,28 +349,34 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
     label: "Candidature a eventi N'arte",
     values: { free: "2 al mese", pro: "Illimitate", max: "Illimitate" },
     hint: "Le candidature ritirate rientrano comunque nel conteggio del mese.",
+    primary: true,
   },
   {
     label: "Statistiche del profilo",
     values: { free: false, pro: "Ultimi 30 giorni", max: "Ultimo anno" },
     hint: "Il piano Max mostra anche quanti organizzatori hanno visitato il profilo.",
+    primary: true,
   },
   {
     label: "Consulenza professionale",
     values: { free: false, pro: "1 slot al mese", max: "Illimitata" },
+    primary: true,
   },
   {
     label: "Proposta alle strutture",
     values: { free: false, pro: false, max: true },
     hint: "Il team N'arte propone l'artista ai locali in target.",
+    primary: true,
   },
   {
     label: "Shooting fotografico",
     values: { free: false, pro: false, max: "Incluso nell'annuale" },
     hint: "Una tantum, riservato all'abbonamento Max annuale.",
+    primary: true,
   },
   {
     label: "Supporto",
     values: { free: "Community", pro: "Email", max: "Prioritario" },
+    primary: true,
   },
 ];

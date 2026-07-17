@@ -22,6 +22,8 @@ export interface HeroGreetingProps {
   greeting?: string;
   /** Mostra un avatar dell'utente al posto dell'icona Sparkles nel badge. */
   avatarUrl?: string | null;
+  /** Etichetta resa accanto al nome (es. il piano dell'artista). */
+  badge?: ReactNode;
 }
 
 function greetingPrefix(): string {
@@ -41,6 +43,7 @@ export function HeroGreeting({
   className,
   greeting,
   avatarUrl,
+  badge,
 }: HeroGreetingProps) {
   const display = name?.trim() || "ciao";
   const saluto = greeting ?? greetingPrefix();
@@ -68,9 +71,12 @@ export function HeroGreeting({
           {badgeContent}
         </span>
         <div className="min-w-0">
-          <h1 className="font-display text-2xl leading-tight tracking-tight sm:text-3xl">
-            {saluto}, {display}!
-          </h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="font-display text-2xl leading-tight tracking-tight sm:text-3xl">
+              {saluto}, {display}!
+            </h1>
+            {badge}
+          </div>
           {description && (
             <p className="mt-1 max-w-xl text-sm text-muted-foreground">{description}</p>
           )}
