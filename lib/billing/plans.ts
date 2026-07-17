@@ -253,6 +253,44 @@ export const PLAN_BADGE_VARIANT: Record<ArtistTier, "muted" | "default" | "accen
   max: "accent",
 };
 
+/** Sottotitolo breve delle schede piano (home / card marketing). */
+export const PLAN_TAGLINES: Record<ArtistTier, string> = {
+  free: "Per iniziare a farti trovare.",
+  pro: "Per ricevere più booking.",
+  max: "Per chi fa dell'arte un lavoro.",
+};
+
+/**
+ * Punti salienti mostrati dentro ogni scheda piano (vista a card della home).
+ * Sono un estratto curato di PLAN_FEATURES, pensato per la lettura rapida: il
+ * confronto completo resta la tabella su /prezzi.
+ */
+export const PLAN_CARD_HIGHLIGHTS: Record<ArtistTier, string[]> = {
+  free: [
+    "Profilo artista pubblico",
+    "Calendario e richieste di booking illimitate",
+    "3 foto e 1 video",
+    "2 candidature a eventi al mese",
+    "Supporto community",
+  ],
+  pro: [
+    "Tutto del piano Free",
+    "Chat privata con locali e organizzatori",
+    "Recensioni e badge Verificato su richiesta",
+    "Fino a 10 foto e 3 video, 2 profili",
+    "Candidature illimitate e priorità nei risultati",
+    "Statistiche 30 giorni e 1 consulenza al mese",
+  ],
+  max: [
+    "Tutto del piano Pro",
+    "Fino a 30 foto e 5 profili artista",
+    "Proposta diretta alle strutture in target",
+    "Shooting fotografico incluso (annuale)",
+    "Consulenza illimitata e statistiche annuali",
+    "Top artist in evidenza e supporto prioritario",
+  ],
+};
+
 export const PAID_TIERS = ["pro", "max"] as const;
 export type PaidTier = (typeof PAID_TIERS)[number];
 
