@@ -1,0 +1,244 @@
+<!--
+  N'arte — Candidatura ricevuta (artista iscritto, in attesa di approvazione)
+  Template transazionale Brevo. Nessun parametro: il testo è interamente statico.
+
+  Palette da app/globals.css:
+    notte #0d1b2a · palco #f7f5f2 · palco-60 #d6cfca · palco-20 #7d746c
+    azzurro #1a6bad · success #2a9d5c · azzurro-subtle #ebf4fb
+
+  Vincoli del mezzo (non scelte stilistiche):
+  - layout a tabelle: Outlook non supporta flexbox/grid
+  - stili inline: molti client rimuovono <style> nel <head>
+  - Fraunces e DM Sans NON si caricano: degradano su Georgia e Helvetica
+  - border-radius ignorato da Outlook desktop: gli angoli restano vivi lì
+-->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f7f5f2;margin:0;padding:0;width:100%;">
+  <tr>
+    <td align="center" style="padding:0;">
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;max-width:100%;">
+
+        <!-- ============ HEADER ============ -->
+        <tr>
+          <td align="center" bgcolor="#0d1b2a" style="background-color:#0d1b2a;padding:38px 24px;">
+            <img src="https://narteplatform.vercel.app/brand/narte-logo.png"
+                 width="200" alt="N'arte"
+                 style="display:block;width:200px;max-width:60%;height:auto;border:0;outline:none;text-decoration:none;" />
+          </td>
+        </tr>
+
+        <!-- ============ EYEBROW ============ -->
+        <tr>
+          <td align="center" style="padding:44px 40px 0 40px;">
+            <p style="margin:0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#1a6bad;">
+              Iscrizione completata
+            </p>
+          </td>
+        </tr>
+
+        <!-- ============ TITOLO ============ -->
+        <tr>
+          <td align="center" style="padding:14px 40px 0 40px;">
+            <h1 style="margin:0;font-family:Fraunces,Georgia,'Times New Roman',serif;font-size:40px;line-height:48px;font-weight:700;letter-spacing:-0.01em;color:#0d1b2a;">
+              Candidatura <em style="font-style:italic;color:#1a6bad;">ricevuta.</em>
+            </h1>
+          </td>
+        </tr>
+
+        <!-- ============ HERO ============ -->
+        <tr>
+          <td align="center" style="padding:28px 40px 0 40px;">
+            <img src="https://narteplatform.vercel.app/hero-strumenti.png"
+                 width="520" alt=""
+                 style="display:block;width:520px;max-width:100%;height:auto;border-radius:12px;border:0;outline:none;text-decoration:none;" />
+          </td>
+        </tr>
+
+        <!-- ============ TESTO ============ -->
+        <tr>
+          <td align="center" style="padding:26px 48px 0 48px;">
+            <p style="margin:0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:16px;line-height:30px;color:#0d1b2a;">
+              Grazie per esserti iscritto a N'Arte.<br />
+              Il nostro team esaminerà la tua candidatura entro 24 ore.<br />
+              In caso di esito positivo, riceverai una nuova email<br />
+              con l'attivazione del tuo account.
+            </p>
+          </td>
+        </tr>
+
+        <!-- ============ CARD "COSA SUCCEDE ORA" ============ -->
+        <tr>
+          <td style="padding:34px 40px 0 40px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;background-color:#ffffff;border:1px solid #e4ded7;border-radius:16px;">
+              <tr>
+                <td style="padding:32px 32px 8px 32px;">
+
+                  <p style="margin:0 0 26px 0;text-align:center;font-family:Fraunces,Georgia,'Times New Roman',serif;font-size:25px;line-height:32px;font-weight:700;color:#0d1b2a;">
+                    Cosa succede ora
+                  </p>
+
+                  <!-- STEP 01 -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+                    <tr>
+                      <td width="56" valign="top" style="width:56px;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="52" style="width:52px;height:52px;border:2px solid #2a9d5c;border-radius:26px;">
+                          <tr>
+                            <td align="center" valign="middle" height="48" style="height:48px;font-family:Helvetica,Arial,sans-serif;font-size:22px;line-height:22px;color:#2a9d5c;">&#10003;</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td width="20" style="width:20px;">&nbsp;</td>
+                      <td width="44" valign="middle" style="width:44px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:17px;font-weight:700;color:#1a6bad;">01</td>
+                      <td valign="middle" style="font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:15px;line-height:23px;color:#0d1b2a;">
+                        Abbiamo ricevuto la tua candidatura.
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- connettore tratteggiato -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0;">
+                    <tr>
+                      <td width="26" style="width:26px;">&nbsp;</td>
+                      <td style="border-left:2px dotted #a8c4dc;height:22px;line-height:22px;font-size:0;">&nbsp;</td>
+                    </tr>
+                  </table>
+
+                  <!-- STEP 02 -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+                    <tr>
+                      <td width="56" valign="top" style="width:56px;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="52" style="width:52px;height:52px;border:2px solid #1a6bad;border-radius:26px;">
+                          <tr>
+                            <td align="center" valign="middle" height="48" style="height:48px;font-family:Georgia,serif;font-size:20px;line-height:20px;color:#1a6bad;">&#9719;</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td width="20" style="width:20px;">&nbsp;</td>
+                      <td width="44" valign="middle" style="width:44px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:17px;font-weight:700;color:#1a6bad;">02</td>
+                      <td valign="middle" style="font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:15px;line-height:23px;color:#0d1b2a;">
+                        Il team N'Arte la esaminerà entro 24 ore.
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- connettore tratteggiato -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0;">
+                    <tr>
+                      <td width="26" style="width:26px;">&nbsp;</td>
+                      <td style="border-left:2px dotted #a8c4dc;height:22px;line-height:22px;font-size:0;">&nbsp;</td>
+                    </tr>
+                  </table>
+
+                  <!-- STEP 03 -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+                    <tr>
+                      <td width="56" valign="top" style="width:56px;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="52" style="width:52px;height:52px;border:2px solid #1a6bad;border-radius:26px;">
+                          <tr>
+                            <td align="center" valign="middle" height="48" style="height:48px;font-family:Helvetica,Arial,sans-serif;font-size:20px;line-height:20px;color:#1a6bad;">&#9993;</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td width="20" style="width:20px;">&nbsp;</td>
+                      <td width="44" valign="top" style="width:44px;padding-top:4px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:17px;font-weight:700;color:#1a6bad;">03</td>
+                      <td valign="middle" style="font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:15px;line-height:23px;color:#0d1b2a;">
+                        Se l'esito sarà positivo, riceverai<br />la mail di attivazione del tuo account.
+                      </td>
+                    </tr>
+                  </table>
+
+                </td>
+              </tr>
+              <tr><td style="height:24px;line-height:24px;font-size:0;">&nbsp;</td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ============ CALLOUT SPAM ============ -->
+        <tr>
+          <td style="padding:18px 40px 0 40px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;background-color:#eef5f0;border-left:4px solid #2a9d5c;">
+              <tr>
+                <td width="60" align="center" valign="middle" style="width:60px;padding:20px 0 20px 12px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="32" style="width:32px;height:32px;border:2px solid #2a9d5c;border-radius:16px;">
+                    <tr>
+                      <td align="center" valign="middle" height="28" style="height:28px;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:16px;line-height:16px;font-weight:700;color:#2a9d5c;">i</td>
+                    </tr>
+                  </table>
+                </td>
+                <td align="center" valign="middle" style="padding:20px 24px 20px 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;line-height:22px;color:#0d1b2a;">
+                  Tieni d'occhio la tua casella di posta,<br />incluse Spam e Promozioni.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ============ DIVIDER ============ -->
+        <tr>
+          <td style="padding:36px 40px 0 40px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+              <tr><td style="border-top:1px solid #ddd6ce;height:1px;line-height:1px;font-size:0;">&nbsp;</td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ============ FOOTER ============ -->
+        <tr>
+          <td align="center" style="padding:32px 40px 0 40px;">
+            <!-- PROVVISORIO: manca l'export scuro del logo script. Questo è
+                 lo stile manoscritto, diverso da quello dell'header. -->
+            <img src="https://narteplatform.vercel.app/logo-narte-light.png"
+                 width="150" alt="N'arte"
+                 style="display:block;width:150px;max-width:50%;height:auto;border:0;outline:none;text-decoration:none;" />
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="padding:20px 40px 0 40px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;color:#0d1b2a;">&#9993;&nbsp;&nbsp;</td>
+                <td style="font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;color:#0d1b2a;">
+                  <a href="mailto:brand@narte.it" style="color:#0d1b2a;text-decoration:none;">brand@narte.it</a>
+                </td>
+                <td style="padding:0 16px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;color:#c9c1b8;">|</td>
+                <td style="font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;color:#0d1b2a;">&#127760;&nbsp;&nbsp;</td>
+                <td style="font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;color:#0d1b2a;">
+                  <a href="https://narteofficial.it" target="_blank" style="color:#0d1b2a;text-decoration:none;">narteofficial.it</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Social: PROVVISORIE, servono i PNG delle icone reali -->
+        <tr>
+          <td align="center" style="padding:22px 40px 44px 40px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="padding:0 6px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="34" style="width:34px;height:34px;border:1px solid #0d1b2a;border-radius:17px;">
+                    <tr><td align="center" valign="middle" height="32" style="height:32px;font-family:Georgia,serif;font-size:15px;font-weight:700;color:#0d1b2a;">f</td></tr>
+                  </table>
+                </td>
+                <td style="padding:0 6px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="34" style="width:34px;height:34px;border:1px solid #0d1b2a;border-radius:17px;">
+                    <tr><td align="center" valign="middle" height="32" style="height:32px;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0d1b2a;">IG</td></tr>
+                  </table>
+                </td>
+                <td style="padding:0 6px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="34" style="width:34px;height:34px;border:1px solid #0d1b2a;border-radius:17px;">
+                    <tr><td align="center" valign="middle" height="32" style="height:32px;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#0d1b2a;">&#9834;</td></tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+
+    </td>
+  </tr>
+</table>
