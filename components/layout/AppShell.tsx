@@ -125,7 +125,15 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="hidden w-72 shrink-0 border-r border-border bg-background lg:flex lg:flex-col">
+      {/*
+        `sticky top-0 h-screen`: senza vincolo di altezza l'aside è un flex item
+        che si allunga quanto la pagina, quindi il blocco "profilo completo" e
+        l'Help Center — ancorati in fondo alla colonna — finivano in fondo al
+        DOCUMENTO e su una pagina lunga bisognava scorrere per vederli.
+        Bloccata all'altezza della viewport, la sidebar resta sempre intera a
+        schermo e a scorrere è solo il <nav> interno, che è già overflow-y-auto.
+      */}
+      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-border bg-background lg:flex lg:flex-col">
         {sidebar}
       </aside>
 

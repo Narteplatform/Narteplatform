@@ -41,12 +41,17 @@ import type { AdminPageKey } from "@/lib/validators/schemas";
 /**
  * Logo + area di appartenenza, senza separatore: il suffisso è dimensionato per
  * leggersi come parte del marchio ("N'ARTE ARTISTA"), non come una briciola di
- * navigazione. `leading-none` + `items-center` lo tengono dentro l'altezza h-14
- * della topbar, dove questo stesso componente è il fallback del breadcrumb.
+ * navigazione.
+ *
+ * `items-baseline` e non `items-center`: nel PNG del logo la base della scritta
+ * "arte" cade al 96% dell'altezza, quindi centrando il suffisso questo finiva
+ * ~6px più in alto e sembrava scritto su un'altra riga. Con l'allineamento alla
+ * linea di base il testo si appoggia dove si appoggia il marchio, e resta
+ * corretto anche cambiando corpo del font o larghezza del logo.
  */
 function ShellBrand({ suffix }: { suffix?: string }) {
   return (
-    <span className="flex items-center gap-2">
+    <span className="flex items-baseline gap-2">
       <NarteLogo variant="light" width={92} className="h-7 w-auto" />
       {suffix ? (
         <span className="font-display text-lg uppercase leading-none tracking-tight">
@@ -258,6 +263,8 @@ async function loadArtistShell(userId: string): Promise<{
   storage: AppShellStorage | undefined;
   profiles: ArtistProfilesContext;
   planTier: ArtistTier | null;
+  /** Cover del profilo attivo: avatar di ripiego se l'account non ne ha uno. */
+  artistCover: string | null;
 }> {
   let admin;
   try {
@@ -269,6 +276,7 @@ async function loadArtistShell(userId: string): Promise<{
       storage: undefined,
       profiles: { owned: [], activeId: null, canCreateMore: false },
       planTier: null,
+      artistCover: null,
     };
   }
 
@@ -408,7 +416,13 @@ async function loadArtistShell(userId: string): Promise<{
     };
   }
 
-  return { navSections, storage, profiles, planTier: activeArtist?.tier ?? null };
+  return {
+    navSections,
+    storage,
+    profiles,
+    planTier: activeArtist?.tier ?? null,
+    artistCover: (artist as { cover_image?: string | null } | null)?.cover_image ?? null,
+  };
 }
 
 function defaultAdminNav(): NavSection[] {
@@ -749,14 +763,16 @@ export async function ArtistAppShell({
   let storage: AppShellStorage | undefined;
   let profiles: ArtistProfilesContext;
   let planTier: ArtistTier | null;
+  let artistCover: string | null;
   try {
-    ({ navSections, storage, profiles, planTier } = await loadArtistShell(user.id));
+    ({ navSections, storage, profiles, planTier, artistCover } = await loadArtistShell(user.id));
   } catch (err) {
     console.error("[AppShellData] loadArtistShell crashed:", err);
     navSections = defaultArtistNav();
     storage = undefined;
     profiles = { owned: [], activeId: null, canCreateMore: false };
     planTier = null;
+    artistCover = null;
   }
   return (
     <AppShell
@@ -766,7 +782,11 @@ export async function ArtistAppShell({
         name: user.name ?? null,
         email: user.email,
         role: "artist",
-        avatarUrl: user.avatarUrl ?? null,
+        // Il salvataggio del profilo propaga già la cover su profiles.avatar_url.
+        // Questo ripiego copre gli account creati PRIMA di quella sincronizzazione,
+        // che altrimenti resterebbero con l'iniziale finché non risalvano il
+        // profilo — e lo fa senza scrivere nulla sul DB.
+        avatarUrl: user.avatarUrl ?? artistCover,
       }}
       planTier={planTier ?? undefined}
       navSections={navSections}

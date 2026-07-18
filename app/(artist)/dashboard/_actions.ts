@@ -162,7 +162,7 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
   // per cambiare la bio.
   const { data: currentRow } = await admin
     .from("artists")
-    .select("tier, gallery, audio_files, percorso_artistico")
+    .select("tier, gallery, audio_files, percorso_artistico, user_id")
     .eq("id", artistId)
     .maybeSingle();
   const current = currentRow as {
@@ -170,6 +170,7 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
     gallery?: string[] | null;
     audio_files?: AudioTrack[] | null;
     percorso_artistico?: ProfileColumns["percorso_artistico"];
+    user_id?: string | null;
   } | null;
 
   const ent = entitlementsFor(current?.tier ?? "free");
@@ -213,6 +214,28 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
   const { error } = await admin.from("artists").update(patch).eq("id", artistId);
 
   if (error) return { ok: false as const, error: error.message };
+
+  // La foto principale del profilo diventa anche l'avatar dell'account, quello
+  // mostrato nella pillola in alto a destra: per l'artista è "la sua foto", una
+  // sola.
+  //
+  // Due condizioni non negoziabili:
+  //  - solo se il profilo è DAVVERO dell'utente collegato. `ownsArtist` lascia
+  //    passare anche il superadmin, e senza questo controllo un admin che
+  //    modifica la scheda di un artista si ritroverebbe la foto di quell'artista
+  //    come proprio avatar.
+  //  - solo con un'immagine valida: se `cover_image` è vuota non si tocca
+  //    l'avatar esistente. Sincronizzare vuol dire propagare una foto, non
+  //    cancellarne una.
+  const newCover = patch.cover_image;
+  if (
+    section === "info" &&
+    typeof newCover === "string" &&
+    newCover.length > 0 &&
+    current?.user_id === user.id
+  ) {
+    await admin.from("profiles").update({ avatar_url: newCover }).eq("id", user.id);
+  }
 
   // "layout" perché la percentuale di completamento vive nella sidebar del
   // layout, non nella pagina. La pagina pubblica dell'artista va rigenerata
