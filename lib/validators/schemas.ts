@@ -1,4 +1,15 @@
 import { z } from "zod";
+import type { Json } from "@/lib/supabase/types";
+
+/**
+ * Valore JSON generico, per colonne jsonb "libere" come `formats.details`.
+ * Ricorsivo per costruzione, rispecchia esattamente il tipo `Json` del DB
+ * (invece di `z.unknown()`, che produce `Record<string, unknown>` — non
+ * assegnabile a `Json` senza cast al call site).
+ */
+const jsonValueSchema: z.ZodType<Json> = z.lazy(() =>
+  z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(jsonValueSchema), z.record(jsonValueSchema)])
+);
 
 export const leadSchema = z.object({
   artistId: z.string().uuid(),
@@ -92,7 +103,7 @@ export const formatSchema = z.object({
   videos: z.array(z.string().url()).max(10).default([]),
   icon: z.string().max(60).optional().or(z.literal("").transform(() => undefined)),
   order_index: z.coerce.number().int().nonnegative().default(0),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(jsonValueSchema).optional(),
   seo_title: z.string().max(120).optional().or(z.literal("").transform(() => undefined)),
   seo_description: z.string().max(300).optional().or(z.literal("").transform(() => undefined)),
   published: z.boolean().default(true),

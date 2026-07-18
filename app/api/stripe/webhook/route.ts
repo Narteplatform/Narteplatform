@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/client";
 import { resolvePriceId } from "@/lib/stripe/prices";
 import { createAdminClient } from "@/lib/supabase/server";
+import type { Json } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,7 +34,7 @@ type SubRow = {
   stripe_price_id: string;
   tier: "pro" | "max";
   billing_interval: "month" | "year";
-  status: string;
+  status: Stripe.Subscription.Status;
   current_period_start: string | null;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
@@ -50,11 +51,11 @@ const iso = (unix: number | null | undefined): string | null =>
  * (checkout.session, invoice) o direttamente.
  */
 function subscriptionIdOf(event: Stripe.Event): string | null {
-  const o = event.data.object as Record<string, unknown>;
-  if (event.type.startsWith("customer.subscription.")) return (o.id as string) ?? null;
-  const sub = o.subscription;
+  const o = event.data.object;
+  if (event.type.startsWith("customer.subscription.")) return "id" in o ? o.id : null;
+  const sub = "subscription" in o ? o.subscription : undefined;
   if (typeof sub === "string") return sub;
-  if (sub && typeof sub === "object" && "id" in sub) return (sub as { id: string }).id;
+  if (sub && typeof sub === "object" && "id" in sub) return sub.id;
   return null;
 }
 
@@ -170,9 +171,13 @@ export async function POST(request: Request) {
 
   // --- Idempotenza ---
   // Stripe consegna "at least once": lo stesso evento può arrivare più volte.
+  // L'evento Stripe, una volta serializzato in jsonb, è genuinamente un
+  // valore Json: l'interfaccia `Stripe.Event` (unione discriminata) non ha
+  // una firma indice, quindi il passaggio da `unknown` è la via che il
+  // compilatore stesso suggerisce per un cast comunque corretto nel merito.
   const { error: insErr } = await admin
     .from("stripe_webhook_events")
-    .insert({ id: event.id, type: event.type, payload: event as unknown as Record<string, unknown> });
+    .insert({ id: event.id, type: event.type, payload: event as unknown as Json });
 
   if (insErr) {
     if (insErr.code !== "23505") {

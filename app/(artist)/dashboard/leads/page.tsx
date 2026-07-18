@@ -334,7 +334,7 @@ export default async function ArtistLeadsPage({
                     </p>
                     <CardTitle className="text-lg">
                       {l.event_location} <span className="text-muted-foreground font-normal">·</span>{" "}
-                      {new Date(l.event_date).toLocaleDateString("it-IT")}
+                      {l.event_date ? new Date(l.event_date).toLocaleDateString("it-IT") : "Data da definire"}
                     </CardTitle>
                     {l.event_time && (
                       <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">

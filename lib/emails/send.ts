@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { createElement } from "react";
 import { createAdminClient } from "@/lib/supabase/server";
 import BookingStatusEmail from "@/lib/emails/templates/BookingStatusEmail";
+import type { Json } from "@/lib/supabase/types";
 
 const FROM = process.env.RESEND_FROM_EMAIL || "N'arte <noreply@narte.it>";
 
@@ -24,7 +25,7 @@ type SendEmailOpts = {
   react: ReactElement;
   replyTo?: string;
   template?: string;
-  meta?: Record<string, unknown>;
+  meta?: Json;
 };
 
 async function logEmail(row: {
@@ -34,7 +35,7 @@ async function logEmail(row: {
   status: "sent" | "failed" | "skipped";
   providerId?: string | null;
   error?: string | null;
-  meta?: Record<string, unknown>;
+  meta?: Json;
 }) {
   try {
     const admin = createAdminClient();

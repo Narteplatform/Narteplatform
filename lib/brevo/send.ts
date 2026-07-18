@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { brevoRequest } from "@/lib/brevo/client";
 import { getTemplateId, type EmailKey, type EmailParamsMap } from "@/lib/brevo/registry";
+import type { Json } from "@/lib/supabase/types";
 
 const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || "noreply@narte.it";
 const SENDER_NAME = process.env.BREVO_SENDER_NAME || "N'arte";
@@ -29,7 +30,7 @@ async function logEmail(row: {
   status: "sent" | "failed" | "skipped";
   providerId?: string | null;
   error?: string | null;
-  meta?: Record<string, unknown>;
+  meta?: Json;
 }) {
   try {
     const admin = createAdminClient();
