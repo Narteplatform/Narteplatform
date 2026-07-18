@@ -151,15 +151,23 @@ export function currentMonthStartRome(now = new Date()): string {
   return `${year}-${month}-01T00:00:00`;
 }
 
-export type MonthlyQuotaKind = "consultation" | "event_application";
+/**
+ * Tipi di quota a rinnovo mensile.
+ *
+ * Al momento esiste solo la consulenza. Esisteva anche `"event_application"`,
+ * ma la funzionalità "candidature agli eventi" non è mai stata realizzata:
+ * niente tabella, niente migrazione, nessuna UI e nessun chiamante. Il ramo
+ * relativo interrogava una tabella inesistente ed è stato rimosso.
+ */
+export type MonthlyQuotaKind = "consultation";
 
 /**
  * Chi consuma la quota.
  *
- * Le due quote si contano su chiavi diverse, e non è un dettaglio: le
- * `consultations` sono legate a `user_id` (la tabella non ha `artist_id` — vedi
- * 0015_consulenza.sql, prenota anche chi artista non è), mentre le
- * `event_applications` sono legate ad `artist_id`.
+ * Le `consultations` sono legate a `user_id`, non a `artist_id`: la tabella
+ * non ha quella colonna (vedi 0015_consulenza.sql), perché prenota anche chi
+ * artista non è. `artistId` resta nel tipo perché i chiamanti lo hanno già a
+ * disposizione e servirà alle quote future legate all'artista.
  */
 export type QuotaSubject = { artistId: string; userId: string };
 
@@ -172,8 +180,8 @@ export async function getMonthlyUsage(
   const since = currentMonthStartRome();
 
   if (kind === "consultation") {
-    // Le consulenze annullate non consumano quota: a differenza delle
-    // candidature, annullare libera davvero lo slot per un altro artista.
+    // Le consulenze annullate non consumano quota: annullare libera davvero
+    // lo slot per un altro artista.
     const { count } = await admin
       .from("consultations")
       .select("id", { count: "exact", head: true })
@@ -183,14 +191,10 @@ export async function getMonthlyUsage(
     return count ?? 0;
   }
 
-  // Le candidature ritirate CONTANO, altrimenti il ciclo
-  // candidati → ritira → candidati renderebbe la quota infinita.
-  const { count } = await admin
-    .from("event_applications")
-    .select("id", { count: "exact", head: true })
-    .eq("artist_id", subject.artistId)
-    .gte("created_at", since);
-  return count ?? 0;
+  // Nessun'altra quota mensile è definita: irraggiungibile con l'unico
+  // valore ammesso da `MonthlyQuotaKind`, resta come rete per quando se ne
+  // aggiungerà una seconda.
+  return 0;
 }
 
 export async function checkMonthlyQuota(
@@ -198,18 +202,14 @@ export async function checkMonthlyQuota(
   ent: Entitlements,
   kind: MonthlyQuotaKind
 ): Promise<LimitCheck> {
-  const limit =
-    kind === "consultation" ? ent.consultationsPerMonth : ent.eventApplicationsPerMonth;
+  const limit = ent.consultationsPerMonth;
 
   if (isUnlimited(limit)) return { ok: true };
 
   if (limit === 0) {
     return {
       ok: false,
-      error:
-        kind === "consultation"
-          ? "La consulenza professionale è inclusa nei piani Pro e Max."
-          : "Le candidature agli eventi sono incluse nei piani Pro e Max.",
+      error: "La consulenza professionale è inclusa nei piani Pro e Max.",
     };
   }
 
@@ -218,10 +218,7 @@ export async function checkMonthlyQuota(
 
   return {
     ok: false,
-    error:
-      kind === "consultation"
-        ? `Il piano ${ent.tier.toUpperCase()} include ${limit} consulenza al mese e l'hai già usata. La quota si rinnova il 1° del mese; con Max è illimitata.`
-        : `Il piano ${ent.tier.toUpperCase()} include ${limit} candidature al mese e le hai già usate. La quota si rinnova il 1° del mese; con Pro è illimitata.`,
+    error: `Il piano ${ent.tier.toUpperCase()} include ${limit} consulenza al mese e l'hai già usata. La quota si rinnova il 1° del mese; con Max è illimitata.`,
   };
 }
 
