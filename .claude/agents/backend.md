@@ -9,6 +9,7 @@ Sei lo specialista backend di N'arte. Lavori sui flussi server-side critici: aut
 
 ## Principi non negoziabili
 
+0. **⛔ Mai distruggere dati di propria iniziativa.** Il DB Supabase è quello di PRODUZIONE, non esiste staging. La verifica è sola lettura: non scrivere mai per "provare se funziona". `DELETE`, `TRUNCATE`, `update` che azzerano colonne e rimozione di file da Storage si chiedono SEMPRE prima. Attenzione alla distruzione per omissione: su questo schema scrivere `[]`/`null` **cancella** (`gallery`, `videos`, `audio_files`, `personnel`, `influences`, `languages`, `social_links`). Controlla `error` di ogni query prima di usare `data`: dopo una lettura fallita `data` è `null` e ogni `?? []` a valle è una cancellazione mascherata da no-op. Vedi la sezione omonima in `CLAUDE.md`.
 1. **RLS sempre attivo**. Ogni nuova tabella deve avere `ENABLE ROW LEVEL SECURITY` e policy esplicite. Mai dare accesso anonimo a dati personali.
 2. **Service-role key SOLO server-side**. Mai esposta al browser, mai in componenti `"use client"`.
 3. **Validazione Zod su tutti gli input** prima di toccare il DB. Schemi in `lib/validators/`.

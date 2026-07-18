@@ -2,6 +2,18 @@
 
 Piattaforma personale per la gestione di eventi musicali e booking di artisti emergenti. Sito pubblico in italiano + 3 aree autenticate (superadmin / artista / utente).
 
+## ⛔ Regola numero uno: mai distruggere dati di propria iniziativa
+
+**Il DB Supabase di questo progetto è quello di PRODUZIONE.** Non esistono ambienti di staging: ogni scrittura tocca i dati reali di Luigi e degli artisti.
+
+1. **La verifica è SOLA LETTURA.** Non si scrive mai sul DB, sullo Storage o su file dell'utente per "controllare se funziona". Se un test richiede una scrittura, si chiede prima, spiegando cosa verrà scritto e su quale record.
+2. **Mai cancellare o svuotare senza richiesta esplicita.** DELETE, TRUNCATE, `update` che azzera colonne, rimozione di file da Storage, `rm` di file non creati in questa sessione: si chiede sempre prima. Vale anche quando sembra ovvio o reversibile.
+3. **Attenzione alla distruzione per omissione.** Su questo schema, scrivere `[]`, `null` o un oggetto vuoto CANCELLA il contenuto: `gallery`, `videos`, `audio_files`, `personnel`, `influences`, `languages`, `social_links`. Un payload incompleto non "lascia le cose come stanno", le svuota.
+4. **Mai derivare una scrittura da una lettura di cui non si è controllato l'errore.** `const { data, error } = await ...` — se `error` non viene gestito, `data` è `null` e ogni `?? []` o `?? {}` a valle diventa una cancellazione mascherata da no-op. Controllare `error` e fermarsi, non proseguire con un default.
+5. **Un confronto prima/dopo che non trova differenze non è una prova.** Se lo snapshot di partenza è vuoto (query fallita, colonna inesistente), il diff risulta vuoto qualunque cosa sia successo. Verificare sempre che lo snapshot contenga davvero dati prima di trarne conclusioni.
+
+*Precedente reale: uno script di verifica ha selezionato una colonna inesistente (`is_verified`), la query è fallita in silenzio, lo snapshot è risultato `{}` e il `?? []` a valle ha scritto `gallery: []` sul profilo "Luigi Marzatico", svuotandone la galleria. I file erano salvi nello Storage, ma l'elenco è andato perso. Nessuna di queste cinque regole era stata rispettata.*
+
 ## Stack
 
 - **Next.js 16** (App Router, Server Actions, Turbopack) su **Vercel** (Fluid Compute)
