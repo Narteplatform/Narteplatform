@@ -1,8 +1,18 @@
 import Link from "next/link";
-import { CalendarDays, ExternalLink, Image as ImageIcon, Inbox, Video } from "lucide-react";
+import {
+  CalendarDays,
+  ExternalLink,
+  Image as ImageIcon,
+  Inbox,
+  Lock,
+  MessageCircle,
+  Video,
+} from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { getActiveArtistRow } from "@/lib/artist/current";
+import { getUnreadCountForUser } from "@/lib/chat/queries";
+import { entitlementsFor } from "@/lib/billing/plans";
 import { HeroGreeting } from "@/components/dashboard/HeroGreeting";
 import { ActivityList } from "@/components/dashboard/ActivityFeed";
 import { ProfileCompletionCard } from "@/components/dashboard/ProfileCompletionCard";
@@ -14,7 +24,7 @@ import { Badge } from "@/components/ui/Badge";
 import { PlanBadge } from "@/components/billing/PlanBadge";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 
-export const metadata = { title: "Overview — N'arte" };
+export const metadata = { title: "Dashboard — N'arte" };
 export const dynamic = "force-dynamic";
 
 export default async function ArtistOverviewPage() {
@@ -55,6 +65,7 @@ export default async function ArtistOverviewPage() {
     { count: availableCount },
     { count: newLeadsCount },
     { data: recentLeads },
+    unreadChat,
   ] = await Promise.all([
     supabase
       .from("artist_availability")
@@ -81,10 +92,15 @@ export default async function ArtistOverviewPage() {
       .eq("artist_id", artist.id)
       .order("created_at", { ascending: false })
       .limit(5),
+    // Stesso conteggio del badge in sidebar (AppShellData): unica fonte.
+    getUnreadCountForUser(user.id, "artist"),
   ]);
 
   const gallery = artist.gallery ?? [];
   const videos = artist.videos ?? [];
+  // La chat è una feature Pro/Max: l'enforcement vero sta in lib/chat/actions.ts,
+  // qui serve solo a decidere se mostrare il conteggio o il lucchetto.
+  const canUseChat = entitlementsFor(artist.tier).canUseChat;
 
   const heroDescription = (() => {
     const parts: string[] = [];
@@ -123,7 +139,7 @@ export default async function ArtistOverviewPage() {
 
       <ProfileCompletionCard artist={artist as unknown as ProfileCompletionSource} />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard
           label="Galleria foto"
           value={gallery.length}
@@ -148,6 +164,27 @@ export default async function ArtistOverviewPage() {
           icon={<Inbox className="size-4" />}
           href="/dashboard/leads?status=new"
         />
+        {canUseChat ? (
+          <KpiCard
+            label="Chat"
+            value={unreadChat}
+            icon={<MessageCircle className="size-4" />}
+            href="/dashboard/chat"
+            sublabel={
+              unreadChat > 0
+                ? "Messaggi da leggere"
+                : "Scrivi con gli organizzatori"
+            }
+          />
+        ) : (
+          <KpiCard
+            label="Chat"
+            value="—"
+            icon={<Lock className="size-4" />}
+            href="/dashboard/abbonamento"
+            sublabel="Disponibile con N'arte Pro"
+          />
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

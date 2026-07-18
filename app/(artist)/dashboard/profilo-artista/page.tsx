@@ -3,11 +3,17 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { getActiveArtistRow } from "@/lib/artist/current";
-import { ArtistProfileForm } from "@/components/forms/ArtistProfileForm";
-import { AccountSettingsForm } from "@/components/forms/AccountSettingsForm";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import type { ArtistVideoItem } from "@/components/forms/VideoUpload";
+import type { ArtistProfileData } from "@/components/dashboard/profile/types";
+import { InfoArtistaBlock } from "@/components/dashboard/profile/blocks/InfoArtistaBlock";
+import { GalleryBlock } from "@/components/dashboard/profile/blocks/GalleryBlock";
+import { VideoBlock } from "@/components/dashboard/profile/blocks/VideoBlock";
+import { AudioBlock } from "@/components/dashboard/profile/blocks/AudioBlock";
+import { BookingBlock } from "@/components/dashboard/profile/blocks/BookingBlock";
+import { SocialBlock } from "@/components/dashboard/profile/blocks/SocialBlock";
+import { AccountBlock } from "@/components/dashboard/profile/blocks/AccountBlock";
 
 export const metadata = { title: "Profilo artista — N'arte" };
 export const dynamic = "force-dynamic";
@@ -53,14 +59,18 @@ export default async function ArtistProfileEditPage() {
     created_at: v.created_at,
   }));
 
+  // getActiveArtistRow torna un record non tipizzato: il cast si fa qui una
+  // volta sola, non dentro ogni blocco.
+  const profile = artist as unknown as ArtistProfileData;
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-2xl tracking-tight sm:text-3xl">Profilo artista</h1>
           <p className="text-sm text-muted-foreground">
-            Tutto quello che salvi qui viene aggiornato in automatico nella tua pagina pubblica e
-            nella sezione &quot;Gli artisti&quot; della home.
+            Ogni sezione si apre e si salva per conto suo. Tutto quello che salvi qui viene
+            aggiornato in automatico sulla tua pagina pubblica.
           </p>
         </div>
         <Button asChild variant="outline" size="sm">
@@ -71,42 +81,19 @@ export default async function ArtistProfileEditPage() {
         </Button>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Modifica profilo</CardTitle>
-          <CardDescription>
-            Foto, video, generi, bio. Tutti i campi sono modificabili e si salvano singolarmente.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ArtistProfileForm
-            artist={artist}
-            genreOptions={genreOptions}
-            artistId={artist.id}
-            initialVideos={initialVideos}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Account — Card sorella e non fieldset dentro ArtistProfileForm:
-          AccountSettingsForm ha i propri <form>, annidarli sarebbe HTML non valido. */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Account</CardTitle>
-          <CardDescription>
-            Nome visualizzato, foto profilo e password di accesso alla piattaforma.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AccountSettingsForm
-            email={user.email ?? ""}
-            defaults={{
-              fullName: user.profile?.full_name ?? "",
-              avatarUrl: user.profile?.avatar_url ?? "",
-            }}
-          />
-        </CardContent>
-      </Card>
+      <div className="space-y-3">
+        <InfoArtistaBlock artist={profile} genreOptions={genreOptions} />
+        <GalleryBlock artist={profile} />
+        <VideoBlock artist={profile} initialVideos={initialVideos} />
+        <AudioBlock artist={profile} />
+        <BookingBlock artist={profile} />
+        <SocialBlock artist={profile} />
+        <AccountBlock
+          email={user.email ?? ""}
+          fullName={user.profile?.full_name ?? ""}
+          avatarUrl={user.profile?.avatar_url ?? ""}
+        />
+      </div>
     </div>
   );
 }

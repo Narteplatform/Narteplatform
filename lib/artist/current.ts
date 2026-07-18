@@ -26,6 +26,8 @@ export type OwnedArtist = {
   cover_image: string | null;
   status: ArtistStatus;
   tier: ArtistTier;
+  /** Profilo oltre il tetto del piano: esiste ma non è pubblico (0043). */
+  plan_suspended: boolean;
 };
 
 /** Tutti i profili dell'account, in ordine stabile (il più vecchio è il principale). */
@@ -33,7 +35,7 @@ export async function getOwnedArtists(userId: string): Promise<OwnedArtist[]> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("artists")
-    .select("id, stage_name, slug, cover_image, status, tier")
+    .select("id, stage_name, slug, cover_image, status, tier, plan_suspended")
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
   return (data ?? []) as unknown as OwnedArtist[];

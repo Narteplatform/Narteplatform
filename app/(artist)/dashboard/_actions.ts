@@ -5,12 +5,14 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ARTIST_VIDEO_BUCKET, isAllowedVideoMime } from "@/lib/upload/video-limits";
 import { entitlementsFor } from "@/lib/billing/plans";
 import { checkCollectionLimit, getEntitlements } from "@/lib/billing/entitlements";
+import { PROFILE_SECTION_PAYLOAD_SCHEMAS } from "@/lib/validators/artist-profile";
 import type { ArtistTier } from "@/lib/supabase/types";
 
 type AudioTrack = { url: string; title: string };
 type PersonnelMember = { name: string; role: string };
 
-type ProfileUpdate = {
+/** Tutte e sole le colonne di `artists` che l'artista può scrivere da sé. */
+export type ProfileColumns = {
   stage_name: string;
   bio: string | null;
   genre: string[];
@@ -23,17 +25,79 @@ type ProfileUpdate = {
   audio_files: AudioTrack[];
   percorso_artistico: "cover_artist" | "tribute_band" | "progetto_inedito" | null;
   // Booking information (sezione GigSalad-style)
-  price_range?: string | null;
-  gig_min_minutes?: number | null;
-  gig_max_minutes?: number | null;
-  languages?: string[];
-  what_to_expect?: string | null;
-  about_extended?: string | null;
-  personnel?: PersonnelMember[];
-  set_list?: string | null;
-  influences?: string[];
-  setup_requirements?: string | null;
+  price_range: string | null;
+  gig_min_minutes: number | null;
+  gig_max_minutes: number | null;
+  languages: string[];
+  what_to_expect: string | null;
+  about_extended: string | null;
+  personnel: PersonnelMember[];
+  set_list: string | null;
+  influences: string[];
+  setup_requirements: string | null;
 };
+
+export type ProfileSectionId = "info" | "gallery" | "videos" | "audio" | "booking" | "social";
+
+/**
+ * Whitelist: nient'altro raggiunge il DB.
+ *
+ * Serve perché l'update gira con la service role, che bypassa RLS per
+ * definizione. Prima il payload arrivava dal client e finiva tal quale in
+ * `.update()`: una chiamata artigianale alla Server Action con
+ * `{ ...update, is_verified: true }` sarebbe stata scritta senza fiatare.
+ * Con la sezione esplicita il server sa quali colonne aspettarsi e scarta il
+ * resto in silenzio.
+ */
+const SECTION_COLUMNS = {
+  info: ["stage_name", "city", "genre", "instruments", "bio", "percorso_artistico", "cover_image"],
+  gallery: ["gallery"],
+  videos: ["videos"],
+  audio: ["audio_files"],
+  booking: [
+    "price_range",
+    "languages",
+    "gig_min_minutes",
+    "gig_max_minutes",
+    "what_to_expect",
+    "about_extended",
+    "personnel",
+    "set_list",
+    "influences",
+    "setup_requirements",
+  ],
+  social: ["social_links"],
+} as const satisfies Record<ProfileSectionId, readonly (keyof ProfileColumns)[]>;
+
+/**
+ * Colonne che un blocco può legittimamente NON mandare.
+ *
+ * Solo `percorso_artistico`: su un piano Free il campo non è modificabile e il
+ * client omette la chiave invece di mandare null, così il valore già salvato
+ * resta intatto (il downgrade nasconde, non cancella). Tutte le altre colonne
+ * della sezione restano obbligatorie, così un blocco non può dimenticarne una
+ * per sbaglio.
+ */
+type OptionalProfileColumn = "percorso_artistico";
+
+export type SectionPayload<S extends ProfileSectionId> = Pick<
+  ProfileColumns,
+  Exclude<(typeof SECTION_COLUMNS)[S][number], OptionalProfileColumn>
+> &
+  Partial<
+    Pick<ProfileColumns, Extract<(typeof SECTION_COLUMNS)[S][number], OptionalProfileColumn>>
+  >;
+
+function pickAllowed(
+  values: Record<string, unknown>,
+  allowed: readonly string[]
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (key in values) out[key] = values[key];
+  }
+  return out;
+}
 
 async function ownsArtist(artistId: string) {
   const supabase = await createClient();
@@ -60,13 +124,36 @@ async function ownsArtist(artistId: string) {
   return null;
 }
 
-export async function updateArtistProfile(artistId: string, update: ProfileUpdate) {
+/**
+ * Salvataggio di UNA sezione dell'editor profilo.
+ *
+ * L'editor è a blocchi indipendenti, ciascuno con il proprio Salva: il patch
+ * contiene solo le colonne di quel blocco, e Postgres non riscrive le altre.
+ * Effetto collaterale utile sui limiti di piano: un artista Free con la
+ * galleria sopra soglia può salvare la bio senza incappare nel check sulla
+ * galleria, perché `gallery` non è nemmeno nel patch.
+ */
+export async function updateArtistProfileSection<S extends ProfileSectionId>(
+  artistId: string,
+  section: S,
+  values: SectionPayload<S>
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = await ownsArtist(artistId);
   if (!user) return { ok: false as const, error: "Non autorizzato" };
 
-  if (update.genre.length > 3) {
-    return { ok: false as const, error: "Massimo 3 generi" };
+  const schema = PROFILE_SECTION_PAYLOAD_SCHEMAS[section];
+  const parsed = schema.safeParse(values);
+  if (!parsed.success) {
+    return {
+      ok: false as const,
+      error: parsed.error.issues[0]?.message ?? "Dati non validi",
+    };
   }
+
+  const patch = pickAllowed(
+    parsed.data as Record<string, unknown>,
+    SECTION_COLUMNS[section]
+  );
 
   const admin = createAdminClient();
 
@@ -82,46 +169,65 @@ export async function updateArtistProfile(artistId: string, update: ProfileUpdat
     tier?: ArtistTier;
     gallery?: string[] | null;
     audio_files?: AudioTrack[] | null;
-    percorso_artistico?: ProfileUpdate["percorso_artistico"];
+    percorso_artistico?: ProfileColumns["percorso_artistico"];
   } | null;
 
   const ent = entitlementsFor(current?.tier ?? "free");
 
-  const galleryCheck = checkCollectionLimit(
-    ent,
-    "gallery",
-    current?.gallery?.length ?? 0,
-    update.gallery.length
-  );
-  if (!galleryCheck.ok) return { ok: false as const, error: galleryCheck.error };
-
-  const audioCheck = checkCollectionLimit(
-    ent,
-    "audio",
-    current?.audio_files?.length ?? 0,
-    update.audio_files.length
-  );
-  if (!audioCheck.ok) return { ok: false as const, error: audioCheck.error };
-
-  // percorso_artistico: gate di scrittura. Chi non ha il piano non può
-  // IMPOSTARLO, ma un valore già presente non viene toccato — il downgrade
-  // nasconde, non cancella (vedi 0040_relax_percorso_trigger.sql).
-  let payload: ProfileUpdate = update;
-  if (!ent.canSetPercorso) {
-    payload = { ...payload, percorso_artistico: current?.percorso_artistico ?? null };
+  if ("genre" in patch) {
+    // Ridondante rispetto allo schema Zod: difesa in profondità sull'unico
+    // limite che ha anche una conseguenza commerciale.
+    const genre = patch.genre as string[];
+    if (genre.length > 3) return { ok: false as const, error: "Massimo 3 generi" };
   }
 
-  const { error } = await admin
-    .from("artists")
-    .update(payload)
-    .eq("id", artistId);
+  if ("gallery" in patch) {
+    const check = checkCollectionLimit(
+      ent,
+      "gallery",
+      current?.gallery?.length ?? 0,
+      (patch.gallery as string[]).length
+    );
+    if (!check.ok) return { ok: false as const, error: check.error };
+  }
+
+  if ("audio_files" in patch) {
+    const check = checkCollectionLimit(
+      ent,
+      "audio",
+      current?.audio_files?.length ?? 0,
+      (patch.audio_files as AudioTrack[]).length
+    );
+    if (!check.ok) return { ok: false as const, error: check.error };
+  }
+
+  // percorso_artistico: gate di scrittura. Chi non ha il piano non può
+  // IMPOSTARLO; la chiave sparisce dal patch, così il valore già in DB resta
+  // intatto — il downgrade nasconde, non cancella (0040_relax_percorso_trigger).
+  if ("percorso_artistico" in patch && !ent.canSetPercorso) {
+    delete patch.percorso_artistico;
+  }
+
+  if (Object.keys(patch).length === 0) return { ok: true as const };
+
+  const { error } = await admin.from("artists").update(patch).eq("id", artistId);
 
   if (error) return { ok: false as const, error: error.message };
 
-  revalidatePath("/dashboard");
+  // "layout" perché la percentuale di completamento vive nella sidebar del
+  // layout, non nella pagina. La pagina pubblica dell'artista va rigenerata
+  // esplicitamente: è il posto dove queste modifiche si vedono davvero.
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/artisti");
-  revalidatePath(`/artisti`);
   revalidatePath("/");
+  const { data: slugRow } = await admin
+    .from("artists")
+    .select("slug")
+    .eq("id", artistId)
+    .maybeSingle();
+  const slug = (slugRow as { slug?: string } | null)?.slug;
+  if (slug) revalidatePath(`/artisti/${slug}`);
+
   return { ok: true as const };
 }
 

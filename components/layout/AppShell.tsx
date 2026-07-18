@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/Dropdown";
-import { Avatar, AvatarStack } from "@/components/ui/Avatar";
+import { Avatar } from "@/components/ui/Avatar";
 import { Progress } from "@/components/ui/Progress";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Button } from "@/components/ui/Button";
@@ -62,11 +62,6 @@ export type AppShellStorage = {
   variant?: "default" | "accent";
 };
 
-export type AppShellRecent = {
-  src?: string | null;
-  name?: string | null;
-};
-
 export interface AppShellProps {
   brand: React.ReactNode;
   brandHref: string;
@@ -75,7 +70,6 @@ export interface AppShellProps {
   planTier?: ArtistTier;
   navSections: NavSection[];
   storage?: AppShellStorage;
-  recentActivity?: AppShellRecent[];
   whatsNewHref?: string;
   showSearch?: boolean;
   /**
@@ -109,7 +103,6 @@ export function AppShell({
   planTier,
   navSections,
   storage,
-  recentActivity,
   whatsNewHref,
   showSearch = false,
   topbarSlot,
@@ -170,18 +163,6 @@ export function AppShell({
           </div>
 
           <div className="flex items-center gap-3">
-            {recentActivity && recentActivity.length > 0 && (
-              <div className="hidden items-center gap-2 md:flex">
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Attività
-                </span>
-                <AvatarStack
-                  items={recentActivity.map((r) => ({ src: r.src, name: r.name }))}
-                  size="xs"
-                  max={4}
-                />
-              </div>
-            )}
             {whatsNewHref && (
               <Button asChild variant="outline" size="sm">
                 <Link href={whatsNewHref}>
@@ -236,6 +217,9 @@ function prettifySegment(seg: string): string {
   const map: Record<string, string> = {
     admin: "Admin",
     dashboard: "Dashboard",
+    // La voce di menu è "Dashboard": senza questa riga il breadcrumb
+    // leggerebbe "Dashboard › Overview" per la stessa pagina.
+    overview: "Dashboard",
     artisti: "Artisti",
     eventi: "Eventi",
     leads: "Lead",

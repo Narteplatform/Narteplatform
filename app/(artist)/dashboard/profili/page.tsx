@@ -76,7 +76,7 @@ export default async function ArtistProfilesPage() {
                     )}
                   </p>
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Piano {a.tier}
+                    {PLAN_LABELS[a.tier]}
                   </p>
                 </div>
               </div>

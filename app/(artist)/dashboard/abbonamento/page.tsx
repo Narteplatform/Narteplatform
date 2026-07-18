@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Camera, Clock, ExternalLink } from "lucide-react";
+import { AlertTriangle, Camera, Clock, ExternalLink, Gift } from "lucide-react";
 import { requireRole } from "@/lib/auth/guards";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getOwnedArtists } from "@/lib/artist/current";
@@ -64,7 +64,30 @@ export default async function AbbonamentoPage({
 
   const ent = await getAccountEntitlements(user.id);
   const owned = await getOwnedArtists(user.id);
-  const suspended = owned.filter((a) => (a as unknown as { plan_suspended?: boolean }).plan_suspended);
+  const suspended = owned.filter((a) => a.plan_suspended);
+
+  // Un piano può arrivare da Stripe oppure da un omaggio del superadmin (0044).
+  // Senza questa distinzione la pagina mostrerebbe "N'arte Max" e, subito sotto,
+  // "stai usando il piano gratuito" a chi ha ricevuto un omaggio.
+  const { data: overrideRows } = await admin
+    .from("artists")
+    .select("tier_override, tier_override_expires_at, tier_override_reason")
+    .eq("user_id", user.id)
+    .not("tier_override", "is", null)
+    .order("tier_override", { ascending: false })
+    .limit(1);
+  const override = ((overrideRows ?? []) as unknown as {
+    tier_override: ArtistTier;
+    tier_override_expires_at: string | null;
+    tier_override_reason: string | null;
+  }[])[0] ?? null;
+  const activeOverride =
+    override &&
+    (!override.tier_override_expires_at ||
+      new Date(override.tier_override_expires_at) > new Date())
+      ? override
+      : null;
+  const isGifted = !sub && activeOverride !== null && isPaidTier(ent.tier);
 
   const configured = isStripeConfigured() && arePricesConfigured();
 
@@ -127,9 +150,13 @@ export default async function AbbonamentoPage({
       <Card>
         <CardHeader className="flex-row items-center justify-between gap-3">
           <CardTitle className="text-base">Il tuo piano</CardTitle>
-          {sub && <Badge variant={sub.status === "past_due" ? "warning" : "success"}>
-            {STATUS_LABEL[sub.status] ?? sub.status}
-          </Badge>}
+          {sub ? (
+            <Badge variant={sub.status === "past_due" ? "warning" : "success"}>
+              {STATUS_LABEL[sub.status] ?? sub.status}
+            </Badge>
+          ) : isGifted ? (
+            <Badge variant="success">Omaggio</Badge>
+          ) : null}
         </CardHeader>
         <CardContent className="space-y-2">
           <p className="font-display text-2xl">{PLAN_LABELS[ent.tier]}</p>
@@ -153,6 +180,21 @@ export default async function AbbonamentoPage({
                   Shooting fotografico incluso — scrivici per fissarlo.
                 </p>
               )}
+            </>
+          ) : isGifted ? (
+            <>
+              <p className="flex items-center gap-2 text-sm text-accent">
+                <Gift className="size-4" />
+                Piano assegnato dal team N&apos;arte.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {activeOverride?.tier_override_expires_at
+                  ? `Resta attivo fino al ${dt(activeOverride.tier_override_expires_at)}.`
+                  : "Non ha scadenza e non prevede alcun addebito."}
+                {activeOverride?.tier_override_reason
+                  ? ` ${activeOverride.tier_override_reason}`
+                  : ""}
+              </p>
             </>
           ) : (
             <p className="text-sm text-muted-foreground">

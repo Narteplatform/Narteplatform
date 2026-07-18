@@ -22,7 +22,7 @@ import {
   getUnreadCountForUser,
 } from "@/lib/chat/queries";
 import type { ReactNode } from "react";
-import { AppShell, type AppShellRecent, type AppShellStorage, type NavSection } from "@/components/layout/AppShell";
+import { AppShell, type AppShellStorage, type NavSection } from "@/components/layout/AppShell";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getArtistContext, type OwnedArtist } from "@/lib/artist/current";
@@ -38,13 +38,19 @@ import {
 } from "@/lib/artist/profile-completion";
 import type { AdminPageKey } from "@/lib/validators/schemas";
 
+/**
+ * Logo + area di appartenenza, senza separatore: il suffisso è dimensionato per
+ * leggersi come parte del marchio ("N'ARTE ARTISTA"), non come una briciola di
+ * navigazione. `leading-none` + `items-center` lo tengono dentro l'altezza h-14
+ * della topbar, dove questo stesso componente è il fallback del breadcrumb.
+ */
 function ShellBrand({ suffix }: { suffix?: string }) {
   return (
     <span className="flex items-center gap-2">
       <NarteLogo variant="light" width={92} className="h-7 w-auto" />
       {suffix ? (
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          / {suffix}
+        <span className="font-display text-lg uppercase leading-none tracking-tight">
+          {suffix}
         </span>
       ) : null}
     </span>
@@ -77,17 +83,13 @@ function safe<T>(p: PromiseLike<T>): Promise<T | null> {
 
 async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boolean }): Promise<{
   navSections: NavSection[];
-  recentActivity: AppShellRecent[];
 }> {
   let admin;
   try {
     admin = createAdminClient();
   } catch (err) {
     console.error("[AppShellData] createAdminClient failed:", err);
-    return {
-      navSections: defaultAdminNav(),
-      recentActivity: [],
-    };
+    return { navSections: defaultAdminNav() };
   }
   const today = todayIso();
 
@@ -99,7 +101,6 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     newLeads,
     contactedLeads,
     closedLeads,
-    recentArtists,
   ] = await Promise.all([
     safe(admin.from("events").select("id", { count: "exact", head: true }).gte("date", today)),
     safe(admin.from("events").select("id", { count: "exact", head: true }).lt("date", today)),
@@ -108,14 +109,6 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "new").in("source", ["format", "contatti"])),
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "contacted")),
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "closed")),
-    safe(
-      admin
-        .from("artists")
-        .select("stage_name, cover_image, status, created_at")
-        .eq("status", "approved")
-        .order("created_at", { ascending: false })
-        .limit(4)
-    ),
   ]);
 
   const c = (n: { count: number | null } | null) => n?.count ?? 0;
@@ -250,12 +243,7 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     return sectionsByKey[k] !== null;
   }).map((k) => sectionsByKey[k]!) as NavSection[];
 
-  const recentActivity: AppShellRecent[] = (recentArtists?.data ?? []).map((a) => ({
-    src: a.cover_image ?? null,
-    name: a.stage_name,
-  }));
-
-  return { navSections, recentActivity };
+  return { navSections };
 }
 
 /** Contesto del selettore di profilo reso nella topbar. */
@@ -268,7 +256,6 @@ type ArtistProfilesContext = {
 async function loadArtistShell(userId: string): Promise<{
   navSections: NavSection[];
   storage: AppShellStorage | undefined;
-  recentActivity: AppShellRecent[];
   profiles: ArtistProfilesContext;
   planTier: ArtistTier | null;
 }> {
@@ -280,7 +267,6 @@ async function loadArtistShell(userId: string): Promise<{
     return {
       navSections: defaultArtistNav(),
       storage: undefined,
-      recentActivity: [],
       profiles: { owned: [], activeId: null, canCreateMore: false },
       planTier: null,
     };
@@ -317,10 +303,9 @@ async function loadArtistShell(userId: string): Promise<{
   let newLeads = 0;
   let contactedLeads = 0;
   let closedLeads = 0;
-  let recentLeads: { contact_email: string; event_location: string }[] = [];
 
   if (artist) {
-    const [leadsNew, leadsContacted, leadsClosed, recent] = await Promise.all([
+    const [leadsNew, leadsContacted, leadsClosed] = await Promise.all([
       safe(
         admin
           .from("leads")
@@ -342,19 +327,10 @@ async function loadArtistShell(userId: string): Promise<{
           .eq("artist_id", artist.id)
           .eq("status", "closed")
       ),
-      safe(
-        admin
-          .from("leads")
-          .select("contact_email, event_location, created_at")
-          .eq("artist_id", artist.id)
-          .order("created_at", { ascending: false })
-          .limit(4)
-      ),
     ]);
     newLeads = leadsNew?.count ?? 0;
     contactedLeads = leadsContacted?.count ?? 0;
     closedLeads = leadsClosed?.count ?? 0;
-    recentLeads = recent?.data ?? [];
   }
 
   const unreadChat = await safe(getUnreadCountForUser(userId, "artist")).then((v) => v ?? 0);
@@ -368,7 +344,7 @@ async function loadArtistShell(userId: string): Promise<{
     },
     {
       href: "/dashboard/overview",
-      label: "Overview",
+      label: "Dashboard",
       icon: <LayoutDashboard className="size-4" />,
       exact: true,
     },
@@ -432,11 +408,7 @@ async function loadArtistShell(userId: string): Promise<{
     };
   }
 
-  const recentActivity: AppShellRecent[] = recentLeads.map((l) => ({
-    name: l.event_location ?? l.contact_email,
-  }));
-
-  return { navSections, storage, recentActivity, profiles, planTier: activeArtist?.tier ?? null };
+  return { navSections, storage, profiles, planTier: activeArtist?.tier ?? null };
 }
 
 function defaultAdminNav(): NavSection[] {
@@ -453,7 +425,7 @@ function defaultAdminNav(): NavSection[] {
 
 function defaultArtistNav(): NavSection[] {
   return [
-    { href: "/dashboard/overview", label: "Overview", icon: <LayoutDashboard className="size-4" />, exact: true },
+    { href: "/dashboard/overview", label: "Dashboard", icon: <LayoutDashboard className="size-4" />, exact: true },
     { href: "/dashboard/profilo-artista", label: "Profilo artista", icon: <User className="size-4" /> },
     { href: "/dashboard/calendario", label: "Calendario", icon: <CalendarDays className="size-4" /> },
     { href: "/dashboard/leads", label: "Richieste", icon: <Inbox className="size-4" /> },
@@ -463,14 +435,13 @@ function defaultArtistNav(): NavSection[] {
 async function loadConsultantShell(userId: string): Promise<{
   navSections: NavSection[];
   storage: AppShellStorage | undefined;
-  recentActivity: AppShellRecent[];
 }> {
   let admin;
   try {
     admin = createAdminClient();
   } catch (err) {
     console.error("[AppShellData] createAdminClient failed:", err);
-    return { navSections: defaultConsultantNav(), storage: undefined, recentActivity: [] };
+    return { navSections: defaultConsultantNav(), storage: undefined };
   }
 
   const consultantRow = await safe(
@@ -536,7 +507,7 @@ async function loadConsultantShell(userId: string): Promise<{
     },
   ];
 
-  return { navSections, storage: undefined, recentActivity: [] };
+  return { navSections, storage: undefined };
 }
 
 function defaultConsultantNav(): NavSection[] {
@@ -556,20 +527,18 @@ export async function AdminAppShell({
   const isConsultant = user.role === "consultant";
   let navSections: NavSection[];
   let storage: AppShellStorage | undefined = undefined;
-  let recentActivity: AppShellRecent[];
   try {
     if (isConsultant) {
-      ({ navSections, storage, recentActivity } = await loadConsultantShell(user.id));
+      ({ navSections, storage } = await loadConsultantShell(user.id));
     } else {
       const isRoot = isRootSuperadminEmail(user.email);
       const allowed = await getAllowedAdminPages(user.id, user.email);
-      ({ navSections, recentActivity } = await loadAdminShell({ allowed, isRoot }));
+      ({ navSections } = await loadAdminShell({ allowed, isRoot }));
     }
   } catch (err) {
     console.error("[AppShellData] loadAdminShell crashed:", err);
     navSections = isConsultant ? defaultConsultantNav() : defaultAdminNav();
     storage = undefined;
-    recentActivity = [];
   }
   return (
     <AppShell
@@ -583,7 +552,6 @@ export async function AdminAppShell({
       }}
       navSections={navSections}
       storage={storage}
-      recentActivity={[]}
     >
       {children}
     </AppShell>
@@ -593,14 +561,13 @@ export async function AdminAppShell({
 async function loadOrganizerShell(userId: string): Promise<{
   navSections: NavSection[];
   storage: AppShellStorage | undefined;
-  recentActivity: AppShellRecent[];
 }> {
   let admin;
   try {
     admin = createAdminClient();
   } catch (err) {
     console.error("[AppShellData] createAdminClient failed:", err);
-    return { navSections: defaultOrganizerNav(), storage: undefined, recentActivity: [] };
+    return { navSections: defaultOrganizerNav(), storage: undefined };
   }
 
   const organizerRes = await safe(
@@ -616,10 +583,9 @@ async function loadOrganizerShell(userId: string): Promise<{
   let pendingCount = 0;
   let trattativaCount = 0;
   let confermataCount = 0;
-  let recentReqs: { event_date: string; artist_id: string }[] = [];
 
   if (organizer) {
-    const [venues, pending, trattativa, confermata, recent] = await Promise.all([
+    const [venues, pending, trattativa, confermata] = await Promise.all([
       safe(admin.from("venues").select("id", { count: "exact", head: true }).eq("organizer_id", organizer.id)),
       safe(
         admin
@@ -642,20 +608,11 @@ async function loadOrganizerShell(userId: string): Promise<{
           .eq("organizer_id", organizer.id)
           .eq("status", "confermata")
       ),
-      safe(
-        admin
-          .from("booking_requests")
-          .select("event_date, artist_id")
-          .eq("organizer_id", organizer.id)
-          .order("created_at", { ascending: false })
-          .limit(4)
-      ),
     ]);
     venuesCount = venues?.count ?? 0;
     pendingCount = pending?.count ?? 0;
     trattativaCount = trattativa?.count ?? 0;
     confermataCount = confermata?.count ?? 0;
-    recentReqs = recent?.data ?? [];
   }
 
   const unreadChatOrg = await safe(getUnreadCountForUser(userId, "organizer")).then((v) => v ?? 0);
@@ -734,11 +691,7 @@ async function loadOrganizerShell(userId: string): Promise<{
     };
   }
 
-  const recentActivity: AppShellRecent[] = recentReqs.map((r) => ({
-    name: new Date(r.event_date).toLocaleDateString("it-IT", { day: "2-digit", month: "short" }),
-  }));
-
-  return { navSections, storage, recentActivity };
+  return { navSections, storage };
 }
 
 function defaultOrganizerNav(): NavSection[] {
@@ -760,18 +713,16 @@ export async function OrganizerAppShell({
 }) {
   let navSections: NavSection[];
   let storage: AppShellStorage | undefined;
-  let recentActivity: AppShellRecent[];
   try {
-    ({ navSections, storage, recentActivity } = await loadOrganizerShell(user.id));
+    ({ navSections, storage } = await loadOrganizerShell(user.id));
   } catch (err) {
     console.error("[AppShellData] loadOrganizerShell crashed:", err);
     navSections = defaultOrganizerNav();
     storage = undefined;
-    recentActivity = [];
   }
   return (
     <AppShell
-      brand={<ShellBrand suffix="Organizer" />}
+      brand={<ShellBrand suffix="Organizzatore" />}
       brandHref="/organizzatore"
       user={{
         name: user.name ?? null,
@@ -781,7 +732,6 @@ export async function OrganizerAppShell({
       }}
       navSections={navSections}
       storage={storage}
-      recentActivity={recentActivity}
     >
       {children}
     </AppShell>
@@ -797,22 +747,20 @@ export async function ArtistAppShell({
 }) {
   let navSections: NavSection[];
   let storage: AppShellStorage | undefined;
-  let recentActivity: AppShellRecent[];
   let profiles: ArtistProfilesContext;
   let planTier: ArtistTier | null;
   try {
-    ({ navSections, storage, recentActivity, profiles, planTier } = await loadArtistShell(user.id));
+    ({ navSections, storage, profiles, planTier } = await loadArtistShell(user.id));
   } catch (err) {
     console.error("[AppShellData] loadArtistShell crashed:", err);
     navSections = defaultArtistNav();
     storage = undefined;
-    recentActivity = [];
     profiles = { owned: [], activeId: null, canCreateMore: false };
     planTier = null;
   }
   return (
     <AppShell
-      brand={<ShellBrand suffix="Artist" />}
+      brand={<ShellBrand suffix="Artista" />}
       brandHref="/dashboard"
       user={{
         name: user.name ?? null,
@@ -823,7 +771,6 @@ export async function ArtistAppShell({
       planTier={planTier ?? undefined}
       navSections={navSections}
       storage={storage}
-      recentActivity={recentActivity}
       topbarSlot={
         <ArtistProfileSwitcher
           owned={profiles.owned}

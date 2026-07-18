@@ -45,10 +45,13 @@ export async function getEntitlements(artistId: string): Promise<Entitlements> {
  * L'abbonamento appartiene all'account (0042): serve per le decisioni che non
  * riguardano un artista specifico — in primis quanti profili si possono creare.
  *
- * Differenza da `getEntitlements(artistId)`: qui gli override per-artista NON
- * contano. Un omaggio del superadmin su un profilo sblocca le feature di quel
- * profilo, ma non dà all'account il diritto di crearne altri: altrimenti
- * regalare Pro a un artista regalerebbe di riflesso uno slot profilo in più.
+ * Da 0044 gli omaggi del superadmin (`artists.tier_override`) contano quanto un
+ * abbonamento pagato: `account_tier()` prende il maggiore fra i due. Prima li
+ * ignorava, e il risultato era un artista con badge MAX, scritta "N'arte Free"
+ * nell'abbonamento e un solo slot profilo — un piano che non sbloccava nulla.
+ *
+ * Ne segue che `getEntitlements(artistId)` e questa funzione ora coincidono per
+ * i profili collegati a un account: il tier è dell'account, non della scheda.
  */
 export async function getAccountEntitlements(userId: string): Promise<Entitlements> {
   const admin = createAdminClient();
