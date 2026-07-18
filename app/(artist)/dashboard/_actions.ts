@@ -6,7 +6,9 @@ import { ARTIST_VIDEO_BUCKET, isAllowedVideoMime } from "@/lib/upload/video-limi
 import { entitlementsFor } from "@/lib/billing/plans";
 import { checkCollectionLimit, getEntitlements } from "@/lib/billing/entitlements";
 import { PROFILE_SECTION_PAYLOAD_SCHEMAS } from "@/lib/validators/artist-profile";
-import type { ArtistTier } from "@/lib/supabase/types";
+import type { ArtistTier, Database } from "@/lib/supabase/types";
+
+type ArtistUpdate = Database["public"]["Tables"]["artists"]["Update"];
 
 type AudioTrack = { url: string; title: string };
 type PersonnelMember = { name: string; role: string };
@@ -150,10 +152,14 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
     };
   }
 
+  // Il whitelisting in `pickAllowed` garantisce che le uniche chiavi presenti
+  // siano quelle di `SECTION_COLUMNS[section]` (sottoinsieme di ProfileColumns,
+  // a sua volta sottoinsieme delle colonne scrivibili di `artists`): il valore
+  // è quindi genuinamente un `ArtistUpdate` parziale, non un bag generico.
   const patch = pickAllowed(
     parsed.data as Record<string, unknown>,
     SECTION_COLUMNS[section]
-  );
+  ) as ArtistUpdate;
 
   const admin = createAdminClient();
 
