@@ -1025,6 +1025,10 @@ export interface Database {
           venue_city: string | null;
           venue_cover: string | null;
         };
+        // Obbligatorio: `GenericView` di postgrest-js lo richiede anche per le
+        // view non aggiornabili. Se manca, `Views` non soddisfa `GenericSchema`
+        // e l'intero schema `public` collassa a `never`.
+        Relationships: [];
       };
     };
     Functions: {
