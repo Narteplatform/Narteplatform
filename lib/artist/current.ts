@@ -78,6 +78,9 @@ export type ActiveArtistRow = {
   slug: string;
   status: ArtistStatus;
   tier: ArtistTier;
+  cover_image: string | null;
+  gallery: string[];
+  videos: string[];
   [key: string]: unknown;
 };
 

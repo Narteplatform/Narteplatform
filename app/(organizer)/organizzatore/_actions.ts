@@ -236,7 +236,7 @@ export async function artistAcceptRequest(requestId: string, notes?: string) {
 
   const { data: req } = await admin
     .from("booking_requests")
-    .select("id, artist_id, status")
+    .select("id, artist_id, organizer_id, status")
     .eq("id", requestId)
     .maybeSingle();
   if (!req) return { ok: false as const, error: "Richiesta non trovata" };
@@ -274,18 +274,27 @@ export async function artistAcceptRequest(requestId: string, notes?: string) {
   const opener = notes?.trim()
     ? `${artistName} ha accettato la trattativa. Nota: ${notes.trim()}`
     : `${artistName} ha accettato la trattativa. Iniziate a chattare.`;
-  await admin
-    .from("booking_messages")
-    .insert({
-      booking_request_id: requestId,
+  // Modello chat v2 (migrazione 0013): la conversazione è per coppia
+  // (artista, organizzatore), non più per booking_request. La vecchia tabella
+  // `booking_messages` è stata droppata, quindi l'opener va scritto su
+  // `messages`. L'RPC è security definer e valida il chiamante: va usato il
+  // client utente, non quello service-role (con cui `auth.uid()` è null).
+  const { data: conversationId, error: convError } = await supabaseSrv.rpc(
+    "get_or_create_conversation",
+    { p_artist_id: req.artist_id, p_organizer_id: req.organizer_id }
+  );
+  if (convError || !conversationId) {
+    console.error("chat opener: conversazione non disponibile:", convError?.message);
+  } else {
+    const { error: openerError } = await admin.from("messages").insert({
+      conversation_id: conversationId,
       sender_id: user.id,
       sender_role: "artist",
       kind: "system",
       body: opener,
-    })
-    .then((r) => {
-      if (r.error) console.error("chat opener insert:", r.error.message);
     });
+    if (openerError) console.error("chat opener insert:", openerError.message);
+  }
 
   await sendBookingAcceptedEmail(requestId).catch((e) => console.error("email accepted:", e));
 

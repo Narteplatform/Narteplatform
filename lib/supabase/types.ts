@@ -14,6 +14,16 @@ export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "pri
 export type BookingStatus = "pending" | "in_trattativa" | "confermata" | "rifiutata" | "annullata";
 export type ChatMessageKind = "text" | "offer" | "system" | "image" | "document" | "voice";
 export type ChatOfferStatus = "pending" | "accepted" | "rejected" | "superseded";
+export type SubscriptionStatus =
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "incomplete"
+  | "incomplete_expired"
+  | "unpaid"
+  | "paused";
+export type BillingInterval = "month" | "year";
 export type EventCategory =
   | "music"
   | "clubs"
@@ -92,6 +102,8 @@ export interface Database {
           set_list: string | null;
           influences: string[];
           setup_requirements: string | null;
+          /** jsonb, default '[]'. Array di { url, title }. */
+          audio_files: Json;
           created_at: string;
         };
         Insert: {
@@ -122,6 +134,7 @@ export interface Database {
           set_list?: string | null;
           influences?: string[];
           setup_requirements?: string | null;
+          audio_files?: Json;
           created_at?: string;
         };
         Update: {
@@ -152,6 +165,7 @@ export interface Database {
           set_list?: string | null;
           influences?: string[];
           setup_requirements?: string | null;
+          audio_files?: Json;
           created_at?: string;
         };
         Relationships: [];
@@ -658,6 +672,9 @@ export interface Database {
           final_price_proposed_at: string | null;
           final_price_confirmed_by: string | null;
           final_price_confirmed_at: string | null;
+          cancelled_at: string | null;
+          cancelled_by: string | null;
+          cancellation_reason: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -679,6 +696,9 @@ export interface Database {
           final_price_proposed_at?: string | null;
           final_price_confirmed_by?: string | null;
           final_price_confirmed_at?: string | null;
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
+          cancellation_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -700,6 +720,9 @@ export interface Database {
           final_price_proposed_at?: string | null;
           final_price_confirmed_by?: string | null;
           final_price_confirmed_at?: string | null;
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
+          cancellation_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1008,6 +1031,216 @@ export interface Database {
         };
         Relationships: [];
       };
+      billing_customers: {
+        Row: {
+          user_id: string;
+          stripe_customer_id: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          stripe_customer_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          stripe_customer_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          stripe_customer_id: string;
+          stripe_subscription_id: string;
+          stripe_price_id: string;
+          tier: ArtistTier;
+          billing_interval: BillingInterval;
+          status: SubscriptionStatus;
+          current_period_start: string | null;
+          current_period_end: string | null;
+          cancel_at_period_end: boolean;
+          canceled_at: string | null;
+          trial_end: string | null;
+          stripe_updated_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          stripe_customer_id: string;
+          stripe_subscription_id: string;
+          stripe_price_id: string;
+          tier: ArtistTier;
+          billing_interval: BillingInterval;
+          status: SubscriptionStatus;
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
+          trial_end?: string | null;
+          stripe_updated_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          stripe_customer_id?: string;
+          stripe_subscription_id?: string;
+          stripe_price_id?: string;
+          tier?: ArtistTier;
+          billing_interval?: BillingInterval;
+          status?: SubscriptionStatus;
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
+          trial_end?: string | null;
+          stripe_updated_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      stripe_webhook_events: {
+        Row: {
+          id: string;
+          type: string;
+          payload: Json;
+          received_at: string;
+          processed_at: string | null;
+          error: string | null;
+        };
+        Insert: {
+          id: string;
+          type: string;
+          payload: Json;
+          received_at?: string;
+          processed_at?: string | null;
+          error?: string | null;
+        };
+        Update: {
+          id?: string;
+          type?: string;
+          payload?: Json;
+          received_at?: string;
+          processed_at?: string | null;
+          error?: string | null;
+        };
+        Relationships: [];
+      };
+      consultants: {
+        Row: {
+          id: string;
+          name: string;
+          role: string | null;
+          email: string | null;
+          phone: string | null;
+          bio: string | null;
+          avatar_url: string | null;
+          is_active: boolean;
+          user_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          role?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          bio?: string | null;
+          avatar_url?: string | null;
+          is_active?: boolean;
+          user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          role?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          bio?: string | null;
+          avatar_url?: string | null;
+          is_active?: boolean;
+          user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      consultant_slots: {
+        Row: {
+          id: string;
+          slot_at: string;
+          duration_min: number;
+          is_active: boolean;
+          consultant_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          slot_at: string;
+          duration_min?: number;
+          is_active?: boolean;
+          consultant_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          slot_at?: string;
+          duration_min?: number;
+          is_active?: boolean;
+          consultant_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      consultations: {
+        Row: {
+          id: string;
+          slot_id: string | null;
+          user_id: string | null;
+          name: string;
+          email: string;
+          phone: string | null;
+          needs: string | null;
+          status: "requested" | "confirmed" | "completed" | "cancelled";
+          admin_notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          slot_id?: string | null;
+          user_id?: string | null;
+          name: string;
+          email: string;
+          phone?: string | null;
+          needs?: string | null;
+          status?: "requested" | "confirmed" | "completed" | "cancelled";
+          admin_notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          slot_id?: string | null;
+          user_id?: string | null;
+          name?: string;
+          email?: string;
+          phone?: string | null;
+          needs?: string | null;
+          status?: "requested" | "confirmed" | "completed" | "cancelled";
+          admin_notes?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       booking_requests_public: {
@@ -1069,6 +1302,10 @@ export interface Database {
         };
         Returns: ArtistTier;
       };
+      superadmin_cancel_booking: {
+        Args: { p_booking_id: string; p_reason: string };
+        Returns: Json;
+      };
     };
     Enums: {
       role_enum: Role;
@@ -1083,6 +1320,8 @@ export interface Database {
       chat_offer_status: ChatOfferStatus;
       artist_tier_enum: ArtistTier;
       artist_path_enum: ArtistPath;
+      subscription_status_enum: SubscriptionStatus;
+      billing_interval_enum: BillingInterval;
     };
     CompositeTypes: { [_ in never]: never };
   };
