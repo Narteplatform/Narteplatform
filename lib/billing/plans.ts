@@ -8,7 +8,7 @@
  *
  * ⚠️  L'ABBONAMENTO È DELL'ACCOUNT, NON DEL SINGOLO ARTISTA.
  *     Un account PRO può creare 2 profili artista, uno MAX ne può creare 5, e
- *     TUTTI i profili ereditano i benefici del piano dell'account. MAX a 99,99€
+ *     TUTTI i profili ereditano i benefici del piano dell'account. MAX a 49,99€
  *     è di fatto il piano agenzia. Vedi 0042_subscriptions_per_account.sql:
  *     `subscriptions` è agganciata a user_id, e compute_artist_tier() risale
  *     dall'artista al suo proprietario.
@@ -192,7 +192,7 @@ export function formatLimit(n: number, unlimitedLabel = "illimitate"): string {
 export const PLAN_PRICES_CENTS: Record<ArtistTier, Record<BillingInterval, number>> = {
   free: { month: 0, year: 0 },
   pro: { month: 999, year: 4999 },
-  max: { month: 9999, year: 49999 },
+  max: { month: 4999, year: 49999 },
 };
 
 export function formatPrice(cents: number): string {
@@ -205,9 +205,10 @@ export function formatPrice(cents: number): string {
 
 /**
  * Sconto dell'annuale rispetto a 12 mensilità, in percentuale intera.
- * Con il listino attuale è ~58% su entrambi i piani: l'annuale costa quanto 5
- * mesi. È uno sconto molto aggressivo — di fatto il mensile diventa una prova e
- * l'annuale è il prezzo reale.
+ * Con il listino attuale vale ~58% su PRO (l'annuale costa quanto 5 mesi) e
+ * ~17% su MAX. Su PRO è uno sconto molto aggressivo: di fatto il mensile
+ * diventa una prova e l'annuale è il prezzo reale. Il badge del toggle mostra
+ * la percentuale di PRO, la più rappresentativa.
  */
 export function annualDiscountPercent(tier: ArtistTier): number {
   const { month, year } = PLAN_PRICES_CENTS[tier];
@@ -220,8 +221,10 @@ export function annualDiscountPercent(tier: ArtistTier): number {
  *
  * Non è una scelta estetica: su MAX mensile sarebbe arbitraggio puro. Uno
  * shooting costa a N'arte diverse centinaia di euro; chiunque potrebbe
- * abbonarsi un mese a 99,99€, incassarlo e disdire, con perdita netta a ogni
- * giro. A 499,99€ annuali il margine lo copre.
+ * abbonarsi un mese a 49,99€, incassarlo e disdire, con perdita netta a ogni
+ * giro. A 499,99€ annuali il margine lo copre. Col mensile sceso da 99,99€ a
+ * 49,99€ il margine di arbitraggio raddoppia: questo vincolo è ora ancora più
+ * critico, non allentarlo.
  *
  * Per questo NON è un campo di `Entitlements`: non dipende solo dal piano ma
  * anche dall'intervallo di fatturazione, che vive sulla subscription.
