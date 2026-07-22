@@ -344,7 +344,7 @@ export function ArtistsExplorer({
                     isGuest={isGuest}
                     category={roleLabel}
                   />
-                  <span className="pointer-events-none absolute right-3 top-3 z-10">
+                  <span className="pointer-events-none absolute left-3 top-3 z-10">
                     <Badge variant="accent">TOP</Badge>
                   </span>
                 </div>
@@ -384,7 +384,7 @@ export function ArtistsExplorer({
                     category={roleLabel}
                   />
                   {isTop && (
-                    <span className="pointer-events-none absolute right-3 top-3 z-10">
+                    <span className="pointer-events-none absolute left-3 top-3 z-10">
                       <Badge variant="accent">TOP</Badge>
                     </span>
                   )}

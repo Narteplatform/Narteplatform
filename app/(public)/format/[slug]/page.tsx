@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Reveal } from "@/components/animations/Reveal";
 import { EventMediaGallery } from "@/components/marketing/EventMediaGallery";
+import { ImageLightbox } from "@/components/marketing/ImageLightbox";
+import { FormatInterestForm } from "@/components/marketing/FormatInterestForm";
 
 export const dynamic = "force-dynamic";
 
@@ -68,58 +69,58 @@ export default async function FormatDetailPage({
 
   const gallery = Array.isArray(format.gallery) ? format.gallery : [];
   const videos = Array.isArray(format.videos) ? format.videos : [];
-  const hasMedia = gallery.length > 0 || videos.length > 0;
 
   return (
     <article>
-      {/* HERO: cover sx + titolo dx */}
+      {/* HERO — stile pagina evento: cover sx a tutta altezza + testo dx */}
       <section className="relative overflow-hidden border-b border-border pt-28 pb-16 md:pt-36 md:pb-20">
         <div
           aria-hidden="true"
           className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/3 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"
         />
-        <div className="container-narte relative z-10 grid items-start gap-8 md:grid-cols-2 md:gap-10 lg:gap-14">
-          {/* Cover portrait */}
-          {format.cover_image && (
-            <Reveal>
-              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-border bg-muted md:sticky md:top-28">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={format.cover_image}
-                  alt={format.title}
-                  className="h-full w-full object-cover"
-                />
+        <div className="container-narte relative z-10 grid gap-8 md:grid-cols-2 md:gap-10 lg:gap-14">
+          {/* COVER */}
+          <div className="md:h-full">
+            <Reveal className="md:h-full">
+              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border bg-notte md:aspect-auto md:h-full md:min-h-[520px]">
+                {format.cover_image ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={format.cover_image}
+                    alt={format.title}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center px-6 text-center font-display text-2xl text-palco/25">
+                    {format.title}
+                  </div>
+                )}
+                <span className="absolute left-4 top-4 inline-flex items-center rounded-full bg-black/50 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-white backdrop-blur-sm">
+                  format
+                </span>
               </div>
             </Reveal>
-          )}
+          </div>
 
-          {/* Info column */}
-          <div className={`flex flex-col ${!format.cover_image ? "md:col-span-2 max-w-3xl" : ""}`}>
+          {/* COLONNA TESTO */}
+          <div className="flex flex-col">
             <Reveal>
-              <Link
-                href="/format"
-                className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-accent"
-              >
-                <ArrowLeft className="size-3.5" /> Tutti i format
-              </Link>
-              <p className="mt-8 text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-                Format
-              </p>
+              <p className="accent-label">format</p>
             </Reveal>
             <Reveal delay={0.1}>
-              <h1 className="mt-4 font-display text-4xl leading-tight md:text-5xl lg:text-6xl">
+              <h1 className="display-xl mt-3 text-4xl md:text-5xl lg:text-6xl">
                 {format.title}
               </h1>
             </Reveal>
             {format.tagline && (
-              <Reveal delay={0.15}>
-                <p className="mt-5 text-lg text-muted-foreground md:text-xl">
+              <Reveal delay={0.2}>
+                <p className="mt-6 max-w-prose text-lg text-muted-foreground md:text-xl">
                   {format.tagline}
                 </p>
               </Reveal>
             )}
             {format.description && (
-              <Reveal delay={0.2}>
+              <Reveal delay={0.25}>
                 <div className="mt-8 rounded-2xl border border-border bg-muted p-5 md:p-6">
                   <p className="accent-label mb-3">descrizione</p>
                   <div className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -132,24 +133,54 @@ export default async function FormatDetailPage({
         </div>
       </section>
 
-      {/* GALLERY + VIDEO */}
-      {hasMedia && (
+      {/* GALLERY FOTO — sezione dedicata con lightbox */}
+      {gallery.length > 0 && (
         <section className="bg-muted py-16 md:py-24">
           <div className="container-narte">
             <Reveal>
               <p className="accent-label mb-3">galleria</p>
             </Reveal>
             <Reveal delay={0.1}>
-              <h2 className="display-xl text-3xl md:text-5xl">Foto e video.</h2>
+              <h2 className="display-xl text-3xl md:text-5xl">Gallery.</h2>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <ImageLightbox
+                images={gallery}
+                className="mt-8"
+                gridClassName="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"
+              />
+            </Reveal>
+          </div>
+        </section>
+      )}
+
+      {/* VIDEO */}
+      {videos.length > 0 && (
+        <section className="border-t border-border py-16 md:py-24">
+          <div className="container-narte">
+            <Reveal>
+              <p className="accent-label mb-3">video</p>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <h2 className="display-xl text-3xl md:text-5xl">Performance.</h2>
             </Reveal>
             <Reveal delay={0.2}>
               <div className="mt-8">
-                <EventMediaGallery gallery={gallery} videos={videos} />
+                <EventMediaGallery gallery={[]} videos={videos} />
               </div>
             </Reveal>
           </div>
         </section>
       )}
+
+      {/* CTA — form interesse contestuale al format */}
+      <section className="border-t border-border bg-muted py-16 md:py-24">
+        <div className="container-narte">
+          <Reveal>
+            <FormatInterestForm formatTitle={format.title} />
+          </Reveal>
+        </div>
+      </section>
 
       <div className="container-narte py-10">
         <Link

@@ -924,6 +924,8 @@ export interface Database {
           content: string;
           seo_title: string | null;
           seo_description: string | null;
+          keywords: string[];
+          og_image: string | null;
           author_name: string;
           published_at: string | null;
           created_at: string;
@@ -938,6 +940,8 @@ export interface Database {
           content: string;
           seo_title?: string | null;
           seo_description?: string | null;
+          keywords?: string[];
+          og_image?: string | null;
           author_name?: string;
           published_at?: string | null;
           created_at?: string;
@@ -952,6 +956,8 @@ export interface Database {
           content?: string;
           seo_title?: string | null;
           seo_description?: string | null;
+          keywords?: string[];
+          og_image?: string | null;
           author_name?: string;
           published_at?: string | null;
           created_at?: string;

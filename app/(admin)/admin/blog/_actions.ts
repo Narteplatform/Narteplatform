@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { formatContentToSeoHtml, deriveSeoMeta } from "@/lib/blog/seo-format";
+import { formatContentToSeoHtml, deriveFullSeo, stripUnsafe } from "@/lib/blog/seo-format";
 
 async function ensureSuperadmin() {
   const supabase = await createClient();
@@ -42,6 +42,8 @@ const postSchema = z.object({
   content: z.string().min(20, "Contenuto troppo breve"),
   seoTitle: z.string().trim().max(160).optional().or(z.literal("").transform(() => undefined)),
   seoDescription: z.string().trim().max(320).optional().or(z.literal("").transform(() => undefined)),
+  keywords: z.array(z.string().trim().min(1).max(60)).max(15).optional(),
+  ogImage: z.string().url("URL non valido").optional().or(z.literal("").transform(() => undefined)),
   authorName: z.string().trim().max(120).optional().or(z.literal("").transform(() => undefined)),
   publish: z.boolean().optional(),
 });
@@ -50,22 +52,38 @@ export type BlogPostInput = z.infer<typeof postSchema>;
 
 /**
  * Prepara contenuto e meta SEO senza mai alterare le parole:
- * - se il contenuto è testo semplice viene formattato in HTML (idempotente:
- *   formatContentToSeoHtml restituisce l'input invariato se è già HTML).
- * - se seo_title/seo_description mancano vengono derivati da titolo + testo.
+ * - il contenuto viene normalizzato in HTML (idempotente su HTML già pronto,
+ *   come quello prodotto dall'editor) e ripulito da markup non sicuro.
+ * - i meta (title/description/keywords/og_image) mancanti vengono derivati in
+ *   modo deterministico da titolo + testo (+ cover come fallback OG).
  */
 function buildSeoFields(d: {
   title: string;
   content: string;
+  coverImage?: string;
   seoTitle?: string;
   seoDescription?: string;
-}): { content: string; seoTitle: string; seoDescription: string } {
-  const content = formatContentToSeoHtml(d.content);
-  const derived = deriveSeoMeta(d.title, content);
+  keywords?: string[];
+  ogImage?: string;
+}): {
+  content: string;
+  seoTitle: string;
+  seoDescription: string;
+  keywords: string[];
+  ogImage: string | null;
+} {
+  const content = stripUnsafe(formatContentToSeoHtml(d.content));
+  const full = deriveFullSeo(d.title, content, d.coverImage);
   return {
     content,
-    seoTitle: d.seoTitle?.trim() ? d.seoTitle.trim() : derived.seoTitle,
-    seoDescription: d.seoDescription?.trim() ? d.seoDescription.trim() : derived.seoDescription,
+    seoTitle: d.seoTitle?.trim() ? d.seoTitle.trim() : full.seoTitle,
+    seoDescription: d.seoDescription?.trim() ? d.seoDescription.trim() : full.seoDescription,
+    keywords: d.keywords?.length ? d.keywords : full.keywords,
+    ogImage: d.ogImage?.trim()
+      ? d.ogImage.trim()
+      : d.coverImage?.trim()
+      ? d.coverImage.trim()
+      : null,
   };
 }
 
@@ -102,6 +120,8 @@ export async function createBlogPost(input: BlogPostInput) {
       content: seo.content,
       seo_title: seo.seoTitle,
       seo_description: seo.seoDescription,
+      keywords: seo.keywords,
+      og_image: seo.ogImage,
       author_name: d.authorName || "N'arte",
       published_at: d.publish ? new Date().toISOString() : null,
     })
@@ -169,6 +189,8 @@ export async function updateBlogPost(id: string, input: BlogPostInput) {
       content: seo.content,
       seo_title: seo.seoTitle,
       seo_description: seo.seoDescription,
+      keywords: seo.keywords,
+      og_image: seo.ogImage,
       author_name: d.authorName || "N'arte",
       published_at,
     })

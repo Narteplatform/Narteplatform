@@ -18,6 +18,8 @@ type Post = {
   content: string;
   seo_title: string | null;
   seo_description: string | null;
+  keywords: string[] | null;
+  og_image: string | null;
   author_name: string;
   published_at: string | null;
 };
@@ -32,7 +34,7 @@ export default async function EditBlogPostPage({
   const { data } = await admin
     .from("blog_posts")
     .select(
-      "id, slug, title, excerpt, cover_image, content, seo_title, seo_description, author_name, published_at"
+      "id, slug, title, excerpt, cover_image, content, seo_title, seo_description, keywords, og_image, author_name, published_at"
     )
     .eq("id", id)
     .maybeSingle();
@@ -66,6 +68,8 @@ export default async function EditBlogPostPage({
               content: post.content,
               seoTitle: post.seo_title,
               seoDescription: post.seo_description,
+              keywords: post.keywords,
+              ogImage: post.og_image,
               authorName: post.author_name,
               publishedAt: post.published_at,
             }}

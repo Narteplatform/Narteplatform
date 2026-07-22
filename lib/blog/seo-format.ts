@@ -140,3 +140,131 @@ export function deriveSeoMeta(
 
   return { seoTitle, seoDescription };
 }
+
+/**
+ * Slug deterministico dal titolo (copia locale, non-`"use server"`, così può
+ * girare anche lato client per l'anteprima/auto-compilazione). La generazione
+ * dello slug definitivo e la sua unicità restano gestite in `_actions.ts`.
+ */
+export function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 80);
+}
+
+/** Stopword italiane comuni: articoli, preposizioni, congiunzioni, ausiliari, pronomi. */
+const IT_STOPWORDS = new Set<string>([
+  "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "di", "da", "in",
+  "con", "su", "per", "tra", "fra", "del", "dello", "della", "dei", "degli",
+  "delle", "dal", "dallo", "dalla", "dai", "dagli", "dalle", "nel", "nello",
+  "nella", "nei", "negli", "nelle", "al", "allo", "alla", "ai", "agli", "alle",
+  "sul", "sullo", "sulla", "sui", "sugli", "sulle", "col", "coi",
+  "e", "ed", "o", "od", "ma", "se", "che", "chi", "cui", "non", "come", "anche",
+  "più", "meno", "molto", "poco", "tanto", "tutto", "tutti", "tutte", "ogni",
+  "sono", "essere", "stato", "stata", "hai", "abbiamo", "avete", "hanno",
+  "questo", "questa", "questi", "queste", "quello", "quella", "quelli", "quelle",
+  "ti", "si", "ci", "vi", "mi", "ne", "lo", "la", "li", "le", "suo", "sua",
+  "suoi", "sue", "tuo", "tua", "loro", "nostro", "nostra", "vostro", "vostra",
+  "già", "ancora", "sempre", "mai", "dove", "quando", "quanto", "quale", "quali",
+  "ossia", "cioè", "senza", "sotto", "sopra", "dopo", "prima", "verso", "circa",
+]);
+
+/**
+ * Estrae le keyword più rilevanti per frequenza, senza mai alterare le parole:
+ * conserva la prima forma vista (casing/accenti originali). Scarta stopword IT,
+ * token < 4 caratteri e numeri puri.
+ */
+export function extractKeywords(raw: string, max = 8): string[] {
+  const plain = stripTags(raw);
+  const tokens = plain.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const firstForm = new Map<string, string>();
+  const count = new Map<string, number>();
+  for (const t of tokens) {
+    const key = t.toLowerCase();
+    if (key.length < 4 || IT_STOPWORDS.has(key) || /^\d+$/.test(key)) continue;
+    if (!firstForm.has(key)) firstForm.set(key, t);
+    count.set(key, (count.get(key) ?? 0) + 1);
+  }
+  return [...count.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, max)
+    .map(([k]) => firstForm.get(k)!);
+}
+
+/**
+ * Tra le prime ~4 frasi del testo sceglie quella che contiene più keyword e la
+ * restituisce verbatim (troncata a 155). Deterministico. Ritorna null se non
+ * trova nulla di utile.
+ */
+function pickKeywordRichSentence(plain: string, keywords: string[]): string | null {
+  if (!plain) return null;
+  const sentences = plain
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+  if (sentences.length === 0) return null;
+  const lowerKeywords = keywords.map((k) => k.toLowerCase());
+  let best = sentences[0];
+  let bestScore = -1;
+  for (const s of sentences) {
+    const low = s.toLowerCase();
+    const score = lowerKeywords.reduce((n, k) => (low.includes(k) ? n + 1 : n), 0);
+    if (score > bestScore) {
+      bestScore = score;
+      best = s;
+    }
+  }
+  return truncateAtWord(best, SEO_DESC_MAX);
+}
+
+const EXCERPT_MAX = 200;
+
+/**
+ * Deriva l'intero set di parametri SEO in modo deterministico (nessuna IA,
+ * nessuna dipendenza, nessuna alterazione delle parole del testo).
+ */
+export function deriveFullSeo(
+  title: string,
+  raw: string,
+  coverImage?: string | null
+): {
+  slug: string;
+  excerpt: string;
+  seoTitle: string;
+  seoDescription: string;
+  keywords: string[];
+  ogImage: string | null;
+} {
+  const plain = stripTags(raw);
+  const keywords = extractKeywords(raw);
+  const base = deriveSeoMeta(title, raw);
+  const seoDescription = pickKeywordRichSentence(plain, keywords) ?? base.seoDescription;
+  return {
+    slug: slugify(title),
+    excerpt: truncateAtWord(plain, EXCERPT_MAX),
+    seoTitle: base.seoTitle,
+    seoDescription,
+    keywords,
+    ogImage: coverImage?.trim() ? coverImage.trim() : null,
+  };
+}
+
+/**
+ * Difesa in profondità lato server: rimuove blocchi <script>/<style>, attributi
+ * on*= e URL javascript:. Il contenuto è comunque scritto solo dai superadmin e
+ * Tiptap non emette script; questa è una rete di sicurezza dependency-free.
+ */
+export function stripUnsafe(html: string): string {
+  return html
+    .replace(/<\s*(script|style)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/\son\w+\s*=\s*"[^"]*"/gi, "")
+    .replace(/\son\w+\s*=\s*'[^']*'/gi, "")
+    .replace(/\son\w+\s*=\s*[^\s>]+/gi, "")
+    .replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"');
+}

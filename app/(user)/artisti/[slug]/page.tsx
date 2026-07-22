@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Instagram, Globe, Music, Facebook, Youtube, MapPin, MessageCircle, Lock, LogIn, UserPlus } from "lucide-react";
+import { Instagram, Globe, Facebook, Youtube, MapPin, MessageCircle, Lock, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { openChatAndRedirect } from "@/lib/chat/open";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -10,7 +10,7 @@ import { BookingCalendar, type ViewerRole, type ConfirmedBookingInfo } from "@/c
 import { PriceBandBadge } from "@/components/marketing/PriceBandBadge";
 import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
 import { BookingInformation } from "@/components/marketing/BookingInformation";
-import { ArtistToolsSocialTabs } from "@/components/marketing/ArtistToolsSocialTabs";
+import { TikTokIcon, SpotifyIcon } from "@/components/marketing/SocialIcons";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
 import { entitlementsFor } from "@/lib/billing/plans";
@@ -337,7 +337,6 @@ export default async function ArtistDetailPage({
         )
       : []
   ).slice(0, ent.audioMax);
-  const instruments: string[] = Array.isArray(artist.instruments) ? artist.instruments : [];
   const genres: string[] = Array.isArray(artist.genre) ? artist.genre : [];
   const bio = artist.bio ?? null;
   const coverImage = artist.cover_image ?? null;
@@ -390,10 +389,10 @@ export default async function ArtistDetailPage({
         ? social.instagram
         : `https://instagram.com/${social.instagram.replace(/^@/, "")}`,
       label: "Instagram",
-      icon: <Instagram className="size-4" />,
+      icon: <Instagram className="size-5" />,
     });
   if (social.facebook)
-    socials.push({ key: "fb", href: social.facebook, label: "Facebook", icon: <Facebook className="size-4" /> });
+    socials.push({ key: "fb", href: social.facebook, label: "Facebook", icon: <Facebook className="size-5" /> });
   if (social.tiktok)
     socials.push({
       key: "tt",
@@ -401,14 +400,14 @@ export default async function ArtistDetailPage({
         ? social.tiktok
         : `https://tiktok.com/@${social.tiktok.replace(/^@/, "")}`,
       label: "TikTok",
-      icon: <Music className="size-4" />,
+      icon: <TikTokIcon className="size-5" />,
     });
   if (social.youtube)
-    socials.push({ key: "yt", href: social.youtube, label: "YouTube", icon: <Youtube className="size-4" /> });
+    socials.push({ key: "yt", href: social.youtube, label: "YouTube", icon: <Youtube className="size-5" /> });
   if (social.spotify)
-    socials.push({ key: "sp", href: social.spotify, label: "Spotify", icon: <Music className="size-4" /> });
+    socials.push({ key: "sp", href: social.spotify, label: "Spotify", icon: <SpotifyIcon className="size-5" /> });
   if (social.website)
-    socials.push({ key: "web", href: social.website, label: "Sito", icon: <Globe className="size-4" /> });
+    socials.push({ key: "web", href: social.website, label: "Sito", icon: <Globe className="size-5" /> });
 
   return (
     <article>
@@ -577,35 +576,6 @@ export default async function ArtistDetailPage({
         </div>
       </section>
 
-      {/* #11 — STRUMENTI & SOCIAL: sezione blu full-width con tab */}
-      {(instruments.length > 0 || socials.length > 0) && (
-        <section className="w-full bg-notte py-16 md:py-24">
-          <div className="container-narte">
-            <Reveal>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
-                artista
-              </p>
-              <h2 className="font-display text-3xl text-white md:text-4xl">
-                {instruments.length > 0 && socials.length > 0
-                  ? "Strumenti & Social"
-                  : instruments.length > 0
-                  ? "Strumenti"
-                  : "Social"}
-              </h2>
-            </Reveal>
-            <Reveal delay={0.12}>
-              <div className="mt-10">
-                <ArtistToolsSocialTabs
-                  instruments={instruments}
-                  socials={socials}
-                  artistName={artist.stage_name}
-                />
-              </div>
-            </Reveal>
-          </div>
-        </section>
-      )}
-
       {/* AUDIO */}
       {audioTracks.length > 0 && (
         <section className="border-t border-border bg-background py-16 md:py-24">
@@ -713,6 +683,39 @@ export default async function ArtistDetailPage({
                 </ul>
               </Reveal>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* SOCIAL — icone cliccabili in fondo */}
+      {socials.length > 0 && (
+        <section className="border-t border-border bg-notte py-16 md:py-24">
+          <div className="container-narte">
+            <Reveal>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
+                social
+              </p>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <h2 className="font-display text-3xl text-white md:text-5xl">Seguimi.</h2>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <div className="mt-8 flex flex-wrap gap-3">
+                {socials.map((s) => (
+                  <a
+                    key={s.key}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={s.label}
+                    title={s.label}
+                    className="inline-flex size-12 items-center justify-center rounded-full border border-white/20 text-white transition hover:border-accent hover:bg-accent hover:text-accent-foreground"
+                  >
+                    {s.icon}
+                  </a>
+                ))}
+              </div>
+            </Reveal>
           </div>
         </section>
       )}

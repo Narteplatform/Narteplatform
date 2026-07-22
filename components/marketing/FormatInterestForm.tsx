@@ -31,7 +31,7 @@ function Field({
   );
 }
 
-export function FormatInterestForm() {
+export function FormatInterestForm({ formatTitle }: { formatTitle?: string } = {}) {
   const [done, setDone] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -45,7 +45,12 @@ export function FormatInterestForm() {
 
   async function onSubmit(values: FormatInterestInput) {
     setServerError(null);
-    const res = await submitFormatInterest(values);
+    // Se il form è incorporato nella pagina di un format specifico, anteponiamo
+    // il riferimento al messaggio del lead per sapere da dove arriva la richiesta.
+    const payload = formatTitle
+      ? { ...values, message: `[Format: ${formatTitle}]\n\n${values.message}` }
+      : values;
+    const res = await submitFormatInterest(payload);
     if (!res.ok) {
       setServerError(res.error ?? "Errore. Riprova.");
     } else {

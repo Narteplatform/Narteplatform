@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { ImageUpload } from "@/components/forms/ImageUpload";
-import { formatContentToSeoHtml } from "@/lib/blog/seo-format";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
+import { deriveFullSeo } from "@/lib/blog/seo-format";
 import {
   createBlogPost,
   updateBlogPost,
@@ -19,6 +20,8 @@ type Initial = {
   content: string;
   seoTitle: string | null;
   seoDescription: string | null;
+  keywords: string[] | null;
+  ogImage: string | null;
   authorName: string;
   publishedAt: string | null;
 };
@@ -27,7 +30,6 @@ export function BlogPostForm({ initial }: { initial?: Initial }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"edit" | "preview">("edit");
   const [form, setForm] = useState({
     title: initial?.title ?? "",
     slug: initial?.slug ?? "",
@@ -36,6 +38,8 @@ export function BlogPostForm({ initial }: { initial?: Initial }) {
     content: initial?.content ?? "",
     seoTitle: initial?.seoTitle ?? "",
     seoDescription: initial?.seoDescription ?? "",
+    keywords: initial?.keywords ?? [],
+    ogImage: initial?.ogImage ?? "",
     authorName: initial?.authorName ?? "N'arte",
     publish: Boolean(initial?.publishedAt),
   });
@@ -44,10 +48,35 @@ export function BlogPostForm({ initial }: { initial?: Initial }) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  function optimizeSeo() {
-    const optimized = formatContentToSeoHtml(form.content);
-    update("content", optimized);
-    setTab("preview");
+  /** Auto-compila i parametri SEO (deterministico) e li applica live nel form. */
+  function autofillSeo() {
+    const res = deriveFullSeo(form.title, form.content, form.coverImage);
+    setForm((f) => ({
+      ...f,
+      // Lo slug si compila solo se vuoto: riscriverlo romperebbe URL pubblicati.
+      slug: f.slug.trim() ? f.slug : res.slug,
+      excerpt: res.excerpt,
+      seoTitle: res.seoTitle,
+      seoDescription: res.seoDescription,
+      keywords: res.keywords,
+      ogImage: f.ogImage.trim() ? f.ogImage : res.ogImage ?? "",
+    }));
+  }
+
+  function addKeyword(raw: string) {
+    const v = raw.trim();
+    if (!v) return;
+    setForm((f) => (f.keywords.includes(v) ? f : { ...f, keywords: [...f.keywords, v] }));
+  }
+  function removeKeyword(k: string) {
+    setForm((f) => ({ ...f, keywords: f.keywords.filter((x) => x !== k) }));
+  }
+  function onKeywordKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addKeyword(e.currentTarget.value);
+      e.currentTarget.value = "";
+    }
   }
 
   function submit() {
@@ -56,7 +85,7 @@ export function BlogPostForm({ initial }: { initial?: Initial }) {
       setError("Titolo troppo corto.");
       return;
     }
-    if (form.content.trim().length < 20) {
+    if (form.content.replace(/<[^>]*>/g, "").trim().length < 20) {
       setError("Contenuto troppo breve.");
       return;
     }
@@ -69,6 +98,8 @@ export function BlogPostForm({ initial }: { initial?: Initial }) {
         content: form.content,
         seoTitle: form.seoTitle.trim() || undefined,
         seoDescription: form.seoDescription.trim() || undefined,
+        keywords: form.keywords.length ? form.keywords : undefined,
+        ogImage: form.ogImage.trim() || undefined,
         authorName: form.authorName.trim() || undefined,
         publish: form.publish,
       };
@@ -126,59 +157,25 @@ export function BlogPostForm({ initial }: { initial?: Initial }) {
       <div>
         <div className="mb-2 flex items-center gap-2">
           <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Contenuto (HTML)
+            Contenuto
           </label>
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="ml-auto"
-            onClick={optimizeSeo}
+            onClick={autofillSeo}
           >
-            Ottimizza per SEO
+            Auto-compila SEO
           </Button>
-          <div className="inline-flex rounded-md border border-border">
-            <button
-              type="button"
-              onClick={() => setTab("edit")}
-              className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
-                tab === "edit"
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Modifica
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("preview")}
-              className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
-                tab === "preview"
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Anteprima
-            </button>
-          </div>
         </div>
-        {tab === "edit" ? (
-          <textarea
-            value={form.content}
-            onChange={(e) => update("content", e.target.value)}
-            rows={18}
-            className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 font-mono text-sm"
-            placeholder="<h2>Sezione</h2>&#10;<p>Paragrafo...</p>"
-          />
-        ) : (
-          <div
-            className="blog-prose min-h-[300px] rounded-md border border-border bg-background p-4"
-            dangerouslySetInnerHTML={{ __html: form.content }}
-          />
-        )}
+        <RichTextEditor
+          value={form.content}
+          onChange={(html) => update("content", html)}
+        />
       </div>
 
-      <details className="rounded-md border border-border bg-muted/40 p-4">
+      <details className="rounded-md border border-border bg-muted/40 p-4" open>
         <summary className="cursor-pointer text-sm font-semibold">SEO (avanzate)</summary>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <Field label="SEO Title (override)">
@@ -203,6 +200,45 @@ export function BlogPostForm({ initial }: { initial?: Initial }) {
               className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm"
             />
           </Field>
+          <Field label="Parole chiave (keywords)" className="md:col-span-2" hint="Invio o virgola per aggiungere">
+            <div className="flex flex-wrap gap-2">
+              {form.keywords.length === 0 && (
+                <span className="text-xs text-muted-foreground">
+                  Nessuna keyword. Usa &quot;Auto-compila SEO&quot; o aggiungile qui sotto.
+                </span>
+              )}
+              {form.keywords.map((k) => (
+                <span
+                  key={k}
+                  className="inline-flex items-center gap-1 rounded-full bg-background px-2.5 py-1 text-xs"
+                >
+                  {k}
+                  <button
+                    type="button"
+                    onClick={() => removeKeyword(k)}
+                    aria-label={`Rimuovi ${k}`}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              type="text"
+              placeholder="Aggiungi keyword…"
+              onKeyDown={onKeywordKeyDown}
+              className="mt-2 h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+            />
+          </Field>
+          <div className="md:col-span-2">
+            <ImageUpload
+              label="OG image (social) — opzionale, fallback alla cover"
+              value={form.ogImage}
+              onChange={(url) => update("ogImage", url)}
+              kind="blog"
+            />
+          </div>
         </div>
       </details>
 

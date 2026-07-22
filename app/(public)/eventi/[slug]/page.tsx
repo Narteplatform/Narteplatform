@@ -2,10 +2,11 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { Reveal } from "@/components/animations/Reveal";
+import { Reveal, StaggerList } from "@/components/animations/Reveal";
 import { Button } from "@/components/ui/Button";
 import { EventInfoCards } from "@/components/marketing/EventInfoCards";
 import { EventMediaGallery } from "@/components/marketing/EventMediaGallery";
+import { EventCard } from "@/components/marketing/EventCard";
 
 export default async function EventDetailPage({
   params,
@@ -25,6 +26,25 @@ export default async function EventDetailPage({
   const gallery = (event.gallery ?? []) as string[];
   const videos = (event.videos ?? []) as string[];
   const hasMedia = gallery.length > 0 || videos.length > 0;
+
+  // Eventi correlati: stessa categoria, escluso l'evento corrente, i più recenti.
+  const { data: relatedData, error: relatedError } = await supabase
+    .from("events")
+    .select("slug, title, city, date, price, cover_image")
+    .eq("category", event.category)
+    .neq("id", event.id)
+    .order("date", { ascending: false })
+    .limit(3);
+  const relatedEvents = relatedError
+    ? []
+    : (relatedData ?? []).map((e) => ({
+        slug: e.slug,
+        title: e.title,
+        city: e.city,
+        date: e.date,
+        price: e.price,
+        coverImage: e.cover_image,
+      }));
 
   return (
     <article>
@@ -130,6 +150,25 @@ export default async function EventDetailPage({
                 <EventMediaGallery gallery={gallery} videos={videos} />
               </div>
             </Reveal>
+          </div>
+        </section>
+      )}
+
+      {/* EVENTI CORRELATI — stessa categoria */}
+      {relatedEvents.length > 0 && (
+        <section className="border-t border-border py-16 md:py-24">
+          <div className="container-narte">
+            <Reveal>
+              <p className="accent-label mb-3">altri eventi</p>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <h2 className="display-xl text-3xl md:text-5xl">Eventi correlati.</h2>
+            </Reveal>
+            <StaggerList className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
+              {relatedEvents.map((e) => (
+                <EventCard key={e.slug} {...e} />
+              ))}
+            </StaggerList>
           </div>
         </section>
       )}

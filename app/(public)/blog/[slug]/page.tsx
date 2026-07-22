@@ -18,6 +18,8 @@ type Post = {
   content: string;
   seo_title: string | null;
   seo_description: string | null;
+  keywords: string[] | null;
+  og_image: string | null;
   author_name: string;
   published_at: string;
   updated_at: string;
@@ -38,7 +40,7 @@ async function getPost(slug: string) {
   const { data } = await admin
     .from("blog_posts")
     .select(
-      "id, slug, title, excerpt, cover_image, content, seo_title, seo_description, author_name, published_at, updated_at"
+      "id, slug, title, excerpt, cover_image, content, seo_title, seo_description, keywords, og_image, author_name, published_at, updated_at"
     )
     .eq("slug", slug)
     .not("published_at", "is", null)
@@ -68,9 +70,12 @@ export async function generateMetadata({
   if (!post) return { title: "Articolo non trovato — N'arte" };
   const title = post.seo_title || `${post.title} | N'arte`;
   const description = post.seo_description || post.excerpt || undefined;
+  const ogImage = post.og_image || post.cover_image;
+  const keywords = post.keywords && post.keywords.length ? post.keywords : undefined;
   return {
     title,
     description,
+    keywords,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
       title,
@@ -79,13 +84,13 @@ export async function generateMetadata({
       publishedTime: post.published_at,
       modifiedTime: post.updated_at,
       authors: [post.author_name],
-      images: post.cover_image ? [{ url: post.cover_image }] : undefined,
+      images: ogImage ? [{ url: ogImage }] : undefined,
     },
     twitter: {
-      card: post.cover_image ? "summary_large_image" : "summary",
+      card: ogImage ? "summary_large_image" : "summary",
       title,
       description,
-      images: post.cover_image ? [post.cover_image] : undefined,
+      images: ogImage ? [ogImage] : undefined,
     },
   };
 }
@@ -103,12 +108,15 @@ export default async function BlogPostPage({
 
   const publishedDate = new Date(post.published_at);
 
+  const jsonLdImage = post.og_image || post.cover_image;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: post.title,
     description: post.seo_description || post.excerpt || undefined,
-    image: post.cover_image ? [post.cover_image] : undefined,
+    image: jsonLdImage ? [jsonLdImage] : undefined,
+    keywords:
+      post.keywords && post.keywords.length ? post.keywords.join(", ") : undefined,
     datePublished: post.published_at,
     dateModified: post.updated_at,
     author: { "@type": "Organization", name: post.author_name },

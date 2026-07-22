@@ -85,13 +85,6 @@ export function ArtistCard({
           </div>
         )}
 
-        {!isGuest && city && (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-notte/55 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-palco backdrop-blur-sm">
-            <span className="size-1.5 rounded-full bg-azzurro" />
-            {city}
-          </span>
-        )}
-
         {!isGuest && (
           <FavoriteToggle
             artist={{ slug, stage_name: stageName, cover_image: coverImage, city }}
