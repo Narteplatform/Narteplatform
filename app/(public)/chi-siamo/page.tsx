@@ -22,14 +22,16 @@ export default function ChiSiamoPage() {
 
       {/* FONDATORE */}
       <section className="py-20 md:py-28">
-        <div className="container-narte grid gap-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-10 lg:gap-14">
+        {/* Colonna foto a larghezza fissa: il cerchio deve restare un cerchio,
+            quindi non segue una frazione della griglia. */}
+        <div className="container-narte grid gap-8 md:grid-cols-[auto_1fr] md:items-center md:gap-12 lg:gap-16">
           <Reveal>
-            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-border bg-muted">
+            <div className="relative mx-auto aspect-square w-56 overflow-hidden rounded-full border border-border bg-muted sm:w-64 md:mx-0 md:w-72 lg:w-80">
               <Image
                 src="/brand/fondatore-eduardo.jpg"
                 alt="Eduardo Castronuovo, fondatore di N'arte, sul palco"
                 fill
-                sizes="(min-width: 768px) 42vw, 100vw"
+                sizes="(min-width: 1024px) 320px, (min-width: 768px) 288px, 224px"
                 className="object-cover"
               />
             </div>
