@@ -110,7 +110,41 @@ export default async function AdminEmailPage({
               Nessun invio registrato negli ultimi 30 giorni.
             </p>
           ) : (
-            <div className="-mx-2 overflow-x-auto">
+            <>
+            {/* Sotto md le 5 colonne obbligherebbero a scorrere di lato: stessi
+                numeri, uno sotto l'altro. */}
+            <ul className="space-y-2 md:hidden">
+              {templates.map((t) => (
+                <li key={t.template} className="rounded-xl border border-border p-3">
+                  <Link
+                    href={`/admin/email?template=${encodeURIComponent(t.template)}`}
+                    className="block font-medium hover:text-accent"
+                  >
+                    {t.template}
+                  </Link>
+                  <dl className="mt-2 grid grid-cols-4 gap-2 text-center text-xs">
+                    <div>
+                      <dt className="text-muted-foreground">Inviate</dt>
+                      <dd className="mt-0.5 font-medium text-green-700">{t.sent}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Fallite</dt>
+                      <dd className="mt-0.5 font-medium text-red-700">{t.failed}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Saltate</dt>
+                      <dd className="mt-0.5 font-medium text-muted-foreground">{t.skipped}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Totale</dt>
+                      <dd className="mt-0.5 font-medium">{t.total}</dd>
+                    </div>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+
+            <div className="-mx-2 hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -141,6 +175,7 @@ export default async function AdminEmailPage({
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>

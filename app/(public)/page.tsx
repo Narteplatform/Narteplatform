@@ -17,9 +17,9 @@ export default function HomePage() {
       <StarsSection />
       <EventsSection />
       <CollaborationsSection />
-      <BlogSection />
-      <EventRequestSection />
       <PricingSection />
+      <EventRequestSection />
+      <BlogSection />
     </>
   );
 }

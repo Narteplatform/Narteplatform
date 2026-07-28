@@ -132,7 +132,9 @@ function SuperadminRowEditor({ row }: { row: SuperadminRow }) {
               Niente
             </Button>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3">
+          {/* Colonna singola sotto sm: a 375px due colonne di etichette con
+              checkbox erano illeggibili e con tap target sovrapposti. */}
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
             {ADMIN_PAGE_KEYS.map((key) => {
               const isForced = FORCED.includes(key);
               const checked = selected.has(key) || isForced;

@@ -21,6 +21,17 @@ export const metadata: Metadata = {
   description:
     "Piattaforma di N'arte: eventi musicali, artisti emergenti, cultura. Trova la tua vibe.",
   metadataBase: new URL(getSiteUrl()),
+  // Monogramma N'arte bianco su notte (#0d1b2a), generato da
+  // public/brand/narte-monogram.png. Percorsi con estensione .png: il matcher
+  // del middleware li salta già, nessun round-trip Supabase per una favicon.
+  icons: {
+    icon: [
+      { url: "/icons/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-96.png", sizes: "96x96", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     title: "N'arte — Find your vibe",
     description: "Eventi musicali, artisti emergenti, cultura intorno alla città.",

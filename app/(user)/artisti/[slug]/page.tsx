@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Instagram, Globe, Facebook, Youtube, MapPin, MessageCircle, Lock, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import { openChatAndRedirect } from "@/lib/chat/open";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
@@ -317,6 +318,10 @@ export default async function ArtistDetailPage({
   // intero, quindi Pro/Max non sono toccati.
   const ent = entitlementsFor(artist.tier ?? "free");
 
+  // Stessa condizione usata dalla lista artisti (ArtistsExplorer): l'etichetta
+  // TOP è il piano Max, non un flag dedicato.
+  const isTopArtist = artist.tier === "max";
+
   const gallery: string[] = (Array.isArray(artist.gallery) ? artist.gallery : []).slice(
     0,
     ent.galleryMax
@@ -437,6 +442,13 @@ export default async function ArtistDetailPage({
               {city && (
                 <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-black/50 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-white backdrop-blur-sm">
                   <MapPin className="size-3" /> {city}
+                </span>
+              )}
+              {/* Stessa etichetta della lista artisti (ArtistsExplorer), qui a
+                  destra per non collidere con la pillola città. */}
+              {isTopArtist && (
+                <span className="pointer-events-none absolute right-4 top-4 z-10">
+                  <Badge variant="accent">TOP</Badge>
                 </span>
               )}
             </div>

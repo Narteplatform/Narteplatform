@@ -30,13 +30,22 @@ export default async function EventiPage({
 }) {
   const sp = await searchParams;
   const cat = sp?.cat ?? "all";
-  const when: When = sp?.when === "past" ? "past" : "upcoming";
+  // `null` = nessuna scelta esplicita dell'utente: solo in questo caso possiamo
+  // ripiegare sui passati se non c'è nulla in arrivo.
+  const requested: When | null =
+    sp?.when === "past" ? "past" : sp?.when === "upcoming" ? "upcoming" : null;
 
-  let events: Awaited<ReturnType<typeof loadEvents>> = [];
-  try {
-    events = await loadEvents(cat, when);
-  } catch {
-    events = [];
+  let when: When = requested ?? "upcoming";
+  // loadEvents restituisce null se la query fallisce: un errore non deve
+  // diventare uno "zero eventi in arrivo" che fa scattare il fallback.
+  let events = await loadEvents(cat, when);
+
+  if (requested === null && events?.length === 0) {
+    const past = await loadEvents(cat, "past");
+    if (past && past.length > 0) {
+      when = "past";
+      events = past;
+    }
   }
 
   function buildHref(next: { cat?: string; when?: When }) {
@@ -44,7 +53,9 @@ export default async function EventiPage({
     const c = next.cat ?? cat;
     const w = next.when ?? when;
     if (c && c !== "all") params.set("cat", c);
-    if (w && w !== "upcoming") params.set("when", w);
+    // Sempre esplicito: se il default risolto è "past", un link senza `when`
+    // riporterebbe di nuovo ai passati e il tab "In arrivo" sarebbe irraggiungibile.
+    if (w) params.set("when", w);
     const qs = params.toString();
     return qs ? `/eventi?${qs}` : "/eventi";
   }
@@ -108,7 +119,7 @@ export default async function EventiPage({
           </Reveal>
 
           <div>
-            {events.length === 0 ? (
+            {!events || events.length === 0 ? (
               <p className="text-notte/60">
                 {when === "past"
                   ? "Nessun evento passato in questa categoria."
@@ -128,25 +139,35 @@ export default async function EventiPage({
   );
 }
 
+/**
+ * `null` = la query non è andata a buon fine. Distinguerlo da un array vuoto è
+ * necessario perché il ripiego automatico sugli eventi passati deve scattare
+ * solo su un "davvero non c'è niente in arrivo", non su una lettura fallita.
+ */
 async function loadEvents(cat: string, when: When) {
-  const supabase = await createClient();
-  const nowIso = new Date().toISOString();
-  let q = supabase
-    .from("events")
-    .select("slug, title, city, date, price, cover_image");
-  if (cat !== "all") q = q.eq("category", cat as never);
-  if (when === "past") {
-    q = q.lt("date", nowIso).order("date", { ascending: false });
-  } else {
-    q = q.gte("date", nowIso).order("date", { ascending: true });
+  try {
+    const supabase = await createClient();
+    const nowIso = new Date().toISOString();
+    let q = supabase
+      .from("events")
+      .select("slug, title, city, date, price, cover_image");
+    if (cat !== "all") q = q.eq("category", cat as never);
+    if (when === "past") {
+      q = q.lt("date", nowIso).order("date", { ascending: false });
+    } else {
+      q = q.gte("date", nowIso).order("date", { ascending: true });
+    }
+    const { data, error } = await q;
+    if (error || !data) return null;
+    return data.map((e) => ({
+      slug: e.slug,
+      title: e.title,
+      city: e.city,
+      date: e.date,
+      price: e.price,
+      coverImage: e.cover_image,
+    }));
+  } catch {
+    return null;
   }
-  const { data } = await q;
-  return (data ?? []).map((e) => ({
-    slug: e.slug,
-    title: e.title,
-    city: e.city,
-    date: e.date,
-    price: e.price,
-    coverImage: e.cover_image,
-  }));
 }

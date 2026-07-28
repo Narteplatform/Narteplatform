@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
 import { Button } from "@/components/ui/Button";
@@ -10,21 +11,44 @@ export default function ChiSiamoPage() {
     <>
       <PageHero
         label="chi siamo"
-        title={
-          <>
-            Una piattaforma per chi vive
-            <br />
-            di musica e cultura.
-          </>
-        }
+        title="Chi siamo"
         description={
           <>
-            N&apos;arte nasce a Napoli per dare visibilità ad artisti emergenti e raccontare gli
-            eventi musicali e culturali che organizziamo. Curiamo ogni esperienza con
-            attenzione: dal sound design alla scenografia.
+            La piattaforma N&apos;arte offre visibilità ad artisti emergenti mettendoli in
+            contatto con gli organizzatori di eventi e locali.
           </>
         }
       />
+
+      {/* FONDATORE */}
+      <section className="py-20 md:py-28">
+        <div className="container-narte grid gap-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-10 lg:gap-14">
+          <Reveal>
+            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-border bg-muted">
+              <Image
+                src="/brand/fondatore-eduardo.jpg"
+                alt="Eduardo Castronuovo, fondatore di N'arte, sul palco"
+                fill
+                sizes="(min-width: 768px) 42vw, 100vw"
+                className="object-cover"
+              />
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.1}>
+            <div>
+              <p className="accent-label mb-3">il fondatore</p>
+              <h2 className="display-xl text-4xl md:text-5xl">Eduardo Castronuovo</h2>
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
+                Giovane visionario fondatore di N&apos;arte e presente nel settore della musica
+                da oltre 8 anni. Eduardo ha dato la possibilità a tantissimi giovani emergenti
+                di crescere ed esprimersi su migliaia di palchi, gestendo anche la direzione
+                artistica di grandi eventi in tutta Italia.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
 
       {/* MISSIONE / COSA FACCIAMO */}
       <section className="bg-muted py-20 md:py-28">

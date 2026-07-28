@@ -136,6 +136,32 @@
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
+
+  /*
+    Altezza esatta della zona utile dentro la shell admin, per i pannelli che
+    devono stare dentro la viewport senza far scorrere la pagina (la chat).
+    Sottrae, nell'ordine: la topbar sticky (h-14 = 3.5rem), il padding
+    verticale di <main> (2×1.25rem su mobile, 2×2.5rem da lg) e — solo sotto
+    lg — la barra fissa in basso (h-14) con la sua safe area.
+
+    Prima ogni pagina si calcolava l'altezza a mano: /admin/chat sottraeva
+    12rem tarati sul desktop e /admin/chat/[id] usava 100dvh pieni pur stando
+    DENTRO una shell con header e padding, sforando la viewport di ~5rem.
+
+    `--shell-extra` è per le pagine che hanno un proprio titolo sopra il
+    pannello: si imposta con l'utility arbitraria [--shell-extra:4.5rem].
+  */
+  .admin-shell-viewport {
+    height: calc(
+      100dvh - 3.5rem - 2.5rem - 3.5rem - env(safe-area-inset-bottom) -
+        var(--shell-extra, 0rem)
+    );
+  }
+  @media (min-width: 1024px) {
+    .admin-shell-viewport {
+      height: calc(100dvh - 3.5rem - 5rem - var(--shell-extra, 0rem));
+    }
+  }
   /* Blog article typography */
   .blog-prose {
     color: var(--color-foreground);

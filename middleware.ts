@@ -150,6 +150,8 @@ export const config = {
     // `api/stripe` escluso: il webhook non ha cookie di sessione, quindi il
     // refresh auth qui sarebbe puro spreco — e Stripe considera fallito un
     // webhook che non risponde entro ~20s, ritentandolo.
-    "/((?!_next/static|_next/image|favicon.ico|api/health|api/stripe|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif)$).*)",
+    // `webmanifest` escluso come le immagini: il manifest della PWA admin è un
+    // file statico e non deve pagare un getUser() Supabase a ogni fetch.
+    "/((?!_next/static|_next/image|favicon.ico|api/health|api/stripe|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|webmanifest)$).*)",
   ],
 };

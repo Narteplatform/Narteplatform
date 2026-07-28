@@ -22,7 +22,8 @@ export default async function AdminChatPage({ searchParams }: { searchParams: Se
           </p>
         </div>
       </header>
-      <div className="h-[calc(100dvh-12rem)] grid grid-cols-1 md:grid-cols-[380px_1fr] rounded-xl border border-border bg-surface overflow-hidden">
+      {/* --shell-extra = intestazione della pagina (~3.5rem) + lo space-y-4 (1rem) */}
+      <div className="admin-shell-viewport [--shell-extra:4.5rem] grid grid-cols-1 md:grid-cols-[380px_1fr] rounded-xl border border-border bg-surface overflow-hidden">
         <aside className="border-r border-border min-h-0">
           <ConversationList items={items} basePath="/admin/chat" mode="superadmin" />
         </aside>

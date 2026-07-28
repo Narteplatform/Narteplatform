@@ -69,7 +69,7 @@ export default async function AdminOverviewPage() {
         secondary={{ label: "Aggiungi artista", href: "/admin/artisti/new", icon: <UserPlus className="size-4" /> }}
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="Eventi totali"
           value={eventsRes.count ?? 0}

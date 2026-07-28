@@ -33,7 +33,8 @@ export default async function AdminChatDetailPage({
       <Link href="/admin/chat" className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">
         ← Tutte le conversazioni
       </Link>
-      <div className="h-[100dvh] md:h-[calc(100dvh-12rem)] grid grid-cols-1 md:grid-cols-[380px_1fr] rounded-none md:rounded-xl border-0 md:border md:border-border bg-surface overflow-hidden">
+      {/* --shell-extra = il link "Tutte le conversazioni" (~1rem) + lo space-y-3 (0.75rem) */}
+      <div className="admin-shell-viewport [--shell-extra:1.75rem] grid grid-cols-1 md:grid-cols-[380px_1fr] rounded-xl border border-border bg-surface overflow-hidden">
         <aside className="hidden md:block border-r border-border min-h-0">
           <ConversationList items={items} basePath="/admin/chat" activeId={id} mode="superadmin" />
         </aside>

@@ -96,7 +96,9 @@ export default async function AdminLeadsPage({
         </p>
       </header>
 
-      <div className="flex flex-wrap items-center gap-1 rounded-full bg-muted p-1 w-fit">
+      {/* Sotto md una riga sola scorrevole invece del wrap dentro il
+          contenitore tondo, che a 375px spezzava le pill su due righe. */}
+      <div className="-mx-4 flex snap-x items-center gap-1 overflow-x-auto px-4 py-1 md:mx-0 md:w-fit md:flex-wrap md:rounded-full md:bg-muted md:px-1 md:py-1">
         {STATUS_TABS.map((s) => {
           const active = (sp?.status ?? "") === s.v;
           const params = new URLSearchParams();
@@ -108,10 +110,10 @@ export default async function AdminLeadsPage({
               key={s.v || "all"}
               href={href}
               className={cn(
-                "inline-flex h-8 items-center rounded-full px-3 text-sm font-medium transition",
+                "inline-flex h-9 shrink-0 snap-start items-center rounded-full px-3 text-sm font-medium transition md:h-8",
                 active
                   ? "bg-foreground text-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground md:bg-transparent"
               )}
             >
               {s.label}

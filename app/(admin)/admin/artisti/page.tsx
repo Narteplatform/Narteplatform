@@ -199,6 +199,57 @@ export default async function AdminArtistsPage({
         </div>
 
         <CardContent className="p-0">
+          {/* Sotto md la tabella a 6 colonne obbligherebbe a scorrere di lato:
+              stessi dati e stesse azioni, impaginati in verticale. */}
+          <ul className="divide-y divide-border md:hidden">
+            {filteredArtists.length === 0 ? (
+              <li className="px-4 py-10 text-center text-sm text-muted-foreground">
+                Nessun artista trovato.{" "}
+                <Link href="/admin/artisti/new" className="underline">
+                  Aggiungi il primo
+                </Link>
+                .
+              </li>
+            ) : (
+              filteredArtists.map((a) => (
+                <li key={a.id} className="flex gap-3 px-4 py-4">
+                  <Avatar src={a.cover_image} name={a.stage_name} size="md" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground">{a.stage_name}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {a.city ?? "—"}
+                      {a.genre.length > 0 ? ` · ${a.genre.slice(0, 2).join(", ")}` : ""}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Badge variant={STATUS_VARIANT[a.status] ?? "muted"} dot>
+                        {STATUS_LABEL[a.status] ?? a.status}
+                      </Badge>
+                      <ArtistTierQuickAssign
+                        artistId={a.id}
+                        tier={a.tier}
+                        hasOverride={a.tier_override != null}
+                      />
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Button asChild variant="outline" size="sm" className="h-10">
+                        <Link href={`/admin/artisti/${a.id}`}>
+                          <Pencil className="size-4" /> Modifica
+                        </Link>
+                      </Button>
+                      <Button asChild variant="ghost" size="sm" className="h-10">
+                        <Link href={`/artisti/${a.slug}`} target="_blank" rel="noreferrer">
+                          <ExternalLink className="size-4" /> Apri
+                        </Link>
+                      </Button>
+                      <DeleteArtistButton artistId={a.id} artistName={a.stage_name} />
+                    </div>
+                  </div>
+                </li>
+              ))
+            )}
+          </ul>
+
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -279,6 +330,7 @@ export default async function AdminArtistsPage({
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

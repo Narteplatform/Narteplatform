@@ -112,6 +112,62 @@ export default async function AdminEventiPage({
         </div>
 
         <CardContent className="p-0">
+          {/* Sotto md la tabella a 6 colonne obbligherebbe a scorrere di lato:
+              stessi dati e stesse azioni, impaginati in verticale. */}
+          <ul className="divide-y divide-border md:hidden">
+            {filtered.length === 0 ? (
+              <li className="px-4 py-10 text-center text-sm text-muted-foreground">
+                Nessun evento trovato.{" "}
+                <Link href="/admin/eventi/new" className="underline">
+                  Crea il primo evento
+                </Link>
+                .
+              </li>
+            ) : (
+              filtered.map((event) => (
+                <li key={event.id} className="flex gap-3 px-4 py-4">
+                  <div className="relative size-14 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
+                    {event.cover_image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={event.cover_image}
+                        alt={event.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                        <ImageIcon className="size-4" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground">{event.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {formatEventDate(event.date)} · {event.city}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <EventStatusBadge event={event} past={new Date(event.date) < today} />
+                      <Badge variant="muted">{event.category}</Badge>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <Button asChild variant="outline" size="sm" className="h-10">
+                        <Link href={`/admin/eventi/${event.id}`}>
+                          <Pencil className="size-4" /> Modifica
+                        </Link>
+                      </Button>
+                      <Button asChild variant="ghost" size="sm" className="h-10">
+                        <Link href={`/eventi/${event.slug}`} target="_blank" rel="noreferrer">
+                          <ExternalLink className="size-4" /> Apri
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </li>
+              ))
+            )}
+          </ul>
+
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -167,17 +223,7 @@ export default async function AdminEventiPage({
                       <TableCell className="text-muted-foreground">{formatEventDate(event.date)}</TableCell>
                       <TableCell className="text-muted-foreground">{event.city}</TableCell>
                       <TableCell>
-                        {event.featured ? (
-                          <Badge variant="accent" dot>
-                            In primo piano
-                          </Badge>
-                        ) : past ? (
-                          <Badge variant="muted">Concluso</Badge>
-                        ) : (
-                          <Badge variant="success" dot>
-                            Pubblicato
-                          </Badge>
-                        )}
+                        <EventStatusBadge event={event} past={past} />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1.5">
@@ -199,8 +245,32 @@ export default async function AdminEventiPage({
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/** Unico punto di verità per lo stato: tabella desktop e schede mobili. */
+function EventStatusBadge({
+  event,
+  past,
+}: {
+  event: { featured: boolean | null };
+  past: boolean;
+}) {
+  if (event.featured) {
+    return (
+      <Badge variant="accent" dot>
+        In primo piano
+      </Badge>
+    );
+  }
+  if (past) return <Badge variant="muted">Concluso</Badge>;
+  return (
+    <Badge variant="success" dot>
+      Pubblicato
+    </Badge>
   );
 }

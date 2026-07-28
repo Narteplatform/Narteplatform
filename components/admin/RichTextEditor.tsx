@@ -134,7 +134,9 @@ export function RichTextEditor({ value, onChange }: Props) {
 
   return (
     <div className="rounded-md border border-border bg-background">
-      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 rounded-t-md border-b border-border bg-muted/60 px-2 py-2 backdrop-blur">
+      {/* top-14 sotto lg: la topbar della shell è anch'essa sticky top-0 con
+          z-30, quindi a top-0 la toolbar ci finiva sotto e spariva. */}
+      <div className="sticky top-14 z-20 flex flex-wrap items-center gap-1 rounded-t-md border-b border-border bg-muted/60 px-2 py-2 backdrop-blur lg:top-0">
         <TB onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} label="Grassetto">
           <Bold className="size-4" />
         </TB>

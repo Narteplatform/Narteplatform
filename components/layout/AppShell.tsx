@@ -69,6 +69,12 @@ export interface AppShellProps {
   /** Piano dell'artista, mostrato come etichetta nella pillola profilo. Assente per admin/organizer. */
   planTier?: ArtistTier;
   navSections: NavSection[];
+  /**
+   * Barra di navigazione fissa in basso, resa solo sotto `lg`. Opzionale e
+   * attiva oggi solo per l'area admin, installata come PWA sul telefono del
+   * cliente: artista e organizzatore restano col solo cassetto.
+   */
+  bottomNav?: NavSection[];
   storage?: AppShellStorage;
   whatsNewHref?: string;
   showSearch?: boolean;
@@ -102,6 +108,7 @@ export function AppShell({
   user,
   planTier,
   navSections,
+  bottomNav,
   storage,
   whatsNewHref,
   showSearch = false,
@@ -110,6 +117,7 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname() ?? "/";
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const hasBottomNav = (bottomNav?.length ?? 0) > 0;
 
   const sidebar = (
     <SidebarContent
@@ -142,7 +150,7 @@ export function AppShell({
           <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 lg:hidden" />
           <Dialog.Content
             aria-describedby={undefined}
-            className="fixed inset-y-0 left-0 z-50 flex w-[85%] max-w-sm flex-col bg-background shadow-xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left lg:hidden"
+            className="fixed inset-y-0 left-0 z-50 flex w-[85%] max-w-sm flex-col bg-background pb-[env(safe-area-inset-bottom)] shadow-xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left lg:hidden"
           >
             <Dialog.Title className="sr-only">Menu di navigazione</Dialog.Title>
             {sidebar}
@@ -183,12 +191,78 @@ export function AppShell({
         </header>
 
         <main className="flex-1">
-          <div className="mx-auto w-full max-w-[1400px] px-5 py-6 lg:px-10 lg:py-10">
+          <div
+            className={cn(
+              "mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-5 sm:py-6 lg:px-10 lg:py-10",
+              // Spazio per la barra fissa in basso: senza, l'ultimo contenuto
+              // della pagina ci finisce sotto e diventa intoccabile.
+              hasBottomNav && "pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-10"
+            )}
+          >
             {children}
           </div>
         </main>
       </div>
+
+      {hasBottomNav && (
+        <BottomNav sections={bottomNav!} pathname={pathname} />
+      )}
     </div>
+  );
+}
+
+/**
+ * Barra a schede in basso, il gesto che fa sembrare un sito un'app sul
+ * telefono. `pb-[env(safe-area-inset-bottom)]` tiene le voci sopra la barra
+ * gesti dell'iPhone; senza, l'ultima riga di testo finisce sotto di essa.
+ */
+function BottomNav({
+  sections,
+  pathname,
+}: {
+  sections: NavSection[];
+  pathname: string;
+}) {
+  return (
+    <nav
+      aria-label="Navigazione rapida"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+    >
+      <ul className="flex items-stretch">
+        {sections.map((section) => {
+          const active = isSectionActive(pathname, section);
+          return (
+            <li key={section.href} className="min-w-0 flex-1">
+              <Link
+                href={section.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "relative flex h-14 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium transition",
+                  active ? "text-accent" : "text-muted-foreground"
+                )}
+              >
+                <span className="relative flex size-5 items-center justify-center">
+                  {section.icon}
+                  {section.badge && (
+                    <span
+                      className={cn(
+                        "absolute -right-2 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-semibold leading-none",
+                        section.badge.variant === "accent"
+                          ? "bg-accent text-accent-foreground"
+                          : "bg-foreground text-background"
+                      )}
+                    >
+                      {section.badge.label}
+                    </span>
+                  )}
+                </span>
+                <span className="w-full truncate text-center">{section.label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 
@@ -350,7 +424,8 @@ function NavItem({
               onNavigate();
             }}
             className={cn(
-              "flex flex-1 items-center gap-3 rounded-md px-3 py-2 text-sm transition",
+              // py-2.5 sotto lg: sul telefono la riga arriva ai 44px minimi iOS.
+              "flex flex-1 items-center gap-3 rounded-md px-3 py-2.5 text-sm transition lg:py-2",
               section.featured && !linkActive
                 ? "bg-accent text-accent-foreground font-semibold shadow-[0_4px_20px_rgba(232,84,42,0.25)] hover:opacity-90"
                 : section.featured && linkActive
@@ -388,7 +463,7 @@ function NavItem({
               aria-expanded={open}
               aria-label={open ? `Comprimi ${section.label}` : `Espandi ${section.label}`}
               onClick={() => setOpen((v) => !v)}
-              className="ml-1 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="ml-1 inline-flex size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground lg:size-7"
             >
               <ChevronDown
                 className={cn("size-4 transition-transform", open && "rotate-180")}
@@ -408,7 +483,7 @@ function NavItem({
                   href={child.href}
                   onClick={onNavigate}
                   className={cn(
-                    "flex items-center justify-between rounded-md px-2.5 py-1.5 text-[13px] transition",
+                    "flex items-center justify-between rounded-md px-2.5 py-2.5 text-[13px] transition lg:py-1.5",
                     childActive
                       ? "text-foreground font-medium"
                       : "text-muted-foreground hover:text-foreground"

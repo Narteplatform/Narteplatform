@@ -155,7 +155,47 @@ export default async function AdminArtistDetailPage({
               Nessuna data confermata per questo artista.
             </p>
           ) : (
-            <div className="-mx-2 overflow-x-auto">
+            <>
+            {/* Sotto md la tabella a 6 colonne obbligherebbe a scorrere di
+                lato: stessi dati e stessa azione, impaginati in verticale. */}
+            <ul className="space-y-3 md:hidden">
+              {bookings.map((b) => {
+                const dateLabel = new Date(b.event_date).toLocaleDateString("it-IT", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                });
+                return (
+                  <li key={b.id} className="rounded-xl border border-border p-3 text-sm">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="font-medium">{dateLabel}</p>
+                      <p className="text-xs text-muted-foreground">{b.time_slot ?? "—"}</p>
+                    </div>
+                    <p className="mt-1">{b.organizers?.display_name ?? "—"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {b.venues?.name
+                        ? `${b.venues.name}${b.venues.city ? ` · ${b.venues.city}` : ""}`
+                        : "—"}
+                    </p>
+                    <p className="mt-1 text-sm">
+                      {b.budget_offer != null
+                        ? `€${Number(b.budget_offer).toLocaleString("it-IT")}`
+                        : "Budget non indicato"}
+                    </p>
+                    <div className="mt-3">
+                      <CancelBookingDialog
+                        bookingId={b.id}
+                        artistName={artist.stage_name}
+                        organizerName={b.organizers?.display_name ?? "Organizzatore"}
+                        eventDate={dateLabel}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="-mx-2 hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -203,6 +243,7 @@ export default async function AdminArtistDetailPage({
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>

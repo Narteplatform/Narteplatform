@@ -25,8 +25,10 @@ export function KpiCard({ label, value, icon, sublabel, href, className }: KpiCa
           </span>
         )}
       </div>
-      <div className="mt-6 flex items-end justify-between gap-3">
-        <span className="font-display text-5xl leading-none tracking-tight tabular-nums">
+      {/* Corpo ridotto sotto sm: a 48px quattro schede impilate si mangiavano
+          l'intera prima schermata del telefono. Da sm in su nulla cambia. */}
+      <div className="mt-4 flex items-end justify-between gap-3 sm:mt-6">
+        <span className="font-display text-4xl leading-none tracking-tight tabular-nums sm:text-5xl">
           {value}
         </span>
         {href && (

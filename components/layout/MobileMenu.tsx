@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, X, LogIn, UserPlus, User, LayoutDashboard, Sparkles } from "lucide-react";
+import { SearchBar } from "@/components/layout/SearchBar";
 
 type Props = {
   isLoggedIn: boolean;
@@ -92,6 +93,12 @@ export function MobileMenu({ isLoggedIn, role }: Props) {
               >
                 <X className="size-5" />
               </button>
+            </div>
+
+            {/* Sotto md la lente della top bar è nascosta: senza questa, da
+                telefono non c'era alcun modo di cercare. */}
+            <div className="shrink-0 px-5 pt-6">
+              <SearchBar onNavigate={() => setOpen(false)} />
             </div>
 
             <nav aria-label="Navigazione mobile" className="flex flex-col gap-1 px-5 py-6">

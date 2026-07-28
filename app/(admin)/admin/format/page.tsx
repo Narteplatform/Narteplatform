@@ -44,6 +44,71 @@ export default async function AdminFormatPage() {
           <CardTitle className="text-base">Lista format</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
+          {/* Sotto md la tabella richiederebbe scorrimento laterale: stessi
+              dati e stesse azioni, impaginati in verticale. */}
+          <ul className="divide-y divide-border md:hidden">
+            {(formats ?? []).length === 0 ? (
+              <li className="px-4 py-10 text-center text-sm text-muted-foreground">
+                Nessun format trovato.{" "}
+                <Link href="/admin/format/nuovo" className="underline">
+                  Crea il primo format
+                </Link>
+                .
+              </li>
+            ) : (
+              (formats ?? []).map((fmt) => (
+                <li key={fmt.id} className="flex gap-3 px-4 py-4">
+                  <div className="relative size-14 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
+                    {fmt.cover_image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={fmt.cover_image}
+                        alt={fmt.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                        {fmt.icon ? (
+                          <span className="text-lg">{fmt.icon}</span>
+                        ) : (
+                          <ImageIcon className="size-4" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground">{fmt.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      /format/{fmt.slug} · ordine {fmt.order_index}
+                    </p>
+                    <div className="mt-2">
+                      {fmt.published ? (
+                        <Badge variant="success" dot>
+                          Pubblicato
+                        </Badge>
+                      ) : (
+                        <Badge variant="muted">Bozza</Badge>
+                      )}
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <Button asChild variant="outline" size="sm" className="h-10">
+                        <Link href={`/admin/format/${fmt.id}`}>
+                          <Pencil className="size-4" /> Modifica
+                        </Link>
+                      </Button>
+                      <Button asChild variant="ghost" size="sm" className="h-10">
+                        <Link href={`/format/${fmt.slug}`} target="_blank" rel="noreferrer">
+                          <ExternalLink className="size-4" /> Apri
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </li>
+              ))
+            )}
+          </ul>
+
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -122,6 +187,7 @@ export default async function AdminFormatPage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -90,7 +90,9 @@ export default async function AdminFeedbackPage({
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      {/* 2 colonne già da telefono: in colonna singola le quattro schede si
+          mangiavano tutta la prima schermata. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Card>
           <CardContent className="py-5">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Totale</p>
@@ -121,7 +123,7 @@ export default async function AdminFeedbackPage({
       </div>
 
       <div className="flex flex-col gap-3 border-b border-border pb-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="-mx-4 flex snap-x items-center gap-2 overflow-x-auto px-4 text-xs md:mx-0 md:flex-wrap md:px-0">
           <span className="text-muted-foreground">Stato:</span>
           <FilterChip href={tabHref({ status: undefined })} active={!statusF} label="Tutti" />
           <FilterChip
@@ -136,7 +138,7 @@ export default async function AdminFeedbackPage({
             label="Archiviati"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="-mx-4 flex snap-x items-center gap-2 overflow-x-auto px-4 text-xs md:mx-0 md:flex-wrap md:px-0">
           <span className="text-muted-foreground">Ruolo:</span>
           <FilterChip href={tabHref({ role: undefined })} active={!roleF} label="Tutti" />
           <FilterChip
@@ -152,7 +154,7 @@ export default async function AdminFeedbackPage({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-xs">
+      <div className="-mx-4 flex snap-x items-center gap-2 overflow-x-auto px-4 text-xs md:mx-0 md:flex-wrap md:px-0">
         <span className="text-muted-foreground">Categoria:</span>
         <FilterChip href={tabHref({ category: undefined })} active={!catF} label="Tutte" />
         {(["generale", "suggerimento", "bug", "altro"] as const).map((c) => (
@@ -237,7 +239,7 @@ function FilterChip({
   return (
     <Link
       href={href}
-      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 transition ${
+      className={`inline-flex h-8 shrink-0 snap-start items-center gap-1 whitespace-nowrap rounded-full border px-3 transition md:h-auto md:py-1 ${
         active
           ? "border-foreground bg-foreground text-background"
           : "border-border bg-background text-muted-foreground hover:text-foreground"

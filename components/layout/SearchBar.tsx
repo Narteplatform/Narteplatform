@@ -6,7 +6,15 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import type { SearchHit } from "@/app/api/search/route";
 
-export function SearchBar() {
+type SearchBarProps = {
+  /** Focus automatico all'apertura, usato dal pannello a lente della top bar. */
+  autoFocus?: boolean;
+  /** Chiamata dopo che si è navigato verso un risultato: chi ospita la barra
+   *  (pannello a lente, drawer mobile) la usa per chiudersi. */
+  onNavigate?: () => void;
+};
+
+export function SearchBar({ autoFocus = false, onNavigate }: SearchBarProps = {}) {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [open, setOpen] = useState(false);
@@ -59,6 +67,7 @@ export function SearchBar() {
     setOpen(false);
     setQ("");
     router.push(hit.type === "artist" ? `/artisti/${hit.slug}` : `/eventi/${hit.slug}`);
+    onNavigate?.();
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -79,6 +88,8 @@ export function SearchBar() {
       <input
         type="search"
         value={q}
+        // eslint-disable-next-line jsx-a11y/no-autofocus
+        autoFocus={autoFocus}
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => q.trim().length >= 2 && setOpen(true)}
         onKeyDown={onKeyDown}

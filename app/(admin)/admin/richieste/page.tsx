@@ -101,7 +101,9 @@ export default async function AdminRichiestePage({
         </p>
       </header>
 
-      <div className="flex flex-wrap items-center gap-1 rounded-full bg-muted p-1 w-fit">
+      {/* 6 pill: su telefono andavano a capo dentro il contenitore tondo e
+          sembrava rotto. Sotto md scorrono su una riga sola. */}
+      <div className="-mx-4 flex snap-x items-center gap-1 overflow-x-auto px-4 py-1 md:mx-0 md:w-fit md:flex-wrap md:rounded-full md:bg-muted md:px-1 md:py-1">
         {TABS.map((t) => {
           const active = (sp?.status ?? "") === t.v;
           const href = t.v ? `/admin/richieste?status=${t.v}` : "/admin/richieste";
@@ -110,10 +112,12 @@ export default async function AdminRichiestePage({
               key={t.v || "all"}
               href={href}
               className={cn(
-                "inline-flex h-8 items-center rounded-full px-3 text-sm font-medium transition",
+                // h-9 e shrink-0 sotto md: tap target comodo e niente
+                // compressione nella riga scorrevole.
+                "inline-flex h-9 shrink-0 snap-start items-center rounded-full px-3 text-sm font-medium transition md:h-8",
                 active
                   ? "bg-foreground text-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground md:bg-transparent"
               )}
             >
               {t.label}

@@ -86,15 +86,28 @@ function safe<T>(p: PromiseLike<T>): Promise<T | null> {
   );
 }
 
+/**
+ * Voci della barra fissa in basso su mobile: le operazioni quotidiane
+ * dell'admin. Tutto il resto resta nel cassetto, raggiungibile dal burger.
+ */
+const BOTTOM_NAV_KEYS: AdminPageKey[] = ["overview", "eventi", "artisti", "leads", "chat"];
+
+/** Etichette accorciate: nella barra ci stanno ~9 caratteri per voce. */
+const BOTTOM_NAV_LABELS: Partial<Record<AdminPageKey, string>> = {
+  overview: "Home",
+};
+
 async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boolean }): Promise<{
   navSections: NavSection[];
+  bottomNav: NavSection[];
 }> {
   let admin;
   try {
     admin = createAdminClient();
   } catch (err) {
     console.error("[AppShellData] createAdminClient failed:", err);
-    return { navSections: defaultAdminNav() };
+    const fallback = defaultAdminNav();
+    return { navSections: fallback, bottomNav: fallback.slice(0, 5) };
   }
   const today = todayIso();
 
@@ -243,12 +256,28 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     "impostazioni",
     "profilo",
   ];
-  const navSections: NavSection[] = ORDER.filter((k) => {
+  const isVisible = (k: AdminPageKey) => {
     if (opts?.allowed && !opts.allowed.has(k)) return false;
     return sectionsByKey[k] !== null;
-  }).map((k) => sectionsByKey[k]!) as NavSection[];
+  };
 
-  return { navSections };
+  const navSections: NavSection[] = ORDER.filter(isVisible).map(
+    (k) => sectionsByKey[k]!
+  ) as NavSection[];
+
+  // Stesso filtro dei permessi della sidebar: un superadmin non-root senza
+  // accesso a Chat non deve trovarsela in barra. `children` rimossi: nella
+  // barra la voce è un solo tocco, non un accordion.
+  const bottomNav: NavSection[] = BOTTOM_NAV_KEYS.filter(isVisible).map((k) => {
+    const section = sectionsByKey[k]!;
+    return {
+      ...section,
+      label: BOTTOM_NAV_LABELS[k] ?? section.label,
+      children: undefined,
+    };
+  });
+
+  return { navSections, bottomNav };
 }
 
 /** Contesto del selettore di profilo reso nella topbar. */
@@ -540,18 +569,23 @@ export async function AdminAppShell({
 }) {
   const isConsultant = user.role === "consultant";
   let navSections: NavSection[];
+  let bottomNav: NavSection[] | undefined;
   let storage: AppShellStorage | undefined = undefined;
   try {
     if (isConsultant) {
       ({ navSections, storage } = await loadConsultantShell(user.id));
+      // Il consulente ha 3 sole voci: una barra in basso sarebbe un doppione
+      // del cassetto.
+      bottomNav = undefined;
     } else {
       const isRoot = isRootSuperadminEmail(user.email);
       const allowed = await getAllowedAdminPages(user.id, user.email);
-      ({ navSections } = await loadAdminShell({ allowed, isRoot }));
+      ({ navSections, bottomNav } = await loadAdminShell({ allowed, isRoot }));
     }
   } catch (err) {
     console.error("[AppShellData] loadAdminShell crashed:", err);
     navSections = isConsultant ? defaultConsultantNav() : defaultAdminNav();
+    bottomNav = isConsultant ? undefined : navSections.slice(0, 5);
     storage = undefined;
   }
   return (
@@ -565,6 +599,7 @@ export async function AdminAppShell({
         avatarUrl: user.avatarUrl ?? null,
       }}
       navSections={navSections}
+      bottomNav={bottomNav}
       storage={storage}
     >
       {children}

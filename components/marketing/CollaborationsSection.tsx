@@ -45,7 +45,9 @@ export async function CollaborationsSection() {
 
       <Reveal delay={0.25}>
         <div className="relative mt-12 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-          <Marquee speed={40}>
+          {/* `speed` è la durata in secondi di un giro completo, non una
+              velocità: più basso = scorrimento più veloce. */}
+          <Marquee speed={30}>
             {collabs.map((c) => (
               <LogoCell key={c.id} collab={c} />
             ))}
