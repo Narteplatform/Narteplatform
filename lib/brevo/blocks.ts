@@ -510,11 +510,13 @@ function footer(): string {
                 </td>`
   ).join("\n");
 
-  // PROVVISORIO: manca l'export scuro del logo script, qui si usa quello
-  // chiaro. Su fondo avorio il contrasto regge, ma non è l'asset giusto.
+  // Stesso marchio dell'header, in versione scura per il fondo avorio.
+  // `narte-logo-dark.png` è generato da `narte-logo.png` con
+  // `scripts/recolor-png.mjs`: l'ufficiale esiste solo in bianco, e su questo
+  // sfondo sarebbe invisibile.
   return `${row(
-    `            <img src="${ASSETS}/logo-narte-light.png" width="150" alt="N'arte"
-                 style="display:block;width:150px;max-width:50%;height:auto;border:0;outline:none;text-decoration:none;" />`,
+    `            <img src="${ASSETS}/brand/narte-logo-dark.png" width="160" alt="N'arte"
+                 style="display:block;width:160px;max-width:50%;height:auto;border:0;outline:none;text-decoration:none;" />`,
     "32px 40px 0 40px"
   )}
 ${row(contacts, "20px 40px 0 40px")}
