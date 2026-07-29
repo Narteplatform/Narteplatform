@@ -2,7 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
+import { MilestonesTimeline } from "@/components/marketing/MilestonesTimeline";
 import { Button } from "@/components/ui/Button";
+import { MILESTONES } from "@/lib/content/milestones";
+import { NARTE_STATS, NARTE_SINCE } from "@/lib/content/stats";
 
 export const metadata = { title: "Chi siamo — N'arte" };
 
@@ -14,7 +17,7 @@ export default function ChiSiamoPage() {
         title="Chi siamo"
         description={
           <>
-            La piattaforma N&apos;arte offre visibilità ad artisti emergenti mettendoli in
+            La piattaforma N&rsquo;arte offre visibilità ad artisti emergenti mettendoli in
             contatto con gli organizzatori di eventi e locali.
           </>
         }
@@ -42,12 +45,40 @@ export default function ChiSiamoPage() {
               <p className="accent-label mb-3">il fondatore</p>
               <h2 className="display-xl text-4xl md:text-5xl">Eduardo Castronuovo</h2>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-                Giovane visionario fondatore di N&apos;arte e presente nel settore della musica
+                Giovane visionario fondatore di N&rsquo;arte e presente nel settore della musica
                 da oltre 8 anni. Eduardo ha dato la possibilità a tantissimi giovani emergenti
                 di crescere ed esprimersi su migliaia di palchi, gestendo anche la direzione
                 artistica di grandi eventi in tutta Italia.
               </p>
             </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* MILESTONES — sezione neutra di proposito: la successiva è già
+          bg-muted, e due fasce dello stesso colore di fila spezzerebbero
+          l'alternanza chiaro/scuro della pagina. */}
+      <section className="border-t border-border py-20 md:py-28">
+        <div className="container-narte">
+          <div className="max-w-2xl">
+            <Reveal>
+              <p className="accent-label mb-3">le tappe</p>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <h2 className="display-xl text-balance text-4xl md:text-6xl">
+                Come siamo arrivati fin qui.
+              </h2>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <p className="mt-5 text-pretty text-base text-muted-foreground md:text-lg">
+                Otto anni, una città e un mucchio di serate. Tocca una tappa per
+                leggerne la storia.
+              </p>
+            </Reveal>
+          </div>
+
+          <Reveal delay={0.25}>
+            <MilestonesTimeline items={MILESTONES} className="mt-12 md:mt-16" />
           </Reveal>
         </div>
       </section>
@@ -93,21 +124,19 @@ export default function ChiSiamoPage() {
             <p className="accent-label mb-3">i numeri</p>
           </Reveal>
           <Reveal delay={0.1}>
-            <h2 className="display-xl text-4xl md:text-6xl">
-              Dal 2018, una rete in continua crescita.
+            <h2 className="display-xl text-balance text-4xl md:text-6xl">
+              Dal {NARTE_SINCE}, una rete in continua crescita.
             </h2>
           </Reveal>
           <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-3">
-            {[
-              { k: "100+", v: "Artisti emergenti" },
-              { k: "30+", v: "Location iconiche" },
-              { k: "200+", v: "Eventi prodotti" },
-            ].map((s, i) => (
-              <Reveal key={s.k} delay={0.1 * (i + 1)}>
-                <div className="bg-background p-8 md:p-10">
-                  <p className="font-display text-5xl md:text-6xl">{s.k}</p>
+            {NARTE_STATS.map((s, i) => (
+              <Reveal key={s.label} delay={0.1 * (i + 1)}>
+                <div className="h-full bg-background p-8 md:p-10">
+                  <p className="font-display text-5xl tabular-nums md:text-6xl">
+                    {s.value}
+                  </p>
                   <p className="mt-2 text-sm uppercase tracking-wide text-muted-foreground">
-                    {s.v}
+                    {s.label}
                   </p>
                 </div>
               </Reveal>

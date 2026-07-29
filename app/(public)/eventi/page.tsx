@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getPublicEvents } from "@/lib/data/events";
 import { EventCard } from "@/components/marketing/EventCard";
 import { PageHero } from "@/components/marketing/PageHero";
 import { StaggerList, Reveal } from "@/components/animations/Reveal";
@@ -67,7 +67,7 @@ export default async function EventiPage({
         title="Eventi"
         description={
           <>
-            Tutti gli eventi musicali e culturali organizzati da N&apos;arte o ai quali
+            Tutti gli eventi musicali e culturali organizzati da N&rsquo;arte o ai quali
             partecipiamo.
           </>
         }
@@ -143,31 +143,8 @@ export default async function EventiPage({
  * `null` = la query non è andata a buon fine. Distinguerlo da un array vuoto è
  * necessario perché il ripiego automatico sugli eventi passati deve scattare
  * solo su un "davvero non c'è niente in arrivo", non su una lettura fallita.
+ * Il contratto è mantenuto da getPublicEvents, che serve anche /collaborazioni.
  */
 async function loadEvents(cat: string, when: When) {
-  try {
-    const supabase = await createClient();
-    const nowIso = new Date().toISOString();
-    let q = supabase
-      .from("events")
-      .select("slug, title, city, date, price, cover_image");
-    if (cat !== "all") q = q.eq("category", cat as never);
-    if (when === "past") {
-      q = q.lt("date", nowIso).order("date", { ascending: false });
-    } else {
-      q = q.gte("date", nowIso).order("date", { ascending: true });
-    }
-    const { data, error } = await q;
-    if (error || !data) return null;
-    return data.map((e) => ({
-      slug: e.slug,
-      title: e.title,
-      city: e.city,
-      date: e.date,
-      price: e.price,
-      coverImage: e.cover_image,
-    }));
-  } catch {
-    return null;
-  }
+  return getPublicEvents({ when, category: cat });
 }

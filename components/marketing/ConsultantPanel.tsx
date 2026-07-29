@@ -67,8 +67,8 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
         <CheckCircle2 className="mx-auto size-12 text-accent" />
         <h3 className="mt-4 font-display text-2xl">Richiesta inviata!</h3>
         <p className="mt-2 text-muted-foreground">
-          Riceverai una email di conferma. Un consulente N&apos;arte ti contatterà a breve per
-          finalizzare l&apos;appuntamento.
+          Riceverai una email di conferma. Un consulente N&rsquo;arte ti contatterà a breve per
+          finalizzare l&rsquo;appuntamento.
         </p>
       </div>
     );
@@ -82,10 +82,10 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
           <Sparkles className="size-3.5" /> Gratuito
         </span>
         <h2 className="mt-5 font-display text-3xl md:text-5xl">
-          Parla con un consulente N&apos;arte.
+          Parla con un consulente N&rsquo;arte.
         </h2>
         <p className="mt-4 text-base text-muted-foreground md:text-lg">
-          Sei alla ricerca dell&apos;artista giusto, vuoi capire come organizzare un evento o
+          Sei alla ricerca dell&rsquo;artista giusto, vuoi capire come organizzare un evento o
           serve un consiglio su budget e disponibilità? Prenota una chiamata gratuita di 30
           minuti con un nostro consulente.
         </p>

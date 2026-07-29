@@ -16,7 +16,6 @@ import {
 import type { ArtistTier } from "@/lib/supabase/types";
 
 const TIERS: ArtistTier[] = ["free", "pro", "max"];
-const CTA_HREF = "/candidatura-artista";
 const CTA_LABEL: Record<ArtistTier, string> = {
   free: "Inizia gratis",
   pro: "Scegli N'arte Pro",
@@ -54,7 +53,16 @@ const CARD_STYLE: Record<
   },
 };
 
-export function HomePricing() {
+/**
+ * `ctaHref` è una prop e non una costante perché questa griglia vive anche
+ * DENTRO /candidatura-artista: là un link alla stessa pagina ricaricherebbe
+ * senza portare da nessuna parte, e il bersaglio giusto è il form (#candidatura).
+ */
+export function HomePricing({
+  ctaHref = "/candidatura-artista",
+}: {
+  ctaHref?: string;
+} = {}) {
   const [interval, setInterval] = useState<BillingInterval>("year");
 
   return (
@@ -131,7 +139,7 @@ export function HomePricing() {
               </p>
 
               <Link
-                href={CTA_HREF}
+                href={ctaHref}
                 className={cn(
                   "mt-6 inline-flex h-12 w-full items-center justify-center rounded-md px-5 text-sm font-semibold transition",
                   style.cta

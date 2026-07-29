@@ -4,12 +4,17 @@ import { EventCard, type EventCardProps } from "./EventCard";
 import { StaggerList, Reveal } from "@/components/animations/Reveal";
 import { Button } from "@/components/ui/Button";
 
+/**
+ * Solo eventi futuri. Senza il filtro sulla data, `order(date asc)` restituiva
+ * gli otto eventi più VECCHI in tabella: la home annunciava serate già passate.
+ */
 async function getEvents(limit = 8): Promise<EventCardProps[]> {
   try {
     const supabase = createAdminClient();
     const { data } = await supabase
       .from("events")
       .select("slug, title, city, date, price, cover_image")
+      .gte("date", new Date().toISOString())
       .order("date", { ascending: true })
       .limit(limit);
     return (data ?? []).map((e) => ({
@@ -31,11 +36,13 @@ export async function EventsSection() {
   return (
     <section className="container-narte py-20 md:py-28">
       <Reveal>
-        <p className="accent-label mb-3">cosa succede</p>
+        <p className="accent-label mb-3">in arrivo</p>
       </Reveal>
-      <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+      <div className="mb-4 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
         <Reveal delay={0.1}>
-          <h2 className="display-xl text-4xl md:text-6xl">Eventi</h2>
+          <h2 className="display-xl text-balance text-4xl md:text-6xl">
+            Quello che stiamo mettendo in piedi
+          </h2>
         </Reveal>
         <Reveal delay={0.2}>
           <Button asChild variant="default" size="md">
@@ -43,10 +50,16 @@ export async function EventsSection() {
           </Button>
         </Reveal>
       </div>
+      <Reveal delay={0.25}>
+        <p className="mb-10 max-w-xl text-pretty text-sm text-muted-foreground md:text-base">
+          Le prossime date che abbiamo in calendario. Se ne organizzi una tu, la
+          parte difficile la facciamo noi.
+        </p>
+      </Reveal>
 
       {events.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Nessun evento al momento. Torna a trovarci a breve.
+          Nessuna data in calendario in questo momento. Torna a trovarci a breve.
         </p>
       ) : (
         <StaggerList className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">

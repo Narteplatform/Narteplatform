@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Search, ChevronDown } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { NARTE_STATS } from "@/lib/content/stats";
 import type { SearchHit } from "@/app/api/search/route";
 
 const easing = [0.22, 1, 0.36, 1] as const;
@@ -14,8 +15,11 @@ const easing = [0.22, 1, 0.36, 1] as const;
 const CONCERT_BG =
   "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=2400&q=80";
 
+// La prima voce si chiama per esteso e non "Tutti": i due select stanno
+// affiancati e mostravano entrambi la stessa parola, senza far capire quale
+// fosse il genere e quale la città.
 const GENRES = [
-  { v: "", label: "Tutti" },
+  { v: "", label: "Tutti i generi" },
   { v: "rock", label: "Rock" },
   { v: "pop", label: "Pop" },
   { v: "jazz", label: "Jazz" },
@@ -26,18 +30,12 @@ const GENRES = [
 ];
 
 const CITIES = [
-  { v: "", label: "Tutti" },
+  { v: "", label: "Tutte le città" },
   { v: "Napoli", label: "Napoli" },
   { v: "Caserta", label: "Caserta" },
   { v: "Salerno", label: "Salerno" },
   { v: "Avellino", label: "Avellino" },
   { v: "Benevento", label: "Benevento" },
-];
-
-const STATS = [
-  { value: "200+", label: "Artisti verificati" },
-  { value: "500+", label: "Prenotazioni completate" },
-  { value: "50+", label: "Locali partner" },
 ];
 
 export function HeroNarteClient() {
@@ -180,18 +178,21 @@ export function HeroNarteClient() {
           {/* Space Grotesk arriva a 700: font-black (900) e italic non hanno un
               taglio reale, il browser li sintetizzerebbe. L'accento è il colore. */}
           <span className="block text-5xl font-bold text-palco sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-            La tua musica
+            Cento artisti.
           </span>
           <span className="mt-2 block text-5xl font-bold text-azzurro-light sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-            merita un palco.
+            La tua serata.
           </span>
         </motion.h1>
 
+        {/* Niente whitespace-nowrap: una frase più lunga di quella vecchia
+            uscirebbe dallo schermo alle larghezze intermedie. */}
         <motion.p
           {...titleAnim(0.2)}
-          className="mt-5 max-w-xl text-base text-palco/75 md:max-w-none md:whitespace-nowrap md:text-lg"
+          className="mt-5 max-w-2xl text-pretty text-base text-palco/75 md:text-lg"
         >
-          Prenota artisti emergenti per il tuo locale, festival o evento privato.
+          Cerca per genere, città e data. Guarda i video, leggi il cachet,
+          controlla le sere libere. Poi scrivi.
         </motion.p>
 
         {/* Search bar */}
@@ -319,7 +320,7 @@ export function HeroNarteClient() {
           className="mt-8 flex flex-wrap items-center justify-center gap-3"
         >
           <Button asChild size="lg">
-            <Link href="/artisti">Scopri gli artisti</Link>
+            <Link href="/artisti">Trova il tuo artista</Link>
           </Button>
           <Button
             asChild
@@ -327,7 +328,7 @@ export function HeroNarteClient() {
             variant="ghost"
             className="text-palco hover:bg-palco/10 hover:text-palco"
           >
-            <Link href="/chi-siamo">Come funziona</Link>
+            <Link href="#richiedi">Raccontaci il tuo evento</Link>
           </Button>
         </motion.div>
 
@@ -337,9 +338,9 @@ export function HeroNarteClient() {
           className="mt-16 w-full max-w-2xl border-t border-palco/15 pt-8"
         >
           <dl className="grid grid-cols-3 gap-4 text-center">
-            {STATS.map((s) => (
+            {NARTE_STATS.map((s) => (
               <div key={s.label}>
-                <dt className="font-display text-3xl font-bold text-palco md:text-4xl">
+                <dt className="font-display text-3xl font-bold tabular-nums text-palco md:text-4xl">
                   {s.value}
                 </dt>
                 <dd className="mt-1 text-xs uppercase tracking-wider text-palco/60 md:text-[13px]">

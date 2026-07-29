@@ -58,8 +58,8 @@ export default async function FormatPage() {
         title="I format"
         description={
           <>
-            Contenitori di musica live curati da N&apos;arte: format pensati per club,
-            festival e brand che vogliono offrire al pubblico un&apos;esperienza riconoscibile
+            Contenitori di musica live curati da N&rsquo;arte: format pensati per club,
+            festival e brand che vogliono offrire al pubblico un&rsquo;esperienza riconoscibile
             e di qualità.
           </>
         }

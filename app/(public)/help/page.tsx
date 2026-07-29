@@ -27,7 +27,7 @@ export default function HelpHomePage() {
         title="Aiuto"
         description={
           <>
-            Guide, tutorial e risposte rapide su N&apos;arte. Cerca un argomento o sfoglia
+            Guide, tutorial e risposte rapide su N&rsquo;arte. Cerca un argomento o sfoglia
             le categorie qui sotto.
           </>
         }
@@ -128,7 +128,7 @@ export default function HelpHomePage() {
                 Vuoi parlare con un consulente?
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Prenota una chiamata gratuita di 30 minuti con il team N&apos;arte.
+                Prenota una chiamata gratuita di 30 minuti con il team N&rsquo;arte.
               </p>
               <Link
                 href="/help/consulenza/prenotare-chiamata"

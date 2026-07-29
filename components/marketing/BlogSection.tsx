@@ -41,11 +41,11 @@ export async function BlogSection() {
         </Reveal>
         <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <Reveal delay={0.1}>
-            <h2 className="display-xl text-4xl md:text-6xl">Il magazine N&apos;arte</h2>
+            <h2 className="display-xl text-4xl md:text-6xl">Il magazine N&rsquo;arte</h2>
           </Reveal>
           <Reveal delay={0.2}>
             <p className="max-w-md text-sm text-muted-foreground md:text-base">
-              Racconti, interviste e retroscena dal mondo N&apos;arte.
+              Racconti, interviste e retroscena dal mondo N&rsquo;arte.
             </p>
           </Reveal>
         </div>
@@ -70,7 +70,7 @@ export async function BlogSection() {
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center font-display text-2xl text-palco/25">
-                      N&apos;arte
+                      N&rsquo;arte
                     </div>
                   )}
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-notte via-notte/20 to-transparent" />
@@ -92,7 +92,7 @@ export async function BlogSection() {
                     href={`/blog/${p.slug}`}
                     className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-accent transition hover:gap-2.5"
                   >
-                    Leggi l&apos;articolo <ArrowUpRight className="size-4" />
+                    Leggi l&rsquo;articolo <ArrowUpRight className="size-4" />
                   </Link>
                 </div>
               </article>

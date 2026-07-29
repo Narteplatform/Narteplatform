@@ -67,7 +67,7 @@ export function FormatInterestForm({ formatTitle }: { formatTitle?: string } = {
             Interessi
           </span>
           <h2 className="mt-4 font-display text-2xl md:text-3xl">
-            Vuoi portare un format N&apos;arte nel tuo locale o festival?
+            Vuoi portare un format N&rsquo;arte nel tuo locale o festival?
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground md:text-base">
             Scrivici per ricevere il dossier completo con artisti, technical rider e

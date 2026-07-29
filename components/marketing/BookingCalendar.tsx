@@ -358,7 +358,7 @@ export function BookingCalendar({
                         Disponibile in qualunque orario
                       </span>
                       <span className="mt-1 block text-xs text-muted-foreground">
-                        Nessun turno preimpostato. Indica tu l&apos;orario nel form.
+                        Nessun turno preimpostato. Indica tu l&rsquo;orario nel form.
                       </span>
                     </span>
                     <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
@@ -436,11 +436,11 @@ export function BookingCalendar({
                 </div>
                 <p className="accent-label mt-6">richiesta inviata</p>
                 <h3 className="mt-2 font-display text-2xl md:text-3xl">
-                  Richiesta d&apos;interesse inviata correttamente
+                  Richiesta d&rsquo;interesse inviata correttamente
                 </h3>
                 <p className="mt-3 max-w-md text-sm text-muted-foreground">
                   Abbiamo ricevuto la tua richiesta per <strong>{artistName}</strong> il{" "}
-                  {formatHuman(selectedISO)}. L&apos;artista e il nostro team la valutano e ti
+                  {formatHuman(selectedISO)}. L&rsquo;artista e il nostro team la valutano e ti
                   rispondono via email entro 48h.
                 </p>
                 <Button

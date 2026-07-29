@@ -46,9 +46,9 @@ export default function PrezziPage() {
 
               <div className="space-y-6 text-sm">
                 <div>
-                  <p className="font-medium">Il piano vale per un artista o per l&apos;account?</p>
+                  <p className="font-medium">Il piano vale per un artista o per l&rsquo;account?</p>
                   <p className="mt-1 text-muted-foreground">
-                    Per l&apos;account. Con Pro gestisci 2 profili artista, con Max fino a 5, e
+                    Per l&rsquo;account. Con Pro gestisci 2 profili artista, con Max fino a 5, e
                     tutti ereditano i vantaggi del piano: paghi una volta sola. È pensato per band,
                     manager e agenzie.
                   </p>
@@ -68,14 +68,14 @@ export default function PrezziPage() {
                     Il piano resta attivo fino alla fine del periodo già pagato. Dopo, foto, video e
                     profili oltre i limiti del piano gratuito vengono nascosti, ma{" "}
                     <strong>non vengono mai cancellati</strong>: se torni, ricompare tutto
-                    com&apos;era.
+                    com&rsquo;era.
                   </p>
                 </div>
 
                 <div>
                   <p className="font-medium">Come funziona il badge Verificato?</p>
                   <p className="mt-1 text-muted-foreground">
-                    Pro e Max sbloccano la <em>richiesta</em> di verifica: è il team N&apos;arte a
+                    Pro e Max sbloccano la <em>richiesta</em> di verifica: è il team N&rsquo;arte a
                     valutarla e concederla. Un badge che si compra non verificherebbe nulla, e agli
                     organizzatori serve potersi fidare.
                   </p>
@@ -84,8 +84,8 @@ export default function PrezziPage() {
                 <div>
                   <p className="font-medium">Lo shooting fotografico del piano Max?</p>
                   <p className="mt-1 text-muted-foreground">
-                    È incluso una tantum nell&apos;abbonamento <strong>Max annuale</strong>. Dopo
-                    l&apos;attivazione ti scriviamo per organizzarlo.
+                    È incluso una tantum nell&rsquo;abbonamento <strong>Max annuale</strong>. Dopo
+                    l&rsquo;attivazione ti scriviamo per organizzarlo.
                   </p>
                 </div>
 
@@ -100,10 +100,10 @@ export default function PrezziPage() {
 
               <div className="rounded-2xl border border-border bg-muted/30 p-6 text-center">
                 <p className="font-display text-lg tracking-tight">
-                  Non sei ancora un artista N&apos;arte?
+                  Non sei ancora un artista N&rsquo;arte?
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Candidati: la valutazione è gratuita e il piano lo scegli dopo l&apos;approvazione.
+                  Candidati: la valutazione è gratuita e il piano lo scegli dopo l&rsquo;approvazione.
                 </p>
                 <Button asChild variant="accent" className="mt-4">
                   <Link href="/candidatura-artista">Candidati come artista</Link>

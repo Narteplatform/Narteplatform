@@ -12,8 +12,16 @@ export function formatEventDate(input: string | Date): string {
   return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]}`;
 }
 
+/**
+ * Prezzo di un evento (in euro). Usata da EventCard ed EventInfoCards — quella
+ * dei piani è un'altra, in lib/billing/plans.ts, e ragiona in centesimi.
+ *
+ * `0` vale come "Gratis" quanto `null`: nell'archivio eventi i concerti
+ * gratuiti inseriti con prezzo 0 comparivano come "€0.00" accanto ad altri che
+ * dicevano "Gratis", per la sola differenza di come erano stati salvati.
+ */
 export function formatPrice(value: number | null | undefined): string {
-  if (value == null) return "Gratis";
+  if (value == null || value === 0) return "Gratis";
   return `€${value.toFixed(2)}`;
 }
 

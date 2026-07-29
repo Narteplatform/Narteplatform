@@ -35,12 +35,12 @@ export async function StarsSection() {
     <section className="bg-[#F7F5F2] py-20 text-notte md:py-28">
       <div className="container-narte">
         <Reveal>
-          <p className="accent-label mb-3">gli artisti</p>
+          <p className="accent-label mb-3">il roster</p>
         </Reveal>
-        <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="mb-4 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <Reveal delay={0.1}>
-            <h2 className="display-xl text-4xl text-notte md:text-6xl">
-              Scegli l&apos;artista per le tue esigenze
+            <h2 className="display-xl text-balance text-4xl text-notte md:text-6xl">
+              Guardali suonare prima di scegliere
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
@@ -49,6 +49,12 @@ export async function StarsSection() {
             </Button>
           </Reveal>
         </div>
+        <Reveal delay={0.25}>
+          <p className="mb-10 max-w-xl text-pretty text-sm text-notte/70 md:text-base">
+            Ogni profilo ha video, generi, formazione e fascia di cachet. Nessuna
+            serata prenotata al buio.
+          </p>
+        </Reveal>
 
         {artists.length === 0 ? (
           <p className="text-sm text-notte/60">

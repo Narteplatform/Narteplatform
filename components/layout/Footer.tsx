@@ -74,7 +74,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-notte-60 pt-6 text-xs text-notte-40 md:flex-row md:items-center">
-          <span>© {new Date().getFullYear()} N&apos;Arte — Tutti i diritti riservati.</span>
+          <span>© {new Date().getFullYear()} N&rsquo;Arte — Tutti i diritti riservati.</span>
           <span>Made with passion in Napoli.</span>
         </div>
       </div>

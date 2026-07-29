@@ -46,7 +46,7 @@ export default async function BlogIndexPage() {
         description={
           <>
             Consigli pratici per organizzatori, ritratti di artisti emergenti e
-            approfondimenti sui format musicali N&apos;arte.
+            approfondimenti sui format musicali N&rsquo;arte.
           </>
         }
       />
@@ -75,7 +75,7 @@ export default async function BlogIndexPage() {
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center font-display text-2xl text-muted-foreground">
-                        N&apos;arte
+                        N&rsquo;arte
                       </div>
                     )}
                   </div>
@@ -94,7 +94,7 @@ export default async function BlogIndexPage() {
                       <p className="text-sm text-muted-foreground line-clamp-3">{p.excerpt}</p>
                     )}
                     <span className="mt-auto text-xs font-semibold uppercase tracking-wider text-accent">
-                      Leggi l&apos;articolo →
+                      Leggi l&rsquo;articolo →
                     </span>
                   </div>
                 </Link>

@@ -217,7 +217,7 @@ export default async function BlogPostPage({
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center font-display text-2xl text-muted-foreground">
-                        N&apos;arte
+                        N&rsquo;arte
                       </div>
                     )}
                   </div>
@@ -236,7 +236,7 @@ export default async function BlogPostPage({
                       <p className="text-sm text-muted-foreground line-clamp-3">{p.excerpt}</p>
                     )}
                     <span className="mt-auto text-xs font-semibold uppercase tracking-wider text-accent">
-                      Leggi l&apos;articolo →
+                      Leggi l&rsquo;articolo →
                     </span>
                   </div>
                 </Link>

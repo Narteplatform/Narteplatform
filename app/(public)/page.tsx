@@ -6,8 +6,13 @@ import { EventsSection } from "@/components/marketing/EventsSection";
 import { CollaborationsSection } from "@/components/marketing/CollaborationsSection";
 import { BlogSection } from "@/components/marketing/BlogSection";
 import { EventRequestSection } from "@/components/marketing/EventRequestSection";
-import { PricingSection } from "@/components/marketing/PricingSection";
 
+/**
+ * La home parla a chi cerca un artista: locali, organizzatori, chi mette in
+ * piedi una serata. I piani sono un prodotto rivolto agli artisti e vivono
+ * sulla loro landing (/candidatura-artista#piani), non qui: in mezzo alla home
+ * chiedevano di abbonarsi a un lettore che non deve abbonarsi a niente.
+ */
 export default function HomePage() {
   return (
     <>
@@ -17,7 +22,6 @@ export default function HomePage() {
       <StarsSection />
       <EventsSection />
       <CollaborationsSection />
-      <PricingSection />
       <EventRequestSection />
       <BlogSection />
     </>
