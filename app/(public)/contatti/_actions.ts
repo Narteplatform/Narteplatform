@@ -2,7 +2,8 @@
 
 import { createAdminClient } from "@/lib/supabase/server";
 import { contactSchema, type ContactInput } from "@/lib/validators/schemas";
-import { sendEmail } from "@/lib/emails/send";
+import { dispatchEmail } from "@/lib/emails/dispatch";
+import { getSiteUrl } from "@/lib/site-url";
 import ContactMessageEmail from "@/lib/emails/templates/ContactMessageEmail";
 
 export async function submitContact(input: ContactInput) {
@@ -43,20 +44,46 @@ export async function submitContact(input: ContactInput) {
   }
 
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-  if (adminEmail) {
-    await sendEmail({
-      to: adminEmail,
-      subject: `Nuovo messaggio da ${data.name}`,
-      replyTo: data.email,
-      template: "ContactMessage",
-      react: ContactMessageEmail({
-        name: data.name,
-        email: data.email,
-        subject: data.subject ?? null,
-        message: data.message,
-      }),
-    });
-  }
+  const params = {
+    name: data.name,
+    email: data.email,
+    subject: data.subject ?? "",
+    message: data.message,
+    adminUrl: `${getSiteUrl()}/admin/leads`,
+  };
+
+  // Nessun invio blocca la risposta all'utente: il messaggio è già salvato,
+  // un problema di posta non deve trasformarsi in un errore a schermo.
+  await Promise.allSettled([
+    adminEmail
+      ? dispatchEmail({
+          key: "contact_message",
+          to: adminEmail,
+          params,
+          replyTo: data.email,
+          fallback: {
+            subject: `Nuovo messaggio da ${data.name}`,
+            template: "ContactMessage",
+            react: ContactMessageEmail({
+              name: data.name,
+              email: data.email,
+              subject: data.subject ?? null,
+              message: data.message,
+            }),
+          },
+        })
+      : Promise.resolve(),
+    // Ricevuta al mittente: prima non esisteva, chi scriveva restava senza
+    // conferma che il messaggio fosse partito davvero. Nasce su Brevo e non
+    // ha un componente Resend: finché la chiave non è attiva non parte,
+    // esattamente come oggi, ma resta tracciata in email_log.
+    dispatchEmail({
+      key: "contact_receipt",
+      to: data.email,
+      params,
+      subjectPreview: "Abbiamo ricevuto il tuo messaggio — N'arte",
+    }),
+  ]);
 
   return { ok: true as const };
 }

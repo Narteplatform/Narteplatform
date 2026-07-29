@@ -53,6 +53,14 @@ export const C = {
   success: "#2a9d5c",
   /** Sfondo del callout. */
   successBg: "#eef5f0",
+  /** Ambra: pagamenti in sospeso, scadenze. `--color-warning`. */
+  warning: "#e8a030",
+  warningBg: "#fdf5e9",
+  /** Rosso: annullamenti, rifiuti. `--color-error`. */
+  danger: "#d93d2a",
+  dangerBg: "#fdefed",
+  /** Corallo: accento secondario. `--color-corallo`. */
+  coral: "#e8542a",
   /** Testo secondario. */
   muted: "#7d746c",
   /** Separatore fra le righe di una scheda dati. */
@@ -444,25 +452,30 @@ ${row(button(secondary, "secondary"), "12px 40px 0 40px")}`;
 export interface CalloutSpec {
   /** Testo, può contenere `<br />`. */
   text: string;
-  /** Titolo opzionale in verde, come "N'Arte Tips" nei mockup. */
+  /** Titolo opzionale colorato, come "N'Arte Tips" nei mockup. */
   heading?: string;
   icon?: IconName;
+  /** Verde di default; ambra per le scadenze, rosso per gli annullamenti. */
+  tone?: "success" | "warning" | "danger";
 }
 
-/** Riquadro verde con barra a sinistra, usato per note e suggerimenti. */
+/** Riquadro con barra colorata a sinistra, per note e avvisi. */
 export function callout(spec: CalloutSpec): string {
   const icon = spec.icon ?? "info";
+  const tone = spec.tone ?? "success";
+  const color = tone === "warning" ? C.warning : tone === "danger" ? C.danger : C.success;
+  const bg = tone === "warning" ? C.warningBg : tone === "danger" ? C.dangerBg : C.successBg;
   const heading = spec.heading
-    ? `<p style="margin:0 0 6px 0;font-family:${SANS};font-size:16px;line-height:22px;font-weight:700;color:${C.success};">${spec.heading}</p>`
+    ? `<p style="margin:0 0 6px 0;font-family:${SANS};font-size:16px;line-height:22px;font-weight:700;color:${color};">${spec.heading}</p>`
     : "";
   const align = spec.heading ? "left" : "center";
 
   return row(
-    `            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;background-color:${C.successBg};border-left:4px solid ${C.success};">
+    `            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;background-color:${bg};border-left:4px solid ${color};">
               <tr>
                 <td width="60" align="center" valign="middle" style="width:60px;padding:20px 0 20px 12px;">
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="32" style="width:32px;height:32px;border:2px solid ${C.success};border-radius:16px;">
-                    <tr><td align="center" valign="middle" height="28" style="height:28px;">${iconMark(icon, 15, C.success)}</td></tr>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="32" style="width:32px;height:32px;border:2px solid ${color};border-radius:16px;">
+                    <tr><td align="center" valign="middle" height="28" style="height:28px;">${iconMark(icon, 15, color)}</td></tr>
                   </table>
                 </td>
                 <td align="${align}" valign="middle" style="padding:20px 24px 20px 0;font-family:${SANS};font-size:14px;line-height:22px;color:${C.navy};">
@@ -478,6 +491,45 @@ export function callout(spec: CalloutSpec): string {
 // ---------------------------------------------------------------------------
 // Divider e footer
 // ---------------------------------------------------------------------------
+
+/**
+ * Fascia "copia interna" per le email che arrivano solo a noi. Serve a
+ * distinguerle a colpo d'occhio in casella: senza, la copia della
+ * candidatura e la candidatura vera sembrano la stessa email.
+ */
+export function internalBadge(text = "Copia interna — N'arte"): string {
+  return row(
+    `            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;background-color:${C.navy};">
+              <tr>
+                <td align="center" style="padding:10px 20px;font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#7a9ab2;">${text}</td>
+              </tr>
+            </table>`,
+    "0",
+    "left"
+  );
+}
+
+/**
+ * Valore in evidenza: una data per i promemoria, un importo per le offerte.
+ * Sostituisce l'immagine di apertura nelle email che non ne hanno una ma
+ * hanno comunque bisogno di un fuoco visivo.
+ */
+export function highlight(label: string, value: string, opts: { tone?: "accent" | "success" | "warning" } = {}): string {
+  const color =
+    opts.tone === "success" ? C.success : opts.tone === "warning" ? C.warning : C.accent;
+  return row(
+    `            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;background-color:${C.card};border:1px solid ${C.cardBorder};border-radius:16px;">
+              <tr>
+                <td align="center" style="padding:26px 24px;">
+                  <p style="margin:0 0 6px 0;font-family:${SANS};font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${C.muted};">${label}</p>
+                  <p style="margin:0;font-family:${SERIF};font-size:28px;line-height:36px;font-weight:700;color:${color};">${value}</p>
+                </td>
+              </tr>
+            </table>`,
+    "28px 40px 0 40px",
+    "left"
+  );
+}
 
 export function divider(): string {
   return row(

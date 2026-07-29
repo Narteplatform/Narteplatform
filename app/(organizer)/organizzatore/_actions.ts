@@ -14,6 +14,7 @@ import {
   sendBookingConfirmedEmail,
   sendBookingDeclinedEmail,
 } from "@/lib/emails/send";
+import { sendBookingCancelledByOrganizerEmail } from "@/lib/emails/booking-notify";
 
 function slugify(s: string) {
   return s
@@ -216,6 +217,12 @@ export async function cancelBookingRequest(requestId: string) {
     .update({ status: "annullata" })
     .eq("id", requestId);
   if (error) return { ok: false as const, error: error.message };
+
+  // Finora l'artista non veniva avvisato: si ritrovava la data libera senza
+  // sapere perché, oppure la teneva bloccata credendola ancora valida.
+  await sendBookingCancelledByOrganizerEmail(requestId).catch((e) =>
+    console.error("[email] annullamento organizzatore:", e)
+  );
 
   revalidatePath("/organizzatore/richieste");
   revalidatePath("/organizzatore");

@@ -2,6 +2,8 @@
 
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
+import { dispatchEmail } from "@/lib/emails/dispatch";
+import { getSiteUrl } from "@/lib/site-url";
 
 export const eventRequestSchema = z.object({
   name: z.string().min(2).max(80),
@@ -42,5 +44,25 @@ export async function submitEventRequest(input: EventRequestInput) {
   });
 
   if (error) return { ok: false as const, error: error.message };
+
+  // Come il form Format, finora questa richiesta non avvisava nessuno.
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  if (adminEmail) {
+    await dispatchEmail({
+      key: "public_lead_admin",
+      to: adminEmail,
+      replyTo: data.email,
+      params: {
+        source: `Richiesta evento — ${data.eventType}`,
+        name: data.name,
+        email: data.email,
+        phone: data.phone ?? "",
+        message: lines,
+        adminUrl: `${getSiteUrl()}/admin/leads`,
+      },
+      subjectPreview: `Richiesta evento: ${data.name}`,
+    }).catch((e) => console.error("[email] richiesta evento:", e));
+  }
+
   return { ok: true as const };
 }

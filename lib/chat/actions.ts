@@ -9,6 +9,7 @@ import {
   type ChatOfferInput,
 } from "@/lib/validators/schemas";
 import { sendBookingConfirmedEmail } from "@/lib/emails/send";
+import { notifyNewChatMessage, notifyNewChatOffer } from "@/lib/chat/notify";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import type { Role } from "@/lib/supabase/types";
 import {
@@ -157,6 +158,13 @@ export async function sendMessage(input: ChatMessageInput): Promise<ActionResult
     body: parsed.data.body,
   });
   if (error) return { ok: false, error: error.message };
+
+  // Avvisa la controparte. Non blocca la risposta: il messaggio è già salvato
+  // e un problema di posta non deve far fallire l'invio in chat.
+  await notifyNewChatMessage(parsed.data.conversation_id, role).catch((e) =>
+    console.error("[chat] notifica nuovo messaggio:", e)
+  );
+
   return { ok: true };
 }
 
@@ -198,6 +206,14 @@ export async function sendOffer(input: ChatOfferInput): Promise<ActionResult> {
     offer_status: "pending",
   });
   if (error) return { ok: false, error: error.message };
+
+  // Un'offerta è l'evento più importante della trattativa: va notificata
+  // sempre, anche se poco fa era già partita una notifica di messaggio.
+  await notifyNewChatOffer(parsed.data.conversation_id, role, {
+    amount: parsed.data.budget_cents != null ? parsed.data.budget_cents / 100 : null,
+    eventDate: parsed.data.event_date ?? null,
+  }).catch((e) => console.error("[chat] notifica offerta:", e));
+
   return { ok: true };
 }
 

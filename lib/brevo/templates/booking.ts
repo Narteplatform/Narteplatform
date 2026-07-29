@@ -75,6 +75,9 @@ const bookingRequestArtist = defineTemplate({
       "Ci piacerebbe averti nel nostro palinsesto per una serata live. Scrivici in chat per confermare disponibilità e dettagli.",
     chatUrl: "https://narteofficial.it/dashboard/chat",
     requestUrl: "https://narteofficial.it/dashboard/richieste",
+    contactEmail: "marco.esposito@example.com",
+    contactPhone: "+39 333 000 0000",
+    adminUrl: "https://narteofficial.it/admin/leads",
   },
   html: layout({
     key: "booking_request_artist",
@@ -134,6 +137,9 @@ const bookingRequestReceipt = defineTemplate({
       "Ci piacerebbe averti nel nostro palinsesto per una serata live. Possiamo confrontarci in chat per disponibilità e dettagli.",
     chatUrl: "https://narteofficial.it/organizzatore/chat",
     requestUrl: "https://narteofficial.it/organizzatore/richieste",
+    contactEmail: "marco.esposito@example.com",
+    contactPhone: "",
+    adminUrl: "https://narteofficial.it/admin/leads",
   },
   html: layout({
     key: "booking_request_receipt",

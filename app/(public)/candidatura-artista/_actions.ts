@@ -6,6 +6,7 @@ import {
   type ArtistApplicationInput,
 } from "@/lib/validators/schemas";
 import { dispatchEmail } from "@/lib/emails/dispatch";
+import { getSiteUrl } from "@/lib/site-url";
 import ApplicationReceivedEmail from "@/lib/emails/templates/ApplicationReceivedEmail";
 
 export async function submitArtistApplication(input: ArtistApplicationInput) {
@@ -45,7 +46,13 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
   // I parametri Brevo e il componente Resend convivono di proposito: finché
   // la chiave non è elencata in BREVO_ENABLED_KEYS parte il secondo, e se
   // Brevo fallisce si ricade comunque su di lui. Vedi lib/emails/dispatch.ts.
-  const params = { applicantName: data.name, stageName: data.stageName };
+  const params = {
+    applicantName: data.name,
+    stageName: data.stageName,
+    email: data.email,
+    genres: data.genres.join(", "),
+    adminUrl: `${getSiteUrl()}/admin/artisti`,
+  };
 
   await Promise.all([
     dispatchEmail({
@@ -55,7 +62,10 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
       fallback: {
         subject: "Candidatura ricevuta — N'arte",
         template: "ApplicationReceived",
-        react: ApplicationReceivedEmail(params),
+        react: ApplicationReceivedEmail({
+          applicantName: data.name,
+          stageName: data.stageName,
+        }),
       },
     }),
     adminEmail
@@ -67,7 +77,11 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
           fallback: {
             subject: `Nuova candidatura: ${data.stageName}`,
             template: "ApplicationReceivedAdmin",
-            react: ApplicationReceivedEmail({ ...params, isAdminCopy: true }),
+            react: ApplicationReceivedEmail({
+              applicantName: data.name,
+              stageName: data.stageName,
+              isAdminCopy: true,
+            }),
           },
         })
       : Promise.resolve(),

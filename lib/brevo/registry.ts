@@ -26,6 +26,7 @@ export type EmailKey =
   // --- candidatura artista ---
   | "application_received"
   | "application_received_admin"
+  | "application_rejected"
   | "artist_approved"
   // --- registrazione organizzatore ---
   | "organizer_registration_received"
@@ -40,20 +41,54 @@ export type EmailKey =
   | "booking_confirmed"
   | "booking_declined"
   | "booking_cancelled_admin"
-  // --- chat ---
+  | "booking_cancelled_organizer"
+  // --- chat e trattativa ---
   | "chat_new_message"
+  | "chat_new_offer"
+  | "price_proposed"
+  | "price_confirmed"
   // --- consulenze ---
   | "consultation_request_user"
   | "consultation_request_admin"
   | "consultation_confirmed_artist"
   | "consultation_confirmed_admin"
-  // --- contatti ---
-  | "contact_message";
+  | "consultation_reminder"
+  // --- abbonamenti ---
+  | "subscription_activated"
+  | "payment_failed"
+  | "subscription_cancelled"
+  | "profiles_suspended"
+  // --- contatti e lead pubblici ---
+  | "contact_message"
+  | "contact_receipt"
+  | "public_lead_admin"
+  // --- account ---
+  | "password_reset"
+  | "password_changed"
+  | "welcome_user"
+  // --- ciclo di vita evento ---
+  | "event_reminder"
+  | "feedback_request";
 
-/** Candidatura artista ricevuta (versione candidato e copia interna). */
+/**
+ * Candidatura artista ricevuta. Gli ultimi tre campi servono solo alla copia
+ * interna: nell'email al candidato restano vuoti e le relative righe della
+ * scheda spariscono da sole.
+ */
 export interface ApplicationReceivedParams {
   applicantName: string;
   stageName: string;
+  email: string;
+  genres: string;
+  adminUrl: string;
+}
+
+/** Candidatura non accolta. `reason` è facoltativa: se vuota, la riga sparisce. */
+export interface ApplicationRejectedParams {
+  applicantName: string;
+  stageName: string;
+  reason: string;
+  siteUrl: string;
 }
 
 /** Candidatura approvata: `actionUrl` è il link monouso valido 24 ore. */
@@ -112,6 +147,10 @@ export interface BookingRequestParams {
   message: string;
   chatUrl: string;
   requestUrl: string;
+  /** Solo nella copia interna. */
+  contactEmail: string;
+  contactPhone: string;
+  adminUrl: string;
 }
 
 /** Aggiornamenti di stato di una richiesta già esistente. */
@@ -141,6 +180,30 @@ export interface ChatNewMessageParams {
   chatUrl: string;
 }
 
+/**
+ * Nuova offerta economica ricevuta in chat. Il contenuto della trattativa
+ * non viene riportato oltre all'importo: aprire la chat resta necessario, ed
+ * è il presupposto del piano a pagamento.
+ */
+export interface ChatNewOfferParams {
+  fromName: string;
+  eventDate: string;
+  priceLabel: string;
+  chatUrl: string;
+}
+
+/** Prezzo finale proposto o confermato su una data già confermata. */
+export interface PriceParams {
+  artistName: string;
+  organizerName: string;
+  eventDate: string;
+  priceLabel: string;
+  /** Chi ha fatto la proposta, per non attribuirla alla persona sbagliata. */
+  proposedBy: string;
+  bookingUrl: string;
+  chatUrl: string;
+}
+
 /** Consulenza: richiesta, conferma e copia interna. */
 export interface ConsultationParams {
   /** Nome di chi ha prenotato. */
@@ -161,6 +224,7 @@ export interface ConsultationParams {
   /** Solo nelle copie interne. */
   email: string;
   phone: string;
+  adminUrl: string;
 }
 
 export interface ContactMessageParams {
@@ -168,12 +232,115 @@ export interface ContactMessageParams {
   email: string;
   subject: string;
   message: string;
+  adminUrl: string;
+}
+
+/**
+ * Lead dai form pubblici che oggi non notificano nessuno: `/format` e la
+ * richiesta evento. `source` distingue la provenienza.
+ */
+export interface PublicLeadParams {
+  source: string;
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  adminUrl: string;
+}
+
+/** Abbonamento attivato o rinnovato. */
+export interface SubscriptionParams {
+  artistName: string;
+  planName: string;
+  priceLabel: string;
+  periodLabel: string;
+  renewalDate: string;
+  invoiceUrl: string;
+  billingUrl: string;
+}
+
+/**
+ * Pagamento non riuscito. `retryDate` è la data del prossimo tentativo di
+ * Stripe: senza, l'artista non sa quanto tempo ha per rimediare.
+ */
+export interface PaymentFailedParams {
+  artistName: string;
+  planName: string;
+  amountLabel: string;
+  retryDate: string;
+  billingUrl: string;
+}
+
+/** Abbonamento disdetto: resta attivo fino a `endDate`. */
+export interface SubscriptionCancelledParams {
+  artistName: string;
+  planName: string;
+  endDate: string;
+  billingUrl: string;
+}
+
+/**
+ * Profili spubblicati perché il piano non ne copre più il numero. Oggi
+ * l'artista se ne accorge da solo scoprendo che il profilo è sparito dal
+ * sito: è la ragione per cui questa email esiste.
+ */
+export interface ProfilesSuspendedParams {
+  artistName: string;
+  planName: string;
+  profileNames: string;
+  allowedLabel: string;
+  billingUrl: string;
+}
+
+/** Recupero password. Il link è monouso e scade. */
+export interface PasswordResetParams {
+  name: string;
+  actionUrl: string;
+  expiresLabel: string;
+}
+
+/** Notifica di avvenuto cambio password: serve ad accorgersi di un accesso altrui. */
+export interface PasswordChangedParams {
+  name: string;
+  whenLabel: string;
+  supportUrl: string;
+}
+
+/** Benvenuto a chi si registra come utente. */
+export interface WelcomeUserParams {
+  name: string;
+  artistsUrl: string;
+  eventsUrl: string;
+}
+
+/** Promemoria prima dell'evento, a entrambe le parti. */
+export interface EventReminderParams {
+  recipientName: string;
+  counterpartName: string;
+  /** "fra 7 giorni" oppure "domani". */
+  whenLabel: string;
+  eventDate: string;
+  eventTime: string;
+  city: string;
+  address: string;
+  priceLabel: string;
+  bookingUrl: string;
+  chatUrl: string;
+}
+
+/** Invito a lasciare una recensione, il giorno dopo l'evento. */
+export interface FeedbackRequestParams {
+  organizerName: string;
+  artistName: string;
+  eventDate: string;
+  feedbackUrl: string;
 }
 
 /** Mappa chiave → tipo dei parametri. Fonte di verità per `sendTransactional`. */
 export interface EmailParamsMap {
   application_received: ApplicationReceivedParams;
   application_received_admin: ApplicationReceivedParams;
+  application_rejected: ApplicationRejectedParams;
   artist_approved: ArtistApprovedParams;
   organizer_registration_received: OrganizerRegistrationParams;
   organizer_approved: OrganizerApprovedParams;
@@ -186,12 +353,28 @@ export interface EmailParamsMap {
   booking_confirmed: BookingStatusParams;
   booking_declined: BookingStatusParams;
   booking_cancelled_admin: BookingStatusParams;
+  booking_cancelled_organizer: BookingStatusParams;
   chat_new_message: ChatNewMessageParams;
+  chat_new_offer: ChatNewOfferParams;
+  price_proposed: PriceParams;
+  price_confirmed: PriceParams;
   consultation_request_user: ConsultationParams;
   consultation_request_admin: ConsultationParams;
   consultation_confirmed_artist: ConsultationParams;
   consultation_confirmed_admin: ConsultationParams;
+  consultation_reminder: ConsultationParams;
+  subscription_activated: SubscriptionParams;
+  payment_failed: PaymentFailedParams;
+  subscription_cancelled: SubscriptionCancelledParams;
+  profiles_suspended: ProfilesSuspendedParams;
   contact_message: ContactMessageParams;
+  contact_receipt: ContactMessageParams;
+  public_lead_admin: PublicLeadParams;
+  password_reset: PasswordResetParams;
+  password_changed: PasswordChangedParams;
+  welcome_user: WelcomeUserParams;
+  event_reminder: EventReminderParams;
+  feedback_request: FeedbackRequestParams;
 }
 
 interface RegistryEntry {
@@ -301,6 +484,74 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
   contact_message: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONTACT_MESSAGE),
     label: "Messaggio dal form contatti",
+  },
+  application_rejected: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_APPLICATION_REJECTED),
+    label: "Candidatura non accolta",
+  },
+  booking_cancelled_organizer: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_CANCELLED_ORGANIZER),
+    label: "Richiesta annullata dall'organizzatore",
+  },
+  chat_new_offer: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CHAT_NEW_OFFER),
+    label: "Nuova offerta in chat",
+  },
+  price_proposed: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PRICE_PROPOSED),
+    label: "Prezzo finale proposto",
+  },
+  price_confirmed: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PRICE_CONFIRMED),
+    label: "Prezzo finale confermato",
+  },
+  consultation_reminder: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_REMINDER),
+    label: "Promemoria consulenza",
+  },
+  subscription_activated: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_ACTIVATED),
+    label: "Abbonamento attivo",
+  },
+  payment_failed: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PAYMENT_FAILED),
+    label: "Pagamento non riuscito",
+  },
+  subscription_cancelled: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_CANCELLED),
+    label: "Abbonamento disdetto",
+  },
+  profiles_suspended: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILES_SUSPENDED),
+    label: "Profili spubblicati",
+  },
+  contact_receipt: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONTACT_RECEIPT),
+    label: "Messaggio ricevuto — conferma",
+  },
+  public_lead_admin: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PUBLIC_LEAD_ADMIN),
+    label: "Nuovo lead dai form pubblici",
+  },
+  password_reset: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PASSWORD_RESET),
+    label: "Recupero password",
+  },
+  password_changed: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PASSWORD_CHANGED),
+    label: "Password modificata",
+  },
+  welcome_user: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_WELCOME_USER),
+    label: "Benvenuto su N'arte",
+  },
+  event_reminder: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_EVENT_REMINDER),
+    label: "Promemoria evento",
+  },
+  feedback_request: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_FEEDBACK_REQUEST),
+    label: "Invito a lasciare una recensione",
   },
 };
 

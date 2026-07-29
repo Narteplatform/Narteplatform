@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 
+import { createAdminClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/emails/send";
 import { sendTransactional } from "@/lib/brevo/send";
 import { ALL_EMAIL_KEYS, isEmailKey, type EmailKey, type EmailParamsMap } from "@/lib/brevo/registry";
@@ -34,13 +35,26 @@ export interface DispatchOpts<K extends EmailKey> {
   params: EmailParamsMap[K];
   replyTo?: string;
   meta?: Json;
-  /** Percorso Resend, usato quando Brevo non è attivo per questa chiave. */
-  fallback: {
+  /**
+   * Percorso Resend, usato quando Brevo non è attivo per questa chiave.
+   *
+   * Assente per le email che nascono direttamente su Brevo e non hanno mai
+   * avuto un componente React: lì non c'è nulla su cui ricadere. In quel caso
+   * l'email non parte — esattamente come oggi, dove non esiste affatto — ma
+   * la riga finisce comunque in `email_log` con stato `skipped`, così la
+   * mancata consegna resta visibile invece di sparire.
+   */
+  fallback?: {
     subject: string;
     react: ReactElement;
     /** Nome storico del template, per non spezzare le statistiche esistenti. */
     template: string;
   };
+  /**
+   * Oggetto per il log quando non c'è `fallback`: senza, in `/admin/email`
+   * comparirebbe la chiave al posto di un oggetto leggibile.
+   */
+  subjectPreview?: string;
 }
 
 /**
@@ -72,31 +86,52 @@ export async function dispatchEmail<K extends EmailKey>(
 ): Promise<DispatchResult> {
   const useBrevo = shouldUseBrevo(opts.key);
 
+  const subject = opts.fallback?.subject ?? opts.subjectPreview;
+
   if (useBrevo) {
     const result = await sendTransactional({
       key: opts.key,
       to: opts.to,
       params: opts.params,
       replyTo: opts.replyTo,
-      subjectPreview: opts.fallback.subject,
+      subjectPreview: subject,
       meta: opts.meta,
     });
 
     if (result.ok) return { ok: true, provider: "brevo", fallback: false };
 
+    const reason = "skipped" in result && result.skipped ? result.reason : result.error;
+
+    // Nessun percorso Resend: l'email semplicemente non parte. `sendTransactional`
+    // ha già scritto la riga `skipped`/`failed`, quindi la cosa resta tracciata.
+    if (!opts.fallback) {
+      console.warn(`[dispatch] "${opts.key}" non inviata (${reason}) e nessun fallback disponibile`);
+      return { ok: false, provider: "brevo", skipped: true };
+    }
+
+
     // Brevo non ha consegnato: si prova Resend. Entrambi i tentativi restano
     // in email_log, così dal pannello si vede sia il fallimento sia il
     // recupero — una riga sola nasconderebbe la configurazione mancante.
-    const reason = "skipped" in result && result.skipped ? result.reason : result.error;
     console.warn(`[dispatch] Brevo non ha inviato "${opts.key}" (${reason}) — ricado su Resend`);
-
-    const resent = await sendViaResend(opts, { fallbackFrom: "brevo", reason });
+    const resent = await sendViaResend(opts, opts.fallback, { fallbackFrom: "brevo", reason });
     return resent.ok
       ? { ok: true, provider: "resend", fallback: true }
       : { ok: false, provider: "resend", skipped: resent.skipped };
   }
 
-  const sent = await sendViaResend(opts, null);
+  // Chiave non instradata su Brevo e nessun componente Resend: l'email non ha
+  // ancora una strada. Non parte — come oggi, dove non esiste affatto — ma la
+  // riga viene comunque scritta, altrimenti la mancata consegna sarebbe
+  // invisibile e nessuno saprebbe che c'è una chiave da abilitare.
+  if (!opts.fallback) {
+    const reason = "chiave non attiva su Brevo e nessun fallback Resend";
+    console.warn(`[dispatch] "${opts.key}" non inviata: ${reason}`);
+    await logSkipped(opts, subject ?? opts.key, reason);
+    return { ok: false, provider: "brevo", skipped: true };
+  }
+
+  const sent = await sendViaResend(opts, opts.fallback, null);
   return sent.ok
     ? { ok: true, provider: "resend", fallback: false }
     : { ok: false, provider: "resend", skipped: sent.skipped };
@@ -106,8 +141,34 @@ function shouldUseBrevo(key: EmailKey): boolean {
   return enabledKeys().has(key);
 }
 
+/**
+ * Registra un mancato invio quando non è stato nemmeno tentato. Gli altri
+ * casi li scrive già `sendTransactional` o `sendEmail`; questo è l'unico
+ * ramo che altrimenti non lascerebbe traccia.
+ */
+async function logSkipped<K extends EmailKey>(
+  opts: DispatchOpts<K>,
+  subject: string,
+  reason: string
+): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    await admin.from("email_log").insert({
+      to_addresses: Array.isArray(opts.to) ? opts.to : [opts.to],
+      subject,
+      template: opts.key,
+      status: "skipped",
+      error: reason,
+      meta: { provider: "brevo", key: opts.key },
+    });
+  } catch (e) {
+    console.error("[dispatch] impossibile registrare l'invio saltato", e);
+  }
+}
+
 async function sendViaResend<K extends EmailKey>(
   opts: DispatchOpts<K>,
+  fallback: NonNullable<DispatchOpts<K>["fallback"]>,
   fallbackInfo: { fallbackFrom: "brevo"; reason: string } | null
 ): Promise<{ ok: boolean; skipped: boolean }> {
   const meta: Record<string, Json> = {
@@ -124,10 +185,10 @@ async function sendViaResend<K extends EmailKey>(
 
   const result = await sendEmail({
     to: opts.to,
-    subject: opts.fallback.subject,
-    react: opts.fallback.react,
+    subject: fallback.subject,
+    react: fallback.react,
     replyTo: opts.replyTo,
-    template: opts.fallback.template,
+    template: fallback.template,
     meta,
   });
 
