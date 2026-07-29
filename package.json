@@ -13,7 +13,12 @@
     "db:seed-accounts": "node --env-file=.env.local scripts/seed-accounts.mjs",
     "db:seed-content": "node --env-file=.env.local scripts/seed-content.mjs",
     "db:apply": "node --env-file=.env.local scripts/apply-migrations.mjs",
-    "vercel:sync-env": "node scripts/sync-vercel-env.mjs"
+    "vercel:sync-env": "node scripts/sync-vercel-env.mjs",
+    "email:build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/brevo-build.mjs",
+    "email:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/brevo-sync.mjs",
+    "email:sync:dry": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/brevo-sync.mjs --dry-run",
+    "email:preview": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/brevo-preview.mjs",
+    "email:test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/brevo-send-test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

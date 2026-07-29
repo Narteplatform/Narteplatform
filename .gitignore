@@ -42,3 +42,6 @@ supabase/.branches/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# preview dei template email (rigenerabile con `npm run email:build`)
+.brevo-preview/

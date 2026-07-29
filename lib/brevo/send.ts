@@ -11,6 +11,15 @@ type SendTransactionalOpts<K extends EmailKey> = {
   to: string | string[];
   params: EmailParamsMap[K];
   replyTo?: string;
+  /**
+   * Oggetto da scrivere in `email_log`. L'oggetto vero è definito lato Brevo
+   * dentro il template, quindi qui non lo conosciamo: senza questo campo il
+   * pannello /admin/email mostrerebbe la chiave (`contact_message`) al posto
+   * di "Nuovo messaggio da Mario Rossi" su ogni riga.
+   */
+  subjectPreview?: string;
+  /** Dati aggiuntivi da conservare sulla riga di log. */
+  meta?: Json;
 };
 
 type SendTransactionalResult =
@@ -61,20 +70,22 @@ export async function sendTransactional<K extends EmailKey>(
   opts: SendTransactionalOpts<K>
 ): Promise<SendTransactionalResult> {
   const toArr = Array.isArray(opts.to) ? opts.to : [opts.to];
+  // `subject` è NOT NULL su email_log: se il chiamante non passa un oggetto
+  // leggibile si ripiega sulla chiave.
+  const subject = opts.subjectPreview || opts.key;
+  const baseMeta = { ...(asObject(opts.meta) ?? {}), provider: "brevo", key: opts.key };
 
   const templateId = getTemplateId(opts.key);
   if (templateId == null) {
     const reason = "template non ancora creato su Brevo";
     console.warn(`[brevo] ${reason} — chiave "${opts.key}", email non inviata`);
-    // `subject` è NOT NULL su email_log; l'oggetto vero è definito lato
-    // Brevo nel template, quindi usiamo la chiave come valore descrittivo.
     await logEmail({
       to: toArr,
-      subject: opts.key,
+      subject,
       template: opts.key,
       status: "skipped",
       error: reason,
-      meta: { provider: "brevo", key: opts.key },
+      meta: baseMeta,
     });
     return { ok: false, skipped: true, reason };
   }
@@ -95,33 +106,40 @@ export async function sendTransactional<K extends EmailKey>(
       // BREVO_API_KEY mancante — comportamento previsto in dev.
       await logEmail({
         to: toArr,
-        subject: opts.key,
+        subject,
         template: opts.key,
         status: "skipped",
         error: "BREVO_API_KEY mancante",
-        meta: { provider: "brevo", key: opts.key },
+        meta: baseMeta,
       });
       return { ok: false, skipped: true, reason: "BREVO_API_KEY mancante" };
     }
     console.error("[brevo] errore invio email", opts.key, result.error);
     await logEmail({
       to: toArr,
-      subject: opts.key,
+      subject,
       template: opts.key,
       status: "failed",
       error: result.error,
-      meta: { provider: "brevo", key: opts.key },
+      meta: baseMeta,
     });
     return { ok: false, error: result.error };
   }
 
   await logEmail({
     to: toArr,
-    subject: opts.key,
+    subject,
     template: opts.key,
     status: "sent",
     providerId: result.data?.messageId ?? null,
-    meta: { provider: "brevo", key: opts.key },
+    meta: baseMeta,
   });
   return { ok: true, id: result.data?.messageId ?? null };
+}
+
+/** `Json` ammette anche array e primitivi: qui serve solo la forma a oggetto. */
+function asObject(value: Json | undefined): Record<string, Json> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, Json>)
+    : null;
 }

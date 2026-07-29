@@ -5,7 +5,7 @@ import {
   artistApplicationSchema,
   type ArtistApplicationInput,
 } from "@/lib/validators/schemas";
-import { sendEmail } from "@/lib/emails/send";
+import { dispatchEmail } from "@/lib/emails/dispatch";
 import ApplicationReceivedEmail from "@/lib/emails/templates/ApplicationReceivedEmail";
 
 export async function submitArtistApplication(input: ArtistApplicationInput) {
@@ -42,27 +42,33 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
   }
 
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  // I parametri Brevo e il componente Resend convivono di proposito: finché
+  // la chiave non è elencata in BREVO_ENABLED_KEYS parte il secondo, e se
+  // Brevo fallisce si ricade comunque su di lui. Vedi lib/emails/dispatch.ts.
+  const params = { applicantName: data.name, stageName: data.stageName };
+
   await Promise.all([
-    sendEmail({
+    dispatchEmail({
+      key: "application_received",
       to: data.email,
-      subject: "Candidatura ricevuta — N'arte",
-      template: "ApplicationReceived",
-      react: ApplicationReceivedEmail({
-        applicantName: data.name,
-        stageName: data.stageName,
-      }),
+      params,
+      fallback: {
+        subject: "Candidatura ricevuta — N'arte",
+        template: "ApplicationReceived",
+        react: ApplicationReceivedEmail(params),
+      },
     }),
     adminEmail
-      ? sendEmail({
+      ? dispatchEmail({
+          key: "application_received_admin",
           to: adminEmail,
-          subject: `Nuova candidatura: ${data.stageName}`,
-          template: "ApplicationReceivedAdmin",
-          react: ApplicationReceivedEmail({
-            applicantName: data.name,
-            stageName: data.stageName,
-            isAdminCopy: true,
-          }),
+          params,
           replyTo: data.email,
+          fallback: {
+            subject: `Nuova candidatura: ${data.stageName}`,
+            template: "ApplicationReceivedAdmin",
+            react: ApplicationReceivedEmail({ ...params, isAdminCopy: true }),
+          },
         })
       : Promise.resolve(),
   ]);

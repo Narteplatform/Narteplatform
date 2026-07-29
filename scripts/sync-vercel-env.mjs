@@ -19,6 +19,11 @@ const EXPORTABLE = [
   "SUPABASE_SECRET_KEY",
   "RESEND_API_KEY",
   "RESEND_FROM_EMAIL",
+  "BREVO_API_KEY",
+  "BREVO_SENDER_EMAIL",
+  "BREVO_SENDER_NAME",
+  "BREVO_ASSET_BASE_URL",
+  "BREVO_ENABLED_KEYS",
   "SUPERADMIN_EMAIL",
   "ADMIN_NOTIFICATION_EMAIL",
   "NEXT_PUBLIC_SITE_URL",
@@ -44,6 +49,16 @@ for (const line of readFileSync(ENV_FILE, "utf8").split(/\r?\n/)) {
     val = val.slice(1, -1);
   }
   env[m[1]] = val;
+}
+
+// Gli id dei template Brevo si aggiungono da soli: sono una ventina e
+// cambiano ogni volta che se ne pubblica uno nuovo. Elencarli a mano qui
+// significherebbe dimenticarne uno e ritrovarsi in produzione con l'email
+// saltata (`skipped`) mentre in locale funziona tutto.
+for (const name of Object.keys(env).sort()) {
+  if (name.startsWith("BREVO_TEMPLATE_") && !EXPORTABLE.includes(name)) {
+    EXPORTABLE.push(name);
+  }
 }
 
 let ok = 0;
