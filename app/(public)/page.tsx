@@ -2,7 +2,7 @@ import { HeroNarte } from "@/components/marketing/HeroNarte";
 import { AboutBlock } from "@/components/marketing/AboutBlock";
 import { HowItWorks } from "@/components/marketing/HowItWorks";
 import { StarsSection } from "@/components/marketing/StarsSection";
-import { EventsSection } from "@/components/marketing/EventsSection";
+import { PastEventsSection } from "@/components/marketing/PastEventsSection";
 import { CollaborationsSection } from "@/components/marketing/CollaborationsSection";
 import { BlogSection } from "@/components/marketing/BlogSection";
 import { EventRequestSection } from "@/components/marketing/EventRequestSection";
@@ -20,7 +20,7 @@ export default function HomePage() {
       <AboutBlock />
       <HowItWorks />
       <StarsSection />
-      <EventsSection />
+      <PastEventsSection />
       <CollaborationsSection />
       <EventRequestSection />
       <BlogSection />
