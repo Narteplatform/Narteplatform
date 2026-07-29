@@ -1,6 +1,7 @@
 import { CalendarCheck, Search, UserRound, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 import { Reveal } from "@/components/animations/Reveal";
+import { SectionHeading } from "@/components/marketing/SectionHeading";
 import { BENEFITS, type BenefitIcon } from "@/lib/content/artist-landing";
 
 /**
@@ -18,39 +19,28 @@ export function ArtistBenefits() {
   return (
     <section className="bg-[#F7F5F2] py-20 text-notte md:py-28">
       <div className="container-narte">
-        <div className="max-w-2xl">
-          <Reveal>
-            <p className="accent-label mb-3">perché iscriversi</p>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <h2 className="display-xl text-balance text-4xl text-notte md:text-6xl">
-              Smetti di rincorrere le date.
-            </h2>
-          </Reveal>
-          <Reveal delay={0.2}>
-            <p className="mt-5 text-pretty text-base text-notte/70 md:text-lg">
-              Il lavoro più ingrato del fare musica non è suonare: è convincere
-              qualcuno a farti suonare. Questa è la parte che proviamo a
-              toglierti di mezzo.
-            </p>
-          </Reveal>
-        </div>
+        <SectionHeading
+          label="perché iscriversi"
+          title="Smetti di rincorrere le date."
+          description="Il lavoro più ingrato del fare musica non è suonare: è convincere qualcuno a farti suonare. Questa è la parte che proviamo a toglierti di mezzo."
+        />
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 md:mt-16 lg:gap-6">
+        {/* Quattro card su due colonne, la griglia centrata nel contenitore.
+            Icona sopra e testo centrato: allineare a sinistra dentro una
+            sezione centrata spezzava l'asse verticale della pagina. */}
+        <div className="mx-auto mt-12 grid max-w-4xl gap-5 sm:grid-cols-2 md:mt-16 lg:gap-6">
           {BENEFITS.map((b, i) => (
             <Reveal key={b.title} delay={0.1 * (i + 1)}>
-              <article className="group flex h-full gap-5 rounded-2xl border border-palco-60 bg-white p-6 shadow-[var(--shadow-sm)] transition-[transform,box-shadow] duration-220 ease-[var(--ease-out)] hover:-translate-y-1 hover:shadow-[var(--shadow-md)] md:p-7">
-                <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg bg-azzurro-subtle text-azzurro transition-colors group-hover:bg-azzurro group-hover:text-white">
+              <article className="group flex h-full flex-col items-center rounded-2xl border border-palco-60 bg-white p-6 text-center shadow-[var(--shadow-sm)] transition-[transform,box-shadow] duration-220 ease-[var(--ease-out)] hover:-translate-y-1 hover:shadow-[var(--shadow-md)] md:p-8">
+                <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl bg-azzurro-subtle text-azzurro transition-colors group-hover:bg-azzurro group-hover:text-white">
                   {ICONS[b.icon]}
                 </span>
-                <div>
-                  <h3 className="text-balance font-display text-lg font-bold leading-tight text-notte md:text-xl">
-                    {b.title}
-                  </h3>
-                  <p className="mt-2 text-pretty text-sm leading-relaxed text-notte/70">
-                    {b.desc}
-                  </p>
-                </div>
+                <h3 className="mt-5 text-balance font-display text-lg font-bold leading-tight text-notte md:text-xl">
+                  {b.title}
+                </h3>
+                <p className="mt-2.5 text-pretty text-sm leading-relaxed text-notte/70">
+                  {b.desc}
+                </p>
               </article>
             </Reveal>
           ))}

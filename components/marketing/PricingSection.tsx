@@ -46,13 +46,16 @@ export function PricingSection({
               {label}
             </p>
           </Reveal>
+          {/* Stesse misure di SectionHeading (max-w-3xl / max-w-2xl e scala
+              4xl→5xl→6xl): la sezione piani sta in mezzo alle altre della
+              landing e con un titolo più stretto rompeva il ritmo centrato. */}
           <Reveal delay={0.1}>
-            <h2 className="display-xl max-w-2xl text-balance text-4xl text-white md:text-6xl">
+            <h2 className="display-xl max-w-3xl text-balance text-4xl text-white md:text-5xl lg:text-6xl">
               {title}
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
-            <p className="mt-4 max-w-xl text-pretty text-sm text-white/70 md:text-base">
+            <p className="mt-5 max-w-2xl text-pretty text-base text-white/70 md:text-lg">
               {description}
             </p>
           </Reveal>

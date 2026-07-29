@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { Check } from "lucide-react";
 import { ArtistApplicationForm } from "@/components/forms/ArtistApplicationForm";
 import { Reveal } from "@/components/animations/Reveal";
 import { Button } from "@/components/ui/Button";
 import { PageHero } from "@/components/marketing/PageHero";
+import { SectionHeading } from "@/components/marketing/SectionHeading";
 import { ArtistBenefits } from "@/components/marketing/ArtistBenefits";
 import { ArtistProfilePreview } from "@/components/marketing/ArtistProfilePreview";
 import { ArtistHowItWorks } from "@/components/marketing/ArtistHowItWorks";
@@ -140,25 +142,17 @@ export default async function CandidaturaPage() {
       {/* 8 — FAQ */}
       <section className="bg-[#F7F5F2] py-20 text-notte md:py-28">
         <div className="container-narte">
-          <div className="max-w-2xl">
-            <Reveal>
-              <p className="accent-label mb-3">dubbi legittimi</p>
-            </Reveal>
-            <Reveal delay={0.1}>
-              <h2 className="display-xl text-balance text-4xl text-notte md:text-6xl">
-                Le domande che ci fanno tutti.
-              </h2>
-            </Reveal>
-          </div>
+          <SectionHeading
+            label="dubbi legittimi"
+            title="Le domande che ci fanno tutti."
+          />
           <Reveal delay={0.2}>
-            {/* Allineato a sinistra con il titolo, non centrato: `mx-auto`
-                staccava la colonna delle domande dall'H2.
-                La prima aperta di default fa capire a colpo d'occhio che le
+            {/* La prima aperta di default fa capire a colpo d'occhio che le
                 righe si aprono, ed è anche l'obiezione numero uno. */}
             <FaqAccordion
               items={FAQ}
               defaultOpenId="costo"
-              className="mt-10 max-w-3xl md:mt-14"
+              className="mx-auto mt-10 max-w-3xl md:mt-14"
             />
           </Reveal>
         </div>
@@ -173,40 +167,47 @@ export default async function CandidaturaPage() {
           aria-hidden="true"
           className="hero-glow-ring pointer-events-none absolute left-1/2 top-0 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2"
         />
-        <div className="container-narte relative z-10 grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
-          <div>
-            <Reveal>
-              <p className="accent-label mb-3">candidatura</p>
-            </Reveal>
-            <Reveal delay={0.1}>
-              <h2 className="display-xl text-balance text-4xl md:text-6xl">
-                Mandaci due link e sentiamoci.
-              </h2>
-            </Reveal>
-            <Reveal delay={0.2}>
-              <p className="mt-5 max-w-md text-pretty text-base text-muted-foreground md:text-lg">
+        <div className="container-narte relative z-10">
+          <SectionHeading
+            label="candidatura"
+            title="Mandaci due link e sentiamoci."
+            description={
+              <>
                 Non serve un press kit, non serve un disco fuori. Serve qualcosa
                 da ascoltare. Le candidature le leggiamo a mano, una per una, e
                 rispondiamo a tutti via email — anche quando la risposta è no.
-              </p>
-            </Reveal>
-            <Reveal delay={0.3}>
-              <ul className="mt-8 space-y-2 text-sm text-muted-foreground">
-                <li>· Iscrizione gratuita, nessuna carta richiesta</li>
-                <li>· Nessuna esclusiva: continui a suonare dove vuoi</li>
-                <li>· Il cachet lo decidi tu</li>
-              </ul>
-            </Reveal>
-          </div>
+              </>
+            }
+          />
+
+          {/* Le tre rassicurazioni sopra il form, non accanto: sono l'ultima
+              obiezione da togliere prima che qualcuno inizi a scrivere. */}
+          <Reveal delay={0.25}>
+            <ul className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-2.5">
+              {[
+                "Iscrizione gratuita, nessuna carta",
+                "Nessuna esclusiva",
+                "Il cachet lo decidi tu",
+              ].map((t) => (
+                <li
+                  key={t}
+                  className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-card px-3.5 py-1.5 text-xs text-muted-foreground md:text-sm"
+                >
+                  <Check aria-hidden="true" className="size-3.5 shrink-0 text-accent" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
 
           <Reveal delay={0.15}>
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-lg)] md:p-8">
-              <h3 className="font-display text-2xl md:text-3xl">
+            <div className="mx-auto mt-10 max-w-xl rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-lg)] md:mt-12 md:p-8">
+              <h3 className="text-center font-display text-2xl md:text-3xl">
                 Inviaci la tua candidatura
               </h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Dopo la revisione ricevi un&rsquo;email per completare il profilo e
-                gestire le disponibilità.
+              <p className="mt-2 text-center text-sm text-muted-foreground">
+                Dopo la revisione ricevi un&rsquo;email per completare il profilo
+                e gestire le disponibilità.
               </p>
               <div className="mt-6">
                 <ArtistApplicationForm genreOptions={genreOptions} />
