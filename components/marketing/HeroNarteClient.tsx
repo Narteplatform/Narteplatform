@@ -177,11 +177,18 @@ export function HeroNarteClient() {
         >
           {/* Space Grotesk arriva a 700: font-black (900) e italic non hanno un
               taglio reale, il browser li sintetizzerebbe. L'accento è il colore. */}
+          {/* Una frase sola spezzata in due righe: alla scala della hero non
+              sta su una riga, e il taglio va tenuto qui e non lasciato al
+              browser, che a certe larghezze manderebbe a capo dopo "per". */}
+          {/* Lo spazio in coda serve al testo accessibile: le due righe sono
+              `block`, e senza di lui l'h1 viene annunciato "…idealeper il tuo
+              evento". A schermo non si vede, uno spazio a fine riga si
+              collassa. */}
           <span className="block text-5xl font-bold text-palco sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-            Cento artisti.
+            L&rsquo;artista ideale{" "}
           </span>
           <span className="mt-2 block text-5xl font-bold text-azzurro-light sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-            La tua serata.
+            per il tuo evento
           </span>
         </motion.h1>
 
@@ -191,8 +198,8 @@ export function HeroNarteClient() {
           {...titleAnim(0.2)}
           className="mt-5 max-w-2xl text-pretty text-base text-palco/75 md:text-lg"
         >
-          Cerca per genere, città e data. Guarda i video, leggi il cachet,
-          controlla le sere libere. Poi scrivi.
+          Cerca tra centinaia di artisti per genere, tipologia e disponibilità e
+          contattali per la tua serata!
         </motion.p>
 
         {/* Search bar */}
