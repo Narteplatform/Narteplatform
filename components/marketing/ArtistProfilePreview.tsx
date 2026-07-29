@@ -10,13 +10,12 @@ import { PROFILE_ANNOTATIONS } from "@/lib/content/artist-landing";
  * artista senza montare BookingCalendar (client, ~650 righe, con fetch) né
  * toccare il database per una sezione che deve solo far vedere la forma.
  *
- * Mockup al centro e annotazioni sotto, non affiancate: con la scheda in
- * colonna restavano trecento pixel di vuoto accanto al testo, e su mobile la
- * lista finiva comunque sotto. Così l'impaginazione è la stessa a ogni
- * larghezza.
+ * Unica sezione asimmetrica della landing: annotazioni a sinistra e scheda
+ * spostata a destra. L'intestazione resta centrata come le altre, così lo
+ * stacco si legge come una scelta e non come un allineamento sbagliato.
  *
  * I numerini sulla scheda sono `aria-hidden`: il significato lo porta la lista
- * numerata, che è testo vero.
+ * numerata accanto, che è testo vero.
  */
 export function ArtistProfilePreview() {
   return (
@@ -28,9 +27,40 @@ export function ArtistProfilePreview() {
           description="Questo è quello che vede un organizzatore quando ti trova. Un link solo, da mandare anche fuori da qui."
         />
 
-        {/* MOCKUP */}
-        <Reveal delay={0.15}>
-          <div className="relative mx-auto mt-12 w-full max-w-[19rem] rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-lg)] md:mt-16">
+        {/* Intestazione centrata come le altre sezioni, contenuto su due
+            colonne: annotazioni a sinistra, scheda spostata a destra. */}
+        <div className="mt-12 grid gap-12 md:mt-16 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-16">
+          {/* ANNOTAZIONI. Su mobile stanno sotto la scheda (order-2): prima si
+              guarda com'è fatta una pagina, poi si legge perché. */}
+          {/* justify-self-center a ogni larghezza: da lg riduce lo stacco fra
+              i bullet e la scheda che numerano, e sotto lg centra il blocco
+              come la scheda invece di lasciarlo appeso a sinistra. */}
+          <ol className="order-2 max-w-xl justify-self-center space-y-8 lg:order-1">
+            {PROFILE_ANNOTATIONS.map((a, i) => (
+              <li key={a.title}>
+                <Reveal delay={0.1 * (i + 1)} className="flex gap-4">
+                  <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-accent font-display text-sm font-bold tabular-nums text-accent-foreground">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-balance font-display text-lg font-bold leading-tight">
+                      {a.title}
+                    </h3>
+                    <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground md:text-base">
+                      {a.desc}
+                    </p>
+                  </div>
+                </Reveal>
+              </li>
+            ))}
+          </ol>
+
+          {/* MOCKUP */}
+          <Reveal
+            delay={0.15}
+            className="order-1 lg:order-2 lg:justify-self-end lg:translate-x-4 xl:translate-x-8"
+          >
+            <div className="relative mx-auto w-full max-w-[19rem] rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-lg)]">
             {/* Cover */}
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-gradient-to-br from-azzurro/35 via-notte-60 to-corallo/25">
               {/* Il posto della foto: senza un segno al centro il riquadro
@@ -115,28 +145,7 @@ export function ArtistProfilePreview() {
             </div>
           </div>
         </Reveal>
-
-        {/* ANNOTAZIONI */}
-        <ol className="mx-auto mt-12 grid max-w-5xl gap-8 sm:grid-cols-2 md:mt-16 lg:grid-cols-4 lg:gap-6">
-          {PROFILE_ANNOTATIONS.map((a, i) => (
-            <li key={a.title}>
-              <Reveal
-                delay={0.1 * (i + 1)}
-                className="flex flex-col items-center text-center"
-              >
-                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-accent font-display text-sm font-bold tabular-nums text-accent-foreground">
-                  {i + 1}
-                </span>
-                <h3 className="mt-4 text-balance font-display text-lg font-bold leading-tight">
-                  {a.title}
-                </h3>
-                <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-                  {a.desc}
-                </p>
-              </Reveal>
-            </li>
-          ))}
-        </ol>
+        </div>
       </div>
     </section>
   );
