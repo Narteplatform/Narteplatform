@@ -27,6 +27,9 @@ const EXPORTABLE = [
   "SUPERADMIN_EMAIL",
   "ADMIN_NOTIFICATION_EMAIL",
   "NEXT_PUBLIC_SITE_URL",
+  // Senza questa, le statistiche del piano Max restano a zero in produzione:
+  // il tracking delle visite fallisce chiuso quando il salt manca.
+  "VISIT_HASH_SALT",
 ];
 
 if (!existsSync(ENV_FILE)) {
