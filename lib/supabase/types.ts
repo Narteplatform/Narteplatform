@@ -24,6 +24,11 @@ export type SubscriptionStatus =
   | "unpaid"
   | "paused";
 export type BillingInterval = "month" | "year";
+/**
+ * Ruolo di chi ha visitato un profilo artista, al momento della visita.
+ * Non esiste 'superadmin': le visite del team non vengono proprio registrate.
+ */
+export type ProfileViewViewerKind = "anon" | "user" | "artist" | "organizer";
 export type EventCategory =
   | "music"
   | "clubs"
@@ -1247,6 +1252,48 @@ export interface Database {
         };
         Relationships: [];
       };
+      artist_profile_views: {
+        Row: {
+          artist_id: string;
+          viewed_on: string;
+          visitor_hash: string;
+          viewer_kind: ProfileViewViewerKind;
+          first_seen_at: string;
+        };
+        Insert: {
+          artist_id: string;
+          viewed_on: string;
+          visitor_hash: string;
+          viewer_kind?: ProfileViewViewerKind;
+          first_seen_at?: string;
+        };
+        Update: {
+          artist_id?: string;
+          viewed_on?: string;
+          visitor_hash?: string;
+          viewer_kind?: ProfileViewViewerKind;
+          first_seen_at?: string;
+        };
+        Relationships: [];
+      };
+      artist_favorites: {
+        Row: {
+          user_id: string;
+          artist_id: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          artist_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          artist_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       booking_requests_public: {
@@ -1312,6 +1359,20 @@ export interface Database {
         Args: { p_booking_id: string; p_reason: string };
         Returns: Json;
       };
+      record_artist_profile_view: {
+        Args: {
+          p_slug: string;
+          p_visitor_hash: string;
+          p_viewer_kind: ProfileViewViewerKind;
+          p_viewer_user_id?: string | null;
+        };
+        /** `true` se la visita è stata registrata, `false` se scartata o duplicata. */
+        Returns: boolean;
+      };
+      artist_view_stats: {
+        Args: { p_artist_id: string; p_days: number };
+        Returns: { day: string; organizer_views: number; other_views: number }[];
+      };
     };
     Enums: {
       role_enum: Role;
@@ -1328,6 +1389,7 @@ export interface Database {
       artist_path_enum: ArtistPath;
       subscription_status_enum: SubscriptionStatus;
       billing_interval_enum: BillingInterval;
+      profile_view_viewer_kind: ProfileViewViewerKind;
     };
     CompositeTypes: { [_ in never]: never };
   };

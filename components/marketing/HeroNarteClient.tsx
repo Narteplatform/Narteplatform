@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Search, ChevronDown } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import { NARTE_STATS } from "@/lib/content/stats";
 import type { SearchHit } from "@/app/api/search/route";
 
@@ -292,8 +293,9 @@ export function HeroNarteClient() {
                               ) : null}
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate font-display text-sm">
-                                {h.title}
+                              <span className="flex items-center gap-1.5">
+                                <span className="truncate font-display text-sm">{h.title}</span>
+                                <ArtistTierBadges tier={h.tier} compact className="shrink-0" />
                               </span>
                               {h.subtitle && (
                                 <span className="block truncate text-xs text-notte/55">

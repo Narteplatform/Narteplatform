@@ -152,6 +152,11 @@ export const config = {
     // webhook che non risponde entro ~20s, ritentandolo.
     // `webmanifest` escluso come le immagini: il manifest della PWA admin è un
     // file statico e non deve pagare un getUser() Supabase a ogni fetch.
-    "/((?!_next/static|_next/image|favicon.ico|api/health|api/stripe|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|webmanifest)$).*)",
+    // `api/artists/view` escluso: il beacon delle visite legge già la sessione
+    // nell'handler, e farla rileggere qui raddoppierebbe il costo di una
+    // chiamata che parte a ogni apertura di profilo. Effetto collaterale noto e
+    // accettato: se il token scade proprio in quell'istante non viene
+    // rinfrescato e quella singola visita risulta anonima.
+    "/((?!_next/static|_next/image|favicon.ico|api/health|api/stripe|api/artists/view|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|webmanifest)$).*)",
   ],
 };

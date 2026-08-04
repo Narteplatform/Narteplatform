@@ -199,7 +199,7 @@ export default async function AbbonamentoPage({
           ) : (
             <p className="text-sm text-muted-foreground">
               Stai usando il piano gratuito. Passa a Pro per la chat con gli organizzatori, le
-              recensioni e il badge Verificato.
+              recensioni e il badge Verificato N&rsquo;arte.
             </p>
           )}
 

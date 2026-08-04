@@ -1,7 +1,8 @@
 "use client";
 
 import { Heart } from "lucide-react";
-import { useFavorites, type FavoriteArtist } from "@/lib/favorites";
+import { useFavorites } from "@/components/favorites/FavoritesProvider";
+import type { FavoriteArtist } from "@/lib/favorites/types";
 
 type Variant = "default" | "card" | "hero";
 

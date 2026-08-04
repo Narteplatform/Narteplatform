@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getPublicEvents } from "@/lib/data/events";
 import { EventCard } from "@/components/marketing/EventCard";
 import { PageHero } from "@/components/marketing/PageHero";
+import { heroImageFor } from "@/lib/content/hero-images";
 import { StaggerList, Reveal } from "@/components/animations/Reveal";
 
 const CATEGORIES = [
@@ -63,6 +64,7 @@ export default async function EventiPage({
   return (
     <>
       <PageHero
+        image={heroImageFor("eventi")}
         label="cosa succede"
         title="Eventi"
         description={

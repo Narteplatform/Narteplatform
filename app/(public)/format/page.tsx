@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
+import { heroImageFor } from "@/lib/content/hero-images";
 import { FormatInterestForm } from "@/components/marketing/FormatInterestForm";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +55,7 @@ export default async function FormatPage() {
   return (
     <>
       <PageHero
+        image={heroImageFor("format")}
         label="format"
         title="I format"
         description={

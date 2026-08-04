@@ -22,6 +22,7 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PlanBadge } from "@/components/billing/PlanBadge";
+import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 
 export const metadata = { title: "Dashboard — N'arte" };
@@ -127,7 +128,14 @@ export default async function ArtistOverviewPage() {
         greeting="Bentornato"
         name={artist.stage_name}
         avatarUrl={artist.cover_image}
-        badge={<PlanBadge tier={artist.tier} />}
+        badge={
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <PlanBadge tier={artist.tier} />
+            {/* Gli stessi badge che vede l'organizzatore sul profilo pubblico:
+                l'artista deve poter verificare cosa sta comprando. */}
+            <ArtistTierBadges tier={artist.tier} compact />
+          </span>
+        }
         description={heroDescription}
         primary={{
           label: "Pagina pubblica",

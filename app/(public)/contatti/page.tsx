@@ -2,6 +2,7 @@ import { Mail, Instagram, MapPin } from "lucide-react";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
+import { heroImageFor } from "@/lib/content/hero-images";
 
 export const metadata = { title: "Contatti — N'arte" };
 
@@ -9,6 +10,7 @@ export default function ContattiPage() {
   return (
     <>
       <PageHero
+        image={heroImageFor("contatti")}
         label="contatti"
         title="Parliamone."
         description={

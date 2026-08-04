@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
+import { heroImageFor } from "@/lib/content/hero-images";
 import { PlanComparison } from "@/components/billing/PlanComparison";
 import { Button } from "@/components/ui/Button";
 
@@ -14,6 +15,7 @@ export default function PrezziPage() {
   return (
     <>
       <PageHero
+        image={heroImageFor("prezzi")}
         label="piani e prezzi"
         title={
           <>
@@ -73,11 +75,21 @@ export default function PrezziPage() {
                 </div>
 
                 <div>
-                  <p className="font-medium">Come funziona il badge Verificato?</p>
+                  <p className="font-medium">Come funziona il badge Verificato N&rsquo;arte?</p>
                   <p className="mt-1 text-muted-foreground">
-                    Pro e Max sbloccano la <em>richiesta</em> di verifica: è il team N&rsquo;arte a
-                    valutarla e concederla. Un badge che si compra non verificherebbe nulla, e agli
-                    organizzatori serve potersi fidare.
+                    È incluso in Pro e Max e compare sul profilo appena attivi il piano: non devi
+                    richiederlo né aspettare un&rsquo;approvazione. Dice agli organizzatori che
+                    dietro il profilo c&rsquo;è un artista che sta lavorando sul serio. Con Max hai
+                    anche l&rsquo;etichetta <strong>TOP Artist</strong> e la fascia in evidenza in
+                    cima alla pagina Artisti.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-medium">Cosa vuol dire &ldquo;ti candidiamo a 2 eventi al mese&rdquo;?</p>
+                  <p className="mt-1 text-muted-foreground">
+                    Sul piano Max ci pensiamo noi: ogni mese il team ti propone ad almeno due eventi
+                    N&rsquo;arte in linea con il tuo profilo. Non devi cercarli né candidarti tu.
                   </p>
                 </div>
 

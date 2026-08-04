@@ -11,16 +11,32 @@ async function getStars(limit = 8): Promise<ArtistCardProps[]> {
     const supabase = createAdminClient();
     const { data } = await supabase
       .from("artists")
-      .select("slug, stage_name, city, cover_image, genre")
+      .select("id, slug, stage_name, city, cover_image, genre, tier")
+      // ⚠️  `is_public` NON è opzionale: è la colonna generata
+      //     (status='approved' and not plan_suspended, 0043) che decide chi
+      //     esiste sul sito pubblico. Senza, la home mostrerebbe profili non
+      //     approvati o sospesi per piano, con un link che porta a 404 — la
+      //     pagina più visitata del sito che manda le persone nel vuoto.
       .eq("is_public", true)
+      // Stesso ranking della pagina /artisti: `artist_tier_enum` è dichiarato
+      // ('free','pro','max') e Postgres ordina gli enum per ordine di
+      // dichiarazione, quindi `desc` è già max → pro → free.
+      //
+      // ⚠️  Con `limit` a 8, quando gli artisti Pro/Max saranno almeno otto
+      //     questa vetrina smetterà di mostrare i Free e di ruotare all'arrivo
+      //     di nuovi iscritti. È voluto: la home è la prima superficie in cui
+      //     l'abbonamento deve valere qualcosa.
+      .order("tier", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(limit);
     return (data ?? []).map((a) => ({
+      artistId: a.id,
       slug: a.slug,
       stageName: a.stage_name,
       city: a.city,
       coverImage: a.cover_image,
       genres: a.genre,
+      tier: a.tier,
     }));
   } catch {
     return [];

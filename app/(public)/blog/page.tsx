@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
+import { heroImageFor } from "@/lib/content/hero-images";
 
 export const metadata: Metadata = {
   title: "Blog — N'arte",
@@ -41,6 +42,7 @@ export default async function BlogIndexPage() {
   return (
     <>
       <PageHero
+        image={heroImageFor("blog")}
         label="blog"
         title="Blog"
         description={

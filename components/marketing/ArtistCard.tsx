@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Lock, MapPin } from "lucide-react";
-import type { PriceBand } from "@/lib/supabase/types";
+import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
 import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
+import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 
 const PRICE_SYMBOL: Record<PriceBand, string> = {
   budget: "€",
@@ -35,6 +36,18 @@ export type ArtistCardProps = {
   canSeePrice?: boolean;
   isGuest?: boolean;
   category?: string | null;
+  /**
+   * Piano dell'artista: decide i badge "Verificato N'arte" e "TOP Artist".
+   * Chi non lo passa non mostra badge — è il caso delle superfici che non
+   * selezionano `tier` dal DB.
+   */
+  tier?: ArtistTier | null;
+  /**
+   * Id dell'artista, necessario per salvarlo nei preferiti di un utente
+   * autenticato: la riga a database è (user_id, artist_id). Senza, il cuore
+   * continua a funzionare per gli ospiti (che salvano per slug nel browser).
+   */
+  artistId?: string;
 };
 
 export function ArtistCard({
@@ -47,6 +60,8 @@ export function ArtistCard({
   canSeePrice = false,
   isGuest = false,
   category = null,
+  tier = null,
+  artistId,
 }: ArtistCardProps) {
   const href = `/artisti/${slug}`;
   return (
@@ -74,6 +89,17 @@ export function ArtistCard({
         )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-notte via-notte/20 to-transparent" />
 
+        {/* Badge di piano in alto a sinistra: il lato destro è occupato dal
+            cuore dei preferiti. Restano visibili anche ai guest — sono il
+            motivo per cui vale la pena iscriversi, non un dettaglio da
+            nascondere dietro il blur. */}
+        <ArtistTierBadges
+          tier={tier}
+          compact
+          onImage
+          className="pointer-events-none absolute left-3 top-3 z-10 max-w-[calc(100%-4rem)]"
+        />
+
         {isGuest && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <span
@@ -87,7 +113,14 @@ export function ArtistCard({
 
         {!isGuest && (
           <FavoriteToggle
-            artist={{ slug, stage_name: stageName, cover_image: coverImage, city }}
+            artist={{
+              id: artistId,
+              slug,
+              stage_name: stageName,
+              cover_image: coverImage,
+              city,
+              tier,
+            }}
             variant="card"
           />
         )}

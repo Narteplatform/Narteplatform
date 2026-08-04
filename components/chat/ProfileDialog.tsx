@@ -5,6 +5,7 @@ import { ExternalLink, Globe, Instagram, MapPin, Music2, Phone, X } from "lucide
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import type { ChatPartyMeta } from "@/lib/chat/queries";
 
 export function ProfileDialog({
@@ -50,7 +51,12 @@ export function ProfileDialog({
           <div className="flex items-center gap-4">
             <Avatar src={p.avatarUrl} name={p.name} size="lg" />
             <div className="min-w-0">
-              <div className="font-display text-xl text-notte truncate">{p.name}</div>
+              <div className="flex items-center gap-2">
+                <div className="font-display text-xl text-notte truncate">{p.name}</div>
+                {isArtist && (
+                  <ArtistTierBadges tier={meta.artist.tier} compact className="shrink-0" />
+                )}
+              </div>
               {isArtist ? (
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   {meta.artist.city && (

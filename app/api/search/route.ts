@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import type { ArtistTier } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,8 @@ export type SearchHit = {
   title: string;
   subtitle: string | null;
   image: string | null;
+  /** Solo sugli artisti: alimenta i badge Verificato / TOP nella tendina. */
+  tier?: ArtistTier | null;
 };
 
 export async function GET(request: Request) {
@@ -27,7 +30,7 @@ export async function GET(request: Request) {
     // deve decidere CHI entra nei 5, non solo come sono ordinati.
     supabase
       .from("artists")
-      .select("slug, stage_name, city, cover_image, genre, status")
+      .select("slug, stage_name, city, cover_image, genre, tier")
       .eq("is_public", true)
       .or(`stage_name.ilike.${like},city.ilike.${like}`)
       .order("tier", { ascending: false })
@@ -47,6 +50,7 @@ export async function GET(request: Request) {
       title: a.stage_name,
       subtitle: [a.city, (a.genre ?? []).slice(0, 2).join(" / ")].filter(Boolean).join(" · "),
       image: a.cover_image,
+      tier: a.tier,
     })),
     ...(events ?? []).map((e) => ({
       type: "event" as const,

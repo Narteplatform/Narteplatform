@@ -9,7 +9,7 @@ import type { EventCardProps } from "@/components/marketing/EventCard";
 
 /** Destinazione unica: le anteprime sono una porta sull'archivio, non scorciatoie ai singoli eventi. */
 const ARCHIVE_HREF = "/eventi?when=past";
-const PREVIEW_COUNT = 4;
+const PREVIEW_COUNT = 2;
 
 /**
  * Prova sociale per chi organizza: le serate che abbiamo già fatto.
@@ -18,9 +18,11 @@ const PREVIEW_COUNT = 4;
  * il calendario non aveva date future — e una fascia vuota in home dice
  * l'esatto contrario di quello che questa pagina deve dire.
  *
- * Le quattro anteprime portano TUTTE all'archivio, non al proprio evento: per
- * questo hanno l'etichetta in hover e un aria-label che dichiara dove si va,
- * altrimenti il titolo sulla card prometterebbe una destinazione diversa.
+ * Due locandine e non quattro: a parità di spazio si vedono più grandi, e la
+ * colonna delle immagini finisce per specchiare la colonna del testo invece di
+ * sovrastarla. Entrambe portano all'archivio, non al proprio evento: per questo
+ * hanno l'etichetta in hover e un aria-label che dichiara dove si va, altrimenti
+ * il titolo sulla card prometterebbe una destinazione diversa.
  */
 export async function PastEventsSection() {
   const events = await getPublicEvents({ when: "past", limit: PREVIEW_COUNT });
@@ -32,7 +34,9 @@ export async function PastEventsSection() {
 
   return (
     <section className="border-t border-border py-20 md:py-28">
-      <div className="container-narte grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-center lg:gap-16">
+      {/* Due colonne di uguale larghezza: il blocco delle locandine specchia
+          quello del testo invece di sbilanciare la sezione verso destra. */}
+      <div className="container-narte grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
         {/* COPY */}
         <div>
           <Reveal>
@@ -59,11 +63,12 @@ export async function PastEventsSection() {
           </Reveal>
         </div>
 
-        {/* ANTEPRIME. La larghezza è limitata da lg in su: a piena colonna due
-            righe di locandine 3:4 diventano alte il doppio del testo accanto e
-            lasciano trecento pixel di vuoto sopra e sotto il titolo. */}
-        <Reveal delay={0.15} className="lg:w-[27rem] lg:justify-self-end">
-          <ul className="grid grid-cols-2 gap-4 md:gap-5">
+        {/* ANTEPRIME. Nessun vincolo di larghezza: con due sole locandine su
+            una riga l'altezza resta vicina a quella del testo accanto, e la
+            colonna può occupare tutta la sua metà. Era il problema che la
+            vecchia griglia 2×2 doveva contenere con un max-width fisso. */}
+        <Reveal delay={0.15}>
+          <ul className="grid grid-cols-2 gap-5 md:gap-6">
             {events.map((e) => (
               <li key={e.slug}>
                 <ArchiveTile event={e} />
@@ -115,13 +120,15 @@ function ArchiveTile({ event }: { event: EventCardProps }) {
         </div>
       </div>
 
-      <p className="mt-2.5 text-xs uppercase tracking-wide text-muted-foreground">
+      {/* Tipografia di un gradino più alta della griglia 2×2 precedente: con
+          locandine grandi il doppio, il testo di prima sembrerebbe una didascalia. */}
+      <p className="mt-3 text-sm uppercase tracking-wide text-muted-foreground">
         {formatEventDate(date)}
       </p>
-      <p className="mt-0.5 line-clamp-2 text-balance font-display text-sm leading-tight transition-colors group-hover:text-accent md:text-base">
+      <p className="mt-1 line-clamp-2 text-balance font-display text-base leading-tight transition-colors group-hover:text-accent md:text-lg">
         {title}
       </p>
-      <p className="mt-0.5 text-xs text-muted-foreground">{city}</p>
+      <p className="mt-0.5 text-sm text-muted-foreground">{city}</p>
     </Link>
   );
 }

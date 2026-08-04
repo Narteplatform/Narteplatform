@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ArrowRight, MessageCircle, Phone } from "lucide-react";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
+import { heroImageFor } from "@/lib/content/hero-images";
 import { CategoryIcon } from "@/lib/help/icons";
 import { HelpSearch } from "@/components/help/HelpSearch";
 import { HELP_CATEGORIES, popularArticles } from "@/lib/help/content";
@@ -23,6 +24,7 @@ export default function HelpHomePage() {
   return (
     <div className="bg-background pb-24">
       <PageHero
+        image={heroImageFor("help")}
         label="aiuto"
         title="Aiuto"
         description={

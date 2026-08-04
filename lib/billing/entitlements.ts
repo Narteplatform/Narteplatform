@@ -2,12 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveActiveArtist } from "@/lib/artist/current";
 import type { ArtistTier } from "@/lib/supabase/types";
-import {
-  ENTITLEMENTS,
-  entitlementsFor,
-  isUnlimited,
-  type Entitlements,
-} from "@/lib/billing/plans";
+import { entitlementsFor, isUnlimited, type Entitlements } from "@/lib/billing/plans";
 
 /**
  * Lettura degli entitlement e enforcement dei limiti di piano, lato server.
@@ -19,8 +14,8 @@ import {
  * `artists` passa già da service role (che bypassa RLS per definizione), quindi
  * il confine reale è la Server Action, non la policy. Duplicare la matrice in
  * SQL creerebbe due fonti di verità destinate a divergere al primo cambio di
- * listino. Le due eccezioni — tetto video e quota candidature — sono
- * documentate in plans.ts e hanno un trigger dedicato.
+ * listino. L'unica eccezione — il tetto dei profili artista, che ha una race
+ * chiudibile solo da un trigger — è documentata in plans.ts.
  */
 
 type ArtistTierRow = { tier: ArtistTier | null };
@@ -222,15 +217,6 @@ export async function checkMonthlyQuota(
   };
 }
 
-/**
- * Regola di visibilità del badge, in un posto solo.
- *
- * Il piano Max dà diritto a RICHIEDERE la verifica, non a ottenerla: un badge
- * "Verificato" che si compra non verifica nulla, e verso gli organizzatori
- * sarebbe una dichiarazione fuorviante. La concessione resta del superadmin.
- * Se il cliente decidesse per l'auto-assegnazione, questa è l'unica riga da
- * cambiare: `return ent.verifiedBadgeEligible`.
- */
-export function canShowVerifiedBadge(tier: ArtistTier, isVerified: boolean): boolean {
-  return ENTITLEMENTS[tier]?.verifiedBadgeEligible === true && isVerified;
-}
+// La regola dei badge "Verificato N'arte" / "TOP Artist" NON vive qui: sta in
+// lib/billing/plans.ts (`hasVerifiedBadge`, `hasTopArtistBadge`). Questo modulo
+// è `server-only`, mentre i badge vanno renderizzati anche da Client Component.

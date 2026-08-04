@@ -2,7 +2,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { PageHero } from "@/components/marketing/PageHero";
 import { ArtistsExplorer } from "@/components/marketing/ArtistsExplorer";
-import type { PriceBand } from "@/lib/supabase/types";
+import { heroImageFor } from "@/lib/content/hero-images";
+import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
 
 export const metadata = { title: "Artisti — N'arte" };
 
@@ -17,7 +18,7 @@ export default async function ArtistiPage() {
     genre: string[] | null;
     instruments?: string[] | null;
     price_band?: PriceBand | null;
-    tier?: string | null;
+    tier?: ArtistTier | null;
   };
   let rows: ArtistRow[] = [];
   {
@@ -60,12 +61,17 @@ export default async function ArtistiPage() {
     genre: (a.genre ?? []) as string[],
     instruments: (a.instruments ?? []) as string[],
     price_band: (a.price_band ?? "standard") as PriceBand,
-    tier: (a.tier ?? "standard") as string,
+    // `free` e non `"standard"`: quello è un valore di price_band_enum, copiato
+    // per errore dalla riga sopra. Nel ramo di fallback qui sotto la select non
+    // chiede `tier`, quindi il default arriva davvero a destinazione — e con
+    // "standard" nessun artista sarebbe più né TOP né Verificato.
+    tier: (a.tier ?? "free") as ArtistTier,
   }));
 
   return (
     <>
       <PageHero
+        image={heroImageFor("artisti")}
         label="roster"
         title="Gli artisti"
         description={

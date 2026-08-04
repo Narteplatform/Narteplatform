@@ -4,6 +4,7 @@ import { ArtistApplicationForm } from "@/components/forms/ArtistApplicationForm"
 import { Reveal } from "@/components/animations/Reveal";
 import { Button } from "@/components/ui/Button";
 import { PageHero } from "@/components/marketing/PageHero";
+import { heroImageFor } from "@/lib/content/hero-images";
 import { SectionHeading } from "@/components/marketing/SectionHeading";
 import { ArtistBenefits } from "@/components/marketing/ArtistBenefits";
 import { ArtistProfilePreview } from "@/components/marketing/ArtistProfilePreview";
@@ -74,6 +75,7 @@ export default async function CandidaturaPage() {
 
       {/* 1 — HERO */}
       <PageHero
+        image={heroImageFor("candidatura-artista")}
         label="per gli artisti"
         title="Sei un artista?"
         description={

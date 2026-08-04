@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
+import { heroImageFor } from "@/lib/content/hero-images";
 import { MilestonesTimeline } from "@/components/marketing/MilestonesTimeline";
 import { Button } from "@/components/ui/Button";
 import { MILESTONES } from "@/lib/content/milestones";
@@ -13,6 +14,7 @@ export default function ChiSiamoPage() {
   return (
     <>
       <PageHero
+        image={heroImageFor("chi-siamo")}
         label="chi siamo"
         title="Chi siamo"
         description={

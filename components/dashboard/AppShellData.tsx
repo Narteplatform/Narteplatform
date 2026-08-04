@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Building2,
   CalendarDays,
   ClipboardList,
@@ -27,7 +28,7 @@ import { NarteLogo } from "@/components/layout/NarteLogo";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getArtistContext, type OwnedArtist } from "@/lib/artist/current";
 import { getAccountEntitlements } from "@/lib/billing/entitlements";
-import { isUnlimited } from "@/lib/billing/plans";
+import { entitlementsFor, isUnlimited } from "@/lib/billing/plans";
 import type { ArtistTier } from "@/lib/supabase/types";
 import { ArtistProfileSwitcher } from "@/components/dashboard/ArtistProfileSwitcher";
 import { getAllowedAdminPages, isRootSuperadminEmail } from "@/lib/admin/permissions";
@@ -428,6 +429,18 @@ async function loadArtistShell(userId: string): Promise<{
       icon: <CreditCard className="size-4" />,
     },
   ];
+
+  // Le statistiche sono un'esclusiva del piano Max. La voce compare solo a chi
+  // ce l'ha: chi non ce l'ha e arriva sull'URL trova comunque una pagina che
+  // spiega cosa si sta perdendo, non un 404 (vedi la pagina stessa).
+  // `accountEnt` è già stato risolto sopra: nessuna query in più.
+  if (activeArtist && entitlementsFor(activeArtist.tier ?? "free").stats !== "none") {
+    navSections.splice(navSections.length - 1, 0, {
+      href: "/dashboard/statistiche",
+      label: "Statistiche",
+      icon: <BarChart3 className="size-4" />,
+    });
+  }
 
   let storage: AppShellStorage | undefined;
   if (artist) {

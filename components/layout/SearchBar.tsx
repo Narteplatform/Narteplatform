@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import type { SearchHit } from "@/app/api/search/route";
 
 type SearchBarProps = {
@@ -174,7 +175,10 @@ function HitRow({ hit, onSelect }: { hit: SearchHit; onSelect: () => void }) {
           ) : null}
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block font-display text-sm">{hit.title}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="truncate font-display text-sm">{hit.title}</span>
+            <ArtistTierBadges tier={hit.tier} compact className="shrink-0" />
+          </span>
           {hit.subtitle && (
             <span className="block truncate text-xs text-muted-foreground">{hit.subtitle}</span>
           )}

@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import type { ChatMessageKind, ChatOfferStatus, Role } from "@/lib/supabase/types";
+import type { ArtistTier, ChatMessageKind, ChatOfferStatus, Role } from "@/lib/supabase/types";
 
 export type ChatViewerRole = "artist" | "organizer" | "superadmin";
 
@@ -55,6 +55,8 @@ export type ChatPartyMeta = {
     name: string;
     avatarUrl: string | null;
     slug: string;
+    /** Piano dell'artista: alimenta i badge Verificato / TOP nel dialog profilo. */
+    tier?: ArtistTier | null;
     bio?: string | null;
     city?: string | null;
     genre?: string[] | null;
@@ -258,7 +260,7 @@ export async function getConversationMeta(conversationId: string): Promise<ChatP
   const { data } = await admin
     .from("conversations")
     .select(
-      "id, artist_id, organizer_id, artists!inner(id, stage_name, slug, cover_image, user_id, bio, city, genre, social_links), organizers!inner(id, display_name, avatar_url, user_id, bio, is_brand, phone, instagram, website)",
+      "id, artist_id, organizer_id, artists!inner(id, stage_name, slug, cover_image, user_id, bio, city, genre, social_links, tier), organizers!inner(id, display_name, avatar_url, user_id, bio, is_brand, phone, instagram, website)",
     )
     .eq("id", conversationId)
     .maybeSingle();
@@ -275,6 +277,7 @@ export async function getConversationMeta(conversationId: string): Promise<ChatP
         city: string | null;
         genre: string[] | null;
         social_links: { instagram?: string; spotify?: string; website?: string } | null;
+        tier: ArtistTier | null;
       };
     }
   ).artists;
@@ -303,6 +306,7 @@ export async function getConversationMeta(conversationId: string): Promise<ChatP
       name: a.stage_name,
       avatarUrl: a.cover_image,
       slug: a.slug,
+      tier: a.tier ?? null,
       bio: a.bio ?? null,
       city: a.city ?? null,
       genre: a.genre ?? null,

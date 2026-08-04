@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPublicEvents } from "@/lib/data/events";
 import { StaggerList, Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
+import { heroImageFor } from "@/lib/content/hero-images";
 import { EventCard } from "@/components/marketing/EventCard";
 import { LogoMarquee, type CollabLogo } from "@/components/marketing/LogoMarquee";
 
@@ -42,6 +43,7 @@ export default async function CollaborazioniPage() {
   return (
     <>
       <PageHero
+        image={heroImageFor("collaborazioni")}
         label="collaborazioni"
         title="Collaborazioni"
         description={

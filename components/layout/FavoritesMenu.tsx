@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Heart, X, MapPin } from "lucide-react";
-import { useFavorites } from "@/lib/favorites";
+import { useFavorites } from "@/components/favorites/FavoritesProvider";
 
 export function FavoritesMenu() {
   const { items, hydrated, remove } = useFavorites();

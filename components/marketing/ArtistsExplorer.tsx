@@ -3,8 +3,8 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Search, ChevronDown, RotateCcw, Check } from "lucide-react";
 import { ArtistCard } from "@/components/marketing/ArtistCard";
-import { Badge } from "@/components/ui/Badge";
-import type { PriceBand } from "@/lib/supabase/types";
+import { TopArtistBadge } from "@/components/marketing/ArtistBadges";
+import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
 
 export type ExplorerArtist = {
   id: string;
@@ -15,7 +15,7 @@ export type ExplorerArtist = {
   genre: string[];
   instruments: string[];
   price_band: PriceBand;
-  tier?: string;
+  tier?: ArtistTier | null;
 };
 
 const ROLE_GROUPS: { key: string; label: string; match: (instr: string) => boolean }[] = [
@@ -245,6 +245,22 @@ export function ArtistsExplorer({
 
   const showTopSection = topArtists.length > 0 && !hasFilters;
 
+  /**
+   * I Max escono dalla griglia SOLO quando la fascia in cima li sta già
+   * mostrando: altrimenti comparirebbero due volte nella stessa schermata.
+   * Con un filtro attivo la fascia sparisce e i Max devono tornare in griglia,
+   * o una ricerca per nome non troverebbe proprio gli artisti in evidenza.
+   */
+  const gridArtists = useMemo(
+    () => (showTopSection ? filtered.filter((a) => a.tier !== "max") : filtered),
+    [filtered, showTopSection]
+  );
+
+  // Roster di soli Max: la fascia mostra tutto e sotto non resta niente. Senza
+  // questa distinzione la pagina scriverebbe "Nessun artista corrisponde ai
+  // filtri" sotto una griglia piena, con zero filtri attivi.
+  const showGridSection = !showTopSection || gridArtists.length > 0;
+
   function toggle(list: string[], setList: (v: string[]) => void, value: string) {
     if (list.includes(value)) setList(list.filter((x) => x !== value));
     else setList([...list, value]);
@@ -324,7 +340,7 @@ export function ArtistsExplorer({
         <div className="mt-10">
           <div className="mb-4 flex items-center gap-3">
             <p className="font-display text-sm text-notte">Top Artist</p>
-            <Badge variant="accent">TOP</Badge>
+            <TopArtistBadge compact />
           </div>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {topArtists.map((a) => {
@@ -332,47 +348,47 @@ export function ArtistsExplorer({
                 ROLE_GROUPS.find((g) => (a.instruments ?? []).some((i) => g.match(i)))?.label ??
                 null;
               return (
-                <div key={a.id} className="relative">
-                  <ArtistCard
-                    slug={a.slug}
-                    stageName={a.stage_name}
-                    city={a.city}
-                    coverImage={a.cover_image}
-                    genres={a.genre}
-                    priceBand={a.price_band}
-                    canSeePrice={canSeePrice}
-                    isGuest={isGuest}
-                    category={roleLabel}
-                  />
-                  <span className="pointer-events-none absolute left-3 top-3 z-10">
-                    <Badge variant="accent">TOP</Badge>
-                  </span>
-                </div>
+                <ArtistCard
+                  key={a.id}
+                  slug={a.slug}
+                  stageName={a.stage_name}
+                  city={a.city}
+                  coverImage={a.cover_image}
+                  genres={a.genre}
+                  priceBand={a.price_band}
+                  canSeePrice={canSeePrice}
+                  isGuest={isGuest}
+                  category={roleLabel}
+                  tier={a.tier}
+                  artistId={a.id}
+                />
               );
             })}
           </div>
-          <div className="mt-10 mb-4 flex items-center gap-3">
-            <p className="font-display text-sm text-notte">Tutti gli artisti</p>
-          </div>
+          {showGridSection && (
+            <div className="mt-10 mb-4 flex items-center gap-3">
+              <p className="font-display text-sm text-notte">Tutti gli artisti</p>
+            </div>
+          )}
         </div>
       )}
 
       {/* RESULTS GRID */}
-      <div className={showTopSection ? "" : "mt-10"}>
-        {filtered.length === 0 ? (
-          <p className="text-center text-muted-foreground">
-            Nessun artista corrisponde ai filtri selezionati.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {filtered.map((a) => {
-              const roleLabel =
-                ROLE_GROUPS.find((g) => (a.instruments ?? []).some((i) => g.match(i)))?.label ??
-                null;
-              const isTop = a.tier === "max";
-              return (
-                <div key={a.id} className="relative">
+      {showGridSection && (
+        <div className={showTopSection ? "" : "mt-10"}>
+          {gridArtists.length === 0 ? (
+            <p className="text-center text-muted-foreground">
+              Nessun artista corrisponde ai filtri selezionati.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {gridArtists.map((a) => {
+                const roleLabel =
+                  ROLE_GROUPS.find((g) => (a.instruments ?? []).some((i) => g.match(i)))?.label ??
+                  null;
+                return (
                   <ArtistCard
+                    key={a.id}
                     slug={a.slug}
                     stageName={a.stage_name}
                     city={a.city}
@@ -382,18 +398,15 @@ export function ArtistsExplorer({
                     canSeePrice={canSeePrice}
                     isGuest={isGuest}
                     category={roleLabel}
+                    tier={a.tier}
+                    artistId={a.id}
                   />
-                  {isTop && (
-                    <span className="pointer-events-none absolute left-3 top-3 z-10">
-                      <Badge variant="accent">TOP</Badge>
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -139,24 +139,38 @@ La piattaforma prevede **cinque profili**, ognuno con un'area dedicata.
 La piattaforma è gratuita per **visitatori, utenti e organizzatori**.
 Per gli artisti sono previsti tre piani.
 
+> ⚠️ **La fonte unica è `lib/billing/plans.ts`**, non questa tabella. Qui c'è un
+> riassunto per la lettura, ma al primo dubbio vince il codice: la matrice
+> `ENTITLEMENTS` e `PLAN_FEATURES` alimentano `/prezzi`, le card e l'enforcement.
+
 | Funzione | Free | Pro | Max |
 |---|:---:|:---:|:---:|
-| Profilo pubblico | base | completo | completo |
-| Foto in gallery | max 3 | illimitate | illimitate |
-| Tracce audio | 1 | illimitate | illimitate |
-| Video | — | ✔ | ✔ |
-| Candidature a eventi N'arte | 2 al mese | illimitate | illimitate |
-| Booking ricevuti | 2 al mese | illimitati | illimitati |
-| Statistiche visite al profilo | — | base | avanzate |
-| Posizione nei risultati di ricerca | standard | priorità | top + featured |
-| Badge "Verificato" | — | — | ✔ |
-| Consulenza professionale | — | 1 slot al mese | illimitati |
+| Profilo pubblico | ✔ | ✔ | ✔ |
+| Foto in gallery | 3 | fino a 10 | fino a 30 |
+| Video | 1 | fino a 3 | fino a 3 |
+| Tracce audio | — | 1 | 1 |
+| Richieste di booking | illimitate | illimitate | illimitate |
+| Chat con gli organizzatori | — | ✔ | ✔ |
+| Recensioni | — | ✔ | ✔ |
+| Badge "Verificato N'arte" | — | ✔ | ✔ |
+| Etichetta "TOP Artist" | — | — | ✔ |
+| Profili artista creabili | 1 | 2 | 5 |
+| Posizione nei risultati | standard | priorità | top in evidenza |
+| Eventi N'arte | — | — | ti candidiamo a 2 al mese |
+| Statistiche del profilo | — | — | ultimo anno |
+| Consulenza professionale | — | 1 slot al mese | illimitata |
+| Proposta alle strutture | — | — | ✔ |
+| Shooting fotografico | — | — | incluso nell'annuale |
 | Supporto | community | email | prioritario |
 
-**Prezzi**: da definire insieme al cliente.
-- Pro: € _____ / mese
-- Max: € _____ / mese
-- Possibilità di sconto annuale (–15% / –20%).
+I booking non sono mai limitati, su nessun piano: il paywall scatta un passo
+dopo, sulla **chat**. L'artista Free riceve la richiesta e la mail, ma per
+negoziare passa a Pro. La motivazione estesa è nel commento in testa a
+`lib/billing/plans.ts`.
+
+**Prezzi** (in `PLAN_PRICES_CENTS`): Pro 9,99 €/mese o 49,99 €/anno,
+Max 49,99 €/mese o 499,99 €/anno. L'importo realmente addebitato è quello del
+Price su Stripe: se i due divergono vince Stripe.
 
 ---
 
