@@ -45,9 +45,25 @@ export function LogoMarquee({
   );
 }
 
+/**
+ * Cella del nastro. Nessuna cornice: i loghi stanno direttamente sul fondo
+ * della sezione (#F7F5F2 in entrambe le pagine che usano il marquee).
+ *
+ * ⚠️  La cella resta di dimensione fissa anche senza riquadro — 200×80 px, con
+ *     `object-contain` — ed è il contratto con cui vanno esportati i file:
+ *     tela di 400×160 px (2×) trasparente, logo centrato, ~16 px di margine
+ *     per lato. Un logo consegnato con proporzioni diverse non rompe niente,
+ *     ma verrà rimpicciolito fino a entrare qui dentro e apparirà più leggero
+ *     degli altri: la cella garantisce lo stesso spazio, non lo stesso peso
+ *     ottico. Cambiando queste misure va aggiornata anche la richiesta ai
+ *     partner.
+ *
+ * Senza cornice serve un altro segnale di hover per i loghi cliccabili:
+ * l'opacità sostituisce bordo e ombra.
+ */
 function LogoCell({ collab }: { collab: CollabLogo }) {
   const inner = (
-    <div className="flex h-[110px] w-[220px] shrink-0 items-center justify-center rounded-xl border border-border bg-background p-5 shadow-sm transition-[border-color,box-shadow] duration-220 ease-[var(--ease-out)] group-hover:border-accent group-hover:shadow-md">
+    <div className="flex h-20 w-[200px] shrink-0 items-center justify-center transition-opacity duration-220 ease-[var(--ease-out)] group-hover:opacity-70">
       {collab.logo_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -70,7 +86,7 @@ function LogoCell({ collab }: { collab: CollabLogo }) {
         href={collab.link}
         target="_blank"
         rel="noopener noreferrer"
-        className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+        className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4"
         aria-label={`Visita ${collab.name}`}
         title={collab.name}
       >
