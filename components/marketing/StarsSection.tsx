@@ -56,7 +56,7 @@ export async function StarsSection() {
         <div className="mb-4 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <Reveal delay={0.1}>
             <h2 className="display-xl text-balance text-4xl text-notte md:text-6xl">
-              Guardali suonare prima di scegliere
+              Sfoglia tra centinaia di artisti e scegli il più adatto a te
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
@@ -67,8 +67,8 @@ export async function StarsSection() {
         </div>
         <Reveal delay={0.25}>
           <p className="mb-10 max-w-xl text-pretty text-sm text-notte/70 md:text-base">
-            Ogni profilo ha video, generi, formazione e fascia di cachet. Nessuna
-            serata prenotata al buio.
+            Iscriviti per sbloccare i dettagli degli artisti e la possibilità di
+            fare una richiesta di booking.
           </p>
         </Reveal>
 

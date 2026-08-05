@@ -25,17 +25,18 @@ export async function CollaborationsSection() {
     <section className="border-t border-palco-60 bg-[#F7F5F2] py-20 text-notte md:py-28">
       <div className="container-narte">
         <Reveal>
-          <p className="accent-label mb-3">chi ci ha già chiamato</p>
+          <p className="accent-label mb-3">i nostri partner</p>
         </Reveal>
         <Reveal delay={0.1}>
           <h2 className="display-xl text-balance text-4xl text-notte md:text-6xl">
-            Parchi, ristoranti, comuni, festival.
+            Scopri i brand che ci hanno già scelto
           </h2>
         </Reveal>
         <Reveal delay={0.2}>
           <p className="mt-4 max-w-xl text-pretty text-sm text-notte/70 md:text-base">
-            Chi organizza a Napoli e in Campania ci chiama quando serve musica dal
-            vivo. Qualcuno una volta, qualcun altro ogni settimana.
+            N&rsquo;arte è capace di adattarsi a qualunque situazione e
+            dimensione, riuscendo a fornire la massima qualità artistica in ogni
+            contesto.
           </p>
         </Reveal>
       </div>

@@ -1,4 +1,4 @@
-import { Mic2, Search, Users } from "lucide-react";
+import { Building2, Mic2, Search } from "lucide-react";
 import { Reveal } from "@/components/animations/Reveal";
 
 type Block = {
@@ -18,34 +18,34 @@ const BLOCKS: Block[] = [
   {
     key: "organizzatori",
     icon: <Search className="size-5" />,
-    label: "se organizzi",
+    label: "organizzatore",
     title: "Trova, ascolta, prenota.",
     steps: [
       "Filtra per genere, città e data",
-      "Guarda i video e leggi il cachet",
-      "Scrivi all'artista e chiudi la serata",
+      "Guarda i video e le caratteristiche dell'artista",
+      "Fai una richiesta di booking",
     ],
   },
   {
     key: "artisti",
     icon: <Mic2 className="size-5" />,
-    label: "se suoni",
-    title: "Fatti trovare.",
+    label: "artista",
+    title: "Sali sul palco.",
     steps: [
-      "Candidati in due minuti",
-      "Costruisci il profilo",
-      "Ricevi richieste dagli organizzatori",
+      "Candidati in pochi click",
+      "Crea il tuo profilo",
+      "Ricevi richieste di booking",
     ],
   },
   {
-    key: "tutti",
-    icon: <Users className="size-5" />,
-    label: "se vuoi solo ascoltare",
-    title: "Scopri chi suona.",
+    key: "locali",
+    icon: <Building2 className="size-5" />,
+    label: "locale",
+    title: "Il format già pronto.",
     steps: [
-      "Guarda il calendario degli eventi",
-      "Scegli la serata",
-      "Presentati e goditela",
+      "Scopri i nostri format già pronti",
+      "Invia la tua richiesta",
+      "Realizza il tuo evento senza sforzi",
     ],
   },
 ];
@@ -66,8 +66,8 @@ export function HowItWorks() {
           </Reveal>
           <Reveal delay={0.2}>
             <p className="mx-auto mt-6 max-w-2xl text-pretty text-base text-muted-foreground md:text-lg">
-              Se sei qui perché ti serve un artista, il primo è il tuo. Gli altri
-              due esistono perché senza di loro il primo non funzionerebbe.
+              Scopri come usare la prima piattaforma d&rsquo;Italia che mette in
+              contatto artisti ed eventi.
             </p>
           </Reveal>
         </div>

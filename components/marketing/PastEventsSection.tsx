@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/animations/Reveal";
 import { getPublicEvents } from "@/lib/data/events";
 import { formatEventDate } from "@/lib/utils";
-import { NARTE_EVENTS, NARTE_SINCE } from "@/lib/content/stats";
 import type { EventCardProps } from "@/components/marketing/EventCard";
 
 /** Destinazione unica: le anteprime sono una porta sull'archivio, non scorciatoie ai singoli eventi. */
@@ -44,20 +43,19 @@ export async function PastEventsSection() {
           </Reveal>
           <Reveal delay={0.1}>
             <h2 className="display-xl text-balance text-4xl md:text-6xl">
-              Non è la prima volta che lo facciamo.
+              Alcuni dei successi targati N&rsquo;arte
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
             <p className="mt-5 max-w-md text-pretty text-base text-muted-foreground md:text-lg">
-              Piazza del Plebiscito, la Piazzetta di Capri, l&rsquo;Edenlandia.{" "}
-              {NARTE_EVENTS} serate montate da noi dal {NARTE_SINCE}, con gli
-              stessi artisti che trovi qui sopra.
+              Immergiti nel mondo N&rsquo;arte e scopri gli eventi realizzati con
+              successo.
             </p>
           </Reveal>
           <Reveal delay={0.3}>
             <div className="mt-8">
               <Button asChild variant="default" size="lg">
-                <Link href={ARCHIVE_HREF}>Guarda gli eventi passati</Link>
+                <Link href={ARCHIVE_HREF}>Scopri gli eventi passati</Link>
               </Button>
             </div>
           </Reveal>

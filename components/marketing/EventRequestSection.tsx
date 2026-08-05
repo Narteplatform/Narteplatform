@@ -19,22 +19,15 @@ export function EventRequestSection() {
           </Reveal>
           <Reveal delay={0.1}>
             <h2 className="display-xl text-balance text-4xl text-notte md:text-6xl">
-              Dicci che serata hai in testa.
+              Hai una richiesta specifica?
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
             <p className="mt-6 max-w-md text-pretty text-base text-notte/70">
-              Se non hai voglia di cercare da solo, raccontacela e basta: la data,
-              il posto, quanto puoi spendere e che aria vuoi che tiri. Ai nomi ci
-              pensiamo noi. Ti rispondiamo entro 48 ore.
+              Il team N&rsquo;arte è qui per aiutarti, compila il form sottostante
+              con tutte le tue informazioni e ti forniremo la soluzione più
+              adatta alle tue esigenze!
             </p>
-          </Reveal>
-          <Reveal delay={0.3}>
-            <ul className="mt-8 space-y-2 text-sm text-notte/70">
-              <li>· Selezione degli artisti su misura</li>
-              <li>· Location, permessi e service</li>
-              <li>· Promozione della serata</li>
-            </ul>
           </Reveal>
         </div>
         <Reveal delay={0.2}>
