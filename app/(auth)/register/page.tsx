@@ -1,33 +1,42 @@
-import { RegisterForm } from "@/components/forms/RegisterForm";
 import Link from "next/link";
-import { NarteLogo } from "@/components/layout/NarteLogo";
+import { RegisterForm } from "@/components/forms/RegisterForm";
+import { AuthSplit } from "@/components/layout/AuthSplit";
 
-export const metadata = { title: "Registrati — N'arte" };
+export const metadata = { title: "Iscriviti — N'arte" };
 
-export default function RegisterPage() {
+/** Vedi la nota gemella in /login: solo percorsi interni. */
+function safeNext(value?: string | string[]) {
+  const v = Array.isArray(value) ? value[0] : value;
+  return v && v.startsWith("/") && !v.startsWith("//") ? v : null;
+}
+
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  const next = safeNext((await searchParams).next);
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container-narte flex min-h-screen flex-col items-center justify-center py-12">
-        <div className="w-full max-w-md">
-          <Link href="/" aria-label="Home N'arte" className="inline-flex">
-            <NarteLogo variant="light" width={140} className="h-11 w-auto" priority />
+    <AuthSplit
+      active="register"
+      next={next}
+      title="Crea il tuo account"
+      subtitle="Bastano un'email e una password. Scegli come vuoi usare N'arte: puoi cambiare idea in qualunque momento scrivendoci."
+      footer={
+        <p className="text-sm text-muted-foreground">
+          Sei un artista?{" "}
+          <Link
+            href="/candidatura-artista"
+            className="font-semibold text-azzurro underline-offset-2 hover:underline"
+          >
+            Candidati per entrare nel roster
           </Link>
-          <h1 className="display-xl mt-8 text-4xl">Iscriviti</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Crea il tuo account come <strong>utente</strong> per scoprire eventi e artisti, o
-            come <strong>organizzatore</strong> per richiedere e ingaggiare artisti.
-          </p>
-          <div className="mt-8">
-            <RegisterForm />
-          </div>
-          <p className="mt-6 text-sm text-muted-foreground">
-            Hai gia&apos; un account?{" "}
-            <Link href="/login" className="underline">
-              Accedi
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+          : il profilo artista non si crea da qui, passa da un'approvazione.
+        </p>
+      }
+    >
+      <RegisterForm next={next} />
+    </AuthSplit>
   );
 }

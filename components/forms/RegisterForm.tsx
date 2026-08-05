@@ -4,14 +4,37 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertCircle, CalendarCheck, MailCheck, Ticket } from "lucide-react";
 import { authSchema, type AuthInput } from "@/lib/validators/schemas";
+import { authErrorMessage } from "@/lib/auth/error-messages";
 import { createClient } from "@/lib/supabase/client";
 import { Input, Label } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 
 type AccountKind = "user" | "organizer";
 
-export function RegisterForm() {
+const KINDS: {
+  key: AccountKind;
+  label: string;
+  hint: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    key: "user",
+    label: "Utente",
+    hint: "Scopri eventi e artisti",
+    icon: <Ticket className="size-4" />,
+  },
+  {
+    key: "organizer",
+    label: "Organizzatore",
+    hint: "Richiedi e ingaggia artisti",
+    icon: <CalendarCheck className="size-4" />,
+  },
+];
+
+export function RegisterForm({ next }: { next?: string | null }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -26,6 +49,9 @@ export function RegisterForm() {
     setError(null);
     setInfo(null);
     const supabase = createClient();
+    // La destinazione sopravvive al giro di conferma via email: senza, chi si
+    // iscrive da un profilo bloccato torna in home e deve ricercarlo.
+    const suffix = next ? `?next=${encodeURIComponent(next)}` : "";
     const { data, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
@@ -37,77 +63,129 @@ export function RegisterForm() {
           // qualunque altro valore ricade su default 'user'.
           role: kind === "organizer" ? "organizer" : "user",
         },
-        emailRedirectTo: `${window.location.origin}/login`,
+        emailRedirectTo: `${window.location.origin}/login${suffix}`,
       },
     });
     if (error) {
-      setError(error.message);
+      setError(authErrorMessage(error.message));
       return;
     }
     if (data.user && !data.session) {
-      setInfo("Registrazione completata. Controlla la tua email per confermare l'account.");
+      setInfo(
+        "Ci siamo quasi: ti abbiamo mandato un'email di conferma. Aprila per attivare l'account — controlla anche nello spam.",
+      );
       return;
     }
-    router.push("/");
+    router.push(next ?? "/");
     router.refresh();
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label>Tipo di account</Label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setKind("user")}
-            aria-pressed={kind === "user"}
-            className={`rounded-xl border p-3 text-left transition ${
-              kind === "user"
-                ? "border-accent bg-accent/10 text-foreground"
-                : "border-border bg-background text-muted-foreground hover:border-foreground"
-            }`}
-          >
-            <p className="text-sm font-medium">Utente</p>
-            <p className="text-xs text-muted-foreground">Scopri eventi e artisti.</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => setKind("organizer")}
-            aria-pressed={kind === "organizer"}
-            className={`rounded-xl border p-3 text-left transition ${
-              kind === "organizer"
-                ? "border-accent bg-accent/10 text-foreground"
-                : "border-border bg-background text-muted-foreground hover:border-foreground"
-            }`}
-          >
-            <p className="text-sm font-medium">Organizzatore</p>
-            <p className="text-xs text-muted-foreground">Richiedi e ingaggia artisti.</p>
-          </button>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+      {/* TIPO DI ACCOUNT. `radiogroup` e non due bottoni sciolti: sono
+          alternative esclusive, e senza il ruolo uno screen reader le annuncia
+          come azioni indipendenti senza dire quale è attiva. */}
+      <div>
+        <Label id="kind-label">Come vuoi usare N&rsquo;arte?</Label>
+        <div role="radiogroup" aria-labelledby="kind-label" className="grid grid-cols-2 gap-2">
+          {KINDS.map((k) => {
+            const selected = kind === k.key;
+            return (
+              <button
+                key={k.key}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setKind(k.key)}
+                className={`rounded-xl border-[1.5px] p-3 text-left transition-colors ${
+                  selected
+                    ? "border-azzurro bg-azzurro/10"
+                    : "border-border bg-surface hover:border-foreground/40"
+                }`}
+              >
+                <span
+                  className={`inline-flex size-8 items-center justify-center rounded-lg ${
+                    selected ? "bg-azzurro text-white" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {k.icon}
+                </span>
+                <span className="mt-2 block text-sm font-semibold">{k.label}</span>
+                <span className="block text-xs text-muted-foreground">{k.hint}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="space-y-1">
-        <Label>Nome completo</Label>
-        <Input {...register("fullName")} />
+      <div>
+        <Label htmlFor="reg-name">Nome completo</Label>
+        <Input
+          id="reg-name"
+          autoComplete="name"
+          placeholder="Mario Rossi"
+          {...register("fullName")}
+        />
       </div>
-      <div className="space-y-1">
-        <Label>Email</Label>
-        <Input type="email" {...register("email")} />
-        {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
+
+      <div>
+        <Label htmlFor="reg-email">Email</Label>
+        <Input
+          id="reg-email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder="nome@esempio.it"
+          aria-invalid={!!errors.email}
+          {...register("email")}
+        />
+        {errors.email && (
+          <p className="mt-1.5 text-xs text-corallo">Inserisci un indirizzo email valido.</p>
+        )}
       </div>
-      <div className="space-y-1">
-        <Label>Password</Label>
-        <Input type="password" {...register("password")} />
-        {errors.password && <p className="text-xs text-red-600">{errors.password.message}</p>}
+
+      <div>
+        <Label htmlFor="reg-password">Password</Label>
+        <PasswordInput
+          id="reg-password"
+          autoComplete="new-password"
+          placeholder="Almeno 8 caratteri"
+          aria-describedby="reg-password-hint"
+          aria-invalid={!!errors.password}
+          {...register("password")}
+        />
+        {errors.password ? (
+          <p className="mt-1.5 text-xs text-corallo">{errors.password.message}</p>
+        ) : (
+          <p id="reg-password-hint" className="mt-1.5 text-xs text-muted-foreground">
+            Almeno 8 caratteri.
+          </p>
+        )}
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {info && <p className="text-sm text-foreground">{info}</p>}
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Registrazione..." : "Registrati"}
+
+      {error && (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-lg border border-corallo/40 bg-corallo/10 px-3 py-2.5 text-sm text-corallo-dark"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          <span>{error}</span>
+        </p>
+      )}
+
+      {info && (
+        <p
+          role="status"
+          className="flex items-start gap-2 rounded-lg border border-azzurro/40 bg-azzurro/10 px-3 py-2.5 text-sm text-foreground"
+        >
+          <MailCheck className="mt-0.5 size-4 shrink-0 text-azzurro" />
+          <span>{info}</span>
+        </p>
+      )}
+
+      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? "Creazione account…" : "Crea account"}
       </Button>
-      <p className="text-[11px] text-muted-foreground">
-        Sei un artista? <a href="/candidatura-artista" className="underline">Candidati qui</a> per entrare nel roster.
-      </p>
     </form>
   );
 }

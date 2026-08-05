@@ -1,39 +1,51 @@
 import { Suspense } from "react";
-import { LoginForm } from "@/components/forms/LoginForm";
 import Link from "next/link";
-import { NarteLogo } from "@/components/layout/NarteLogo";
+import { LoginForm } from "@/components/forms/LoginForm";
+import { AuthSplit } from "@/components/layout/AuthSplit";
 
 export const metadata = { title: "Accedi — N'arte" };
 
-export default function LoginPage() {
+/**
+ * `next` viene letto qui e non solo dentro il form: serve anche ai link del
+ * selettore, altrimenti chi arriva da un profilo bloccato e passa a "Iscriviti"
+ * perde la destinazione e finisce in home a registrazione fatta.
+ * Solo percorsi interni: `//host` è un URL assoluto travestito.
+ */
+function safeNext(value?: string | string[]) {
+  const v = Array.isArray(value) ? value[0] : value;
+  return v && v.startsWith("/") && !v.startsWith("//") ? v : null;
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  const next = safeNext((await searchParams).next);
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container-narte flex min-h-screen flex-col items-center justify-center py-12">
-        <div className="w-full max-w-md">
-          <Link href="/" aria-label="Home N'arte" className="inline-flex">
-            <NarteLogo variant="light" width={140} className="h-11 w-auto" priority />
+    <AuthSplit
+      active="login"
+      next={next}
+      title="Bentornato su N'arte"
+      subtitle="Accedi per sbloccare i profili completi degli artisti, salvare i preferiti e seguire le tue richieste di booking."
+      footer={
+        <p className="text-sm text-muted-foreground">
+          Sei un artista e vuoi entrare nel roster?{" "}
+          <Link
+            href="/candidatura-artista"
+            className="font-semibold text-azzurro underline-offset-2 hover:underline"
+          >
+            Candidati qui
           </Link>
-          <h1 className="display-xl mt-8 text-4xl">Accedi / Iscriviti</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Hai già un account? Accedi qui sotto. Altrimenti{" "}
-            <Link href="/register" className="underline">
-              iscriviti
-            </Link>{" "}
-            come utente o organizzatore.
-          </p>
-          <div className="mt-8">
-            <Suspense fallback={<div className="h-32" />}>
-              <LoginForm />
-            </Suspense>
-          </div>
-          <p className="mt-6 text-sm text-muted-foreground">
-            Non hai un account?{" "}
-            <Link href="/register" className="underline">
-              Registrati
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+          .
+        </p>
+      }
+    >
+      {/* useSearchParams dentro al form richiede un confine di Suspense. */}
+      <Suspense fallback={<div className="h-64" />}>
+        <LoginForm />
+      </Suspense>
+    </AuthSplit>
   );
 }
