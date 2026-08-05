@@ -175,8 +175,14 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
       {/* Il nastro dei partner sta fuori da questo blocco, quindi l'altezza
           minima non è più quella della hero intera: 74svh qui più il nastro
           in fondo tornano agli ~88svh di prima, e la fascia successiva
-          continua a farsi intravedere sotto la piega. */}
-      <div className="container-narte relative z-10 flex min-h-[74svh] flex-col items-center justify-center px-6 pb-16 pt-24 text-center md:pb-20 md:pt-28">
+          continua a farsi intravedere sotto la piega.
+
+          ⚠️  z-20 contro lo z-10 del nastro, e la differenza è load-bearing.
+          `relative z-*` apre un contesto di impilamento: lo z-50 della tendina
+          dell'autocomplete vale solo dentro questo blocco, quindi a parità di
+          z-index vinceva il nastro, che nel DOM viene dopo — i loghi
+          passavano sopra i risultati della ricerca. */}
+      <div className="container-narte relative z-20 flex min-h-[74svh] flex-col items-center justify-center px-6 pb-16 pt-24 text-center md:pb-20 md:pt-28">
         <motion.h1
           {...titleAnim(0.1)}
           className="font-display tracking-[-0.045em]"
@@ -386,7 +392,8 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
           bordi dello schermo: dentro il contenitore le sfumature laterali si
           fermerebbero a 1200px, con due tagli netti in mezzo alla hero.
           Più lento della sezione più in basso (45s contro 30s): qui è un
-          fondale, non il contenuto della fascia. */}
+          fondale, non il contenuto della fascia.
+          z-10: sopra la foto di sfondo, sotto il blocco della ricerca. */}
       {partners.length > 0 && (
         <motion.div
           {...titleAnim(0.48)}
