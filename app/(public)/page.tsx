@@ -22,8 +22,11 @@ export default function HomePage() {
       <StarsSection />
       <PastEventsSection />
       <CollaborationsSection />
-      <EventRequestSection />
+      {/* Il blog viene prima del form: chiude la parte "guarda cosa facciamo" e
+          lascia a "Parla con noi" l'ultima parola della pagina, che è la
+          conversione. Un modulo a metà pagina veniva scavalcato dagli articoli. */}
       <BlogSection />
+      <EventRequestSection />
     </>
   );
 }

@@ -45,7 +45,7 @@ export async function Header() {
         {/* Tutto ciò che non è il logo vive in un unico gruppo allineato a
             destra: menu, poi ricerca, poi le azioni. Così la ricerca sta dopo
             "Contatti" senza fare da distanziatore come faceva prima a sinistra. */}
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-4 md:gap-6">
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-3 md:gap-6">
           {/* shrink-0 + nowrap: le voci di due parole ("Chi siamo") non devono
               andare a capo quando la barra si stringe. */}
           <nav className="hidden shrink-0 items-center gap-6 whitespace-nowrap text-sm font-medium text-foreground/85 lg:flex">
@@ -59,10 +59,18 @@ export async function Header() {
             <Link href="/contatti" className="transition-opacity hover:opacity-75">Contatti</Link>
           </nav>
 
-          <SearchMenu />
+          {/* Lente e cuore sono due bottoni tondi identici e vanno letti come
+              una coppia: stanno insieme a gap-2, e il gap del gruppo esterno
+              (24px da md) li distanzia allo stesso modo dalle voci di menu a
+              sinistra e dai pulsanti di accesso a destra. Prima la lente stava
+              a 24px dal cuore e il cuore a 8px da "Accedi": sembravano
+              appartenere a due gruppi diversi. */}
+          <div className="flex shrink-0 items-center gap-2">
+            <SearchMenu />
+            <FavoritesMenu />
+          </div>
 
           <div className="flex items-center gap-2">
-            <FavoritesMenu />
             {!user ? (
               <>
                 {/* Desktop auth */}
