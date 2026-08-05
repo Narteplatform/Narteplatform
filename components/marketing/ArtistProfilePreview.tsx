@@ -32,8 +32,15 @@ export function ArtistProfilePreview() {
 
         {/* La colonna della scheda ha la stessa larghezza della scheda (19rem):
             così le due colonne sono misurabili, la coppia sta dentro max-w-4xl
-            e mx-auto la centra come un blocco solo. */}
-        <div className="mx-auto mt-12 grid max-w-4xl items-center gap-10 md:mt-16 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-12">
+            e mx-auto la centra come un blocco solo.
+
+            Il blocco è poi spostato di poco verso sinistra rispetto all'asse
+            della pagina. Con la traslazione — e non con i margini — lo
+            spostamento è puramente visivo e non ridimensiona le colonne. I
+            valori restano sotto il margine libero a ogni breakpoint (2,5rem a
+            lg, 8rem da xl), quindi il blocco non tocca mai il bordo del
+            contenitore. */}
+        <div className="mx-auto mt-12 grid max-w-4xl items-center gap-10 md:mt-16 lg:grid-cols-[minmax(0,1fr)_19rem] lg:-translate-x-6 lg:gap-12 xl:-translate-x-10">
           {/* ANNOTAZIONI. Su mobile stanno sotto la scheda (order-2): prima si
               guarda com'è fatta una pagina, poi si legge perché.
               Da lg si allineano a destra della propria colonna, per restare
