@@ -200,9 +200,17 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
           z-index vinceva il nastro, che nel DOM viene dopo — i loghi
           passavano sopra i risultati della ricerca. */}
       <div className="container-narte relative z-20 flex min-h-[86svh] flex-col items-center justify-center px-6 pb-12 pt-32 text-center md:pb-14 md:pt-48">
+        {/* ⚠️  La spaziatura fra le lettere sta sulle due righe, non qui.
+            `letter-spacing` in `em` si risolve sulla dimensione dell'elemento
+            che la dichiara, e si eredita già convertita in pixel: dichiarata
+            sull'h1 — che di suo è a 16px — valeva -0.72px, ed è quel valore
+            fisso che le righe da 60 e 88px si portavano dietro. In pratica il
+            titolo della hero era quasi senza crenatura, mentre gli altri
+            titoli del sito (classe `display-xl`) la dichiarano sull'elemento
+            che porta anche il corpo e la ottengono davvero. */}
         <motion.h1
           {...titleAnim(0.1)}
-          className="font-display tracking-[-0.045em]"
+          className="font-display"
           style={{ lineHeight: 0.95 }}
         >
           {/* Space Grotesk arriva a 700: font-black (900) e italic non hanno un
@@ -220,10 +228,10 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
               lega la dimensione alla larghezza dello schermo, così ogni riga
               resta una riga da 320px in su; il tetto di 3rem impedisce che sui
               telefoni larghi superi il gradino successivo. */}
-          <span className="block text-[clamp(2.1rem,9.6vw,3rem)] font-bold text-palco sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+          <span className="block text-[clamp(2.1rem,9.6vw,3rem)] font-bold text-palco tracking-[-0.045em] sm:text-6xl md:text-7xl lg:text-[5.5rem]">
             L&rsquo;artista ideale{" "}
           </span>
-          <span className="mt-2 block text-[clamp(2.1rem,9.6vw,3rem)] font-bold text-azzurro-light sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+          <span className="mt-2 block text-[clamp(2.1rem,9.6vw,3rem)] font-bold text-azzurro-light tracking-[-0.045em] sm:text-6xl md:text-7xl lg:text-[5.5rem]">
             per il tuo evento
           </span>
         </motion.h1>
