@@ -21,8 +21,9 @@ export default async function RegisterPage({
     <AuthSplit
       active="register"
       next={next}
+      eyebrow="iscrizione"
       title="Crea il tuo account"
-      subtitle="Bastano un'email e una password. Scegli come vuoi usare N'arte: puoi cambiare idea in qualunque momento scrivendoci."
+      subtitle="Bastano un'email e una password. In due minuti hai accesso a tutto il roster."
       footer={
         <p className="text-sm text-muted-foreground">
           Sei un artista?{" "}

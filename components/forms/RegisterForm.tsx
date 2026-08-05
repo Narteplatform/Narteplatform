@@ -14,6 +14,15 @@ import { Button } from "@/components/ui/Button";
 
 type AccountKind = "user" | "organizer";
 
+/**
+ * Le descrizioni dicono cosa si sblocca davvero, non cosa "sei": è la domanda
+ * a cui la persona sta rispondendo mentre sceglie.
+ *
+ * Nota vera e utile da sapere: chi si iscrive come utente e poi manda la prima
+ * richiesta di booking viene promosso a organizzatore in automatico
+ * (`promote_user_to_organizer` in app/api/booking-request). Quindi la scelta
+ * non è una porta che si chiude, ed è giusto dirlo invece di farla pesare.
+ */
 const KINDS: {
   key: AccountKind;
   label: string;
@@ -23,13 +32,13 @@ const KINDS: {
   {
     key: "user",
     label: "Utente",
-    hint: "Scopri eventi e artisti",
+    hint: "Sblocchi i profili e salvi i preferiti",
     icon: <Ticket className="size-4" />,
   },
   {
     key: "organizer",
     label: "Organizzatore",
-    hint: "Richiedi e ingaggia artisti",
+    hint: "In più: richieste, chat e calendario",
     icon: <CalendarCheck className="size-4" />,
   },
 ];
@@ -116,6 +125,10 @@ export function RegisterForm({ next }: { next?: string | null }) {
             );
           })}
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Non è una scelta definitiva: alla prima richiesta di booking un account utente
+          diventa da organizzatore in automatico.
+        </p>
       </div>
 
       <div>
@@ -186,6 +199,13 @@ export function RegisterForm({ next }: { next?: string | null }) {
       <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Creazione account…" : "Crea account"}
       </Button>
+
+      {/* Detto prima e non dopo: chi non se lo aspetta chiude la scheda,
+          non vede mai l'email e resta convinto di essersi iscritto. */}
+      <p className="text-center text-xs text-muted-foreground">
+        Dopo l&rsquo;invio ti arriva un&rsquo;email di conferma: serve ad attivare
+        l&rsquo;account.
+      </p>
     </form>
   );
 }

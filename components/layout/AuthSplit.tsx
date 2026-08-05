@@ -1,21 +1,23 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, ShieldCheck } from "lucide-react";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { NARTE_STATS } from "@/lib/content/stats";
 
 /**
- * Guscio comune di /login e /register: foto e argomenti a sinistra, campi a
- * destra.
+ * Guscio comune dei pannelli di autenticazione: foto e argomenti a sinistra,
+ * campi a destra. Lo usano /login, /register, /recupero-password e
+ * /reset-password.
  *
- * Le due pagine condividono tutto tranne il modulo, e prima erano due copie
- * della stessa impaginazione centrata — con logo, titolo e link ripetuti a
- * mano. Qui cambia in un posto solo.
+ * Le pagine condividono tutto tranne il modulo, e prima erano copie della
+ * stessa impaginazione centrata — con logo, titolo e link ripetuti a mano.
  *
  * La colonna della foto esiste solo da `lg`: sotto quella soglia occuperebbe
  * mezzo schermo per non dire nulla di utile a chi deve solo digitare
- * un'email, e allontanerebbe il primo campo dal pollice.
+ * un'email, e allontanerebbe il primo campo dal pollice. Gli argomenti però
+ * non spariscono: si ripresentano in forma compatta sopra il modulo, perché
+ * è lì che si decide se vale la pena iscriversi.
  */
 
 /** Vantaggi reali della piattaforma, non promesse: ognuno corrisponde a una funzione che esiste. */
@@ -27,20 +29,26 @@ const POINTS = [
 
 export function AuthSplit({
   active,
+  eyebrow,
   title,
   subtitle,
   /** Preserva la destinazione (`?next=`) quando si passa da un pannello all'altro. */
   next,
+  /** I pannelli di recupero password non sono un terzo modo di entrare: niente selettore. */
+  showTabs = true,
   children,
   footer,
 }: {
   active: "login" | "register";
+  eyebrow: string;
   title: string;
   subtitle: ReactNode;
   next?: string | null;
+  showTabs?: boolean;
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  const isSignup = active === "register" && showTabs;
   const q = next ? `?next=${encodeURIComponent(next)}` : "";
   const tabs = [
     { key: "login" as const, label: "Accedi", href: `/login${q}` },
@@ -106,7 +114,7 @@ export function AuthSplit({
       </aside>
 
       {/* COLONNA DESTRA — il modulo */}
-      <main className="flex flex-col justify-center px-6 py-12 sm:px-10 lg:px-12 xl:px-16">
+      <main className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-12 lg:px-12 xl:px-16">
         <div className="mx-auto w-full max-w-md">
           {/* Il logo torna qui quando la colonna di sinistra sparisce: senza,
               sotto `lg` la pagina non direbbe di che sito è. */}
@@ -114,34 +122,62 @@ export function AuthSplit({
             <NarteLogo variant="light" width={120} className="h-8 w-auto" priority />
           </Link>
 
-          {/* Selettore fra i due pannelli: sono due passi della stessa cosa e
-              un link testuale in fondo alla pagina li faceva sembrare due
-              percorsi separati. */}
-          <div className="mt-8 inline-flex w-full rounded-full border border-border bg-muted p-1 lg:mt-0">
-            {tabs.map((t) => (
-              <Link
-                key={t.key}
-                href={t.href}
-                aria-current={active === t.key ? "page" : undefined}
-                className={`flex-1 rounded-full px-4 py-2 text-center text-sm font-semibold transition-colors ${
-                  active === t.key
-                    ? "bg-azzurro text-white shadow-[0_2px_12px_rgba(26,107,173,0.35)]"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t.label}
-              </Link>
-            ))}
-          </div>
+          {showTabs && (
+            /* Selettore fra i due pannelli: sono due passi della stessa cosa e
+               un link testuale in fondo alla pagina li faceva sembrare due
+               percorsi separati. */
+            <div className="mt-7 inline-flex w-full rounded-full border border-border bg-muted p-1 lg:mt-0">
+              {tabs.map((t) => (
+                <Link
+                  key={t.key}
+                  href={t.href}
+                  aria-current={active === t.key ? "page" : undefined}
+                  className={`flex-1 rounded-full px-4 py-2 text-center text-sm font-semibold transition-colors ${
+                    active === t.key
+                      ? "bg-azzurro text-white shadow-[0_2px_12px_rgba(26,107,173,0.35)]"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t.label}
+                </Link>
+              ))}
+            </div>
+          )}
 
-          <h1 className="display-xl mt-8 text-3xl md:text-4xl">{title}</h1>
+          <p className={`accent-label ${showTabs ? "mt-7" : "mt-7 lg:mt-0"}`}>{eyebrow}</p>
+          <h1 className="display-xl mt-2 text-3xl md:text-4xl">{title}</h1>
           <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
             {subtitle}
           </p>
 
-          <div className="mt-8">{children}</div>
+          {/* Argomenti e rassicurazione servono a chi deve ancora decidere,
+              quindi stanno solo sul pannello di iscrizione: a chi rientra
+              interessa il campo email, non il perché. Sotto `lg` sono anche
+              l'unico posto in cui quel contenuto esiste, visto che la colonna
+              con la foto lì non c'è. */}
+          {isSignup && (
+            <ul className="mt-6 space-y-2 rounded-xl border border-border bg-muted/60 p-4 lg:hidden">
+              {POINTS.map((p) => (
+                <li key={p} className="flex items-start gap-2.5 text-[13px] leading-snug">
+                  <Check className="mt-0.5 size-3.5 shrink-0 text-azzurro" strokeWidth={3} />
+                  <span className="text-pretty text-foreground/80">{p}</span>
+                </li>
+              ))}
+            </ul>
+          )}
 
-          {footer && <div className="mt-8 border-t border-border pt-6">{footer}</div>}
+          <div className="mt-7">{children}</div>
+
+          {/* Utenti e organizzatori non pagano nulla: i piani di N'arte
+              riguardano gli artisti. */}
+          {isSignup && (
+            <p className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <ShieldCheck className="size-3.5 shrink-0 text-azzurro" />
+              Iscrizione gratuita. Nessuna carta richiesta.
+            </p>
+          )}
+
+          {footer && <div className="mt-7 border-t border-border pt-6">{footer}</div>}
         </div>
       </main>
     </div>

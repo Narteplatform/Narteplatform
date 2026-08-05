@@ -155,6 +155,12 @@ export const authSchema = z.object({
 });
 export type AuthInput = z.infer<typeof authSchema>;
 
+/** Richiesta del link di recupero: serve la sola email. */
+export const passwordResetRequestSchema = z.object({
+  email: z.string().email(),
+});
+export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
+
 // =========================================
 // Organizer / Venues / Booking
 // =========================================

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -50,6 +51,7 @@ export function LoginForm() {
           type="email"
           autoComplete="email"
           inputMode="email"
+          autoFocus
           placeholder="nome@esempio.it"
           aria-invalid={!!errors.email}
           {...register("email")}
@@ -60,7 +62,17 @@ export function LoginForm() {
       </div>
 
       <div>
-        <Label htmlFor="login-password">Password</Label>
+        {/* Il recupero sta accanto all'etichetta e non in fondo al modulo: si
+            cerca proprio mentre si guarda il campo che non si ricorda. */}
+        <div className="flex items-baseline justify-between gap-3">
+          <Label htmlFor="login-password">Password</Label>
+          <Link
+            href="/recupero-password"
+            className="mb-1.5 text-xs font-semibold text-azzurro underline-offset-2 hover:underline"
+          >
+            Password dimenticata?
+          </Link>
+        </div>
         <PasswordInput
           id="login-password"
           autoComplete="current-password"

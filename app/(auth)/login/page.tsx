@@ -27,6 +27,7 @@ export default async function LoginPage({
     <AuthSplit
       active="login"
       next={next}
+      eyebrow="accesso"
       title="Bentornato su N'arte"
       subtitle="Accedi per sbloccare i profili completi degli artisti, salvare i preferiti e seguire le tue richieste di booking."
       footer={
