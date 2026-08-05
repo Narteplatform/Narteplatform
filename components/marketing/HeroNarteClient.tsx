@@ -183,16 +183,23 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
       </div>
 
       {/* Il nastro dei partner sta fuori da questo blocco, quindi l'altezza
-          minima non è più quella della hero intera: 74svh qui più il nastro
-          in fondo tornano agli ~88svh di prima, e la fascia successiva
-          continua a farsi intravedere sotto la piega.
+          minima non è quella della hero intera: 86svh qui più il nastro in
+          fondo (80px di loghi + il suo padding) fanno una hero di circa uno
+          schermo pieno. La foto ha così più spazio verticale, ma i loghi
+          restano sopra la piega: alzare ancora questo valore li manderebbe
+          sotto.
+
+          Il padding è volutamente asimmetrico. Con `justify-center` il centro
+          del contenuto cade a (altezza + pt − pb) / 2: pt molto più grande di
+          pb sposta in basso titolo, ricerca e pulsanti senza rinunciare alla
+          centratura, che sui viewport bassi è quella che evita il taglio.
 
           ⚠️  z-20 contro lo z-10 del nastro, e la differenza è load-bearing.
           `relative z-*` apre un contesto di impilamento: lo z-50 della tendina
           dell'autocomplete vale solo dentro questo blocco, quindi a parità di
           z-index vinceva il nastro, che nel DOM viene dopo — i loghi
           passavano sopra i risultati della ricerca. */}
-      <div className="container-narte relative z-20 flex min-h-[74svh] flex-col items-center justify-center px-6 pb-16 pt-24 text-center md:pb-20 md:pt-28">
+      <div className="container-narte relative z-20 flex min-h-[86svh] flex-col items-center justify-center px-6 pb-12 pt-32 text-center md:pb-14 md:pt-48">
         <motion.h1
           {...titleAnim(0.1)}
           className="font-display tracking-[-0.045em]"
