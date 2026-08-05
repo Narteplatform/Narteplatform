@@ -53,7 +53,13 @@ import type { AdminPageKey } from "@/lib/validators/schemas";
 function ShellBrand({ suffix }: { suffix?: string }) {
   return (
     <span className="flex items-baseline gap-2">
-      <NarteLogo variant="light" width={92} className="h-7 w-auto" />
+      {/* `dark` = asset bianco reso senza filtri. La variante `light` applica
+          la tinta azzurra pensata per i fondi chiari: da quando la sidebar è
+          azzurra darebbe azzurro su azzurro. Il marchio compare solo qui —
+          nella topbar il Breadcrumb mostra sempre la sezione corrente, mai il
+          brand, perché dentro /admin, /dashboard e /organizzatore il percorso
+          ha sempre almeno un segmento. */}
+      <NarteLogo variant="dark" width={92} className="h-7 w-auto" />
       {suffix ? (
         <span className="font-display text-lg uppercase leading-none tracking-tight">
           {suffix}
