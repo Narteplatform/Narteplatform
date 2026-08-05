@@ -9,7 +9,6 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import { LogoMarquee, type CollabLogo } from "@/components/marketing/LogoMarquee";
-import { NARTE_STATS } from "@/lib/content/stats";
 import type { SearchHit } from "@/app/api/search/route";
 
 const easing = [0.22, 1, 0.36, 1] as const;
@@ -175,7 +174,7 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
           minima non è più quella della hero intera: 74svh qui più il nastro
           in fondo tornano agli ~88svh di prima, e la fascia successiva
           continua a farsi intravedere sotto la piega. */}
-      <div className="container-narte relative z-10 flex min-h-[74svh] flex-col items-center justify-center px-6 pb-14 pt-24 text-center md:pb-16 md:pt-28">
+      <div className="container-narte relative z-10 flex min-h-[74svh] flex-col items-center justify-center px-6 pb-16 pt-24 text-center md:pb-20 md:pt-28">
         <motion.h1
           {...titleAnim(0.1)}
           className="font-display tracking-[-0.045em]"
@@ -345,25 +344,6 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
             <Link href="#richiedi">Raccontaci il tuo evento</Link>
           </Button>
         </motion.div>
-
-        {/* Stats */}
-        <motion.div
-          {...titleAnim(0.48)}
-          className="mt-12 w-full max-w-2xl border-t border-palco/15 pt-8 md:mt-14"
-        >
-          <dl className="grid grid-cols-3 gap-4 text-center">
-            {NARTE_STATS.map((s) => (
-              <div key={s.label}>
-                <dt className="font-display text-3xl font-bold tabular-nums text-palco md:text-4xl">
-                  {s.value}
-                </dt>
-                <dd className="mt-1 text-xs uppercase tracking-wider text-palco/60 md:text-[13px]">
-                  {s.label}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </motion.div>
       </div>
 
       {/* PARTNER. Fuori da `container-narte` perché il nastro deve arrivare ai
@@ -373,7 +353,7 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
           fondale, non il contenuto della fascia. */}
       {partners.length > 0 && (
         <motion.div
-          {...titleAnim(0.56)}
+          {...titleAnim(0.48)}
           className="relative z-10 pb-12 md:pb-16"
         >
           <LogoMarquee logos={partners} speed={45} surface="on-dark" />
