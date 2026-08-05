@@ -145,7 +145,13 @@ export function AuthSplit({
           )}
 
           <p className={`accent-label ${showTabs ? "mt-7" : "mt-7 lg:mt-0"}`}>{eyebrow}</p>
-          <h1 className="display-xl mt-2 text-3xl md:text-4xl">{title}</h1>
+          {/* Stessa scala del titolo nella colonna di sinistra (`text-5xl`).
+              Il carattere era già lo stesso — Space Grotesk 700 in entrambi —
+              ma a 36px su fondo chiaro, e su una riga sola, sembrava un altro
+              font: il corpo più grande e l'andare a capo su due righe gli
+              ridanno la stessa compattezza. `text-balance` distribuisce le due
+              righe invece di lasciarne una monca. */}
+          <h1 className="display-xl mt-2 text-balance text-4xl md:text-5xl">{title}</h1>
           <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
             {subtitle}
           </p>
