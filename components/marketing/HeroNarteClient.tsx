@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, Lock } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
@@ -135,9 +135,11 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
 
   function onSearch(e?: React.FormEvent<HTMLFormElement>) {
     e?.preventDefault();
-    // Se c'e' un solo match esatto in autocomplete, vai diretto
+    // Se c'e' un solo match esatto in autocomplete, vai diretto. Mai sui
+    // risultati oscurati: lì `title` è il segnaposto uguale per tutti, e
+    // digitarlo manderebbe l'ospite su un artista a caso.
     const t = q.trim().toLowerCase();
-    const exact = hits.find((h) => h.title.toLowerCase() === t);
+    const exact = hits.find((h) => !h.locked && h.title.toLowerCase() === t);
     if (exact) {
       goToArtist(exact.slug);
       return;
@@ -276,29 +278,56 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
                   <ul className="py-1">
                     {hits.map((h, i) => {
                       const active = i === activeIdx;
+                      // `locked` lo decide il server: agli ospiti il nome non
+                      // arriva nemmeno, `h.title` è il segnaposto.
+                      const locked = h.locked === true;
                       return (
                         <li key={`${h.type}-${h.slug}`} role="option" aria-selected={active}>
                           <button
                             type="button"
                             onMouseEnter={() => setActiveIdx(i)}
                             onClick={() => goToArtist(h.slug)}
+                            aria-label={
+                              locked
+                                ? "Iscriviti per vedere i dettagli dell'artista"
+                                : undefined
+                            }
                             className={`flex w-full items-center gap-3 px-4 py-2 text-left transition-colors ${
                               active ? "bg-palco-80" : "hover:bg-palco-80"
                             }`}
                           >
-                            <span className="size-10 shrink-0 overflow-hidden rounded-md bg-palco-80">
+                            <span className="relative size-10 shrink-0 overflow-hidden rounded-md bg-palco-80">
                               {h.image ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={h.image}
                                   alt=""
-                                  className="h-full w-full object-cover"
+                                  className={`h-full w-full object-cover ${
+                                    // scale-125 insieme al blur: senza, la
+                                    // sfocatura scopre i bordi del riquadro.
+                                    locked ? "scale-125 blur-[6px]" : ""
+                                  }`}
                                 />
                               ) : null}
+                              {locked && (
+                                <span
+                                  aria-hidden="true"
+                                  className="absolute inset-0 flex items-center justify-center bg-notte/45"
+                                >
+                                  <Lock className="size-3.5 text-palco" />
+                                </span>
+                              )}
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="flex items-center gap-1.5">
-                                <span className="truncate font-display text-sm">{h.title}</span>
+                                <span
+                                  className={`truncate font-display text-sm ${
+                                    locked ? "select-none blur-[3px]" : ""
+                                  }`}
+                                  aria-hidden={locked}
+                                >
+                                  {h.title}
+                                </span>
                                 <ArtistTierBadges tier={h.tier} compact className="shrink-0" />
                               </span>
                               {h.subtitle && (
@@ -313,11 +342,18 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
                     })}
                   </ul>
                 )}
-                <div className="border-t border-palco-60 px-4 py-2 text-right text-[11px] uppercase tracking-wider">
+                <div className="flex items-center justify-between gap-3 border-t border-palco-60 px-4 py-2 text-[11px] uppercase tracking-wider">
+                  {/* Senza una riga che lo spieghi, la tendina sfocata sembra
+                      un errore di caricamento invece di un contenuto riservato. */}
+                  <span className="text-notte/50">
+                    {hits.some((h) => h.locked)
+                      ? "Iscriviti per vedere i nomi"
+                      : ""}
+                  </span>
                   <Link
                     href="/artisti"
                     onClick={() => setOpen(false)}
-                    className="text-azzurro hover:underline"
+                    className="shrink-0 text-azzurro hover:underline"
                   >
                     Vedi tutti gli artisti
                   </Link>

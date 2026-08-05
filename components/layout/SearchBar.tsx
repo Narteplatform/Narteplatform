@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Lock, Search } from "lucide-react";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import type { SearchHit } from "@/app/api/search/route";
 
@@ -160,23 +160,52 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+/**
+ * `hit.locked` arriva dal server per gli artisti quando chi cerca non ha una
+ * sessione: il nome non è nella risposta, `hit.title` è un segnaposto e va
+ * sfocato come sulle card del roster. Renderlo in chiaro qui vanificherebbe
+ * il blocco applicato ovunque altro.
+ */
 function HitRow({ hit, onSelect }: { hit: SearchHit; onSelect: () => void }) {
+  const locked = hit.locked === true;
   return (
     <li>
       <button
         type="button"
         onClick={onSelect}
+        aria-label={locked ? "Iscriviti per vedere i dettagli dell'artista" : undefined}
         className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-muted"
       >
-        <span className="size-10 shrink-0 overflow-hidden bg-muted">
+        <span className="relative size-10 shrink-0 overflow-hidden bg-muted">
           {hit.image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={hit.image} alt="" className="h-full w-full object-cover" />
+            <img
+              src={hit.image}
+              alt=""
+              className={`h-full w-full object-cover ${
+                locked ? "scale-125 blur-[6px]" : ""
+              }`}
+            />
           ) : null}
+          {locked && (
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 flex items-center justify-center bg-notte/45"
+            >
+              <Lock className="size-3.5 text-palco" />
+            </span>
+          )}
         </span>
         <span className="flex-1 min-w-0">
           <span className="flex items-center gap-1.5">
-            <span className="truncate font-display text-sm">{hit.title}</span>
+            <span
+              className={`truncate font-display text-sm ${
+                locked ? "select-none blur-[3px]" : ""
+              }`}
+              aria-hidden={locked}
+            >
+              {hit.title}
+            </span>
             <ArtistTierBadges tier={hit.tier} compact className="shrink-0" />
           </span>
           {hit.subtitle && (
