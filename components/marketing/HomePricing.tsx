@@ -63,7 +63,11 @@ export function HomePricing({
 }: {
   ctaHref?: string;
 } = {}) {
-  const [interval, setInterval] = useState<BillingInterval>("year");
+  // Si parte dal mensile: è la cifra che l'artista confronta con quello che
+  // spende di solito, e il risparmio dell'annuale resta visibile — sia sul
+  // pulsante "Annuale" con lo sconto, sia sotto ogni prezzo, che con il
+  // mensile attivo indica quanto verrebbe pagando a anno.
+  const [interval, setInterval] = useState<BillingInterval>("month");
 
   return (
     <div className="space-y-10">

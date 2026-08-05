@@ -84,6 +84,39 @@
     --color-ink: var(--color-palco);
     color-scheme: dark;
   }
+  /*
+    Tema della barra laterale delle aree riservate (artista, organizzatore,
+    admin). Non è un tema di pagina: si applica al solo <aside>, così la
+    colonna di navigazione è azzurro di brand e stacca dal contenuto chiaro
+    invece di confondersi con esso.
+
+    Rimappare i token invece di riscrivere le classi dei componenti è ciò che
+    tiene coerenti anche i pezzi annidati — voci di menu, badge, campo di
+    ricerca, blocco spazio, contatori: continuano a usare `bg-muted`,
+    `text-muted-foreground` e `border-border` e diventano azzurri da soli.
+
+    ⚠️ Le percentuali di bianco sono di contrasto, non di gusto: su questo
+    azzurro (#1a6bad) il bianco pieno sta a 5,6:1 e il bianco all'85% a 4,5:1,
+    che è il minimo AA per il testo normale. Sotto l'85% si scende sotto la
+    soglia, quindi le opacità più basse valgono solo per bordi e superfici.
+
+    `--color-accent` passa al corallo: dentro una colonna azzurra un accento
+    azzurro non si vedrebbe, e l'accento serve proprio a marcare la voce
+    attiva e la CTA.
+  */
+  [data-theme="azzurro"] {
+    --color-background: var(--color-azzurro);
+    --color-surface: var(--color-azzurro-dark);
+    --color-foreground: #ffffff;
+    --color-muted: rgba(255, 255, 255, 0.15);
+    --color-muted-foreground: rgba(255, 255, 255, 0.85);
+    --color-card: var(--color-azzurro-dark);
+    --color-border: rgba(255, 255, 255, 0.2);
+    --color-accent: var(--color-corallo);
+    --color-accent-foreground: #ffffff;
+    --color-ink: #ffffff;
+    color-scheme: dark;
+  }
   html,
   body {
     background: var(--color-background);

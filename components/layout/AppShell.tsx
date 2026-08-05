@@ -141,7 +141,14 @@ export function AppShell({
         Bloccata all'altezza della viewport, la sidebar resta sempre intera a
         schermo e a scorrere è solo il <nav> interno, che è già overflow-y-auto.
       */}
-      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-border bg-background lg:flex lg:flex-col">
+      {/* `data-theme="azzurro"` rimappa i token di colore per il solo sottoalbero
+          della sidebar (vedi app/globals.css): da qui in giù `bg-background` è
+          l'azzurro di brand, `text-foreground` è bianco e tutti i componenti
+          annidati seguono senza dover conoscere il tema. */}
+      <aside
+        data-theme="azzurro"
+        className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-border bg-background text-foreground lg:flex lg:flex-col"
+      >
         {sidebar}
       </aside>
 
@@ -149,8 +156,9 @@ export function AppShell({
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 lg:hidden" />
           <Dialog.Content
+            data-theme="azzurro"
             aria-describedby={undefined}
-            className="fixed inset-y-0 left-0 z-50 flex w-[85%] max-w-sm flex-col bg-background pb-[env(safe-area-inset-bottom)] shadow-xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left lg:hidden"
+            className="fixed inset-y-0 left-0 z-50 flex w-[85%] max-w-sm flex-col bg-background text-foreground pb-[env(safe-area-inset-bottom)] shadow-xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left lg:hidden"
           >
             <Dialog.Title className="sr-only">Menu di navigazione</Dialog.Title>
             {sidebar}
@@ -525,7 +533,9 @@ function StorageBlock({
       {storage.hint && (
         <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{storage.hint}</p>
       )}
-      <Button asChild variant="default" size="sm" className="mt-3 w-full">
+      {/* `accent` e non `default`: la variante default è azzurra e su una
+          sidebar azzurra sparirebbe. Il corallo è l'accento del tema qui. */}
+      <Button asChild variant="accent" size="sm" className="mt-3 w-full">
         <Link href={storage.ctaHref} onClick={onNavigate}>
           {storage.ctaLabel}
         </Link>
