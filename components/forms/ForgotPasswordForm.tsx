@@ -8,8 +8,7 @@ import {
   passwordResetRequestSchema,
   type PasswordResetRequestInput,
 } from "@/lib/validators/schemas";
-import { authErrorMessage } from "@/lib/auth/error-messages";
-import { createClient } from "@/lib/supabase/client";
+import { requestPasswordReset } from "@/app/(auth)/recupero-password/_actions";
 import { Input, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -24,14 +23,14 @@ export function ForgotPasswordForm() {
     resolver: zodResolver(passwordResetRequestSchema),
   });
 
+  // L'invio passa da una Server Action e non più dal client: il link va
+  // generato con la chiave service-role per poterlo spedire con il template
+  // Brevo, e quella chiave nel browser non ci va mai.
   async function onSubmit(values: PasswordResetRequestInput) {
     setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) {
-      setError(authErrorMessage(error.message));
+    const res = await requestPasswordReset(values.email);
+    if (!res.ok) {
+      setError(res.error);
       return;
     }
     setSent(true);
