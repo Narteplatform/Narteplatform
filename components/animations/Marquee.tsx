@@ -25,7 +25,13 @@ export function Marquee({
   className?: string;
 }) {
   const reduce = useReducedMotion();
-  const track = "flex w-max shrink-0 items-center gap-12 pr-12";
+  // ⚠️  `pr-*` deve sempre valere quanto il `gap-*`: compensa il gap che manca
+  //     in coda al gruppo, ed è ciò che rende invisibile la giunzione fra le
+  //     due copie. Cambiando l'uno va cambiato l'altro, breakpoint compreso.
+  //     Su mobile il passo è più stretto: a 48px di gap su uno schermo da 390
+  //     entrava in pratica un logo per volta, con l'aria intorno a farla da
+  //     padrona.
+  const track = "flex w-max shrink-0 items-center gap-8 pr-8 sm:gap-12 sm:pr-12";
 
   // Con reduced motion il nastro diventa una striscia che si scorre a mano.
   // Senza `overflow-x-auto` i contenuti sborderebbero dal contenitore e a

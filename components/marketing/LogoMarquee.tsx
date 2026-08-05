@@ -16,7 +16,8 @@ export type CollabLogo = {
  * 2976px di binario. Finché il viewport resta sotto quella misura la giunzione
  * non si vede. Con 6 celle il binario si fermava a 1488px e il buco compariva
  * già su un portatile da 1512px. Se cambiano larghezza della cella o gap
- * (`gap-12` dentro Marquee), questo numero va rifatto.
+ * (`gap-8` sotto `sm`, `gap-12` sopra, dentro Marquee), questo numero va
+ * rifatto — il caso peggiore è il gap più stretto, che accorcia il binario.
  */
 const MIN_CELLS = 12;
 

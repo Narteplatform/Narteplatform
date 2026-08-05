@@ -214,10 +214,16 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
               `block`, e senza di lui l'h1 viene annunciato "…idealeper il tuo
               evento". A schermo non si vede, uno spazio a fine riga si
               collassa. */}
-          <span className="block text-5xl font-bold text-palco sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+          {/* Sotto `sm` il corpo è fluido invece che fisso: a 48px "L'artista
+              ideale" non entrava nella larghezza di un telefono e andava a capo
+              da solo, spezzando la frase in tre righe invece di due. Il clamp
+              lega la dimensione alla larghezza dello schermo, così ogni riga
+              resta una riga da 320px in su; il tetto di 3rem impedisce che sui
+              telefoni larghi superi il gradino successivo. */}
+          <span className="block text-[clamp(1.9rem,8.6vw,3rem)] font-bold text-palco sm:text-6xl md:text-7xl lg:text-[5.5rem]">
             L&rsquo;artista ideale{" "}
           </span>
-          <span className="mt-2 block text-5xl font-bold text-azzurro-light sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+          <span className="mt-2 block text-[clamp(1.9rem,8.6vw,3rem)] font-bold text-azzurro-light sm:text-6xl md:text-7xl lg:text-[5.5rem]">
             per il tuo evento
           </span>
         </motion.h1>
@@ -258,6 +264,13 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
                 />
               </label>
 
+              {/* I due menu a tendina esistono solo da `sm` in su. Su un
+                  telefono impilavano due righe alte 40px sopra il pulsante,
+                  triplicando l'altezza della barra per due filtri che lì si
+                  usano poco: la ricerca testuale copre già genere e città,
+                  perché l'API cerca anche fra i generi del profilo. Lo stato
+                  resta vuoto e la ricerca parte senza filtri; chi vuole
+                  filtrare trova gli stessi controlli su /artisti. */}
               <HeroSelect
                 value={genre}
                 onChange={setGenre}
@@ -394,11 +407,15 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
           <Button asChild size="lg">
             <Link href="/artisti">Trova il tuo artista</Link>
           </Button>
+          {/* Fuori da mobile: su un telefono era la seconda di due CTA a
+              tutta larghezza in una hero già lunga, e portava a un modulo che
+              sta comunque in fondo alla stessa pagina. Da `sm` in su le due
+              CTA stanno affiancate e il costo dello spazio non c'è. */}
           <Button
             asChild
             size="lg"
             variant="ghost"
-            className="text-palco hover:bg-palco/10 hover:text-palco"
+            className="hidden text-palco hover:bg-palco/10 hover:text-palco sm:inline-flex"
           >
             <Link href="#richiedi">Raccontaci il tuo evento</Link>
           </Button>
@@ -435,7 +452,7 @@ function HeroSelect({
   ariaLabel: string;
 }) {
   return (
-    <div className="relative flex items-center">
+    <div className="relative hidden items-center sm:flex">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
