@@ -46,26 +46,30 @@ export default async function CollaborazioniPage() {
           adesso, quindi un evento si sposta qui la mattina dopo. */}
       <section className="border-b border-border py-20 md:py-28">
         <div className="container-narte">
-          <Reveal>
-            <p className="accent-label mb-3">archivio</p>
-          </Reveal>
-          <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <Reveal delay={0.1}>
-              <h2 className="display-xl text-balance text-4xl md:text-6xl">
-                Gli eventi che abbiamo già fatto
-              </h2>
+          {/* Centratura sull'intestazione e non sul contenitore: `text-center`
+              eredita e avrebbe centrato anche il testo delle card sotto. */}
+          <div className="text-center md:text-left">
+            <Reveal>
+              <p className="accent-label mb-3">archivio</p>
             </Reveal>
-            {pastEvents && pastEvents.length > 0 && (
-              <Reveal delay={0.2}>
-                <Link
-                  href="/eventi?when=past"
-                  className="group inline-flex items-center gap-1.5 rounded-md text-sm font-semibold text-accent transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                >
-                  Vedi tutto l&rsquo;archivio
-                  <ArrowRight className="size-4 transition-transform duration-220 ease-[var(--ease-out)] group-hover:translate-x-1" />
-                </Link>
+            <div className="mb-10 flex flex-col items-center gap-4 md:flex-row md:items-end md:justify-between">
+              <Reveal delay={0.1}>
+                <h2 className="display-xl text-balance text-4xl md:text-6xl">
+                  Gli eventi che abbiamo già fatto
+                </h2>
               </Reveal>
-            )}
+              {pastEvents && pastEvents.length > 0 && (
+                <Reveal delay={0.2}>
+                  <Link
+                    href="/eventi?when=past"
+                    className="group inline-flex items-center gap-1.5 rounded-md text-sm font-semibold text-accent transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                  >
+                    Vedi tutto l&rsquo;archivio
+                    <ArrowRight className="size-4 transition-transform duration-220 ease-[var(--ease-out)] group-hover:translate-x-1" />
+                  </Link>
+                </Reveal>
+              )}
+            </div>
           </div>
 
           {pastEvents === null ? (
@@ -90,7 +94,7 @@ export default async function CollaborazioniPage() {
 
       {/* PARTNER — nastro di loghi in scorrimento */}
       <section className="bg-[#F7F5F2] py-20 text-notte md:py-28">
-        <div className="container-narte">
+        <div className="container-narte text-center md:text-left">
           <Reveal>
             <p className="accent-label mb-3">insieme a</p>
           </Reveal>
@@ -100,7 +104,7 @@ export default async function CollaborazioniPage() {
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
-            <p className="mt-4 max-w-xl text-pretty text-sm text-notte/70 md:text-base">
+            <p className="mx-auto mt-4 max-w-xl text-pretty text-sm text-notte/70 md:mx-0 md:text-base">
               Location, sponsor e istituzioni con cui lavoriamo. Se organizzi
               qualcosa e ti serve musica dal vivo, il posto giusto per iniziare è
               una riga in un modulo.

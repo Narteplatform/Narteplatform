@@ -50,27 +50,34 @@ export async function StarsSection() {
   return (
     <section className="bg-[#F7F5F2] py-20 text-notte md:py-28">
       <div className="container-narte">
-        <Reveal>
-          <p className="accent-label mb-3">il roster</p>
-        </Reveal>
-        <div className="mb-4 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <Reveal delay={0.1}>
-            <h2 className="display-xl text-balance text-4xl text-notte md:text-6xl">
-              Sfoglia tra centinaia di artisti e scegli il più adatto a te
-            </h2>
+        {/* ⚠️  La centratura sta su questo blocco e non sul contenitore:
+            `text-center` eredita, e sul contenitore avrebbe centrato anche il
+            testo dentro le card degli artisti qui sotto. Finché la sezione è
+            una colonna sola — sotto `md`, dove titolo, pulsante e testo si
+            impilano — l'intestazione è centrata; da `md` torna ai due bordi. */}
+        <div className="text-center md:text-left">
+          <Reveal>
+            <p className="accent-label mb-3">il roster</p>
           </Reveal>
-          <Reveal delay={0.2}>
-            <Button asChild variant="accent" size="md">
-              <Link href="/artisti">Vedi tutti gli artisti</Link>
-            </Button>
+          <div className="mb-4 flex flex-col items-center gap-6 md:flex-row md:items-end md:justify-between">
+            <Reveal delay={0.1}>
+              <h2 className="display-xl text-balance text-4xl text-notte md:text-6xl">
+                Sfoglia tra centinaia di artisti e scegli il più adatto a te
+              </h2>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <Button asChild variant="accent" size="md">
+                <Link href="/artisti">Vedi tutti gli artisti</Link>
+              </Button>
+            </Reveal>
+          </div>
+          <Reveal delay={0.25}>
+            <p className="mx-auto mb-10 max-w-xl text-pretty text-sm text-notte/70 md:mx-0 md:text-base">
+              Iscriviti per sbloccare i dettagli degli artisti e la possibilità di
+              fare una richiesta di booking.
+            </p>
           </Reveal>
         </div>
-        <Reveal delay={0.25}>
-          <p className="mb-10 max-w-xl text-pretty text-sm text-notte/70 md:text-base">
-            Iscriviti per sbloccare i dettagli degli artisti e la possibilità di
-            fare una richiesta di booking.
-          </p>
-        </Reveal>
 
         {artists.length === 0 ? (
           <p className="text-sm text-notte/60">

@@ -13,7 +13,8 @@ export function EventRequestSection() {
       className="border-t border-palco-60 bg-[#F7F5F2] py-20 text-notte md:py-28"
     >
       <div className="container-narte grid gap-12 md:grid-cols-[1fr_1.2fr]">
-        <div>
+        {/* Centrata finché sta sopra il modulo invece che accanto. */}
+        <div className="text-center md:text-left">
           <Reveal>
             <p className="accent-label mb-3">parla con noi</p>
           </Reveal>
@@ -23,7 +24,7 @@ export function EventRequestSection() {
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
-            <p className="mt-6 max-w-md text-pretty text-base text-notte/70">
+            <p className="mx-auto mt-6 max-w-md text-pretty text-base text-notte/70 md:mx-0">
               Il team N&rsquo;arte è qui per aiutarti, compila il form sottostante
               con tutte le tue informazioni e ti forniremo la soluzione più
               adatta alle tue esigenze!

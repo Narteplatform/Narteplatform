@@ -43,10 +43,11 @@ export default function ChiSiamoPage() {
           </Reveal>
 
           <Reveal delay={0.1}>
-            <div>
+            {/* Centrato finché il testo sta sotto la foto invece che accanto. */}
+            <div className="text-center md:text-left">
               <p className="accent-label mb-3">il fondatore</p>
               <h2 className="display-xl text-4xl md:text-5xl">Eduardo Castronuovo</h2>
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
+              <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:mx-0 md:text-lg">
                 Giovane visionario fondatore di N&rsquo;arte e presente nel settore della musica
                 da oltre 8 anni. Eduardo ha dato la possibilità a tantissimi giovani emergenti
                 di crescere ed esprimersi su migliaia di palchi, gestendo anche la direzione
@@ -62,7 +63,7 @@ export default function ChiSiamoPage() {
           l'alternanza chiaro/scuro della pagina. */}
       <section className="border-t border-border py-20 md:py-28">
         <div className="container-narte">
-          <div className="max-w-2xl">
+          <div className="mx-auto max-w-2xl text-center md:mx-0 md:text-left">
             <Reveal>
               <p className="accent-label mb-3">le tappe</p>
             </Reveal>
@@ -122,14 +123,16 @@ export default function ChiSiamoPage() {
       {/* NUMERI */}
       <section className="border-t border-border py-20 md:py-28">
         <div className="container-narte">
-          <Reveal>
-            <p className="accent-label mb-3">i numeri</p>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <h2 className="display-xl text-balance text-4xl md:text-6xl">
-              Dal {NARTE_SINCE}, una rete in continua crescita.
-            </h2>
-          </Reveal>
+          <div className="text-center md:text-left">
+            <Reveal>
+              <p className="accent-label mb-3">i numeri</p>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <h2 className="display-xl text-balance text-4xl md:text-6xl">
+                Dal {NARTE_SINCE}, una rete in continua crescita.
+              </h2>
+            </Reveal>
+          </div>
           <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-3">
             {NARTE_STATS.map((s, i) => (
               <Reveal key={s.label} delay={0.1 * (i + 1)}>

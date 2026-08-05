@@ -35,11 +35,11 @@ export async function BlogSection() {
 
   return (
     <section className="border-t border-border bg-background py-20 md:py-28">
-      <div className="container-narte">
+      <div className="container-narte text-center md:text-left">
         <Reveal>
           <p className="accent-label mb-3">blog</p>
         </Reveal>
-        <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="mb-10 flex flex-col items-center gap-6 md:flex-row md:items-end md:justify-between">
           <Reveal delay={0.1}>
             <h2 className="display-xl text-4xl md:text-6xl">Il magazine N&rsquo;arte</h2>
           </Reveal>

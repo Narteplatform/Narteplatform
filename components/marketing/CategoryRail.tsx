@@ -17,12 +17,12 @@ const CATEGORIES = [
 
 export function CategoryRail() {
   return (
-    <section className="container-narte py-12">
+    <section className="container-narte py-12 text-center md:text-left">
       <Reveal>
         <p className="accent-label mb-4">popular categories</p>
       </Reveal>
       <Reveal delay={0.1}>
-        <div className="flex flex-wrap gap-x-3 gap-y-2 font-display text-2xl text-muted-foreground md:text-4xl">
+        <div className="flex flex-wrap justify-center gap-x-3 gap-y-2 font-display text-2xl text-muted-foreground md:justify-start md:text-4xl">
           {CATEGORIES.map((c, i) => (
             <Link
               key={c.slug}

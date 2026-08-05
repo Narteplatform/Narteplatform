@@ -36,8 +36,10 @@ export async function PastEventsSection() {
       {/* Due colonne di uguale larghezza: il blocco delle locandine specchia
           quello del testo invece di sbilanciare la sezione verso destra. */}
       <div className="container-narte grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
-        {/* COPY */}
-        <div>
+        {/* COPY. Centrata finché le due colonne sono impilate: qui la griglia
+            si apre a `lg`, non a `md`, quindi il ritorno all'allineamento a
+            sinistra segue quel breakpoint e non quello delle altre sezioni. */}
+        <div className="text-center lg:text-left">
           <Reveal>
             <p className="accent-label mb-3">quello che abbiamo fatto</p>
           </Reveal>
@@ -47,7 +49,7 @@ export async function PastEventsSection() {
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
-            <p className="mt-5 max-w-md text-pretty text-base text-muted-foreground md:text-lg">
+            <p className="mx-auto mt-5 max-w-md text-pretty text-base text-muted-foreground md:text-lg lg:mx-0">
               Immergiti nel mondo N&rsquo;arte e scopri gli eventi realizzati con
               successo.
             </p>

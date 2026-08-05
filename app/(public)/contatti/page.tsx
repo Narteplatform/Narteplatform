@@ -24,12 +24,16 @@ export default function ContattiPage() {
       {/* FORM + INFO */}
       <section className="bg-muted py-20 md:py-28">
         <div className="container-narte grid gap-10 md:grid-cols-[1fr_1.2fr]">
+          {/* `text-center` solo sull'intestazione: le schede dei contatti qui
+              sotto restano allineate a sinistra, con icona e testo in riga. */}
           <div className="space-y-6">
             <Reveal>
-              <p className="accent-label mb-3">canali diretti</p>
+              <p className="accent-label mb-3 text-center md:text-left">canali diretti</p>
             </Reveal>
             <Reveal delay={0.1}>
-              <h2 className="display-xl text-3xl md:text-5xl">Scrivici dove preferisci.</h2>
+              <h2 className="display-xl text-center text-3xl md:text-left md:text-5xl">
+                Scrivici dove preferisci.
+              </h2>
             </Reveal>
 
             <Reveal delay={0.2}>

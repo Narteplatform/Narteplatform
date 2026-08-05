@@ -102,8 +102,10 @@ export default async function FormatDetailPage({
             </Reveal>
           </div>
 
-          {/* COLONNA TESTO */}
-          <div className="flex flex-col">
+          {/* COLONNA TESTO — centrata finché sta sotto la foto. La descrizione
+              più sotto resta allineata a sinistra: è prosa lunga, e centrarla
+              renderebbe frastagliato ogni inizio riga. */}
+          <div className="flex flex-col text-center md:text-left">
             <Reveal>
               <p className="accent-label">format</p>
             </Reveal>
@@ -114,14 +116,14 @@ export default async function FormatDetailPage({
             </Reveal>
             {format.tagline && (
               <Reveal delay={0.2}>
-                <p className="mt-6 max-w-prose text-lg text-muted-foreground md:text-xl">
+                <p className="mx-auto mt-6 max-w-prose text-lg text-muted-foreground md:mx-0 md:text-xl">
                   {format.tagline}
                 </p>
               </Reveal>
             )}
             {format.description && (
               <Reveal delay={0.25}>
-                <div className="mt-8 rounded-2xl border border-border bg-muted p-5 md:p-6">
+                <div className="mt-8 rounded-2xl border border-border bg-muted p-5 text-left md:p-6">
                   <p className="accent-label mb-3">descrizione</p>
                   <div className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground md:text-base">
                     {format.description}
@@ -138,10 +140,12 @@ export default async function FormatDetailPage({
         <section className="bg-muted py-16 md:py-24">
           <div className="container-narte">
             <Reveal>
-              <p className="accent-label mb-3">galleria</p>
+              <p className="accent-label mb-3 text-center md:text-left">galleria</p>
             </Reveal>
             <Reveal delay={0.1}>
-              <h2 className="display-xl text-3xl md:text-5xl">Gallery.</h2>
+              <h2 className="display-xl text-center text-3xl md:text-left md:text-5xl">
+                Gallery.
+              </h2>
             </Reveal>
             <Reveal delay={0.2}>
               <ImageLightbox
@@ -159,10 +163,12 @@ export default async function FormatDetailPage({
         <section className="border-t border-border py-16 md:py-24">
           <div className="container-narte">
             <Reveal>
-              <p className="accent-label mb-3">video</p>
+              <p className="accent-label mb-3 text-center md:text-left">video</p>
             </Reveal>
             <Reveal delay={0.1}>
-              <h2 className="display-xl text-3xl md:text-5xl">Performance.</h2>
+              <h2 className="display-xl text-center text-3xl md:text-left md:text-5xl">
+                Performance.
+              </h2>
             </Reveal>
             <Reveal delay={0.2}>
               <div className="mt-8">

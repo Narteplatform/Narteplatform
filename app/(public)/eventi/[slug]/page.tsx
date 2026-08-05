@@ -87,8 +87,9 @@ export default async function EventDetailPage({
 
           {/* COLONNA INFORMAZIONI — titolo, data/orario/luogo/prezzo e CTA. La
               descrizione non sta più qui: era lei a dettare l'altezza delle due
-              colonne e a sbilanciare il blocco. */}
-          <div className="flex flex-col">
+              colonne e a sbilanciare il blocco.
+              Centrata finché sta sotto la foto invece che accanto. */}
+          <div className="flex flex-col text-center md:text-left">
             <Reveal>
               <p className="accent-label">evento</p>
             </Reveal>
@@ -149,10 +150,12 @@ export default async function EventDetailPage({
         <section className="bg-muted py-16 md:py-24">
           <div className="container-narte">
             <Reveal>
-              <p className="accent-label mb-3">galleria</p>
+              <p className="accent-label mb-3 text-center md:text-left">galleria</p>
             </Reveal>
             <Reveal delay={0.1}>
-              <h2 className="display-xl text-3xl md:text-5xl">Foto e video.</h2>
+              <h2 className="display-xl text-center text-3xl md:text-left md:text-5xl">
+                Foto e video.
+              </h2>
             </Reveal>
             <Reveal delay={0.2}>
               <div className="mt-8">
@@ -168,10 +171,12 @@ export default async function EventDetailPage({
         <section className="border-t border-border py-16 md:py-24">
           <div className="container-narte">
             <Reveal>
-              <p className="accent-label mb-3">altri eventi</p>
+              <p className="accent-label mb-3 text-center md:text-left">altri eventi</p>
             </Reveal>
             <Reveal delay={0.1}>
-              <h2 className="display-xl text-3xl md:text-5xl">Eventi correlati.</h2>
+              <h2 className="display-xl text-center text-3xl md:text-left md:text-5xl">
+                Eventi correlati.
+              </h2>
             </Reveal>
             <StaggerList className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
               {relatedEvents.map((e) => (

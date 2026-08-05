@@ -10,7 +10,7 @@ export async function CollaborationsSection() {
 
   return (
     <section className="border-t border-palco-60 bg-[#F7F5F2] py-20 text-notte md:py-28">
-      <div className="container-narte">
+      <div className="container-narte text-center md:text-left">
         <Reveal>
           <p className="accent-label mb-3">i nostri partner</p>
         </Reveal>
@@ -20,7 +20,7 @@ export async function CollaborationsSection() {
           </h2>
         </Reveal>
         <Reveal delay={0.2}>
-          <p className="mt-4 max-w-xl text-pretty text-sm text-notte/70 md:text-base">
+          <p className="mx-auto mt-4 max-w-xl text-pretty text-sm text-notte/70 md:mx-0 md:text-base">
             N&rsquo;arte è capace di adattarsi a qualunque situazione e
             dimensione, riuscendo a fornire la massima qualità artistica in ogni
             contesto.

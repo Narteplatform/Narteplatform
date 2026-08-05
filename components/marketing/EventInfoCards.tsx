@@ -134,7 +134,9 @@ export function EventInfoCards({ date, endAt, city, venue, price }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
+      {/* Le pillole seguono l'allineamento della colonna che le ospita: sotto
+          `md` la scheda evento è centrata, da lì in su parte da sinistra. */}
+      <div className="flex flex-wrap justify-center gap-2 md:justify-start">
         {pills.map((p) => {
           const isActive = open === p.key;
           return (
