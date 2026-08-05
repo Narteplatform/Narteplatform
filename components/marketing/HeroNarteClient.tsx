@@ -220,10 +220,10 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
               lega la dimensione alla larghezza dello schermo, così ogni riga
               resta una riga da 320px in su; il tetto di 3rem impedisce che sui
               telefoni larghi superi il gradino successivo. */}
-          <span className="block text-[clamp(1.9rem,8.6vw,3rem)] font-bold text-palco sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+          <span className="block text-[clamp(2.1rem,9.6vw,3rem)] font-bold text-palco sm:text-6xl md:text-7xl lg:text-[5.5rem]">
             L&rsquo;artista ideale{" "}
           </span>
-          <span className="mt-2 block text-[clamp(1.9rem,8.6vw,3rem)] font-bold text-azzurro-light sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+          <span className="mt-2 block text-[clamp(2.1rem,9.6vw,3rem)] font-bold text-azzurro-light sm:text-6xl md:text-7xl lg:text-[5.5rem]">
             per il tuo evento
           </span>
         </motion.h1>
@@ -232,7 +232,7 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
             uscirebbe dallo schermo alle larghezze intermedie. */}
         <motion.p
           {...titleAnim(0.2)}
-          className="mt-5 max-w-2xl text-pretty text-base text-palco/75 md:text-lg"
+          className="mt-4 max-w-2xl text-pretty text-[1.1rem] text-palco/75 sm:mt-5 sm:text-base md:text-lg"
         >
           Cerca tra centinaia di artisti per genere, tipologia e disponibilità e
           contattali per la tua serata!
@@ -242,11 +242,16 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
         <motion.form
           {...titleAnim(0.28)}
           onSubmit={onSearch}
-          className="mt-8 w-full max-w-3xl"
+          className="mt-6 w-full max-w-3xl sm:mt-8"
         >
           <div ref={wrapRef} className="relative">
-            <div className="flex flex-col gap-2 rounded-2xl bg-palco p-2 shadow-xl shadow-black/30 sm:flex-row sm:items-stretch sm:rounded-full sm:p-1.5">
-              <label className="flex flex-1 items-center gap-2 px-4 sm:px-4">
+            {/* Una riga sola a ogni larghezza: campo e pulsante affiancati
+                dentro la stessa pillola. Prima sotto `sm` la barra andava in
+                colonna e il pulsante prendeva una seconda riga a tutta
+                larghezza, alta quanto il campo — il doppio di ingombro per la
+                stessa funzione. */}
+            <div className="flex items-center gap-1.5 rounded-full bg-palco p-1.5 shadow-xl shadow-black/30 sm:items-stretch">
+              <label className="flex min-w-0 flex-1 items-center gap-2 pl-3 sm:pl-4">
                 <Search className="size-4 shrink-0 text-notte/40" />
                 <input
                   type="search"
@@ -284,13 +289,17 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
                 ariaLabel="Città"
               />
 
+              {/* Sotto `sm` è un tondo con la sola lente: la parola "Cerca"
+                  costringerebbe il campo di testo a metà larghezza. */}
               <Button
                 type="submit"
                 variant="default"
                 size="md"
-                className="!h-10 !rounded-full px-5"
+                aria-label="Cerca"
+                className="!h-10 !w-10 shrink-0 !rounded-full !px-0 sm:!w-auto sm:!px-5"
               >
-                <Search className="size-4" /> Cerca
+                <Search className="size-4" />
+                <span className="hidden sm:inline">Cerca</span>
               </Button>
             </div>
 
@@ -402,7 +411,7 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
         {/* CTA */}
         <motion.div
           {...titleAnim(0.38)}
-          className="mt-8 flex flex-wrap items-center justify-center gap-3"
+          className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:mt-8"
         >
           <Button asChild size="lg">
             <Link href="/artisti">Trova il tuo artista</Link>
