@@ -9,10 +9,16 @@ export type CollabLogo = {
 
 /**
  * Sotto questa soglia il binario resta più stretto del viewport e fra una copia
- * e l'altra si apre un buco visibile. Con tre partner a DB succede sempre,
+ * e l'altra si apre un buco visibile. Con pochi partner a DB succede sempre,
  * quindi l'elenco si ripete finché non è abbastanza lungo.
+ *
+ * Il conto: cella 200px + gap 48px = 248px per logo, quindi 12 celle fanno
+ * 2976px di binario. Finché il viewport resta sotto quella misura la giunzione
+ * non si vede. Con 6 celle il binario si fermava a 1488px e il buco compariva
+ * già su un portatile da 1512px. Se cambiano larghezza della cella o gap
+ * (`gap-12` dentro Marquee), questo numero va rifatto.
  */
-const MIN_CELLS = 6;
+const MIN_CELLS = 12;
 
 /**
  * Nastro scorrevole dei loghi partner. Usato sia dalla sezione della home sia
