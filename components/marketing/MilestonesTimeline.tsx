@@ -23,8 +23,14 @@ import type { Milestone } from "@/lib/content/milestones";
  *
  * `orientation` resta "horizontal" a ogni larghezza: Radix non ha un
  * orientamento responsive e alternarlo con una media query lato JS
- * introdurrebbe un disallineamento di idratazione. Sotto md i pallini sono
+ * introdurrebbe un disallineamento di idratazione. Sotto lg i pallini sono
  * impilati ma ← → continuano a funzionare, ed è il compromesso migliore.
+ *
+ * Il rail diventa orizzontale da lg e non da md: con sei tappe, a 768px ogni
+ * colonna scende sotto i 110px e titoli come "Capodanno in Piazza del
+ * Plebiscito" si spezzano su cinque righe. Da 1024px in su le colonne stanno
+ * sopra i 150px e il titolo respira. Se le tappe diventano molte di più,
+ * conviene rivedere il breakpoint (o passare a un rail scorrevole).
  */
 export function MilestonesTimeline({
   items,
@@ -56,24 +62,24 @@ export function MilestonesTimeline({
       className={className}
     >
       <div className="relative">
-        {/* Due linee distinte, mai visibili insieme: una verticale sotto md
-            (left-5 = centro di un pallino size-10) e una orizzontale da md
+        {/* Due linee distinte, mai visibili insieme: una verticale sotto lg
+            (left-5 = centro di un pallino size-10) e una orizzontale da lg
             (top-8 = centro di un pallino size-16). Sono separate perché
             l'orizzontale ha bisogno di un inset calcolato che la verticale non
             usa. */}
         <span
           aria-hidden="true"
-          className="absolute bottom-5 left-5 top-5 w-px bg-border md:hidden"
+          className="absolute bottom-5 left-5 top-5 w-px bg-border lg:hidden"
         />
         <span
           aria-hidden="true"
           style={{ left: halfColumn, right: halfColumn }}
-          className="absolute top-8 hidden h-px bg-border md:block"
+          className="absolute top-8 hidden h-px bg-border lg:block"
         />
 
         <Tabs.List
           aria-label="Le tappe di N'arte"
-          className="relative flex flex-col gap-6 md:flex-row md:gap-4"
+          className="relative flex flex-col gap-6 lg:flex-row lg:gap-4"
         >
           {items.map((m) => {
             const isActive = m.id === value;
@@ -81,11 +87,11 @@ export function MilestonesTimeline({
               <Tabs.Trigger
                 key={m.id}
                 value={m.id}
-                className="group flex items-center gap-4 rounded-xl text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 md:flex-1 md:flex-col md:items-center md:gap-0 md:text-center"
+                className="group flex items-center gap-4 rounded-xl text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 lg:flex-1 lg:flex-col lg:items-center lg:gap-0 lg:text-center"
               >
                 <span
                   className={cn(
-                    "relative inline-flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-muted transition-colors duration-220 ease-[var(--ease-out)] md:size-16",
+                    "relative inline-flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-muted transition-colors duration-220 ease-[var(--ease-out)] lg:size-16",
                     isActive
                       ? "border-accent"
                       : "border-border group-hover:border-muted-foreground"
@@ -101,7 +107,7 @@ export function MilestonesTimeline({
                     fallback={
                       <span
                         aria-hidden="true"
-                        className="font-display text-[11px] font-bold tabular-nums text-muted-foreground md:text-sm"
+                        className="font-display text-[11px] font-bold tabular-nums text-muted-foreground lg:text-sm"
                       >
                         {m.year}
                       </span>
@@ -127,7 +133,7 @@ export function MilestonesTimeline({
                     ))}
                 </span>
 
-                <span className="min-w-0 md:mt-4">
+                <span className="min-w-0 lg:mt-4">
                   <span
                     className={cn(
                       "narte-label block transition-colors",
@@ -136,7 +142,7 @@ export function MilestonesTimeline({
                   >
                     {m.year}
                   </span>
-                  <span className="mt-1 block text-balance font-display text-base font-bold leading-tight md:text-[15px] lg:text-base">
+                  <span className="mt-1 block text-balance font-display text-base font-bold leading-tight lg:text-[15px] xl:text-base">
                     {m.title}
                   </span>
                 </span>

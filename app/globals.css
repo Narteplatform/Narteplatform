@@ -5,6 +5,13 @@
   --color-azzurro: #1a6bad;
   --color-azzurro-dark: #145688;
   --color-azzurro-light: #2980c8;
+  /*
+    L'azzurro di brand su fondo notte sta a 3,1:1 e l'azzurro-light a 4,2:1:
+    sotto la soglia AA per le micro-label da 11-12px. `azzurro-pale` è la
+    versione dell'accento pensata per il testo sui fondi scuri — 9,3:1 su notte
+    e 7,5:1 su notte-80 — e non va usata sui fondi chiari, dove sparisce.
+  */
+  --color-azzurro-pale: #8fc4ea;
   --color-azzurro-subtle: #ebf4fb;
   --color-corallo: #e8542a;
   --color-corallo-dark: #c0411c;

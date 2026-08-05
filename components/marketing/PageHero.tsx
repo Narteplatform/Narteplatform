@@ -61,7 +61,10 @@ export function PageHero({
       />
       <div className="container-narte relative z-10 text-center">
         <Reveal>
-          <p className="accent-label mb-4">{label}</p>
+          {/* L'occhiello sta sempre su fondo scuro (le pagine pubbliche girano
+              in tema notte): l'azzurro di brand ci starebbe a 3,1:1, sotto la
+              soglia AA per un testo da 12px. */}
+          <p className="accent-label mb-4 text-azzurro-pale">{label}</p>
         </Reveal>
         <Reveal delay={0.1}>
           <h1 className="display-xl text-5xl md:text-7xl lg:text-8xl">{title}</h1>
