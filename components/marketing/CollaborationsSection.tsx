@@ -1,24 +1,11 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { createAdminClient } from "@/lib/supabase/server";
 import { Reveal } from "@/components/animations/Reveal";
-import { LogoMarquee, type CollabLogo } from "@/components/marketing/LogoMarquee";
-
-async function getCollabs(): Promise<CollabLogo[]> {
-  try {
-    const supabase = createAdminClient();
-    const { data } = await supabase
-      .from("collaborations")
-      .select("id, name, logo_url, link")
-      .order("order_index", { ascending: true });
-    return data ?? [];
-  } catch {
-    return [];
-  }
-}
+import { LogoMarquee } from "@/components/marketing/LogoMarquee";
+import { getCollaborations } from "@/lib/data/collaborations";
 
 export async function CollaborationsSection() {
-  const collabs = await getCollabs();
+  const collabs = await getCollaborations();
   if (collabs.length === 0) return null;
 
   return (

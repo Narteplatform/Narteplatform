@@ -8,6 +8,7 @@ import { Search, ChevronDown } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
+import { LogoMarquee, type CollabLogo } from "@/components/marketing/LogoMarquee";
 import { NARTE_STATS } from "@/lib/content/stats";
 import type { SearchHit } from "@/app/api/search/route";
 
@@ -39,7 +40,7 @@ const CITIES = [
   { v: "Benevento", label: "Benevento" },
 ];
 
-export function HeroNarteClient() {
+export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
   const reduce = useReducedMotion();
   const router = useRouter();
   const [q, setQ] = React.useState("");
@@ -170,7 +171,11 @@ export function HeroNarteClient() {
         />
       </div>
 
-      <div className="container-narte relative z-10 flex min-h-[88svh] flex-col items-center justify-center px-6 py-24 text-center md:py-32">
+      {/* Il nastro dei partner sta fuori da questo blocco, quindi l'altezza
+          minima non è più quella della hero intera: 74svh qui più il nastro
+          in fondo tornano agli ~88svh di prima, e la fascia successiva
+          continua a farsi intravedere sotto la piega. */}
+      <div className="container-narte relative z-10 flex min-h-[74svh] flex-col items-center justify-center px-6 pb-14 pt-24 text-center md:pb-16 md:pt-28">
         <motion.h1
           {...titleAnim(0.1)}
           className="font-display tracking-[-0.045em]"
@@ -344,7 +349,7 @@ export function HeroNarteClient() {
         {/* Stats */}
         <motion.div
           {...titleAnim(0.48)}
-          className="mt-16 w-full max-w-2xl border-t border-palco/15 pt-8"
+          className="mt-12 w-full max-w-2xl border-t border-palco/15 pt-8 md:mt-14"
         >
           <dl className="grid grid-cols-3 gap-4 text-center">
             {NARTE_STATS.map((s) => (
@@ -360,6 +365,20 @@ export function HeroNarteClient() {
           </dl>
         </motion.div>
       </div>
+
+      {/* PARTNER. Fuori da `container-narte` perché il nastro deve arrivare ai
+          bordi dello schermo: dentro il contenitore le sfumature laterali si
+          fermerebbero a 1200px, con due tagli netti in mezzo alla hero.
+          Più lento della sezione più in basso (45s contro 30s): qui è un
+          fondale, non il contenuto della fascia. */}
+      {partners.length > 0 && (
+        <motion.div
+          {...titleAnim(0.56)}
+          className="relative z-10 pb-12 md:pb-16"
+        >
+          <LogoMarquee logos={partners} speed={45} surface="on-dark" />
+        </motion.div>
+      )}
     </section>
   );
 }

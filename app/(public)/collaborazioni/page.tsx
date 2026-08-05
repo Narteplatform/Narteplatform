@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
 import { getPublicEvents } from "@/lib/data/events";
+import { getCollaborations } from "@/lib/data/collaborations";
 import { StaggerList, Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
 import { heroImageFor } from "@/lib/content/hero-images";
 import { EventCard } from "@/components/marketing/EventCard";
-import { LogoMarquee, type CollabLogo } from "@/components/marketing/LogoMarquee";
+import { LogoMarquee } from "@/components/marketing/LogoMarquee";
 
 export const metadata = {
   title: "Collaborazioni — N'arte",
@@ -21,23 +21,10 @@ export const metadata = {
  */
 const PAST_EVENTS_LIMIT = 24;
 
-async function getCollabs(): Promise<CollabLogo[]> {
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("collaborations")
-      .select("id, name, logo_url, link")
-      .order("order_index", { ascending: true });
-    return data ?? [];
-  } catch {
-    return [];
-  }
-}
-
 export default async function CollaborazioniPage() {
   const [pastEvents, collaborations] = await Promise.all([
     getPublicEvents({ when: "past", limit: PAST_EVENTS_LIMIT }),
-    getCollabs(),
+    getCollaborations(),
   ]);
 
   return (
