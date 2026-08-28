@@ -28,6 +28,7 @@
 
 | Area | Stato | Voci 🔴 |
 |---|---|---|
+| **Archivio contenuti su bunny.net** | **Confermato, da sviluppare** | **1** |
 | Contenuti pubblici (format, blog, aiuto, eventi, artisti) | Impianto pronto, contenuti mancanti | 6 |
 | Email | Costruite bene, **mai realmente consegnate** | 5 |
 | Legale / GDPR | Assente | 6 |
@@ -44,6 +45,33 @@ admin e aree per cinque ruoli sono costruiti e coerenti. Quello che manca è
 quasi tutto nella stessa famiglia: **contenuti reali, configurazione dei
 servizi esterni e adempimenti legali**. Sono le tre cose che non si possono
 scrivere in codice al posto tuo.
+
+---
+
+## 0. Archivio dei contenuti su bunny.net 🔴
+
+**Scelta confermata.** Oggi video, foto e audio vivono su Supabase Storage, con un
+tetto di **50 MB per video** che rende inutilizzabile la funzione più importante
+del profilo artista: un video di un concerto ne pesa 250. L'architettura di
+destinazione è già progettata in [`VIDEO_ARCHITETTURA_BUNNY.md`](./VIDEO_ARCHITETTURA_BUNNY.md).
+
+Va fatto **per primo**: ogni altro lavoro sui contenuti dipende da dove finiscono
+i file.
+
+- [ ] 🔴 **B** — Creare account bunny.net, Video Library (Stream) e Storage Zone, e passare le credenziali
+- [ ] 🔴 **A** — Modulo `lib/bunny/`, variabili d'ambiente, migration per id e stato di elaborazione
+- [ ] 🔴 **A** — Caricamento video diretto dal browser a Bunny, ripristinabile se cade la linea, limite a **500 MB**
+- [ ] 🔴 **A** — Accettare i video girati da iPhone senza conversione manuale (oggi i `.mov` vengono rifiutati)
+- [ ] 🔴 **A** — Stato "in elaborazione" in dashboard + webhook di Bunny a conversione finita
+- [ ] 🔴 **A** — Riproduttore a qualità adattiva e anteprima automatica sul profilo pubblico
+- [ ] 🔴 **A** — Spostare gallery, copertine, avatar e tracce audio su Bunny Storage, con immagini già ridimensionate
+- [ ] 🔴 **A** — Adeguare tutti i punti di caricamento esistenti (`GalleryUpload`, `ImageUpload`, `AudioUpload`, `VideoUpload`, `ApplicationVideoUpload`, `EventVideoUpload`)
+- [ ] 🟡 **A** — Script di trasferimento dei contenuti già caricati, **con verifica prima di rimuovere qualsiasi originale**
+- [ ] 🟡 **A** — Mantenere l'applicazione dei limiti di piano sul nuovo percorso e cancellare su Bunny quando si elimina un contenuto
+
+> Effetto collaterale positivo: senza i file pesanti dentro, **Supabase può restare
+> sul piano gratuito** e continuare a occuparsi solo di database e accessi. Il che
+> ridimensiona il punto 9.
 
 ---
 
@@ -109,11 +137,11 @@ Articoli da scrivere, raggruppati per categoria:
 | Booking | differenza lead/booking, contratto modello |
 | Consulenza | annullare una consulenza, diventare consulente |
 | Account | cambiare email, eliminare l'account, privacy e dati |
-| **Pagamenti** (categoria vuota) | modalità di pagamento, chi emette fattura, SIAE, acconto e saldo |
+| **Pagamenti** (categoria vuota) | come ci si accorda sul compenso, fattura fra artista e organizzatore, SIAE, acconto e saldo |
 | **Policy** (categoria vuota) | termini di servizio, codice di condotta, contestazioni, sicurezza account |
 
 - [ ] 🔴 **B** — Scrivere i 23 articoli mancanti (o **C**: decidere di nascondere le categorie non pronte invece di mostrarle vuote)
-- [ ] 🔴 **B/C** — La categoria "Pagamenti" richiede risposte che oggi non esistono: **chi emette la fattura all'organizzatore, l'artista o N'arte? Chi paga la SIAE? Si accettano acconti?** Sono decisioni di business, non testi da scrivere.
+- [ ] 🔴 **B** — La categoria "Pagamenti" ora ha una posizione chiara da spiegare: **N'arte non interviene nel pagamento dell'ingaggio.** Artista e organizzatore si accordano e regolano direttamente fra loro; la piattaforma non incassa, non anticipa e non trattiene nulla. Gli articoli vanno scritti su questa base: chi fattura a chi, come funziona la SIAE, acconti e tutele diventano **consigli di buona pratica**, non regole della piattaforma. L'unica somma incassata da N'arte è l'abbonamento dell'artista.
 - [ ] 🔴 **A** — Correggere l'articolo "Quali email automatiche invia N'arte": descrive email che oggi non partono (vedi sezione 2)
 - [ ] 🔴 **A** — Gli articoli "Eliminare il proprio account" e "Privacy e gestione dati" promettono funzioni che non esistono ancora. O si costruiscono (vedi 3.4) o si riscrive il testo.
 - [ ] 🟡 **A** — Nascondere dalla navigazione pubblica gli articoli segnaposto finché non sono scritti
@@ -127,24 +155,17 @@ Articoli da scrivere, raggruppati per categoria:
 - [ ] 🟡 **B** — Solo 1 evento su 9 ha una galleria fotografica; nessuno ha video
 - [ ] 🟢 **B** — Gli eventi passati sono il patrimonio più credibile del sito: vale la pena arricchirli con foto e resoconti
 
-### 1.5 Artisti demo in produzione 🔴
+### 1.5 Artisti ufficiali da caricare 🔴
 
-Ci sono **11 profili artista approvati e pubblici**. Almeno 7 sono artisti
-inventati creati dal seed iniziale.
+Il catalogo conta 11 profili, tutti con schede molto scarne: bio fra i 33 e i 91
+caratteri, **nessuna galleria, nessuna traccia audio**, un solo video su tutta la
+piattaforma. I profili creati in fase di sviluppo restano dove sono per scelta:
+verranno superati dal caricamento di quelli ufficiali.
 
-| Profilo | Bio | Gallery | Audio | Video |
-|---|---|---|---|---|
-| Vera Iovine, Marta Esposito, DJ Solis, Federico Conte, Sara Greco, Il Collettivo Sud, Luca Romano | 74-91 caratteri | 0 | 0 | 0 |
-| Ciaramex, Rory | 33 caratteri, nessuna città | 0 | 0 | 0 |
-| Luigi Marzatico | 48 caratteri | 0 | 0 | 1 |
-
-Un organizzatore che apre il catalogo oggi trova nove schede quasi vuote di
-artisti che non esistono. È il problema di credibilità più grosso del sito.
-
-- [ ] 🔴 **C** — Decidere cosa fare degli artisti finti: rimuoverli, o tenerli finché non arrivano quelli veri? *(Non tocco nulla senza una tua risposta esplicita.)*
-- [ ] 🔴 **B** — Portare online un numero minimo di artisti reali con profilo completo prima di aprire al pubblico. **Quanti sono il minimo credibile? Direi 15-20.**
-- [ ] 🔴 **B** — Nessun artista ha caricato tracce audio. Il profilo artista senza musica è il difetto più grave del catalogo.
-- [ ] 🟡 **A** — Aggiungere un blocco alla dashboard artista che spinga al completamento del profilo (esiste già `ProfileCompletionCard`: va reso più insistente)
+- [ ] 🔴 **B** — Caricare gli artisti ufficiali con profilo completo: foto, brani, video, bio estesa, fascia di prezzo. **È il passaggio che dà valore all'intero catalogo.** Il minimo credibile per aprire è intorno ai 15-20 profili reali.
+- [ ] 🔴 **B** — Nessun artista ha caricato tracce audio: un profilo artista senza musica è il difetto più grave del catalogo
+- [ ] 🟡 **A** — Rendere più insistente il blocco che spinge l'artista a completare il profilo in dashboard (esiste già `ProfileCompletionCard`)
+- [ ] 🟡 **A** — Guida al primo caricamento per i nuovi artisti approvati, così arrivano da soli a un profilo completo
 
 ### 1.6 Altre pagine
 
@@ -172,7 +193,7 @@ motivo *"RESEND_API_KEY mancante"*. L'ultima è del 18 luglio 2026.
 | `BREVO_SENDER_EMAIL` | `narteweb@libero.it` | Casella Libero gratuita: niente SPF/DKIM/DMARC, finisce in spam o viene rifiutata |
 | `BREVO_ASSET_BASE_URL` non è impostata | assente | Logo e immagini rotti dentro le email |
 
-- [ ] 🔴 **B** — Verificare un dominio di invio vero su Brevo (es. `narte.it`) con record SPF, DKIM e DMARC dal registrar
+- [ ] 🔴 **B** — **Sbloccare la verifica del dominio su Brevo.** È il punto fermo reale: la verifica spettava al partner che detiene il dominio e **non è stata completata correttamente**. Luigi sta sollecitando formalmente. Finché non è chiusa, nessuna email può partire da un indirizzo N'arte — qualunque cosa faccia il codice.
 - [ ] 🔴 **B** — Impostare il mittente su `noreply@narte.it` (o simile) al posto di libero.it e resend.dev
 - [ ] 🔴 **B** — Impostare `BREVO_ENABLED_KEYS=*` su Vercel per attivare davvero Brevo
 - [ ] 🔴 **B** — Impostare `BREVO_ASSET_BASE_URL` sul dominio finale
@@ -212,7 +233,7 @@ leggero e la conformità è alla portata.
 - [ ] 🔴 **B** — Cookie policy
 - [ ] 🔴 **B** — Termini e condizioni d'uso della piattaforma
 - [ ] 🔴 **B** — Condizioni di abbonamento artista: rinnovo, disdetta, **diritto di recesso di 14 giorni** (obbligatorio verso i consumatori UE)
-- [ ] 🔴 **C** — La domanda che regge tutto: **N'arte è intermediario o parte del contratto tra artista e organizzatore?** La risposta cambia i termini, le responsabilità e chi emette fattura.
+- [x] ✅ **DECISO** — **N'arte è una piattaforma di collegamento e nulla più.** Non è parte del contratto fra artista e organizzatore e non intermedia il pagamento dell'esibizione. I termini vanno scritti su questa base: niente clausole di mandato, deposito o gestione fondi. *Semplifica sensibilmente il lavoro dell'avvocato.*
 - [ ] 🟡 **B** — Registro dei trattamenti e accordi con i fornitori (Supabase, Brevo, Stripe, Vercel)
 
 ### 3.2 Cosa costruisco io una volta pronti i testi
@@ -251,7 +272,7 @@ percorso da nessuno.
 
 - [ ] 🔴 **B** — Provare l'intero percorso con una carta reale: attivazione Pro, passaggio a Max, disdetta, pagamento fallito, riattivazione
 - [ ] 🔴 **B** — Verificare che il webhook di produzione sia configurato sulla dashboard Stripe e che risponda
-- [ ] 🟡 **C** — **I prezzi sono IVA inclusa o esclusa?** Vanno raccolti i dati di fatturazione (codice fiscale / partita IVA)? Va attivato Stripe Tax? *Da chiarire col commercialista.*
+- [ ] 🟡 **C** — **I prezzi degli abbonamenti sono IVA inclusa o esclusa?** Vanno raccolti i dati di fatturazione (codice fiscale / partita IVA)? Va attivato Stripe Tax? *Da chiarire col commercialista.* Riguarda **solo** l'abbonamento artista: il compenso dell'ingaggio non passa mai da N'arte.
 - [ ] 🟡 **C** — Tre funzioni sono vendute sulla pagina prezzi ma **non hanno alcun processo dietro**: "ti candidiamo a 2 eventi al mese" (Max), "proposta alle strutture" (Max), "shooting fotografico incluso nell'annuale". Chi le eroga, come, con che tempi? O si definisce il processo o si tolgono dalla pagina.
 - [ ] 🟡 **A** — Chiarire all'artista Free cosa succede scendendo di piano: foto e video in eccesso restano o spariscono?
 - [ ] 🟢 **A** — Report entrate nel pannello admin
@@ -300,7 +321,7 @@ Quello che manca è il **collaudo su dispositivi veri**, non la costruzione.
 
 ## 9. Infrastruttura e operatività 🟡
 
-- [ ] 🔴 **C** — **Supabase è sul piano gratuito.** Significa: 1 GB di archiviazione totale, video limitati a 50 MB, nessun backup ripristinabile a piacere, progetto in pausa dopo 7 giorni di inattività. Con artisti che caricano foto, audio e video si satura in fretta. *Il passaggio a Pro (~25 $/mese) è da decidere prima del lancio, non dopo.*
+- [ ] 🟡 **C** — **Supabase è sul piano gratuito.** Con bunny.net che si prende foto, video e audio (sezione 0), il vincolo di archiviazione smette di essere urgente e il piano gratuito regge più a lungo. Restano però due questioni: **nessun backup ripristinabile a piacere** e **pausa del progetto dopo 7 giorni di inattività** (oggi mitigata dal risveglio automatico giornaliero). *Il passaggio a Pro diventa una scelta di sicurezza, non più di capienza.*
 - [ ] 🔴 **B** — Nessun backup del database configurato oltre a quello base del piano gratuito
 - [ ] 🟡 **C** — **Non esiste un ambiente di prova: `main` è la produzione.** Ogni modifica va online subito. Vale la pena creare un ambiente separato?
 - [ ] 🟡 **A/B** — Nessun sistema di monitoraggio degli errori: se un utente incontra un errore, nessuno lo viene a sapere
@@ -310,26 +331,32 @@ Quello che manca è il **collaudo su dispositivi veri**, non la costruzione.
 
 ---
 
-## I quattro nodi da sciogliere per primi
+## Decisioni: tre chiuse, due aperte
 
-Tutto il resto dipende da queste risposte:
+### Già decise ✅
 
-1. **Chi fattura a chi?** Artista, organizzatore, N'arte. Da qui derivano i termini di servizio, la categoria "Pagamenti" del centro assistenza e il ruolo legale della piattaforma.
-2. **Gli artisti finti restano o vanno via?** E qual è il numero minimo di artisti reali per aprire al pubblico.
-3. **Supabase passa a Pro?** Senza, i video restano a 50 MB e lo spazio finisce presto.
-4. **Le tre promesse del piano Max** — candidature agli eventi, proposta alle strutture, shooting — si erogano davvero o si tolgono dal listino?
+| Decisione | Esito | Cosa sblocca |
+|---|---|---|
+| **Ruolo della piattaforma** | N'arte mette in contatto e basta: nessuna intermediazione del pagamento dell'ingaggio | Termini d'uso, categoria "Pagamenti" del centro assistenza |
+| **Archivio dei contenuti** | **bunny.net confermato** | Video a 500 MB, caricamento da telefono, anteprime, foto più veloci |
+| **Profili artista di sviluppo** | Restano, non si citano nei documenti al cliente | Superati dal caricamento degli artisti ufficiali |
 
----
+### Ancora aperte
+
+1. **Le tre promesse del piano Max** — candidature agli eventi, proposta alle strutture, shooting fotografico: si erogano davvero, e con quale processo, o si tolgono dal listino?
+2. **Supabase passa a Pro?** Con bunny.net che si prende foto, video e audio, il piano gratuito diventa sufficiente più a lungo: resta però il tema dei backup del database e della pausa dopo 7 giorni di inattività.
 
 ## Ordine di lavoro consigliato
 
-**Settimana 1 — sbloccare le email e il legale**
-Dominio verificato con SPF/DKIM, mittente vero, attivazione Brevo, test di ogni
-email. In parallelo: brief all'avvocato per privacy, cookie e termini.
+**Settimana 1 — fondamenta**
+Integrazione bunny.net (appena arrivano le credenziali). In parallelo: sollecito
+al partner per la verifica del dominio email, e brief all'avvocato per privacy,
+cookie e termini.
 
 **Settimana 2 — contenuti**
-Format, articoli del blog, articoli del centro assistenza, correzione
-dell'evento rotto, decisione sugli artisti demo.
+Caricamento degli artisti ufficiali, format, articoli del blog, articoli del
+centro assistenza, correzione dell'evento rotto. Lato nostro: trasferimento dei
+file su bunny.net e pagine legali.
 
 **Settimana 3 — quello che faccio io**
 Pagine legali, banner cookie, caselle di consenso, cancellazione account,

@@ -51,12 +51,16 @@ Cose piccole, verificate, a rischio zero. Un'ora scarsa in tutto.
 
 **Non incluso qui:** l'evento «Brunch del 1 Maggio» (data 2000, descrizione di 4 caratteri). È un dato di produzione: dimmi se correggerlo o rimuoverlo e lo faccio, ma non lo tocco di iniziativa.
 
+**Profili artista di sviluppo:** restano dove sono, per scelta. Non li tocco e non li cito nei documenti destinati al cliente. Verranno naturalmente superati dal caricamento degli artisti ufficiali, che spetta al team N'arte.
+
 ---
 
 ## Blocco 1 — Integrazione bunny.net 🔑
 
-Il blocco più importante e il più grosso. L'architettura è già progettata in
+**Scelta confermata dal cliente.** È il blocco più importante e il più grosso.
+L'architettura è già progettata in
 [`VIDEO_ARCHITETTURA_BUNNY.md`](./VIDEO_ARCHITETTURA_BUNNY.md): non parto da zero.
+L'unica cosa che manca per iniziare sono le credenziali.
 
 ### Cosa mi serve da te prima di iniziare
 
@@ -129,6 +133,13 @@ Tutto verificato come mancante. Rischio nullo, beneficio immediato.
 **Posso costruire tutto l'impianto senza aspettare l'avvocato.** I testi arrivano
 dopo e si incollano dentro: le pagine sono predisposte per riceverli.
 
+> **Posizionamento deciso, e semplifica parecchio.** N'arte è una piattaforma di
+> collegamento: non incassa, non anticipa e non intermedia il compenso
+> dell'esibizione, che artista e organizzatore concordano e regolano direttamente
+> fra loro. I termini d'uso vanno scritti su questa base — niente clausole di
+> mandato, deposito o gestione fondi. L'unica somma incassata da N'arte è
+> l'abbonamento dell'artista.
+
 - [ ] Pagine `/privacy`, `/cookie-policy`, `/termini` con impaginazione curata e struttura pronta per i testi definitivi
 - [ ] Link legali nel footer, che oggi non ne ha nessuno
 - [ ] Banner cookie con consenso *(leggero: il sito non ha tracciatori di terze parti)*
@@ -155,9 +166,18 @@ I 37 template esistono già. Qui costruisco solo quello che manca attorno.
 - [ ] Rinvio di un'email fallita dal pannello admin
 
 **Attenzione:** questo blocco rende gli invii corretti, ma **non li fa arrivare**.
-Perché arrivino serve la parte tua: dominio verificato con SPF/DKIM, mittente reale
-al posto di `narteweb@libero.it` e `onboarding@resend.dev`, e le variabili
-`BREVO_ENABLED_KEYS` e `BREVO_ASSET_BASE_URL` impostate su Vercel.
+
+Il blocco reale è esterno: **la verifica del dominio su Brevo non è stata completata
+correttamente dal partner che detiene il dominio**, a cui spettava. Finché quella
+verifica non è chiusa, nessuna email può partire da un indirizzo N'arte, qualunque
+cosa faccia il codice. Luigi sta sollecitando formalmente il partner.
+
+Una volta sbloccata, servono tre impostazioni su Vercel — le faccio io se mi passi
+gli accessi, o le fai tu in cinque minuti:
+
+- mittente reale al posto di `narteweb@libero.it` e `onboarding@resend.dev`
+- `BREVO_ENABLED_KEYS=*`
+- `BREVO_ASSET_BASE_URL` sul dominio definitivo
 
 ---
 
@@ -226,16 +246,24 @@ Non blocca il lancio, ma vi fa risparmiare tempo da subito.
 
 Quello che serve da te, raccolto in un posto solo:
 
-| Cosa | Serve per | Chi |
+| Cosa | Serve per | Chi | Stato |
+|---|---|---|---|
+| Credenziali bunny.net (Stream + Storage) | Blocco 1 | Tu | ⏳ attesa |
+| **Verifica del dominio su Brevo** | Consegna di tutte le email | Partner che detiene il dominio | ⏳ **sollecito in corso** |
+| Testi legali dall'avvocato | Pubblicazione blocco 4 | Avvocato | ⏳ attesa |
+| Dominio definitivo del sito | Url canonici, blocco 3 | Tu | ⏳ attesa |
+| Sezioni della pagina format | Blocco 7 | Tu | ⏳ attesa |
+| L'artista risponde alle recensioni? | Blocco 6 | Tu | ⏳ attesa |
+| Che fare dell'evento con data 2000 | Blocco 0 | Tu | ⏳ attesa |
+| Caricamento degli artisti ufficiali | Credibilità del catalogo | Team N'arte | ⏳ da programmare |
+
+### Decisioni già chiuse
+
+| Decisione | Esito | Effetto |
 |---|---|---|
-| Credenziali bunny.net (Stream + Storage) | Blocco 1 | Tu |
-| Testi legali dall'avvocato | Pubblicazione blocco 4 | Avvocato |
-| Dominio email verificato con SPF/DKIM | Consegna delle email | Tu + registrar |
-| Dominio definitivo del sito | Url canonici, blocco 3 | Tu |
-| Sezioni della pagina format | Blocco 7 | Tu |
-| L'artista risponde alle recensioni? | Blocco 6 | Tu |
-| Che fare dell'evento con data 2000 | Blocco 0 | Tu |
-| Che fare degli artisti di prova | Contenuti | Tu |
+| Ruolo della piattaforma nei pagamenti | **N'arte non intermedia l'ingaggio** | Semplifica termini d'uso e sblocca la sezione «Pagamenti» del centro assistenza |
+| Archivio dei contenuti | **bunny.net confermato** | Sblocca il blocco 1 |
+| Profili artista di sviluppo | **Restano, non si citano** | Superati dal caricamento degli artisti ufficiali |
 
 ---
 
