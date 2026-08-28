@@ -7,6 +7,8 @@ import { contactSchema, type ContactInput } from "@/lib/validators/schemas";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { submitContact } from "@/app/(public)/contatti/_actions";
+import { HoneypotFields } from "@/components/forms/HoneypotField";
+import { PrivacyConsent } from "@/components/forms/PrivacyConsent";
 
 export function ContactForm() {
   const [done, setDone] = useState(false);
@@ -35,6 +37,7 @@ export function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <HoneypotFields register={register as never} />
       <Field label="Nome" error={errors.name?.message}>
         <Input {...register("name")} />
       </Field>
@@ -48,6 +51,11 @@ export function ContactForm() {
         <Textarea rows={6} {...register("message")} />
       </Field>
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <PrivacyConsent
+        register={register("acceptedPrivacy")}
+        error={errors.acceptedPrivacy?.message}
+      />
+
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Invio..." : "Invia"}
       </Button>

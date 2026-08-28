@@ -1,5 +1,10 @@
 # Design System
 
+> ⚠️ **Aggiornato il 28/08/2026.** Questo documento descriveva ancora la palette
+> iniziale, con l'arancio `#FF5722` come accento. Il codice era già passato da
+> tempo alla famiglia azzurro / notte / palco definita in `app/globals.css`, che
+> resta **l'unica fonte di verità**: in caso di dubbio vince il file CSS.
+
 Il design replica la reference fornita: tipografia display bold in Sentence case, layout monocromatico con accenti, hero "EVENT GUIDE" con immagine clip-path nel testo.
 
 ## Tokens
@@ -8,12 +13,15 @@ Definiti in `app/globals.css` tramite `@theme`:
 
 | Token | Valore | Uso |
 |-------|--------|-----|
-| `--color-background` | `#FFFFFF` | Sfondo principale |
-| `--color-foreground` | `#0B0B0B` | Testo principale, bottoni, header card |
-| `--color-muted` | `#F4F4F4` | Sfondi secondari, placeholder card |
+| `--color-background` | `var(--color-palco)` | Sfondo principale |
+| `--color-foreground` | `var(--color-notte)` | Testo principale, bottoni, header card |
+| `--color-muted` | `var(--color-palco-80)` | Sfondi secondari, placeholder card |
 | `--color-muted-foreground` | `#6B6B6B` | Testo secondario |
 | `--color-border` | `#E5E5E5` | Bordi |
-| `--color-accent` | `#FF5722` | Solo micro-label ("about us", "popular categories", "location") |
+| `--color-accent` | `#1a6bad` (azzurro) | Accento primario: micro-label, link, stati attivi |
+| `--color-corallo` | `#e8542a` | Accento secondario, usato con parsimonia |
+| `--color-notte` | `#0d1b2a` | Inchiostro e fondo delle aree scure |
+| `--color-palco` | `#f7f5f2` | Fondo chiaro, bianco caldo |
 | `--font-sans` | Open Sans | Body, sottotitoli |
 | `--font-display` | Space Grotesk 700 | Titoli e headline |
 | `--radius-pill` | `999px` | Bottoni pill |
@@ -70,7 +78,7 @@ Tutte le animazioni usano Framer Motion e rispettano `prefers-reduced-motion`.
 
 ## Accessibilità
 
-- Contrasto minimo AA su tutto il testo (occhio all'arancio: usabile solo per testo grande o non-essenziale, mai sotto 18px su bianco)
+- Contrasto minimo AA su tutto il testo. Attenzione al corallo `#e8542a` come colore di testo: su fondo chiaro va bene solo sopra i 18px o in grassetto
 - `:focus-visible` ben visibile (ring nera 2px)
 - `aria-label` su pulsanti icon-only
 - `<DayPicker>` di react-day-picker è già accessibile (nav tastiera + announce)

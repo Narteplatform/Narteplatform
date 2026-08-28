@@ -66,7 +66,11 @@ export async function requestPasswordReset(email: string): Promise<Result> {
       .select("id")
       .eq("template", "password_reset")
       .contains("to_addresses", [address])
-      .gte("created_at", since)
+      // `sent_at`, non `created_at`: su email_log quella colonna non esiste
+      // (0023_email_log.sql). Con il nome sbagliato la query andava in errore,
+      // l'errore veniva ingoiato dal catch qui sotto e il freno non è mai
+      // scattato. Vedi lib/chat/notify.ts, che usa da sempre il nome giusto.
+      .gte("sent_at", since)
       .limit(1);
     if (recent && recent.length > 0) {
       // Silenzio: chi ha già ricevuto il link non deve sapere di essere stato

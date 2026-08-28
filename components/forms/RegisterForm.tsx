@@ -11,6 +11,9 @@ import { createClient } from "@/lib/supabase/client";
 import { Input, Label } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
+import Link from "next/link";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { LEGAL_VERSION } from "@/lib/legal/content";
 
 type AccountKind = "user" | "organizer";
 
@@ -71,6 +74,13 @@ export function RegisterForm({ next }: { next?: string | null }) {
           // del profilo. Solo "organizer" è auto-assegnabile dal client;
           // qualunque altro valore ricade su default 'user'.
           role: kind === "organizer" ? "organizer" : "user",
+          // Letti dalla trigger `record_signup_consents` (0049) che scrive le
+          // righe in `user_consents`. Passarli qui invece di fare una seconda
+          // chiamata dal client è deliberato: una chiamata separata potrebbe
+          // fallire, e resterebbe un account creato senza traccia del consenso.
+          accepted_terms: values.acceptedTerms === true,
+          accepted_marketing: values.acceptedMarketing === true,
+          legal_version: LEGAL_VERSION,
         },
         emailRedirectTo: `${window.location.origin}/login${suffix}`,
       },
@@ -195,6 +205,33 @@ export function RegisterForm({ next }: { next?: string | null }) {
           <span>{info}</span>
         </p>
       )}
+
+      {/* CONSENSI. Prima non c'era alcuna casella: si creava un account senza
+          che nessuno avesse accettato nulla, e senza che ne restasse traccia. */}
+      <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-4">
+        <Checkbox
+          {...register("acceptedTerms")}
+          error={errors.acceptedTerms?.message}
+          label={
+            <>
+              Ho letto e accetto la{" "}
+              <Link href="/privacy" target="_blank" className="underline underline-offset-2">
+                informativa privacy
+              </Link>{" "}
+              e i{" "}
+              <Link href="/termini" target="_blank" className="underline underline-offset-2">
+                termini d&rsquo;uso
+              </Link>
+              .
+            </>
+          }
+        />
+        <Checkbox
+          {...register("acceptedMarketing")}
+          label="Voglio ricevere novità sugli eventi e sulle opportunità N'arte."
+          hint="Facoltativo. Puoi disdire quando vuoi."
+        />
+      </div>
 
       <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Creazione account…" : "Crea account"}

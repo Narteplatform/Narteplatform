@@ -13,6 +13,8 @@ import { MultiSelect } from "@/components/ui/MultiSelect";
 import { ApplicationVideoUpload } from "@/components/forms/ApplicationVideoUpload";
 import { submitArtistApplication } from "@/app/(public)/candidatura-artista/_actions";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
+import { HoneypotFields } from "@/components/forms/HoneypotField";
+import { PrivacyConsent } from "@/components/forms/PrivacyConsent";
 
 export function ArtistApplicationForm({
   genreOptions = [],
@@ -64,6 +66,7 @@ export function ArtistApplicationForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <HoneypotFields register={register as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Nome e cognome" error={errors.name?.message}>
           <Input {...register("name")} autoComplete="name" />
@@ -153,6 +156,11 @@ export function ArtistApplicationForm({
         />
       </Field>
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <PrivacyConsent
+        register={register("acceptedPrivacy")}
+        error={errors.acceptedPrivacy?.message}
+      />
+
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Invio..." : "Invia candidatura"}
       </Button>

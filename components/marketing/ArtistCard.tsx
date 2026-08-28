@@ -3,6 +3,7 @@ import { Lock, MapPin } from "lucide-react";
 import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
 import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
+import { StarRating } from "@/components/feedback/StarRating";
 
 const PRICE_SYMBOL: Record<PriceBand, string> = {
   budget: "€",
@@ -48,6 +49,13 @@ export type ArtistCardProps = {
    * continua a funzionare per gli ospiti (che salvano per slug nel browser).
    */
   artistId?: string;
+  /**
+   * Media dei voti e numero di recensioni. Assente o a zero: la riga non
+   * compare affatto. Un "0,0 (0)" su una scheda comunica solo che l'artista
+   * non ha mai lavorato, il che su un catalogo appena aperto è vero per
+   * quasi tutti e non aiuta nessuno.
+   */
+  rating?: { average: number; count: number } | null;
 };
 
 export function ArtistCard({
@@ -62,6 +70,7 @@ export function ArtistCard({
   category = null,
   tier = null,
   artistId,
+  rating,
 }: ArtistCardProps) {
   const href = `/artisti/${slug}`;
   return (
@@ -166,6 +175,18 @@ export function ArtistCard({
           <MapPin className="size-3" />
           {isGuest ? "Iscriviti per scoprire" : city || "Italia"}
         </p>
+
+        {/* Le recensioni sono nascoste agli ospiti come tutto il resto della
+            scheda: è la stessa regola che vale per prezzo e città. */}
+        {!isGuest && rating && rating.count > 0 && (
+          <StarRating
+            value={rating.average}
+            count={rating.count}
+            size="sm"
+            showValue
+            className="text-palco-20"
+          />
+        )}
       </div>
     </Link>
   );

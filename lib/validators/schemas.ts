@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Json } from "@/lib/supabase/types";
+import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from "@/lib/security/honeypot";
 
 /**
  * Valore JSON generico, per colonne jsonb "libere" come `formats.details`.
@@ -10,6 +11,25 @@ import type { Json } from "@/lib/supabase/types";
 const jsonValueSchema: z.ZodType<Json> = z.lazy(() =>
   z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(jsonValueSchema), z.record(jsonValueSchema)])
 );
+
+/**
+ * Campi della trappola anti-bot, da spargere in ogni schema di modulo pubblico:
+ *
+ *   export const contactSchema = z.object({ ...honeypotShape, name: ... });
+ *
+ * Sono entrambi opzionali di proposito. Non è lo schema a decidere se il
+ * modulo è sospetto — quello lo fa `guardPublicForm` leggendo i valori — e
+ * renderli obbligatori spezzerebbe qualunque chiamata legittima che non li
+ * includa, per esempio da un test o da un modulo non ancora aggiornato.
+ *
+ * I nomi arrivano da lib/security/honeypot.ts e non sono ripetuti a mano: se
+ * un giorno il campo trappola dovesse cambiare nome perché i bot lo hanno
+ * imparato, si cambia in un posto solo.
+ */
+export const honeypotShape = {
+  [HONEYPOT_FIELD]: z.string().optional(),
+  [TIMESTAMP_FIELD]: z.union([z.string(), z.number()]).optional(),
+} as const;
 
 export const leadSchema = z.object({
   artistId: z.string().uuid(),
@@ -40,6 +60,16 @@ export const flexLeadSchema = z.object({
 export type FlexLeadInput = z.infer<typeof flexLeadSchema>;
 
 export const artistApplicationSchema = z.object({
+  ...honeypotShape,
+  /**
+   * Presa visione dell'informativa privacy. Obbligatoria: questi moduli
+   * raccolgono nome, email e messaggio di una persona identificabile, e li
+   * conservano. Vale `literal(true)` per la stessa ragione di authSchema.
+   */
+  acceptedPrivacy: z.literal(true, {
+    errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
+  }),
+
   name: z.string().min(2).max(80),
   email: z.string().email(),
   stageName: z.string().min(2).max(80),
@@ -55,6 +85,16 @@ export const artistApplicationSchema = z.object({
 export type ArtistApplicationInput = z.infer<typeof artistApplicationSchema>;
 
 export const contactSchema = z.object({
+  ...honeypotShape,
+  /**
+   * Presa visione dell'informativa privacy. Obbligatoria: questi moduli
+   * raccolgono nome, email e messaggio di una persona identificabile, e li
+   * conservano. Vale `literal(true)` per la stessa ragione di authSchema.
+   */
+  acceptedPrivacy: z.literal(true, {
+    errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
+  }),
+
   name: z.string().min(2).max(80),
   email: z.string().email(),
   subject: z.string().max(120).optional(),
@@ -111,6 +151,16 @@ export const formatSchema = z.object({
 export type FormatInput = z.infer<typeof formatSchema>;
 
 export const formatInterestSchema = z.object({
+  ...honeypotShape,
+  /**
+   * Presa visione dell'informativa privacy. Obbligatoria: questi moduli
+   * raccolgono nome, email e messaggio di una persona identificabile, e li
+   * conservano. Vale `literal(true)` per la stessa ragione di authSchema.
+   */
+  acceptedPrivacy: z.literal(true, {
+    errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
+  }),
+
   name: z.string().min(2, "Almeno 2 caratteri").max(120),
   email: z.string().email("Email non valida"),
   phone: z.string().min(6).max(40).optional().or(z.literal("").transform(() => undefined)),
@@ -152,6 +202,18 @@ export const authSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, "Almeno 8 caratteri"),
   fullName: z.string().min(2).max(80).optional(),
+  /**
+   * Accettazione di privacy e termini. È il PRIMO booleano davvero obbligatorio
+   * del progetto: `z.boolean()` da solo passerebbe anche con `false`, quindi
+   * serve `literal(true)`, che rifiuta la casella non spuntata.
+   */
+  acceptedTerms: z.literal(true, {
+    errorMap: () => ({
+      message: "Per creare l'account devi accettare privacy e termini",
+    }),
+  }),
+  /** Facoltativo e separato: il consenso al marketing non si può accorpare. */
+  acceptedMarketing: z.boolean().optional().default(false),
 });
 export type AuthInput = z.infer<typeof authSchema>;
 

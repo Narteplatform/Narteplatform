@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Open_Sans, Space_Grotesk } from "next/font/google";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
@@ -39,35 +39,31 @@ export const metadata: Metadata = {
   },
 };
 
-// Inline script che azzera ogni Service Worker registrato e svuota le
-// CacheStorage del browser. Risolve il caso di utenti bloccati su una
-// vecchia versione PWA-cached.
-const KILL_SW = `
-try {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function (regs) {
-      regs.forEach(function (r) { r.unregister(); });
-    });
-  }
-  if (typeof caches !== 'undefined') {
-    caches.keys().then(function (keys) {
-      keys.forEach(function (k) { caches.delete(k); });
-    });
-  }
-} catch (e) {}
-`;
+// I tre meta `http-equiv` (cache-control / pragma / expires) e lo script
+// KILL_SW che stavano qui sono stati rimossi.
+//
+// Erano due rimedi temporanei allo stesso incidente: utenti rimasti bloccati su
+// una versione vecchia servita da un Service Worker della PWA. Il rimedio ha
+// funzionato, ma il costo era permanente e pagato da tutti:
+//
+//   - i meta dicevano a OGNI browser di non conservare NULLA di OGNI pagina del
+//     sito. Ogni navigazione ripartiva da zero, comprese le pagine pubbliche che
+//     Next serve già con le proprie intestazioni di cache;
+//   - lo script girava a ogni singolo caricamento per disinstallare un Service
+//     Worker che, nella stragrande maggioranza dei casi, non c'era più da mesi.
+//
+// Chi fosse ancora bloccato — se esiste — si sblocca con un ricaricamento
+// forzato. Non vale il rallentamento di tutti gli altri, per sempre.
+export const viewport: Viewport = {
+  themeColor: "#0d1b2a",
+  colorScheme: "dark",
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="it" className={`${openSans.variable} ${spaceGrotesk.variable}`}>
-      <head>
-        <meta httpEquiv="cache-control" content="no-cache, no-store, must-revalidate" />
-        <meta httpEquiv="pragma" content="no-cache" />
-        <meta httpEquiv="expires" content="0" />
-        <script dangerouslySetInnerHTML={{ __html: KILL_SW }} />
-      </head>
       <body>{children}</body>
     </html>
   );

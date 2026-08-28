@@ -11,6 +11,78 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion", "date-fns"],
   },
+
+  // Prima dell'aggiunta di questo blocco il sito non mandava NESSUN header di
+  // sicurezza: né qui, né in vercel.json, né nel middleware.
+  //
+  // La CSP parte in `Report-Only` DI PROPOSITO. Una policy troppo stretta non
+  // dà errore al deploy: rompe in silenzio pezzi di pagina (un'immagine che non
+  // carica, uno script che non parte) e ce ne si accorge dagli utenti. In
+  // sola segnalazione il browser esegue tutto normalmente e scrive in console
+  // ciò che avrebbe bloccato. Si verifica su home, profilo artista, dashboard,
+  // admin e chat; se la console resta pulita si rinomina la chiave in
+  // `Content-Security-Policy` e la policy diventa attiva.
+  //
+  // QUANDO ENTRERÀ IUBENDA: aggiungere `https://cdn.iubenda.com` a script-src e
+  // connect-src, e `https://cs.iubenda.com` a script-src. Senza, il banner non
+  // si carica.
+  // I documenti legali vivono in una sola pagina dinamica (app/(public)/legale/[doc])
+  // ma devono rispondere a indirizzi brevi e stabili: `/privacy`, non
+  // `/legale/privacy`. Sono URL che finiscono nelle informative, nei contratti e
+  // nel piè di pagina delle email, e cambiarli dopo significa rompere link
+  // stampati altrove.
+  //
+  // Riscrittura e non redirect, di proposito: l'utente vede sempre e solo
+  // l'indirizzo breve, senza un passaggio intermedio.
+  async rewrites() {
+    return [
+      { source: "/privacy", destination: "/legale/privacy" },
+      { source: "/cookie-policy", destination: "/legale/cookie-policy" },
+      { source: "/termini", destination: "/legale/termini" },
+    ];
+  },
+
+  async headers() {
+    const csp = [
+      "default-src 'self'",
+      // 'unsafe-inline' e 'unsafe-eval' servono a Next in sviluppo e agli
+      // script JSON-LD inline. Da stringere quando si passerà ai nonce.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      // blob: serve alle anteprime locali degli upload prima dell'invio.
+      "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://source.unsplash.com",
+      "media-src 'self' blob: https://*.supabase.co",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com",
+      "frame-src https://js.stripe.com https://hooks.stripe.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+    ].join("; ");
+
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Content-Security-Policy-Report-Only", value: csp },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            // microphone resta consentito a se stessi: serve ai messaggi
+            // vocali della chat (components/chat/VoiceRecorder.tsx).
+            value: "camera=(), geolocation=(), microphone=(self), interest-cohort=()",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+        ],
+      },
+    ];
+  },
   // Nessun `typescript: { ignoreBuildErrors: true }`: era stato aggiunto
   // quando i tipi Supabase facevano collassare ogni query a `never` (886
   // errori). La causa è stata rimossa — mancava `Relationships` sulla view

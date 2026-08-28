@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Instagram, Globe, Facebook, Youtube, MapPin, MessageCircle, Lock, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
@@ -16,6 +17,9 @@ import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 import { ProfileViewBeacon } from "@/components/analytics/ProfileViewBeacon";
 import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
 import { entitlementsFor } from "@/lib/billing/plans";
+import { JsonLd, musicGroupJsonLd, breadcrumbJsonLd } from "@/components/seo/JsonLd";
+import { ArtistReviews } from "@/components/marketing/ArtistReviews";
+import { getPublicFeedbackForArtist } from "@/lib/feedback/queries";
 
 type SocialLinks = {
   instagram?: string | null;
@@ -25,6 +29,68 @@ type SocialLinks = {
   spotify?: string | null;
   website?: string | null;
 };
+
+type ArtistMeta = {
+  stage_name: string;
+  slug: string;
+  bio: string | null;
+  genre: string | null;
+  city: string | null;
+  cover_image: string | null;
+};
+
+/**
+ * Il profilo artista era l'unica pagina condivisibile del sito senza metadata:
+ * il link incollato in chat mostrava "N'arte — Find your vibe" per qualunque
+ * artista. È la pagina che gli artisti stessi condividono di più.
+ *
+ * Nota: il contenuto del profilo è dietro login (vedi il ramo `isGuest` qui
+ * sotto), quindi un crawler indicizza la schermata d'invito, non la scheda.
+ * Questi metadata servono soprattutto all'anteprima nelle condivisioni, che
+ * funziona comunque perché la genera il server.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("artists")
+    .select("stage_name, slug, bio, genre, city, cover_image")
+    .eq("slug", slug)
+    .eq("is_public", true)
+    .maybeSingle();
+
+  const artist = data as ArtistMeta | null;
+  if (!artist) return { title: "Artista non trovato — N'arte" };
+
+  const dove = artist.city ? ` da ${artist.city}` : "";
+  const genere = artist.genre ? `${artist.genre}` : "Artista";
+  const description =
+    artist.bio?.replace(/\s+/g, " ").slice(0, 155) ||
+    `${genere}${dove}. Scopri il profilo di ${artist.stage_name} su N'arte e richiedi un booking.`;
+
+  return {
+    title: `${artist.stage_name} — N'arte`,
+    description,
+    alternates: { canonical: `/artisti/${artist.slug}` },
+    openGraph: {
+      title: `${artist.stage_name} · N'arte`,
+      description,
+      type: "profile",
+      url: `/artisti/${artist.slug}`,
+      images: artist.cover_image ? [{ url: artist.cover_image }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${artist.stage_name} · N'arte`,
+      description,
+      images: artist.cover_image ? [artist.cover_image] : undefined,
+    },
+  };
+}
 
 export default async function ArtistDetailPage({
   params,
@@ -323,6 +389,13 @@ export default async function ArtistDetailPage({
   // intero, quindi Pro/Max non sono toccati.
   const ent = entitlementsFor(artist.tier ?? "free");
 
+  // Le recensioni sono una funzione dei piani Pro e Max: si raccolgono sempre
+  // (vedi il commento in dashboard/feedback), ma si mostrano solo se il piano
+  // dell'artista le prevede. Su Free la query non parte nemmeno.
+  const reviews = ent.canReceiveReviews
+    ? await getPublicFeedbackForArtist(artist.id)
+    : { reviews: [], average: 0, count: 0 };
+
   const gallery: string[] = (Array.isArray(artist.gallery) ? artist.gallery : []).slice(
     0,
     ent.galleryMax
@@ -418,6 +491,30 @@ export default async function ArtistDetailPage({
   return (
     <article>
       <ProfileViewBeacon slug={slug} />
+
+      {/* `MusicGroup` è il tipo che Google usa per gli artisti musicali: nome,
+          genere, città, immagine e profili social collegati. Il voto medio
+          verrà agganciato qui quando le recensioni saranno pubbliche. */}
+      <JsonLd
+        data={[
+          musicGroupJsonLd({
+            stageName: artist.stage_name,
+            slug: artist.slug,
+            bio: artist.bio,
+            genre: Array.isArray(artist.genre) ? artist.genre.join(", ") : artist.genre,
+            city: artist.city,
+            coverImage: coverImage,
+            socialLinks: social as Record<string, string | null | undefined>,
+            rating: reviews.count > 0 ? { value: reviews.average, count: reviews.count } : null,
+          }),
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Artisti", path: "/artisti" },
+            { name: artist.stage_name, path: `/artisti/${artist.slug}` },
+          ]),
+        ]}
+      />
+
       {/* HERO — cover sx, title + genres + calendar dx */}
       <section className="relative overflow-hidden border-b border-border pt-24 pb-12 md:pt-32 md:pb-16">
         <div
@@ -591,6 +688,11 @@ export default async function ArtistDetailPage({
           </Reveal>
         </div>
       </section>
+
+      {/* RECENSIONI — subito dopo le informazioni di booking: è lì che chi
+          valuta un ingaggio si sta facendo un'idea, e la prova sociale conta
+          più della gallery. */}
+      <ArtistReviews data={reviews} artistName={artist.stage_name} />
 
       {/* AUDIO */}
       {audioTracks.length > 0 && (

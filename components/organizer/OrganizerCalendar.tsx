@@ -69,13 +69,20 @@ export function OrganizerCalendar({ events }: { events: Event[] }) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-[11px] uppercase tracking-wider text-muted-foreground">
-        {DOW.map((d, i) => (
-          <span key={i}>{d}</span>
-        ))}
-      </div>
+      {/* Contenitore scorrevole: sette colonne su uno schermo da 360px darebbero
+          celle da circa 44px, dentro cui il numero del giorno e il titolo
+          dell'evento non ci stanno. Con una larghezza minima le celle restano
+          leggibili e, quando lo spazio manca, è il calendario a scorrere —
+          non il testo a schiacciarsi. */}
+      <div className="-mx-1 overflow-x-auto px-1 pb-1">
+        <div className="min-w-[19rem]">
+          <div className="grid grid-cols-7 gap-1 text-center text-[11px] uppercase tracking-wider text-muted-foreground">
+            {DOW.map((d, i) => (
+              <span key={i}>{d}</span>
+            ))}
+          </div>
 
-      <div className="grid grid-cols-7 gap-1">
+          <div className="mt-1 grid grid-cols-7 gap-1">
         {cells.map((c, i) => {
           if (!c) return <div key={i} className="aspect-square" />;
           const evs = eventsByDate.get(c.date) ?? [];
@@ -107,6 +114,8 @@ export function OrganizerCalendar({ events }: { events: Event[] }) {
             </div>
           );
         })}
+          </div>
+        </div>
       </div>
     </div>
   );

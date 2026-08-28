@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArrowRight } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
@@ -7,6 +8,62 @@ import { Button } from "@/components/ui/Button";
 import { EventInfoCards } from "@/components/marketing/EventInfoCards";
 import { EventMediaGallery } from "@/components/marketing/EventMediaGallery";
 import { EventCard } from "@/components/marketing/EventCard";
+import { JsonLd, eventJsonLd, breadcrumbJsonLd } from "@/components/seo/JsonLd";
+
+type EventMeta = {
+  title: string;
+  slug: string;
+  description: string | null;
+  cover_image: string | null;
+  city: string | null;
+  date: string;
+};
+
+/**
+ * La pagina di dettaglio evento non aveva alcun metadata: condivisa su
+ * WhatsApp o Instagram mostrava il titolo generico del sito. È la pagina che
+ * più di ogni altra viene incollata in chat quando si promuove una serata.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("events")
+    .select("title, slug, description, cover_image, city, date")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  const event = data as EventMeta | null;
+  if (!event) return { title: "Evento non trovato — N'arte" };
+
+  const luogo = event.city ? ` a ${event.city}` : "";
+  const description =
+    event.description?.replace(/\s+/g, " ").slice(0, 155) ??
+    `${event.title}${luogo}. Scopri i dettagli dell'evento su N'arte.`;
+
+  return {
+    title: `${event.title} — N'arte`,
+    description,
+    alternates: { canonical: `/eventi/${event.slug}` },
+    openGraph: {
+      title: event.title,
+      description,
+      type: "article",
+      url: `/eventi/${event.slug}`,
+      images: event.cover_image ? [{ url: event.cover_image }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: event.title,
+      description,
+      images: event.cover_image ? [event.cover_image] : undefined,
+    },
+  };
+}
 
 export default async function EventDetailPage({
   params,
@@ -48,6 +105,28 @@ export default async function EventDetailPage({
 
   return (
     <article>
+      <JsonLd
+        data={[
+          eventJsonLd({
+            title: event.title,
+            slug: event.slug,
+            description: event.description,
+            date: event.date,
+            endAt: event.end_at,
+            city: event.city,
+            venue: event.venue,
+            coverImage: event.cover_image,
+            ticketUrl: event.ticket_url,
+            price: event.price,
+          }),
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Eventi", path: "/eventi" },
+            { name: event.title, path: `/eventi/${event.slug}` },
+          ]),
+        ]}
+      />
+
       {/* HERO: COVER LEFT + INFO RIGHT */}
       <section className="relative overflow-hidden border-b border-border pt-28 pb-16 md:pt-36 md:pb-20">
         <div

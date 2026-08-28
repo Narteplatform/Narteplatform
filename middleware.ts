@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
 
   // /artisti è pubblica come vetrina; il dettaglio richiede auth internamente
   // perché contiene il form di booking. /admin e /dashboard restano dietro auth.
-  const protectedPrefixes = ["/admin", "/dashboard", "/organizzatore"];
+  const protectedPrefixes = ["/admin", "/dashboard", "/organizzatore", "/__health"];
   const requiresAuth = protectedPrefixes.some((p) => path.startsWith(p));
 
   if (requiresAuth && !user) {
@@ -49,6 +49,17 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/";
     return NextResponse.redirect(url);
   }
+
+  // /__health è una pagina di diagnostica: mostra quali variabili d'ambiente
+  // sono configurate (con la loro lunghezza), l'esito della connessione al DB
+  // con service role, il conteggio di una tabella, l'id dell'utente in sessione
+  // e il commit in produzione. Era raggiungibile da chiunque.
+  //
+  // Qui il middleware fa solo la prima metà del lavoro — grazie al prefisso
+  // aggiunto sopra, un anonimo viene già rimandato al login. Il controllo di
+  // CHI sia l'utente sta dentro la pagina, con `notFound()`: in App Router è il
+  // modo corretto di rispondere 404, e riusa app/not-found.tsx invece di
+  // riscrivere l'URL verso una rotta interna di Next.
 
   if (
     user &&
@@ -157,8 +168,17 @@ export const config = {
     // chiamata che parte a ogni apertura di profilo. Effetto collaterale noto e
     // accettato: se il token scade proprio in quell'istante non viene
     // rinfrescato e quella singola visita risulta anonima.
-    // `api/keepalive` escluso: lo chiama Vercel Cron senza cookie di sessione
-    // (keep-alive del piano Free di Supabase), il getUser() sarebbe sprecato.
-    "/((?!_next/static|_next/image|favicon.ico|api/health|api/keepalive|api/stripe|api/artists/view|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|webmanifest)$).*)",
+    // `api/keepalive` e `api/cron/*` esclusi: li chiama Vercel Cron senza cookie
+    // di sessione, il getUser() sarebbe sprecato. Si autenticano da soli con
+    // CRON_SECRET.
+    // `sitemap.xml` e `robots.txt` esclusi: li leggono i crawler, che non hanno
+    // sessione. Senza l'esclusione ogni passaggio di Googlebot pagava un
+    // getUser() verso Supabase.
+    // Rimossa l'esclusione di `api/health`: quella rotta non è mai esistita
+    // (le uniche sotto app/api sono artists, booking, booking-request, cron,
+    // keepalive, search, stripe, upload, upload-application-video). La pagina
+    // di diagnostica è `/__health`, che deve invece PASSARE dal middleware per
+    // essere protetta.
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/keepalive|api/cron|api/stripe|api/artists/view|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|webmanifest)$).*)",
   ],
 };

@@ -1,8 +1,12 @@
+import { notFound } from "next/navigation";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Health — N'arte" };
+export const metadata = {
+  title: "Health — N'arte",
+  robots: { index: false, follow: false },
+};
 
 const REQUIRED_PUBLIC = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"] as const;
 const REQUIRED_PRIVATE = ["SUPABASE_SERVICE_ROLE_KEY"] as const;
@@ -21,6 +25,23 @@ function envStatus(name: string) {
 }
 
 export default async function HealthPage() {
+  // Questa pagina era PUBBLICA. Mostrava a chiunque quali integrazioni sono
+  // attive (con la lunghezza in caratteri di ogni chiave), l'esito della
+  // connessione service-role al database con il messaggio d'errore in chiaro,
+  // il conteggio reale di una tabella, l'id dell'utente in sessione e il
+  // commit in produzione. Nessuno di questi dati va esposto.
+  //
+  // Il middleware ferma già gli anonimi (`protectedPrefixes`). Qui si decide
+  // CHI passa: solo il superadmin root, lo stesso confronto usato per
+  // /admin/impostazioni. A tutti gli altri la pagina non risulta esistere.
+  const rootEmail = (process.env.SUPERADMIN_EMAIL ?? "").trim().toLowerCase();
+  const gate = await createClient();
+  const {
+    data: { user: viewer },
+  } = await gate.auth.getUser();
+  const viewerEmail = (viewer?.email ?? "").trim().toLowerCase();
+  if (rootEmail === "" || viewerEmail !== rootEmail) notFound();
+
   const checks: { label: string; ok: boolean; detail: string }[] = [];
 
   for (const k of REQUIRED_PUBLIC) {

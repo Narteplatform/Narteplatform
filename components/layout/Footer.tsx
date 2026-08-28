@@ -73,8 +73,35 @@ export function Footer() {
             </ul>
           </div>
         </div>
+        {/* I documenti legali stanno nella barra inferiore e non fra le colonne
+            tematiche: è la convenzione che chiunque si aspetta, e sono link che
+            si cercano di proposito, non si scoprono navigando. Prima non c'era
+            alcun collegamento legale nel sito. */}
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-notte-60 pt-6 text-xs text-notte-40 md:flex-row md:items-center">
           <span>© {new Date().getFullYear()} N&rsquo;Arte — Tutti i diritti riservati.</span>
+
+          <nav aria-label="Documenti legali">
+            <ul className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <li>
+                <Link href="/privacy" className="transition-opacity hover:opacity-75">
+                  Privacy
+                </Link>
+              </li>
+              <li aria-hidden="true">·</li>
+              <li>
+                <Link href="/cookie-policy" className="transition-opacity hover:opacity-75">
+                  Cookie
+                </Link>
+              </li>
+              <li aria-hidden="true">·</li>
+              <li>
+                <Link href="/termini" className="transition-opacity hover:opacity-75">
+                  Termini
+                </Link>
+              </li>
+            </ul>
+          </nav>
+
           <span>Made with passion in Napoli.</span>
         </div>
       </div>

@@ -16,6 +16,8 @@ export type ExplorerArtist = {
   instruments: string[];
   price_band: PriceBand;
   tier?: ArtistTier | null;
+  /** Media dei voti ricevuti. `null` quando l'artista non ha recensioni. */
+  rating?: { average: number; count: number } | null;
 };
 
 const ROLE_GROUPS: { key: string; label: string; match: (instr: string) => boolean }[] = [
@@ -361,6 +363,7 @@ export function ArtistsExplorer({
                   category={roleLabel}
                   tier={a.tier}
                   artistId={a.id}
+                  rating={a.rating}
                 />
               );
             })}
@@ -400,6 +403,7 @@ export function ArtistsExplorer({
                     category={roleLabel}
                     tier={a.tier}
                     artistId={a.id}
+                    rating={a.rating}
                   />
                 );
               })}

@@ -8,6 +8,8 @@ import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { submitFormatInterest } from "@/app/(public)/format/_actions";
 import { CheckCircle2 } from "lucide-react";
+import { HoneypotFields } from "@/components/forms/HoneypotField";
+import { PrivacyConsent } from "@/components/forms/PrivacyConsent";
 
 function Field({
   label,
@@ -91,6 +93,7 @@ export function FormatInterestForm({ formatTitle }: { formatTitle?: string } = {
               className="rounded-xl border border-border bg-background p-6 space-y-4"
               noValidate
             >
+              <HoneypotFields register={register as never} />
               <Field label="Nome *" error={errors.name?.message}>
                 <Input
                   {...register("name")}
@@ -126,6 +129,11 @@ export function FormatInterestForm({ formatTitle }: { formatTitle?: string } = {
                   {serverError}
                 </p>
               )}
+              <PrivacyConsent
+                register={register("acceptedPrivacy")}
+                error={errors.acceptedPrivacy?.message}
+              />
+
               <Button
                 type="submit"
                 variant="accent"

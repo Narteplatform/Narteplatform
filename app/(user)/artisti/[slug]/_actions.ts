@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { leadSchema, type LeadInput } from "@/lib/validators/schemas";
 import { sendEmail } from "@/lib/emails/send";
 import BookingRequestEmail from "@/lib/emails/templates/BookingRequestEmail";
+import { logger } from "@/lib/logger";
 import {
   artistInterestSchema,
   type ArtistInterestInput,
@@ -33,7 +34,7 @@ function publicError(rid: string, message: string): { ok: false; error: string; 
 export async function submitArtistInterest(input: ArtistInterestInput) {
   const rid = newRid();
   try {
-    console.log("[booking]", rid, "step=start", { artistId: input?.artistId, date: input?.date });
+    logger.debug("booking", rid, "step=start", { artistId: input?.artistId, date: input?.date });
 
     const parsed = artistInterestSchema.safeParse(input);
     if (!parsed.success) {
@@ -111,7 +112,7 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
         lastError = { message: error.message, code: error.code };
         // Retry senza event_time se la colonna non esiste sul DB di prod
         if (error.code === "42703" || /event_time/i.test(error.message)) {
-          console.log("[booking]", rid, "step=lead-insert-retry-without-event_time");
+          logger.debug("booking", rid, "step=lead-insert-retry-without-event_time");
           const retry = await admin
             .from("leads")
             .insert(basePayload)
@@ -132,7 +133,7 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
     if (!lead) {
       return publicError(rid, isProd ? "Errore salvataggio" : (lastError?.message ?? "Errore salvataggio"));
     }
-    console.log("[booking]", rid, "step=lead-inserted", { leadId: lead.id });
+    logger.debug("booking", rid, "step=lead-inserted", { leadId: lead.id });
 
     // Notifiche email best-effort (non bloccano)
     let artistEmail: string | null = null;
@@ -185,7 +186,7 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
           })
         : Promise.resolve({ ok: false as const, skipped: true }),
     ]);
-    console.log("[booking]", rid, "step=emails-sent", {
+    logger.debug("booking", rid, "step=emails-sent", {
       artist: results[0].status,
       admin: results[1].status,
     });

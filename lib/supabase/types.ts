@@ -1318,6 +1318,17 @@ export interface Database {
       };
     };
     Functions: {
+      // Limitatore di frequenza — vedi 0048_rate_limits.sql e
+      // lib/security/rate-limit.ts. Registra un colpo sulla chiave e ritorna
+      // `true` se la richiesta può proseguire, `false` se ha sforato.
+      rate_limit_hit: {
+        Args: { p_key: string; p_window_seconds: number; p_max: number };
+        Returns: boolean;
+      };
+      rate_limits_prune: {
+        Args: { p_older_than?: string };
+        Returns: number;
+      };
       promote_user_to_organizer: {
         Args: { uid: string };
         Returns: void;

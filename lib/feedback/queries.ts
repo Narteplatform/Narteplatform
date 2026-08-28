@@ -13,6 +13,122 @@ export type FeedbackRow = {
   created_at: string;
 };
 
+export type PublicReview = {
+  id: string;
+  rating: number;
+  body: string;
+  created_at: string;
+  organizer_name: string;
+};
+
+export type PublicReviews = {
+  reviews: PublicReview[];
+  /** Media aritmetica dei voti visibili, arrotondata a un decimale. */
+  average: number;
+  count: number;
+};
+
+const NESSUNA_RECENSIONE: PublicReviews = { reviews: [], average: 0, count: 0 };
+
+/**
+ * Recensioni pubbliche di un artista, a partire dal suo id.
+ *
+ * Esisteva già `getFeedbackForArtistUser`, ma parte dallo `userId` del
+ * proprietario e risolve il profilo attivo tramite cookie: serve alla dashboard
+ * dell'artista, non al profilo pubblico, dove l'artista è determinato dallo
+ * slug e chi guarda è un'altra persona.
+ *
+ * Due regole non negoziabili qui dentro:
+ *
+ *  - `hidden = false`. Una recensione nascosta dalla moderazione non deve
+ *    comparire, e non deve nemmeno pesare sulla media: se contasse, un
+ *    contenuto rimosso continuerebbe a influenzare il voto.
+ *  - in caso di errore si restituisce "nessuna recensione", non si solleva.
+ *    Il profilo pubblico non deve andare in errore perché la sezione
+ *    recensioni non ha risposto: semplicemente non la mostra.
+ */
+export async function getPublicFeedbackForArtist(
+  artistId: string,
+  limit = 12
+): Promise<PublicReviews> {
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
+    .from("feedback")
+    .select("id, organizer_id, rating, body, created_at")
+    .eq("artist_id", artistId)
+    .eq("hidden", false)
+    .order("created_at", { ascending: false });
+
+  // CLAUDE.md, regola 4: mai proseguire con un default dopo una lettura non
+  // controllata. Qui `?? []` avrebbe prodotto "zero recensioni" tanto per un
+  // artista senza recensioni quanto per una query fallita, rendendo i due casi
+  // indistinguibili.
+  if (error) return NESSUNA_RECENSIONE;
+
+  const rows = data ?? [];
+  if (rows.length === 0) return NESSUNA_RECENSIONE;
+
+  const somma = rows.reduce((acc, r) => acc + r.rating, 0);
+  const average = Math.round((somma / rows.length) * 10) / 10;
+
+  const orgIds = [...new Set(rows.map((r) => r.organizer_id))];
+  const nomi = new Map<string, string>();
+  if (orgIds.length > 0) {
+    const { data: orgs } = await admin
+      .from("organizers")
+      .select("id, display_name")
+      .in("id", orgIds);
+    for (const o of orgs ?? []) nomi.set(o.id, o.display_name);
+  }
+
+  return {
+    average,
+    count: rows.length,
+    reviews: rows.slice(0, limit).map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      body: r.body,
+      created_at: r.created_at,
+      organizer_name: nomi.get(r.organizer_id) ?? "Organizzatore",
+    })),
+  };
+}
+
+/**
+ * Media e conteggio per più artisti in una sola query.
+ *
+ * Serve al catalogo: chiamare `getPublicFeedbackForArtist` per ognuna delle
+ * schede in elenco significherebbe una query per artista.
+ */
+export async function getRatingsForArtists(
+  artistIds: string[]
+): Promise<Map<string, { average: number; count: number }>> {
+  const out = new Map<string, { average: number; count: number }>();
+  if (artistIds.length === 0) return out;
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("feedback")
+    .select("artist_id, rating")
+    .in("artist_id", artistIds)
+    .eq("hidden", false);
+
+  if (error || !data) return out;
+
+  const acc = new Map<string, { somma: number; n: number }>();
+  for (const r of data) {
+    const p = acc.get(r.artist_id) ?? { somma: 0, n: 0 };
+    p.somma += r.rating;
+    p.n += 1;
+    acc.set(r.artist_id, p);
+  }
+  for (const [id, { somma, n }] of acc) {
+    out.set(id, { average: Math.round((somma / n) * 10) / 10, count: n });
+  }
+  return out;
+}
+
 /** Feedback ricevuti da un artista (user logged in). */
 export async function getFeedbackForArtistUser(userId: string) {
   const admin = createAdminClient();

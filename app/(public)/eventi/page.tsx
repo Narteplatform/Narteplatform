@@ -1,3 +1,18 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Eventi — N'arte",
+  description:
+    "Tutti gli eventi N'arte: concerti, serate nei club, festival e rassegne. Filtra per città e categoria e scopri le prossime date.",
+  alternates: { canonical: "/eventi" },
+  openGraph: {
+    title: "Eventi — N'arte",
+    description: "Concerti, serate e festival: tutte le date N'arte.",
+    type: "website",
+    url: "/eventi",
+  },
+};
+
 import Link from "next/link";
 import { getPublicEvents } from "@/lib/data/events";
 import { EventCard } from "@/components/marketing/EventCard";

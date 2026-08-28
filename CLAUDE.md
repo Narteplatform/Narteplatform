@@ -1,6 +1,8 @@
 # N'arte — Project Instructions
 
-Piattaforma personale per la gestione di eventi musicali e booking di artisti emergenti. Sito pubblico in italiano + 3 aree autenticate (superadmin / artista / utente).
+Piattaforma italiana che mette in contatto artisti emergenti, organizzatori di eventi musicali e pubblico. Sito pubblico in italiano + aree autenticate per **cinque ruoli**.
+
+> **N'arte non intermedia i pagamenti degli ingaggi.** Mette in contatto e si ferma lì: il compenso lo concordano e lo regolano direttamente artista e organizzatore. L'unica somma incassata è l'abbonamento dell'artista, via Stripe. È il presupposto su cui sono scritti i termini d'uso: se cambia, cambiano anche quelli.
 
 ## ⛔ Regola numero uno: mai distruggere dati di propria iniziativa
 
@@ -18,7 +20,8 @@ Piattaforma personale per la gestione di eventi musicali e booking di artisti em
 
 - **Next.js 16** (App Router, Server Actions, Turbopack) su **Vercel** (Fluid Compute)
 - **Supabase**: Postgres + Auth + Storage (RLS attivo su tutto)
-- **Resend** + React Email per le email transazionali
+- **Brevo** come provider email principale, **Resend** come rete di sicurezza (vedi `lib/emails/dispatch.ts`)
+- **Stripe** per gli abbonamenti artista (Free / Pro / Max)
 - **Tailwind CSS v4** + componenti shadcn-style + **Framer Motion** per le animazioni
 - **React Hook Form** + **Zod** per i form
 - Lingua: solo italiano
@@ -45,11 +48,48 @@ Vedere `docs/DESIGN_SYSTEM.md` per i dettagli completi.
 
 ## Ruoli
 
-- `superadmin`: accesso totale (CRUD eventi, approvazione artisti, lead)
-- `artist`: dashboard personale (profilo + calendario disponibilità)
-- `user`: lista artisti + richiesta booking
+Cinque, non tre. La documentazione precedente ne elencava tre e ignorava
+organizzatore e consulente, che sono aree complete e funzionanti.
+
+| Ruolo | Area | Cosa fa |
+|---|---|---|
+| `superadmin` | `/admin` | Accesso totale: eventi, format, blog, artisti, lead, consulenze, generi, recensioni, permessi |
+| `artist` | `/dashboard` | Profilo (anche multiplo), calendario e slot, richieste, chat, consulenze, statistiche, abbonamento |
+| `organizer` | `/organizzatore` | Strutture, invio richieste, trattativa in chat, calendario date confermate, recensioni |
+| `consultant` | `/admin/consulenza` | Accesso limitato alle sole consulenze e al proprio profilo |
+| `user` | — | Catalogo artisti, richiesta booking, preferiti |
 
 Promozione automatica a superadmin: trigger Postgres che usa `SUPERADMIN_EMAIL` env.
+⚠️ Non funziona di serie su questo progetto: vedi AGENTS.md, usare `npm run db:promote-admin`.
+
+## Funzioni oltre il booking
+
+Non erano documentate ma sono costruite e attive:
+
+- **Chat** con offerte tracciate (`lib/chat/`, migration 0010-0013)
+- **Blog** con editor TipTap (`app/(public)/blog/`, `app/(admin)/admin/blog/`)
+- **Format** NaJam / NuLive / NaBand / NaCena (`app/(public)/format/`)
+- **Abbonamenti** Stripe con applicazione automatica dei limiti (`lib/billing/`)
+- **Recensioni** post-evento, visibili sul profilo pubblico (`lib/feedback/`)
+- **Consulenze** con slot e consulenti (`app/(admin)/admin/consulenza/`)
+- **Statistiche** di visita del profilo, piano Max (`lib/analytics/`)
+
+## Sicurezza — aggiunte del 28/08/2026
+
+- **Header di sicurezza** in `next.config.ts`. La **CSP è in sola segnalazione**:
+  va verificata in console su tutte le aree e poi attivata rinominando la chiave.
+- **Anti-spam** sui moduli pubblici: `lib/security/honeypot.ts` +
+  `lib/security/rate-limit.ts`, riuniti in `guardPublicForm`. Ogni nuovo modulo
+  pubblico deve chiamarla.
+- **`/__health` non è più pubblica**: solo superadmin root.
+- **Consensi** registrati in `user_consents` (migration 0049).
+
+## Documenti legali
+
+`lib/legal/content.ts` contiene bozze **non ancora validate da un avvocato**,
+servite da `/privacy`, `/cookie-policy` e `/termini`. Sono predisposte per
+essere sostituite da iubenda: basta valorizzare `NEXT_PUBLIC_IUBENDA_*` e le
+pagine rimandano ai documenti ospitati, senza cambiare rotte.
 
 ## Subagent dedicati
 
@@ -57,6 +97,16 @@ In `.claude/agents/`:
 - **frontend** — UI/UX, design system, animazioni
 - **backend** — Supabase, Server Actions, email Resend
 - **qa** — test E2E, Lighthouse, accessibilità
+
+## Migration in attesa di applicazione
+
+Da eseguire dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md):
+
+- `0048_rate_limits.sql` — limitatore di frequenza. Finché manca, i freni
+  registrano un avviso nei log e **lasciano passare**: il sito funziona, ma è
+  senza protezione.
+- `0049_user_consents.sql` — registro dei consensi. Finché manca, la casella in
+  registrazione è obbligatoria lato modulo ma il consenso non viene archiviato.
 
 ## Comandi
 

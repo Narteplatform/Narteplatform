@@ -4,6 +4,7 @@ import { PageHero } from "@/components/marketing/PageHero";
 import { ArtistsExplorer } from "@/components/marketing/ArtistsExplorer";
 import { heroImageFor } from "@/lib/content/hero-images";
 import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
+import { getRatingsForArtists } from "@/lib/feedback/queries";
 
 export const metadata = { title: "Artisti — N'arte" };
 
@@ -52,6 +53,11 @@ export default async function ArtistiPage() {
   const canSeePrice =
     viewer?.profile?.role === "organizer" || viewer?.profile?.role === "superadmin";
 
+  // Voti in un colpo solo: una query per l'intero elenco invece di una per
+  // scheda. Se fallisce la mappa resta vuota e le schede semplicemente non
+  // mostrano il voto — il catalogo non deve rompersi per questo.
+  const ratings = await getRatingsForArtists(rows.map((a) => a.id));
+
   const artists = rows.map((a) => ({
     id: a.id,
     slug: a.slug,
@@ -66,6 +72,7 @@ export default async function ArtistiPage() {
     // chiede `tier`, quindi il default arriva davvero a destinazione — e con
     // "standard" nessun artista sarebbe più né TOP né Verificato.
     tier: (a.tier ?? "free") as ArtistTier,
+    rating: ratings.get(a.id) ?? null,
   }));
 
   return (

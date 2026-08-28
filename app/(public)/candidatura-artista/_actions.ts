@@ -1,6 +1,8 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/server";
+import { guardPublicForm } from "@/lib/security/form-guard";
+import { LIMITI } from "@/lib/security/rate-limit";
 import {
   artistApplicationSchema,
   type ArtistApplicationInput,
@@ -18,6 +20,15 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
     };
   }
   const data = parsed.data;
+
+  // Soglia più stretta degli altri moduli: una candidatura è un atto raro e
+  // pesante (porta con sé un video), e qui è anche il punto in cui uno script
+  // potrebbe generare centinaia di righe da valutare a mano.
+  const guard = await guardPublicForm(input, LIMITI.candidatura, {
+    email: data.email,
+    area: "candidatura-artista",
+  });
+  if (!guard.ok) return { ok: false as const, error: guard.error };
 
   try {
     const supabase = createAdminClient();

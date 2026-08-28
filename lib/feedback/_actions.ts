@@ -62,7 +62,35 @@ export async function submitFeedback(input: {
   revalidatePath("/organizzatore/feedback");
   revalidatePath("/dashboard/feedback");
   revalidatePath("/admin/feedback");
+  await revalidateArtistProfile(booking.artist_id);
   return { ok: true };
+}
+
+/**
+ * Rigenera la pagina pubblica dell'artista dopo una modifica alle recensioni.
+ *
+ * Serve da quando le recensioni compaiono sul profilo (componente
+ * ArtistReviews): senza, una recensione appena inviata — o appena nascosta
+ * dalla moderazione — resterebbe invisibile, o visibile, finché la cache non
+ * scade da sola. Il caso della moderazione è quello che conta: una recensione
+ * rimossa perché offensiva deve sparire subito, non fra un'ora.
+ *
+ * Non solleva mai: è un'ottimizzazione di visualizzazione, non deve far
+ * fallire l'azione che l'ha preceduta e che è già andata a buon fine.
+ */
+async function revalidateArtistProfile(artistId: string | null | undefined) {
+  if (!artistId) return;
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("artists")
+      .select("slug")
+      .eq("id", artistId)
+      .maybeSingle();
+    if (data?.slug) revalidatePath(`/artisti/${data.slug}`);
+  } catch {
+    // ignorata di proposito
+  }
 }
 
 export async function toggleFeedbackHidden(input: { id: string }): Promise<Result> {
@@ -81,7 +109,7 @@ export async function toggleFeedbackHidden(input: { id: string }): Promise<Resul
 
   const { data: fb } = await admin
     .from("feedback")
-    .select("id, hidden")
+    .select("id, hidden, artist_id")
     .eq("id", input.id)
     .maybeSingle();
   if (!fb) return { ok: false, error: "Feedback non trovato" };
@@ -94,6 +122,7 @@ export async function toggleFeedbackHidden(input: { id: string }): Promise<Resul
 
   revalidatePath("/admin/feedback");
   revalidatePath("/dashboard/feedback");
+  await revalidateArtistProfile(fb.artist_id);
   return { ok: true };
 }
 
@@ -210,10 +239,19 @@ export async function deleteFeedback(input: { id: string }): Promise<Result> {
     .maybeSingle();
   if (profile?.role !== "superadmin") return { ok: false, error: "Solo superadmin" };
 
+  // L'artista va letto PRIMA della cancellazione: dopo, la riga non c'è più
+  // e non ci sarebbe modo di sapere quale profilo rigenerare.
+  const { data: daCancellare } = await admin
+    .from("feedback")
+    .select("artist_id")
+    .eq("id", input.id)
+    .maybeSingle();
+
   const { error } = await admin.from("feedback").delete().eq("id", input.id);
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/admin/feedback");
   revalidatePath("/dashboard/feedback");
+  await revalidateArtistProfile(daCancellare?.artist_id);
   return { ok: true };
 }

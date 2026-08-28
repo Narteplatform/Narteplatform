@@ -1,6 +1,8 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/server";
+import { guardPublicForm } from "@/lib/security/form-guard";
+import { LIMITI } from "@/lib/security/rate-limit";
 import { contactSchema, type ContactInput } from "@/lib/validators/schemas";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
@@ -12,6 +14,13 @@ export async function submitContact(input: ContactInput) {
     return { ok: false as const, error: "Dati non validi" };
   }
   const data = parsed.data;
+
+  // Trappola anti-bot + soglia di invii, prima di scrivere qualunque cosa.
+  const guard = await guardPublicForm(input, LIMITI.form, {
+    email: data.email,
+    area: "contatti",
+  });
+  if (!guard.ok) return { ok: false as const, error: guard.error };
 
   try {
     const supabase = createAdminClient();

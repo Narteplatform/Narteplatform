@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { artistInterestSchema } from "@/app/(user)/artisti/[slug]/_schema";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("[booking-api]", rid, "step=start");
+    logger.debug("booking-api", rid, "step=start");
 
     const parsed = artistInterestSchema.safeParse(body);
     if (!parsed.success) {
@@ -123,7 +124,7 @@ export async function POST(req: Request) {
       console.error("[booking-api]", rid, "step=lead-insert-fail", first.error);
       lastError = { message: first.error.message, code: first.error.code };
       if (first.error.code === "42703" || /event_time/i.test(first.error.message)) {
-        console.log("[booking-api]", rid, "step=lead-insert-retry-without-event_time");
+        logger.debug("booking-api", rid, "step=lead-insert-retry-without-event_time");
         const retry = await admin
           .from("leads")
           .insert(basePayload)
@@ -152,7 +153,7 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("[booking-api]", rid, "step=lead-inserted", { leadId: lead.id });
+    logger.debug("booking-api", rid, "step=lead-inserted", { leadId: lead.id });
 
     // Email disabilitate per ora — verranno reintegrate in seguito.
 

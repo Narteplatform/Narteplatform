@@ -38,6 +38,7 @@ import {
   type ProfileCompletionSource,
 } from "@/lib/artist/profile-completion";
 import type { AdminPageKey } from "@/lib/validators/schemas";
+import { getBookingsAwaitingFeedback } from "@/lib/feedback/queries";
 
 /**
  * Logo + area di appartenenza, senza separatore: il suffisso è dimensionato per
@@ -685,6 +686,14 @@ async function loadOrganizerShell(userId: string): Promise<{
 
   const unreadChatOrg = await safe(getUnreadCountForUser(userId, "organizer")).then((v) => v ?? 0);
 
+  // Quante date passate aspettano ancora una recensione. È il numero che fa
+  // scattare il pallino nel menu: senza, la pagina esiste ma nessuno ci entra.
+  const feedbackDaLasciare = organizer
+    ? await safe(getBookingsAwaitingFeedback(organizer.id)).then(
+        (r) => r?.pending.length ?? 0
+      )
+    : 0;
+
   const navSections: NavSection[] = [
     {
       href: "/organizzatore",
@@ -715,6 +724,14 @@ async function loadOrganizerShell(userId: string): Promise<{
       href: "/organizzatore/calendario",
       label: "Calendario",
       icon: <CalendarDays className="size-4" />,
+    },
+    {
+      href: "/organizzatore/feedback",
+      label: "Recensioni",
+      icon: <Star className="size-4" />,
+      badge: feedbackDaLasciare > 0
+        ? { label: String(feedbackDaLasciare), variant: "accent" }
+        : undefined,
     },
     {
       href: "/organizzatore/chat",
@@ -768,7 +785,7 @@ function defaultOrganizerNav(): NavSection[] {
     { href: "/organizzatore/richieste", label: "Richieste", icon: <Inbox className="size-4" /> },
     { href: "/organizzatore/strutture", label: "Strutture", icon: <Building2 className="size-4" /> },
     { href: "/organizzatore/calendario", label: "Calendario", icon: <CalendarDays className="size-4" /> },
-    { href: "/organizzatore/profilo", label: "Profilo", icon: <UserCog className="size-4" /> },
+    { href: "/organizzatore/feedback", label: "Recensioni", icon: <Star className="size-4" /> },
   ];
 }
 

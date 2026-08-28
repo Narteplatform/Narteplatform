@@ -6,6 +6,7 @@ import { bookingRequestPublicSchema } from "@/app/(user)/artisti/[slug]/_schema"
 import { sendEmail } from "@/lib/emails/send";
 import BookingRequestEmail from "@/lib/emails/templates/BookingRequestEmail";
 import type { Database } from "@/lib/supabase/types";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ function fail(rid: string, step: string, error: string, status = 400) {
 export async function POST(req: Request) {
   const rid = newRid();
   try {
-    console.log("[booking-request]", rid, "step=start");
+    logger.debug("booking-request", rid, "step=start");
 
     // --- Parse body
     let body: unknown = null;
@@ -120,7 +121,7 @@ export async function POST(req: Request) {
         return fail(rid, "signup", msg);
       }
       userId = created.user.id;
-      console.log("[booking-request]", rid, "step=signup-ok", userId);
+      logger.debug("booking-request", rid, "step=signup-ok", userId);
 
       // --- Auto-signin via SSR cookies
       try {
@@ -265,7 +266,7 @@ export async function POST(req: Request) {
       return fail(rid, "insert-request", reqErr?.message ?? "Errore salvataggio", 500);
     }
 
-    console.log("[booking-request]", rid, "step=request-inserted", bookingReq.id);
+    logger.debug("booking-request", rid, "step=request-inserted", bookingReq.id);
 
     // --- Emails (best-effort)
     try {

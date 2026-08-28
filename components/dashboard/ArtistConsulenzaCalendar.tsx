@@ -146,7 +146,12 @@ export function ArtistConsulenzaCalendar({
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {/* Contenitore scorrevole: a 360px sette colonne producono celle da
+              ~44px, sotto la soglia comoda per il dito e troppo strette per il
+              contenuto. Meglio far scorrere il calendario che comprimerlo. */}
+          <div className="-mx-1 overflow-x-auto px-1 pb-1">
+            <div className="min-w-[19rem]">
+  <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             {["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"].map((d) => (
               <span key={d}>{d}</span>
             ))}
@@ -209,6 +214,8 @@ export function ArtistConsulenzaCalendar({
               }
               return cells;
             })()}
+              </div>
+            </div>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-border pt-4 text-xs text-muted-foreground">

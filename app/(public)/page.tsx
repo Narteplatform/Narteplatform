@@ -1,3 +1,23 @@
+import type { Metadata } from "next";
+
+// La home era l'unica pagina del sito senza metadata propri: ereditava titolo e
+// descrizione dal root layout, quindi condivisa risultava indistinguibile da
+// qualsiasi altra pagina. È anche la pagina con più probabilità di essere
+// linkata dall'esterno.
+export const metadata: Metadata = {
+  title: "N'arte — Musica dal vivo e artisti emergenti",
+  description:
+    "Scopri eventi, esplora artisti emergenti italiani e richiedi un booking per il tuo locale, festival o evento privato. N'arte mette in contatto chi la musica la suona e chi la ospita.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "N'arte — Musica dal vivo e artisti emergenti",
+    description:
+      "Eventi, artisti emergenti e booking dal vivo in tutta Italia.",
+    type: "website",
+    url: "/",
+  },
+};
+
 import { HeroNarte } from "@/components/marketing/HeroNarte";
 import { AboutBlock } from "@/components/marketing/AboutBlock";
 import { HowItWorks } from "@/components/marketing/HowItWorks";
