@@ -157,6 +157,8 @@ export const config = {
     // chiamata che parte a ogni apertura di profilo. Effetto collaterale noto e
     // accettato: se il token scade proprio in quell'istante non viene
     // rinfrescato e quella singola visita risulta anonima.
-    "/((?!_next/static|_next/image|favicon.ico|api/health|api/stripe|api/artists/view|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|webmanifest)$).*)",
+    // `api/keepalive` escluso: lo chiama Vercel Cron senza cookie di sessione
+    // (keep-alive del piano Free di Supabase), il getUser() sarebbe sprecato.
+    "/((?!_next/static|_next/image|favicon.ico|api/health|api/keepalive|api/stripe|api/artists/view|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|webmanifest)$).*)",
   ],
 };
