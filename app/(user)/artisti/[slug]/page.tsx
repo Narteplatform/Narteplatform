@@ -16,6 +16,7 @@ import { TikTokIcon, SpotifyIcon } from "@/components/marketing/SocialIcons";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 import {
   ArtistVideoPlayer,
+  browserCanPlay,
   type PlayableArtistVideo,
 } from "@/components/media/ArtistVideoPlayer";
 import { ProfileViewBeacon } from "@/components/analytics/ProfileViewBeacon";
@@ -368,7 +369,7 @@ export default async function ArtistDetailPage({
   try {
     const { data, error } = await supabase
       .from("artist_videos")
-      .select("id, url, title, provider, bunny_guid, playback_state")
+      .select("id, url, title, provider, bunny_guid, playback_state, mime_type")
       .eq("artist_id", artist.id)
       .order("created_at", { ascending: false });
     // L'errore veniva ingoiato da un `data ?? []`: un guasto transitorio
@@ -377,13 +378,21 @@ export default async function ArtistDetailPage({
     if (error) {
       console.error("[ArtistDetailPage] artist_videos fetch error", error);
     }
-    // Un video ancora in elaborazione, o la cui conversione è fallita, non si
-    // mostra: un player rotto è peggio di un video assente. Il filtro sta QUI e
-    // non dopo il cap di piano, altrimenti un video non pronto occuperebbe uno
-    // dei posti disponibili e ne nasconderebbe uno pronto.
-    uploadedVideos = ((data ?? []) as (PlayableArtistVideo & { playback_state: string })[]).filter(
-      (v) => v.provider !== "bunny" || v.playback_state === "ready"
-    );
+    // Cosa si mostra e cosa no. Un video la cui conversione è FALLITA non si
+    // mostra mai: un player rotto è peggio di un video assente. Uno ancora in
+    // elaborazione invece SI MOSTRA, purché il suo file originale sia
+    // decodificabile dal browser — Bunny lo conserva e lo serve subito, quindi
+    // il visitatore lo guarda mentre la versione a bitrate adattivo è ancora in
+    // coda. È ciò che evita la mezz'ora di attesa dopo ogni caricamento.
+    //
+    // Il filtro sta QUI e non dopo il cap di piano: altrimenti un video non
+    // mostrabile occuperebbe uno dei posti disponibili e ne nasconderebbe uno
+    // buono.
+    uploadedVideos = ((data ?? []) as PlayableArtistVideo[]).filter((v) => {
+      if (v.provider !== "bunny") return true;
+      if (v.playback_state === "ready") return true;
+      return v.playback_state === "processing" && browserCanPlay(v.mime_type);
+    });
   } catch (e) {
     console.error("[ArtistDetailPage] artist_videos fetch error", e);
   }

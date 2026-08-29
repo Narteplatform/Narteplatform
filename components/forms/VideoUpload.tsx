@@ -13,7 +13,8 @@ import {
 import { probeVideo } from "@/lib/upload/probeVideo";
 import { putWithProgress, UploadAbortedError } from "@/lib/upload/putWithProgress";
 import { uploadViaTus } from "@/lib/upload/tusUpload";
-import { streamThumbnailUrl } from "@/lib/storage/bunny/urls";
+import { streamOriginalUrl, videoPosterUrl } from "@/lib/storage/bunny/urls";
+import { captureVideoPoster } from "@/lib/upload/videoPoster";
 import {
   MAX_VIDEO_BYTES_BUNNY,
   formatMb,
@@ -176,6 +177,23 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
             abortRef.current = abort;
           },
         });
+
+        // Il poster serve SUBITO: la thumbnail di Bunny esiste solo a
+        // transcodifica finita, e nella coda gratuita quella può essere
+        // mezz'ora dopo. Best-effort in senso stretto — se qualcosa va storto
+        // il video è già caricato e non deve fallire per un'anteprima.
+        setProgress({ name: file.name, pct: 100 });
+        try {
+          const poster = await captureVideoPoster(file);
+          if (poster) {
+            const fd = new FormData();
+            fd.append("file", poster);
+            fd.append("guid", sign.videoGuid);
+            await fetch("/api/upload/video/poster", { method: "POST", body: fd });
+          }
+        } catch {
+          // nessuna anteprima: si mostra il riquadro neutro
+        }
 
         const ack = await confirmArtistVideoUpload(sign.videoId);
         if (!ack.ok) throw new Error(ack.error);
@@ -369,6 +387,29 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
  * va transcodificato. Mostrare un player rotto sarebbe peggio che dire cosa sta
  * succedendo, quindi finché non è pronto si mostra lo stato.
  */
+function BunnyOriginalPreview({ guid }: { guid: string }) {
+  const [unavailable, setUnavailable] = useState(false);
+  if (unavailable) {
+    return (
+      <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-muted">
+        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden />
+        <p className="text-xs text-muted-foreground">In elaborazione…</p>
+      </div>
+    );
+  }
+  return (
+    <video
+      src={streamOriginalUrl(guid)}
+      poster={videoPosterUrl(guid)}
+      className="aspect-video w-full bg-black"
+      controls
+      preload="metadata"
+      playsInline
+      onError={() => setUnavailable(true)}
+    />
+  );
+}
+
 function BunnyThumb({ guid }: { guid: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
@@ -381,7 +422,7 @@ function BunnyThumb({ guid }: { guid: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={streamThumbnailUrl(guid)}
+      src={videoPosterUrl(guid)}
       alt=""
       onError={() => setFailed(true)}
       className="aspect-video w-full bg-black object-cover"
@@ -403,6 +444,15 @@ function VideoPreview({ video }: { video: ArtistVideoItem }) {
   }
 
   if (video.playback_state === "processing") {
+    // Se il file originale è decodificabile dal browser lo si guarda GIÀ ORA:
+    // Bunny lo conserva senza costi aggiuntivi e lo serve subito, mentre la
+    // versione a bitrate adattivo è ancora in coda. Senza questo, dopo ogni
+    // caricamento ci sarebbe mezz'ora di riquadro grigio.
+    if (video.mime_type === "video/mp4" || video.mime_type === "video/webm") {
+      return video.bunny_guid ? (
+        <BunnyOriginalPreview guid={video.bunny_guid} />
+      ) : null;
+    }
     return (
       <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-muted">
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden />

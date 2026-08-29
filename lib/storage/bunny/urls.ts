@@ -158,6 +158,26 @@ export function isBunnyStreamUrl(url: string): boolean {
   }
 }
 
+/**
+ * Poster nostro, estratto dal browser al momento del caricamento e messo su
+ * Bunny STORAGE — non su Stream.
+ *
+ * Due ragioni, entrambe pratiche. È disponibile subito, mentre la thumbnail di
+ * Bunny esiste solo a transcodifica finita (nella coda gratuita, da minuti a
+ * mezz'ora). E vive su un'altra pull zone, quindi non risente delle
+ * impostazioni di sicurezza della library Stream.
+ *
+ * La chiave è DERIVATA dal guid, non casuale: così non serve una colonna in più
+ * per ritrovarla.
+ */
+export function videoPosterKey(guid: string): string {
+  return `video-posters/${guid}.jpg`;
+}
+
+export function videoPosterUrl(guid: string): string {
+  return storageCdnUrl(videoPosterKey(guid));
+}
+
 const GUID_RE = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 
 /**

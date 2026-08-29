@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Play } from "lucide-react";
-import { streamEmbedUrl, streamThumbnailUrl } from "@/lib/storage/bunny/urls";
+import { streamEmbedUrl, videoPosterUrl } from "@/lib/storage/bunny/urls";
 
 /**
  * Player Bunny a FACCIATA: il poster ora, l'iframe solo al click.
@@ -25,11 +25,11 @@ export function BunnyVideoFacade({
   title?: string | null;
 }) {
   const [playing, setPlaying] = useState(false);
-  // Il poster è un URL DIRETTO sul CDN. Se sulla library è attiva la
-  // "CDN token authentication", tutti gli URL diretti — thumbnail comprese —
-  // rispondono 403, mentre l'iframe del player continua a funzionare. In quel
-  // caso non si mostra un'immagine rotta: si mostra uno sfondo pulito col
-  // pulsante di riproduzione, e il video resta guardabile.
+  // Il poster è il fotogramma che abbiamo estratto NOI al caricamento e messo
+  // su Bunny Storage: esiste dal primo istante, mentre la thumbnail di Bunny
+  // arriva solo a transcodifica finita. Se manca — un .mov HEVC che il browser
+  // non ha saputo decodificare — non si mostra un'immagine rotta ma uno sfondo
+  // pulito col pulsante di riproduzione, e il video resta guardabile.
   const [posterFailed, setPosterFailed] = useState(false);
   const label = title?.trim() || "Video";
 
@@ -57,7 +57,7 @@ export function BunnyVideoFacade({
     >
       {!posterFailed && (
         <Image
-          src={streamThumbnailUrl(guid)}
+          src={videoPosterUrl(guid)}
           alt=""
           fill
           sizes="(min-width: 768px) 50vw, 100vw"
