@@ -387,6 +387,27 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
  * va transcodificato. Mostrare un player rotto sarebbe peggio che dire cosa sta
  * succedendo, quindi finché non è pronto si mostra lo stato.
  */
+function BunnyThumb({ guid }: { guid: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className="flex aspect-video w-full items-center justify-center bg-neutral-900">
+        <Film className="size-6 text-white/60" aria-hidden />
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={streamThumbnailUrl(guid)}
+      alt=""
+      onError={() => setFailed(true)}
+      className="aspect-video w-full bg-black object-cover"
+      loading="lazy"
+    />
+  );
+}
+
 function VideoPreview({ video }: { video: ArtistVideoItem }) {
   if (video.playback_state === "failed") {
     return (
@@ -414,15 +435,9 @@ function VideoPreview({ video }: { video: ArtistVideoItem }) {
   if (video.provider === "bunny" && video.bunny_guid) {
     // Nell'editor basta il poster: montare l'iframe del player per ogni video
     // scaricherebbe il suo bundle anche solo aprendo la pagina del profilo.
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={streamThumbnailUrl(video.bunny_guid)}
-        alt=""
-        className="aspect-video w-full bg-black object-cover"
-        loading="lazy"
-      />
-    );
+    // Se la library ha la token authentication attiva il poster risponde 403:
+    // meglio un riquadro pulito con l'icona che un'immagine rotta.
+    return <BunnyThumb guid={video.bunny_guid} />;
   }
 
   return (

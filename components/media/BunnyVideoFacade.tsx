@@ -25,6 +25,12 @@ export function BunnyVideoFacade({
   title?: string | null;
 }) {
   const [playing, setPlaying] = useState(false);
+  // Il poster è un URL DIRETTO sul CDN. Se sulla library è attiva la
+  // "CDN token authentication", tutti gli URL diretti — thumbnail comprese —
+  // rispondono 403, mentre l'iframe del player continua a funzionare. In quel
+  // caso non si mostra un'immagine rotta: si mostra uno sfondo pulito col
+  // pulsante di riproduzione, e il video resta guardabile.
+  const [posterFailed, setPosterFailed] = useState(false);
   const label = title?.trim() || "Video";
 
   if (playing) {
@@ -49,16 +55,21 @@ export function BunnyVideoFacade({
       aria-label={`Riproduci ${label}`}
       className="group relative block aspect-video w-full overflow-hidden bg-black"
     >
-      <Image
-        src={streamThumbnailUrl(guid)}
-        alt=""
-        fill
-        sizes="(min-width: 768px) 50vw, 100vw"
-        className="object-cover transition-transform duration-500 group-hover:scale-105"
-      />
+      {!posterFailed && (
+        <Image
+          src={streamThumbnailUrl(guid)}
+          alt=""
+          fill
+          sizes="(min-width: 768px) 50vw, 100vw"
+          onError={() => setPosterFailed(true)}
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      )}
       <span
         aria-hidden
-        className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover:bg-black/10"
+        className={`absolute inset-0 flex items-center justify-center transition-colors ${
+          posterFailed ? "bg-neutral-900" : "bg-black/20 group-hover:bg-black/10"
+        }`}
       >
         <span className="inline-flex size-16 items-center justify-center rounded-full bg-white/95 text-black shadow-lg transition-transform duration-300 group-hover:scale-110">
           <Play className="ml-1 size-6 fill-current" />
