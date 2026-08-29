@@ -14,6 +14,7 @@ import { probeVideo } from "@/lib/upload/probeVideo";
 import { putWithProgress, UploadAbortedError } from "@/lib/upload/putWithProgress";
 import { uploadViaTus } from "@/lib/upload/tusUpload";
 import { streamOriginalUrl, videoPosterUrl } from "@/lib/storage/bunny/urls";
+import { VideoPoster } from "@/components/media/VideoPoster";
 import { captureVideoPoster } from "@/lib/upload/videoPoster";
 import {
   MAX_VIDEO_BYTES_BUNNY,
@@ -68,6 +69,7 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
   const [videos, setVideos] = useState<ArtistVideoItem[]>(initialVideos);
   const [progress, setProgress] = useState<{ name: string; pct: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const uploading = progress !== null;
@@ -163,6 +165,18 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
       // Ramo Bunny Stream — TUS a chunk, riprendibile
       // ---------------------------------------------------------------------
       if (sign.uploadKind === "bunny-tus") {
+        // Il controllo costa un secondo e cambia l'esperienza: se il browser non
+        // decodifica questo file, l'artista lo scopre ADESSO — con la ragione e
+        // il tempo di attesa — invece di trovarsi davanti a un riquadro muto per
+        // venti minuti chiedendosi se il caricamento sia fallito.
+        // Non blocca: il video si carica comunque e sarà visibile a tutti.
+        const probe = await probeVideo(file);
+        if (!probe.playable) {
+          setNotice(
+            `"${file.name}" usa un formato che questo browser non riproduce da solo (di solito HEVC, il formato predefinito dell'iPhone). Il caricamento prosegue normalmente e il video sarà visibile a tutti entro una ventina di minuti, appena convertito.`
+          );
+        }
+
         await uploadViaTus({
           file,
           endpoint: sign.tusEndpoint,
@@ -244,6 +258,7 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
     e.target.value = "";
     if (files.length === 0) return;
     setError(null);
+    setNotice(null);
 
     try {
       // Sequenziale: upload paralleli si contendono l'uplink e rischiano di
@@ -387,6 +402,11 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
         </span>
         . I video saranno online subito.
       </p>
+      {notice && (
+        <p className="rounded-lg border border-border bg-muted p-3 text-xs leading-snug text-muted-foreground">
+          {notice}
+        </p>
+      )}
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );
@@ -405,17 +425,28 @@ function BunnyOriginalPreview({ guid }: { guid: string }) {
   const [unavailable, setUnavailable] = useState(false);
   if (unavailable) {
     return (
-      <div className="flex aspect-video w-full flex-col items-center justify-center gap-1.5 bg-muted px-4 text-center">
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden />
-        <p className="text-xs font-medium">Conversione in corso</p>
-        <p className="text-[11px] leading-snug text-muted-foreground">
-          Questo video usa un formato che il browser non riproduce da solo. È al
-          sicuro: comparirà appena la conversione è pronta.
-        </p>
-        <p className="text-[11px] leading-snug text-muted-foreground">
-          Per averlo online subito, la prossima volta registra in{" "}
-          <span className="font-medium">Impostazioni → Fotocamera → Formati → «Massima compatibilità»</span>.
-        </p>
+      <div className="relative aspect-video w-full overflow-hidden bg-neutral-900">
+        {/* Il poster dietro il messaggio non è decorazione: è il caso in cui il
+            browser di chi carica non decodifica il file, quindi non abbiamo
+            potuto estrarre noi un fotogramma. Appena Bunny genera la sua
+            anteprima, l'artista vede il PROPRIO video invece di un rettangolo
+            vuoto — proprio mentre è costretto ad aspettare. */}
+        <VideoPoster guid={guid} className="absolute inset-0 h-full w-full object-cover opacity-40" />
+        <div className="relative flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-center text-white">
+          <Loader2 className="size-5 animate-spin" aria-hidden />
+          <p className="text-xs font-medium">Conversione in corso</p>
+          <p className="text-[11px] leading-snug text-white/75">
+            Questo formato non si riproduce da solo su questo browser. Il video è
+            al sicuro: comparirà appena la conversione è pronta.
+          </p>
+          <p className="text-[11px] leading-snug text-white/75">
+            Per averlo online subito, la prossima volta registra in{" "}
+            <span className="font-medium text-white">
+              Impostazioni → Fotocamera → Formati → «Massima compatibilità»
+            </span>
+            .
+          </p>
+        </div>
       </div>
     );
   }
@@ -428,27 +459,6 @@ function BunnyOriginalPreview({ guid }: { guid: string }) {
       preload="metadata"
       playsInline
       onError={() => setUnavailable(true)}
-    />
-  );
-}
-
-function BunnyThumb({ guid }: { guid: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) {
-    return (
-      <div className="flex aspect-video w-full items-center justify-center bg-neutral-900">
-        <Film className="size-6 text-white/60" aria-hidden />
-      </div>
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={videoPosterUrl(guid)}
-      alt=""
-      onError={() => setFailed(true)}
-      className="aspect-video w-full bg-black object-cover"
-      loading="lazy"
     />
   );
 }
@@ -476,7 +486,7 @@ function VideoPreview({ video }: { video: ArtistVideoItem }) {
   if (video.provider === "bunny" && video.bunny_guid) {
     // Nell'editor basta il poster: montare l'iframe del player per ogni video
     // scaricherebbe il suo bundle anche solo aprendo la pagina del profilo.
-    return <BunnyThumb guid={video.bunny_guid} />;
+    return <VideoPoster guid={video.bunny_guid} />;
   }
 
   return (

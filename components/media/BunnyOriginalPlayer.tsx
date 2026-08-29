@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { streamOriginalUrl, videoPosterUrl } from "@/lib/storage/bunny/urls";
+import { VideoPoster } from "@/components/media/VideoPoster";
 
 /**
  * Riproduce il file ORIGINALE di un video Bunny mentre la transcodifica è in
@@ -24,9 +25,12 @@ export function BunnyOriginalPlayer({
 
   if (unavailable) {
     return (
-      <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-neutral-900 text-white/70">
-        <Loader2 className="size-5 animate-spin" aria-hidden />
-        <p className="text-xs">Video in preparazione, torna fra poco.</p>
+      <div className="relative aspect-video w-full overflow-hidden bg-neutral-900">
+        <VideoPoster guid={guid} className="absolute inset-0 h-full w-full object-cover opacity-40" />
+        <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 text-white/80">
+          <Loader2 className="size-5 animate-spin" aria-hidden />
+          <p className="text-xs">Video in preparazione, torna fra poco.</p>
+        </div>
       </div>
     );
   }
