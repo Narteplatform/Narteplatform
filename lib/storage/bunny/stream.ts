@@ -121,6 +121,22 @@ export async function createStreamVideo(input: {
   return { guid };
 }
 
+/**
+ * Rinomina un video su Bunny.
+ *
+ * Non serve al sito — il titolo mostrato viene da Postgres — ma tiene allineato
+ * il pannello Bunny, dove altrimenti resterebbe il nome del file originale.
+ * Best-effort: un errore qui non deve far fallire una rinomina già scritta.
+ */
+export async function updateStreamVideoTitle(guid: string, title: string): Promise<void> {
+  const res = await streamFetch(`/videos/${encodeURIComponent(guid)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: title.slice(0, 200) }),
+  });
+  if (!res.ok && res.status !== 404) await describeFailure(res, "updateVideo");
+}
+
 /** Stato autorevole di un video. `null` se non esiste più su Bunny. */
 export async function getStreamVideo(guid: string): Promise<StreamVideo | null> {
   const res = await streamFetch(`/videos/${encodeURIComponent(guid)}`);

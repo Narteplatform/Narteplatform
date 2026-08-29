@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { Upload, X, Film, Loader2, AlertTriangle } from "lucide-react";
+import { Upload, Film, Loader2, AlertTriangle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Input";
 import {
   addArtistVideo,
   confirmArtistVideoUpload,
   deleteArtistVideo,
+  renameArtistVideo,
   refreshArtistVideoStatus,
 } from "@/app/(artist)/dashboard/_actions";
 import { probeVideo } from "@/lib/upload/probeVideo";
@@ -302,33 +303,29 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
 
   return (
     <div className="space-y-3">
-      <Label>
-        I tuoi video (max {videoMax}, fino a {formatMb(MAX_VIDEO_BYTES_BUNNY)} ciascuno)
-      </Label>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <Label>I tuoi video</Label>
+        <span className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">
+            {videos.length} di {videoMax}
+          </span>{" "}
+          {videoMax === 1 ? "spazio" : "spazi"} del tuo piano · fino a{" "}
+          {formatMb(MAX_VIDEO_BYTES_BUNNY)} per video
+        </span>
+      </div>
 
       {videos.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {videos.map((v) => (
-            <div
+            <VideoCard
               key={v.id}
-              className="group relative overflow-hidden rounded-md border border-border bg-black"
-            >
-              <VideoPreview video={v} />
-              <button
-                type="button"
-                onClick={() => remove(v.id)}
-                disabled={pending}
-                aria-label="Rimuovi video"
-                className="absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-full bg-black/80 text-white opacity-90 transition-opacity hover:bg-black"
-              >
-                <X className="size-3.5" />
-              </button>
-              {v.title && (
-                <p className="truncate border-t border-border bg-background px-3 py-2 text-xs">
-                  {v.title}
-                </p>
-              )}
-            </div>
+              video={v}
+              disabled={pending}
+              onRename={(title) =>
+                setVideos((prev) => prev.map((x) => (x.id === v.id ? { ...x, title } : x)))
+              }
+              onRemove={() => remove(v.id)}
+            />
           ))}
         </div>
       )}
@@ -370,19 +367,24 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
         onChange={onFiles}
       />
       <div className="flex flex-wrap items-center gap-2">
+        {/* Variante piena e non "outline": caricare un video è LA cosa che si
+            fa in questa sezione, non una fra tante. */}
         <Button
           type="button"
-          variant="outline"
-          size="sm"
+          variant="accent"
+          size={videos.length === 0 ? "lg" : "md"}
           onClick={pick}
           disabled={uploading || slotsLeft <= 0}
         >
-          <Upload className="size-4" /> {uploading ? "Caricamento…" : "Carica video"}
+          <Upload className="size-4" />
+          {uploading ? "Caricamento…" : videos.length === 0 ? "Carica il tuo primo video" : "Carica video"}
         </Button>
         {slotsLeft <= 0 ? (
           <span className="text-xs text-muted-foreground">
-            Hai raggiunto il massimo di {videoMax} {videoMax === 1 ? "video" : "video"} del tuo
-            piano. Eliminane uno per caricarne un altro.
+            Hai occupato tutti gli spazi del tuo piano
+            {videoMax === 1 ? " (1 video)" : ` (${videoMax} video)`}. Elimina un video con
+            il pulsante <span className="font-medium text-foreground">Elimina</span> qui sopra
+            per liberare spazio e caricarne un altro.
           </span>
         ) : (
           videos.length === 0 && (
@@ -408,6 +410,91 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
         </p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
+    </div>
+  );
+}
+
+/**
+ * Scheda di un video caricato: anteprima, titolo modificabile, eliminazione.
+ *
+ * Il titolo si salva quando il campo perde il fuoco o si preme Invio — non a
+ * ogni tasto: una Server Action per carattere sarebbe una richiesta ogni
+ * battuta. Se il salvataggio fallisce si torna al titolo precedente, così
+ * quello che si legge a schermo è sempre quello che sta nel database.
+ */
+function VideoCard({
+  video,
+  disabled,
+  onRename,
+  onRemove,
+}: {
+  video: ArtistVideoItem;
+  disabled: boolean;
+  onRename: (title: string | null) => void;
+  onRemove: () => void;
+}) {
+  const [draft, setDraft] = useState(video.title ?? "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  async function commit() {
+    const next = draft.trim();
+    if (next === (video.title ?? "")) return;
+    setSaving(true);
+    setFailed(false);
+    const res = await renameArtistVideo(video.id, next);
+    setSaving(false);
+    if (!res.ok) {
+      setFailed(true);
+      setDraft(video.title ?? "");
+      return;
+    }
+    onRename(res.title);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  }
+
+  return (
+    <div className="overflow-hidden rounded-md border border-border bg-background">
+      <VideoPreview video={video} />
+      <div className="space-y-2 border-t border-border p-3">
+        <label className="sr-only" htmlFor={`titolo-${video.id}`}>
+          Titolo del video
+        </label>
+        <input
+          id={`titolo-${video.id}`}
+          type="text"
+          value={draft}
+          maxLength={120}
+          placeholder="Dai un titolo a questo video"
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.currentTarget.blur();
+            }
+            if (e.key === "Escape") setDraft(video.title ?? "");
+          }}
+          className="h-9 w-full rounded-md border border-border bg-background px-2.5 text-sm"
+        />
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-muted-foreground" role="status" aria-live="polite">
+            {saving ? "Salvataggio…" : saved ? "Titolo salvato" : failed ? "Non salvato, riprova" : ""}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+            disabled={disabled}
+            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            <Trash2 className="size-3.5" /> Elimina
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

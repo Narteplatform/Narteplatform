@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ARTIST_VIDEO_BUCKET, isAllowedVideoMime } from "@/lib/upload/video-limits";
-import { deleteStreamVideo } from "@/lib/storage/bunny/stream";
+import { deleteStreamVideo, updateStreamVideoTitle } from "@/lib/storage/bunny/stream";
 import {
   ARTIST_VIDEO_SELECT,
   reconcileBunnyVideo,
@@ -544,6 +544,47 @@ async function revalidateArtistVideoPaths(artistId: string) {
     .maybeSingle();
   if (data?.slug) revalidatePath(`/artisti/${data.slug}`);
 }
+
+/**
+ * Rinomina un video caricato.
+ *
+ * Il titolo è l'unica cosa che l'artista può cambiare dopo il caricamento: il
+ * file no, e non avrebbe senso. Un titolo vuoto torna a `null`, così la scheda
+ * mostra il riquadro senza didascalia invece di una stringa vuota.
+ */
+export async function renameArtistVideo(videoId: string, title: string) {
+  const admin = createAdminClient();
+  const { data: video, error: readErr } = await admin
+    .from("artist_videos")
+    .select("id, artist_id, provider, bunny_guid")
+    .eq("id", videoId)
+    .maybeSingle();
+  if (readErr) return { ok: false as const, error: readErr.message };
+  if (!video) return { ok: false as const, error: "Video non trovato" };
+
+  const user = await ownsArtist(video.artist_id);
+  if (!user) return { ok: false as const, error: "Non autorizzato" };
+
+  const clean = title.trim().slice(0, 120);
+
+  const { error } = await admin
+    .from("artist_videos")
+    .update({ title: clean || null })
+    .eq("id", videoId);
+  if (error) return { ok: false as const, error: error.message };
+
+  // Allineare il pannello Bunny è un di più: se fallisce, la rinomina sul sito
+  // è già avvenuta e non va annullata per questo.
+  if (video.provider === "bunny" && video.bunny_guid && clean) {
+    await updateStreamVideoTitle(video.bunny_guid, clean).catch((e) =>
+      logger.warn("dashboard/video", "rinomina su Bunny fallita", e)
+    );
+  }
+
+  await revalidateArtistVideoPaths(video.artist_id);
+  return { ok: true as const, title: clean || null };
+}
+
 
 export async function deleteArtistVideo(videoId: string) {
   const admin = createAdminClient();

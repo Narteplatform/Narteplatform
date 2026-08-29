@@ -1,28 +1,27 @@
 "use client";
 
-import * as React from "react";
-import { useWatch } from "react-hook-form";
 import { Video } from "lucide-react";
-import { Textarea } from "@/components/ui/Input";
 import { VideoUpload, type ArtistVideoItem } from "@/components/forms/VideoUpload";
 import { ProfileSection } from "@/components/dashboard/profile/ProfileSection";
-import { Field, ProfileSectionForm } from "@/components/dashboard/profile/ProfileSectionForm";
-import { useProfileSectionForm } from "@/components/dashboard/profile/useProfileSectionForm";
-import {
-  videosSectionSchema,
-  toVideosPayload,
-  splitLines,
-  type VideosSectionValues,
-} from "@/lib/validators/artist-profile";
 import type { ArtistProfileData } from "@/components/dashboard/profile/types";
 
 /**
- * Due flussi distinti, di proposito:
- *   • gli URL YouTube/Vimeo stanno nella colonna `videos` e si salvano con il
- *     pulsante di questo blocco;
- *   • i file caricati vivono nella tabella `artist_videos` e hanno già Server
- *     Action proprie (addArtistVideo/deleteArtistVideo), quindi VideoUpload sta
- *     FUORI dal <form>: annidarlo lo farebbe partecipare al submit senza motivo.
+ * Galleria video del profilo artista.
+ *
+ * ⚠️ QUESTA SEZIONE NON SCRIVE PIÙ SU `artists.videos`, ed è deliberato.
+ *
+ * Prima c'era una casella di testo per incollare link YouTube/Vimeo, accanto al
+ * caricamento dei file. Il caricamento è ormai la funzione definitiva — i video
+ * vivono su Bunny, sono riproducibili subito e contano nei limiti di piano —
+ * quindi il campo dei link è stato tolto.
+ *
+ * Non è stato tolto solo il campo: è stato tolto l'INTERO form. Se fosse
+ * rimasto il form senza il campo, il primo salvataggio avrebbe inviato
+ * `videos: []` e cancellato i link già presenti in colonna. Su questo schema
+ * scrivere un array vuoto CANCELLA (vedi la regola 3 di CLAUDE.md), quindi
+ * l'unico modo sicuro di smettere di offrire quel campo è smettere del tutto di
+ * scrivere quella colonna. I link già salvati restano nel database e continuano
+ * a comparire sul profilo pubblico.
  */
 export function VideoBlock({
   artist,
@@ -34,62 +33,21 @@ export function VideoBlock({
   /** Tetto del piano dell'artista, risolto lato server: 1 Free, 3 Pro, 3 Max. */
   videoMax: number;
 }) {
-  const defaultValues = React.useMemo<VideosSectionValues>(
-    () => ({ videos: (artist.videos ?? []).join("\n") }),
-    [artist.videos]
-  );
-
-  const { form, onSubmit, isDirty, isSubmitting, serverError } = useProfileSectionForm({
-    artistId: artist.id,
-    section: "videos",
-    schema: videosSectionSchema,
-    defaultValues,
-    toPayload: toVideosPayload,
-    successMessage: "Video salvati",
-  });
-
-  const raw = useWatch({ control: form.control, name: "videos" }) ?? "";
-  const total = splitLines(raw).length + initialVideos.length;
+  const count = initialVideos.length;
 
   return (
     <ProfileSection
       id="video"
       title="Galleria video"
-      description="Link YouTube/Vimeo e file caricati"
+      description="I video che carichi dal tuo dispositivo"
       icon={<Video className="size-4" />}
       status={
-        total > 0
-          ? { tone: "count", label: total === 1 ? "1 video" : `${total} video` }
+        count > 0
+          ? { tone: "count", label: count === 1 ? "1 video" : `${count} video` }
           : { tone: "todo", label: "Nessun video" }
       }
-      dirty={isDirty}
     >
-      <div className="space-y-6">
-        <ProfileSectionForm
-          onSubmit={onSubmit}
-          isDirty={isDirty}
-          isSubmitting={isSubmitting}
-          serverError={serverError}
-        >
-          <Field
-            label="URL video YouTube/Vimeo, uno per riga"
-            error={form.formState.errors.videos?.message}
-          >
-            <Textarea
-              rows={3}
-              placeholder={"https://youtube.com/watch?v=...\nhttps://vimeo.com/..."}
-              {...form.register("videos")}
-            />
-          </Field>
-        </ProfileSectionForm>
-
-        <div className="border-t border-border pt-5">
-          <p className="mb-3 text-xs text-muted-foreground">
-            Video caricati — si salvano da soli, senza passare dal pulsante qui sopra.
-          </p>
-          <VideoUpload artistId={artist.id} initialVideos={initialVideos} videoMax={videoMax} />
-        </div>
-      </div>
+      <VideoUpload artistId={artist.id} initialVideos={initialVideos} videoMax={videoMax} />
     </ProfileSection>
   );
 }
