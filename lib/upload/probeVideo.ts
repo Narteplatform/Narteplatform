@@ -13,6 +13,17 @@ export type VideoProbe = {
   durationMs: number | null;
   /** false = il browser non decodifica il file (tipicamente HEVC da iPhone). */
   playable: boolean;
+  /**
+   * Dimensioni del fotogramma. Servono a decidere COME mostrare il video: un
+   * video verticale girato col telefono dentro un riquadro 16:9 finisce fra due
+   * grosse barre nere. Con queste il contenitore si adatta al contenuto.
+   *
+   * Bunny le comunica solo a transcodifica finita — cioè fino a mezz'ora dopo —
+   * e per i video già su Supabase non le ha mai comunicate nessuno. Il browser
+   * invece le conosce nell'istante in cui legge i metadati.
+   */
+  width: number | null;
+  height: number | null;
 };
 
 const PROBE_TIMEOUT_MS = 10_000;
@@ -35,7 +46,10 @@ export function probeVideo(file: File): Promise<VideoProbe> {
 
     // Un probe che non risponde non deve bloccare l'upload: si prosegue senza
     // durata, lasciando l'ultima parola alla validazione del server.
-    const timer = setTimeout(() => finish({ durationMs: null, playable: true }), PROBE_TIMEOUT_MS);
+    const timer = setTimeout(
+      () => finish({ durationMs: null, playable: true, width: null, height: null }),
+      PROBE_TIMEOUT_MS
+    );
 
     video.preload = "metadata";
     video.muted = true;
@@ -47,10 +61,16 @@ export function probeVideo(file: File): Promise<VideoProbe> {
       const durationMs = Number.isFinite(video.duration)
         ? Math.round(video.duration * 1000)
         : null;
-      finish({ durationMs, playable });
+      finish({
+        durationMs,
+        playable,
+        width: video.videoWidth || null,
+        height: video.videoHeight || null,
+      });
     };
 
-    video.onerror = () => finish({ durationMs: null, playable: false });
+    video.onerror = () =>
+      finish({ durationMs: null, playable: false, width: null, height: null });
 
     video.src = url;
   });

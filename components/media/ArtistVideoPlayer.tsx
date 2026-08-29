@@ -1,4 +1,5 @@
 import { BunnyVideoFacade } from "@/components/media/BunnyVideoFacade";
+import { videoAspectRatio } from "@/lib/media/aspect";
 import { BunnyOriginalPlayer } from "@/components/media/BunnyOriginalPlayer";
 
 export type PlayableArtistVideo = {
@@ -9,6 +10,8 @@ export type PlayableArtistVideo = {
   bunny_guid: string | null;
   playback_state: string;
   mime_type: string | null;
+  width: number | null;
+  height: number | null;
 };
 
 /**
@@ -44,13 +47,27 @@ export function isRenderable(playbackState: string): boolean {
 export function ArtistVideoPlayer({ video }: { video: PlayableArtistVideo }) {
   if (video.provider === "bunny" && video.bunny_guid) {
     if (video.playback_state === "ready") {
-      return <BunnyVideoFacade guid={video.bunny_guid} title={video.title} />;
+      return (
+        <BunnyVideoFacade
+          guid={video.bunny_guid}
+          title={video.title}
+          width={video.width}
+          height={video.height}
+        />
+      );
     }
     if (video.playback_state === "processing") {
       // Si prova SEMPRE l'originale: se questo browser lo decodifica, il
       // visitatore lo guarda adesso invece che fra venti minuti. Se non lo
       // decodifica, BunnyOriginalPlayer mostra da sé il messaggio di attesa.
-      return <BunnyOriginalPlayer guid={video.bunny_guid} title={video.title} />;
+      return (
+        <BunnyOriginalPlayer
+          guid={video.bunny_guid}
+          title={video.title}
+          width={video.width}
+          height={video.height}
+        />
+      );
     }
     // Conversione fallita: non si mostra niente. Un player rotto è peggio di un
     // video assente.
@@ -61,13 +78,19 @@ export function ArtistVideoPlayer({ video }: { video: PlayableArtistVideo }) {
 
   return (
     // preload="metadata" è obbligatorio: senza, ogni visita scaricherebbe i
-    // video interi.
-    <video
-      src={video.url}
-      controls
-      preload="metadata"
-      playsInline
-      className="aspect-video w-full bg-black"
-    />
+    // video interi. object-cover perché il contenitore ha già il rapporto del
+    // video: non c'è nulla da riempire con barre nere.
+    <div
+      className="w-full overflow-hidden bg-black"
+      style={{ aspectRatio: videoAspectRatio(video.width, video.height) }}
+    >
+      <video
+        src={video.url}
+        controls
+        preload="metadata"
+        playsInline
+        className="h-full w-full object-cover"
+      />
+    </div>
   );
 }

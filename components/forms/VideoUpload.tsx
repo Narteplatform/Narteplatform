@@ -16,6 +16,7 @@ import { putWithProgress, UploadAbortedError } from "@/lib/upload/putWithProgres
 import { uploadViaTus } from "@/lib/upload/tusUpload";
 import { streamOriginalUrl, videoPosterUrl } from "@/lib/storage/bunny/urls";
 import { VideoPoster } from "@/components/media/VideoPoster";
+import { videoAspectRatio } from "@/lib/media/aspect";
 import { captureVideoPoster } from "@/lib/upload/videoPoster";
 import {
   MAX_VIDEO_BYTES_BUNNY,
@@ -38,6 +39,8 @@ export type ArtistVideoItem = {
   playback_state: string;
   upload_state: string;
   bunny_error: string | null;
+  width: number | null;
+  height: number | null;
 };
 
 type SignResponse =
@@ -144,6 +147,11 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
         );
       }
 
+      // Misurato PRIMA della firma: le dimensioni viaggiano con la richiesta e
+      // finiscono sulla riga fin dalla creazione, così il video si mostra col
+      // formato giusto già durante la conversione.
+      const probe = await probeVideo(file);
+
       const signRes = await fetch("/api/upload/video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -152,6 +160,8 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
           fileName: file.name,
           contentType: mime,
           size: file.size,
+          width: probe.width,
+          height: probe.height,
         }),
       });
       if (!signRes.ok) {
@@ -166,12 +176,10 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
       // Ramo Bunny Stream — TUS a chunk, riprendibile
       // ---------------------------------------------------------------------
       if (sign.uploadKind === "bunny-tus") {
-        // Il controllo costa un secondo e cambia l'esperienza: se il browser non
-        // decodifica questo file, l'artista lo scopre ADESSO — con la ragione e
-        // il tempo di attesa — invece di trovarsi davanti a un riquadro muto per
-        // venti minuti chiedendosi se il caricamento sia fallito.
-        // Non blocca: il video si carica comunque e sarà visibile a tutti.
-        const probe = await probeVideo(file);
+        // Se il browser non decodifica questo file, l'artista lo scopre ADESSO
+        // — con la ragione e il tempo di attesa — invece di trovarsi davanti a un
+        // riquadro muto per venti minuti chiedendosi se il caricamento sia
+        // fallito. Non blocca: il video si carica comunque.
         if (!probe.playable) {
           setNotice(
             `"${file.name}" usa un formato che questo browser non riproduce da solo (di solito HEVC, il formato predefinito dell'iPhone). Il caricamento prosegue normalmente e il video sarà visibile a tutti entro una ventina di minuti, appena convertito.`
@@ -221,7 +229,7 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
       // Su questo ramo il browser deve poter decodificare il file: Supabase non
       // transcodifica. Su Bunny il controllo non serve, perché è proprio ciò che
       // Bunny risolve.
-      const { durationMs, playable } = await probeVideo(file);
+      const { durationMs, playable } = probe;
       if (!playable) {
         const proceed = window.confirm(
           `"${file.name}" non sembra riproducibile in questo browser: probabilmente usa un codec non supportato (es. HEVC).\n\nSe lo carichi, molti visitatori non riusciranno a vederlo. Consigliamo di riesportarlo in MP4 (H.264).\n\nCaricarlo lo stesso?`
@@ -457,7 +465,12 @@ function VideoCard({
 
   return (
     <div className="overflow-hidden rounded-md border border-border bg-background">
-      <VideoPreview video={video} />
+      <div
+        className="w-full overflow-hidden bg-black"
+        style={{ aspectRatio: videoAspectRatio(video.width, video.height) }}
+      >
+        <VideoPreview video={video} />
+      </div>
       <div className="space-y-2 border-t border-border p-3">
         <label className="sr-only" htmlFor={`titolo-${video.id}`}>
           Titolo del video
@@ -512,7 +525,7 @@ function BunnyOriginalPreview({ guid }: { guid: string }) {
   const [unavailable, setUnavailable] = useState(false);
   if (unavailable) {
     return (
-      <div className="relative aspect-video w-full overflow-hidden bg-neutral-900">
+      <div className="relative h-full w-full overflow-hidden bg-neutral-900">
         {/* Il poster dietro il messaggio non è decorazione: è il caso in cui il
             browser di chi carica non decodifica il file, quindi non abbiamo
             potuto estrarre noi un fotogramma. Appena Bunny genera la sua
@@ -541,7 +554,7 @@ function BunnyOriginalPreview({ guid }: { guid: string }) {
     <video
       src={streamOriginalUrl(guid)}
       poster={videoPosterUrl(guid)}
-      className="aspect-video w-full bg-black"
+      className="h-full w-full bg-black object-cover"
       controls
       preload="metadata"
       playsInline
@@ -553,7 +566,7 @@ function BunnyOriginalPreview({ guid }: { guid: string }) {
 function VideoPreview({ video }: { video: ArtistVideoItem }) {
   if (video.playback_state === "failed") {
     return (
-      <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-muted px-4 text-center">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-muted px-4 text-center">
         <AlertTriangle className="size-5 text-red-600" aria-hidden />
         <p className="text-xs text-muted-foreground">
           {video.bunny_error ?? "La conversione non è riuscita."} Prova a ricaricarlo.
@@ -579,7 +592,7 @@ function VideoPreview({ video }: { video: ArtistVideoItem }) {
   return (
     <video
       src={video.url ?? undefined}
-      className="aspect-video w-full bg-black"
+      className="h-full w-full bg-black object-cover"
       controls
       preload="metadata"
       playsInline

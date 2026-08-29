@@ -45,3 +45,6 @@ next-env.d.ts
 
 # preview dei template email (rigenerabile con `npm run email:build`)
 .brevo-preview/
+
+# Istantanee e manifest delle migrazioni media: contengono URL, non vanno in git
+scripts/.migration/

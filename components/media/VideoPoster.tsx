@@ -19,7 +19,7 @@ import { streamThumbnailUrl, videoPosterUrl } from "@/lib/storage/bunny/urls";
  */
 export function VideoPoster({
   guid,
-  className = "aspect-video w-full bg-black object-cover",
+  className = "h-full w-full bg-black object-cover",
 }: {
   guid: string;
   className?: string;
@@ -28,7 +28,7 @@ export function VideoPoster({
 
   if (level === 2) {
     return (
-      <div className="flex aspect-video w-full items-center justify-center bg-neutral-900">
+      <div className="flex h-full w-full items-center justify-center bg-neutral-900">
         <Film className="size-6 text-white/60" aria-hidden />
       </div>
     );

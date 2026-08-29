@@ -47,7 +47,17 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { artistId?: string; fileName?: string; contentType?: string; size?: number };
+  let body: {
+    artistId?: string;
+    fileName?: string;
+    contentType?: string;
+    size?: number;
+    // Misurate dal browser prima di spedire. Bunny le comunicherà comunque a
+    // conversione finita, ma fino ad allora sono l'unico modo per sapere se il
+    // video è verticale e mostrarlo senza barre nere ai lati.
+    width?: number | null;
+    height?: number | null;
+  };
   try {
     body = await request.json();
   } catch {
@@ -141,6 +151,8 @@ export async function POST(request: Request) {
         title,
         size_bytes: size,
         mime_type: contentType,
+        width: typeof body.width === "number" && body.width > 0 ? body.width : null,
+        height: typeof body.height === "number" && body.height > 0 ? body.height : null,
         url: null,
         storage_path: null,
       })

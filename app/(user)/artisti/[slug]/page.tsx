@@ -369,7 +369,7 @@ export default async function ArtistDetailPage({
   try {
     const { data, error } = await supabase
       .from("artist_videos")
-      .select("id, url, title, provider, bunny_guid, playback_state, mime_type")
+      .select("id, url, title, provider, bunny_guid, playback_state, mime_type, width, height")
       .eq("artist_id", artist.id)
       .order("created_at", { ascending: false });
     // L'errore veniva ingoiato da un `data ?? []`: un guasto transitorio

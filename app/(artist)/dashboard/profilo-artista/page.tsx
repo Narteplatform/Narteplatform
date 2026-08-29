@@ -44,7 +44,7 @@ export default async function ArtistProfileEditPage() {
     supabase
       .from("artist_videos")
       .select(
-        "id, url, storage_path, title, duration_ms, size_bytes, mime_type, created_at, provider, bunny_guid, playback_state, upload_state, bunny_error"
+        "id, url, storage_path, title, duration_ms, size_bytes, mime_type, created_at, provider, bunny_guid, playback_state, upload_state, bunny_error, width, height"
       )
       .eq("artist_id", artist.id)
       .order("created_at", { ascending: false }),
@@ -70,6 +70,8 @@ export default async function ArtistProfileEditPage() {
     playback_state: v.playback_state,
     upload_state: v.upload_state,
     bunny_error: v.bunny_error,
+    width: v.width,
+    height: v.height,
   }));
 
   // getActiveArtistRow torna un record non tipizzato: il cast si fa qui una

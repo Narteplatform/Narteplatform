@@ -19,7 +19,8 @@
     "email:sync:dry": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/brevo-sync.mjs --dry-run",
     "email:preview": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/brevo-preview.mjs",
     "email:test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file=.env.local scripts/brevo-send-test.mjs",
-    "bunny:check": "node --env-file=.env.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-bunny.mjs"
+    "bunny:check": "node --env-file=.env.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-bunny.mjs",
+    "media:migrate": "node --env-file=.env.local scripts/migrate-media-to-bunny.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
