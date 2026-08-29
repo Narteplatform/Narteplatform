@@ -12,15 +12,19 @@ export type PlayableArtistVideo = {
 };
 
 /**
- * Container che il browser sa decodificare da solo, senza transcodifica.
+ * Un video è "in attesa" solo se la sua conversione è FALLITA. Tutto il resto
+ * si prova a mostrare.
  *
- * È l'elenco corto di proposito: `video/quicktime` resta fuori perché i .mov
- * dell'iPhone sono quasi sempre HEVC, che Chrome, Firefox e Android non
- * riproducono. Per quelli si aspetta Bunny — ed è esattamente il caso in cui la
- * transcodifica serve davvero.
+ * ⚠️ Qui NON si decide in base al MIME, ed è deliberato. Un elenco tipo
+ * `mp4 | webm` sbaglia in due direzioni opposte: escluderebbe i `.mov` in H.264
+ * — quelli che l'iPhone produce in «Massima compatibilità», perfettamente
+ * riproducibili — e escluderebbe l'HEVC anche su Safari, che invece lo decodifica
+ * benissimo. La riproducibilità non è una proprietà del file: è una proprietà
+ * della COPPIA file+browser, e l'unico che la conosce è il browser che ha il
+ * file davanti. Per questo si prova sempre, e ci si arrende solo su `onError`.
  */
-export function browserCanPlay(mime: string | null): boolean {
-  return mime === "video/mp4" || mime === "video/webm";
+export function isRenderable(playbackState: string): boolean {
+  return playbackState !== "failed";
 }
 
 /**
@@ -42,11 +46,14 @@ export function ArtistVideoPlayer({ video }: { video: PlayableArtistVideo }) {
     if (video.playback_state === "ready") {
       return <BunnyVideoFacade guid={video.bunny_guid} title={video.title} />;
     }
-    if (video.playback_state === "processing" && browserCanPlay(video.mime_type)) {
+    if (video.playback_state === "processing") {
+      // Si prova SEMPRE l'originale: se questo browser lo decodifica, il
+      // visitatore lo guarda adesso invece che fra venti minuti. Se non lo
+      // decodifica, BunnyOriginalPlayer mostra da sé il messaggio di attesa.
       return <BunnyOriginalPlayer guid={video.bunny_guid} title={video.title} />;
     }
-    // In elaborazione e non decodificabile dal browser: non si mostra niente.
-    // Un player rotto è peggio di un video assente.
+    // Conversione fallita: non si mostra niente. Un player rotto è peggio di un
+    // video assente.
     return null;
   }
 

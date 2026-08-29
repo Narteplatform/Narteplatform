@@ -387,13 +387,30 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
  * va transcodificato. Mostrare un player rotto sarebbe peggio che dire cosa sta
  * succedendo, quindi finché non è pronto si mostra lo stato.
  */
+/**
+ * Anteprima nell'editor mentre la conversione è in corso.
+ *
+ * Si prova a riprodurre il file originale: se il browser lo decodifica, il
+ * video è già guardabile. Se non lo decodifica — quasi sempre un .mov HEVC,
+ * il formato predefinito dell'iPhone — si spiega all'artista cosa sta
+ * succedendo E come evitarlo la prossima volta. È l'unico punto in cui quel
+ * consiglio ha senso: qui la persona ha appena caricato e sta guardando.
+ */
 function BunnyOriginalPreview({ guid }: { guid: string }) {
   const [unavailable, setUnavailable] = useState(false);
   if (unavailable) {
     return (
-      <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-muted">
+      <div className="flex aspect-video w-full flex-col items-center justify-center gap-1.5 bg-muted px-4 text-center">
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden />
-        <p className="text-xs text-muted-foreground">In elaborazione…</p>
+        <p className="text-xs font-medium">Conversione in corso</p>
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          Questo video usa un formato che il browser non riproduce da solo. È al
+          sicuro: comparirà appena la conversione è pronta.
+        </p>
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          Per averlo online subito, la prossima volta registra in{" "}
+          <span className="font-medium">Impostazioni → Fotocamera → Formati → «Massima compatibilità»</span>.
+        </p>
       </div>
     );
   }
@@ -444,24 +461,11 @@ function VideoPreview({ video }: { video: ArtistVideoItem }) {
   }
 
   if (video.playback_state === "processing") {
-    // Se il file originale è decodificabile dal browser lo si guarda GIÀ ORA:
-    // Bunny lo conserva senza costi aggiuntivi e lo serve subito, mentre la
-    // versione a bitrate adattivo è ancora in coda. Senza questo, dopo ogni
-    // caricamento ci sarebbe mezz'ora di riquadro grigio.
-    if (video.mime_type === "video/mp4" || video.mime_type === "video/webm") {
-      return video.bunny_guid ? (
-        <BunnyOriginalPreview guid={video.bunny_guid} />
-      ) : null;
-    }
-    return (
-      <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-muted">
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden />
-        <p className="text-xs text-muted-foreground">In elaborazione…</p>
-        <p className="px-4 text-center text-[11px] text-muted-foreground">
-          Puoi chiudere questa pagina: il video comparirà da solo.
-        </p>
-      </div>
-    );
+    // Si prova SEMPRE l'originale: Bunny lo conserva senza costi aggiuntivi e
+    // lo serve subito, mentre la versione a bitrate adattivo è ancora in coda.
+    // Se questo browser non lo decodifica, BunnyOriginalPreview mostra da sé il
+    // messaggio di attesa.
+    return video.bunny_guid ? <BunnyOriginalPreview guid={video.bunny_guid} /> : null;
   }
 
   if (video.provider === "bunny" && video.bunny_guid) {

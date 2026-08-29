@@ -26,7 +26,7 @@ export function BunnyOriginalPlayer({
     return (
       <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-neutral-900 text-white/70">
         <Loader2 className="size-5 animate-spin" aria-hidden />
-        <p className="text-xs">Video in preparazione…</p>
+        <p className="text-xs">Video in preparazione, torna fra poco.</p>
       </div>
     );
   }

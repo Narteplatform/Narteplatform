@@ -16,7 +16,7 @@ import { TikTokIcon, SpotifyIcon } from "@/components/marketing/SocialIcons";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 import {
   ArtistVideoPlayer,
-  browserCanPlay,
+  isRenderable,
   type PlayableArtistVideo,
 } from "@/components/media/ArtistVideoPlayer";
 import { ProfileViewBeacon } from "@/components/analytics/ProfileViewBeacon";
@@ -388,11 +388,9 @@ export default async function ArtistDetailPage({
     // Il filtro sta QUI e non dopo il cap di piano: altrimenti un video non
     // mostrabile occuperebbe uno dei posti disponibili e ne nasconderebbe uno
     // buono.
-    uploadedVideos = ((data ?? []) as PlayableArtistVideo[]).filter((v) => {
-      if (v.provider !== "bunny") return true;
-      if (v.playback_state === "ready") return true;
-      return v.playback_state === "processing" && browserCanPlay(v.mime_type);
-    });
+    uploadedVideos = ((data ?? []) as PlayableArtistVideo[]).filter(
+      (v) => v.provider !== "bunny" || isRenderable(v.playback_state)
+    );
   } catch (e) {
     console.error("[ArtistDetailPage] artist_videos fetch error", e);
   }
