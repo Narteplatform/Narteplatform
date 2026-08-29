@@ -3,6 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ARTIST_VIDEO_BUCKET, isAllowedVideoMime } from "@/lib/upload/video-limits";
+import { deleteStreamVideo } from "@/lib/storage/bunny/stream";
+import {
+  ARTIST_VIDEO_SELECT,
+  reconcileBunnyVideo,
+} from "@/lib/artist/video-status";
+import { logger } from "@/lib/logger";
 import { entitlementsFor } from "@/lib/billing/plans";
 import { checkCollectionLimit, getEntitlements } from "@/lib/billing/entitlements";
 import { PROFILE_SECTION_PAYLOAD_SCHEMAS } from "@/lib/validators/artist-profile";
@@ -386,6 +392,15 @@ export async function deleteDateSlot(artistId: string, slotId: string) {
 // =========================================
 // Video artista (artist_videos)
 // =========================================
+// Due provider convivono. `provider = 'supabase'` sono i video già caricati nel
+// bucket artist-videos: continuano a funzionare come sempre e non vengono
+// toccati. `provider = 'bunny'` sono i nuovi, su Bunny Stream.
+
+
+/**
+ * Ramo SUPABASE. Invariato: lo usa VideoUpload quando BUNNY_UPLOADS_ENABLED è
+ * spento, cioè quando /api/upload/video ha risposto `supabase-signed`.
+ */
 export async function addArtistVideo(input: {
   artist_id: string;
   url: string;
@@ -407,7 +422,7 @@ export async function addArtistVideo(input: {
   if (!input.url.startsWith(expectedPrefix)) {
     return { ok: false as const, error: "URL del video non valido" };
   }
-  if (!isAllowedVideoMime(input.mime_type)) {
+  if (!isAllowedVideoMime(input.mime_type, "supabase")) {
     return { ok: false as const, error: "Formato video non supportato" };
   }
 
@@ -425,6 +440,11 @@ export async function addArtistVideo(input: {
     .from("artist_videos")
     .insert({
       artist_id: input.artist_id,
+      provider: "supabase",
+      // Un file su Supabase Storage è riproducibile nell'istante in cui
+      // l'upload finisce: non c'è nessuna elaborazione da attendere.
+      playback_state: "ready",
+      upload_state: "uploaded",
       url: input.url,
       storage_path: input.storage_path,
       size_bytes: input.size_bytes,
@@ -432,13 +452,79 @@ export async function addArtistVideo(input: {
       duration_ms: input.duration_ms ?? null,
       title: input.title ?? null,
     })
-    .select(
-      "id, artist_id, url, storage_path, title, duration_ms, size_bytes, mime_type, created_at"
-    )
+    .select(ARTIST_VIDEO_SELECT)
     .single();
   if (error || !data) return { ok: false as const, error: error?.message ?? "Errore" };
   await revalidateArtistVideoPaths(input.artist_id);
   return { ok: true as const, video: data };
+}
+
+/**
+ * Ramo BUNNY. Chiamata dal client quando il trasferimento TUS è finito.
+ *
+ * Non crea niente: la riga esiste già dal momento della firma. Qui si conferma
+ * che i byte sono arrivati e si fa una prima lettura dello stato — che è anche
+ * il primo dei tre livelli di rete di sicurezza contro il webhook che non
+ * arriva (gli altri due sono il polling della dashboard e la riconciliazione).
+ */
+export async function confirmArtistVideoUpload(videoId: string) {
+  const admin = createAdminClient();
+  const { data: row, error } = await admin
+    .from("artist_videos")
+    .select("id, artist_id, provider, bunny_guid, playback_state")
+    .eq("id", videoId)
+    .maybeSingle();
+  if (error) return { ok: false as const, error: error.message };
+  if (!row) return { ok: false as const, error: "Video non trovato" };
+
+  const user = await ownsArtist(row.artist_id);
+  if (!user) return { ok: false as const, error: "Non autorizzato" };
+  if (row.provider !== "bunny") {
+    return { ok: false as const, error: "Video non gestito da Bunny" };
+  }
+
+  await admin.from("artist_videos").update({ upload_state: "uploaded" }).eq("id", videoId);
+  const refreshed = await reconcileBunnyVideo(row);
+
+  const { data: current } = await admin
+    .from("artist_videos")
+    .select(ARTIST_VIDEO_SELECT)
+    .eq("id", videoId)
+    .maybeSingle();
+
+  await revalidateArtistVideoPaths(row.artist_id);
+  return { ok: true as const, video: refreshed ?? current };
+}
+
+/**
+ * Interroga Bunny e aggiorna la riga. La chiama il polling della dashboard
+ * mentre un video è in elaborazione.
+ *
+ * Serve soprattutto in sviluppo, dove il webhook non può raggiungere localhost:
+ * senza questo, in locale un video resterebbe "in elaborazione" per sempre.
+ */
+export async function refreshArtistVideoStatus(videoId: string) {
+  const admin = createAdminClient();
+  const { data: row } = await admin
+    .from("artist_videos")
+    .select("id, artist_id, provider, bunny_guid, playback_state")
+    .eq("id", videoId)
+    .maybeSingle();
+  if (!row) return { ok: false as const, error: "Video non trovato" };
+
+  const user = await ownsArtist(row.artist_id);
+  if (!user) return { ok: false as const, error: "Non autorizzato" };
+  if (row.provider !== "bunny") return { ok: false as const, error: "Video non gestito da Bunny" };
+
+  const refreshed = await reconcileBunnyVideo(row);
+  if (refreshed) await revalidateArtistVideoPaths(row.artist_id);
+
+  const { data: current } = await admin
+    .from("artist_videos")
+    .select(ARTIST_VIDEO_SELECT)
+    .eq("id", videoId)
+    .maybeSingle();
+  return { ok: true as const, video: refreshed ?? current };
 }
 
 /**
@@ -463,22 +549,47 @@ export async function deleteArtistVideo(videoId: string) {
   const admin = createAdminClient();
   const { data: video } = await admin
     .from("artist_videos")
-    .select("id, artist_id, storage_path")
+    .select("id, artist_id, provider, storage_path, bunny_guid")
     .eq("id", videoId)
     .maybeSingle();
   if (!video) return { ok: false as const, error: "Video non trovato" };
   const user = await ownsArtist(video.artist_id);
   if (!user) return { ok: false as const, error: "Non autorizzato" };
 
-  if (video.storage_path) {
-    await admin.storage.from(ARTIST_VIDEO_BUCKET).remove([video.storage_path]);
+  // PRIMA il file, POI la riga — e la riga si cancella solo se la rimozione è
+  // riuscita davvero. Prima l'esito veniva ignorato: se lo Storage falliva, la
+  // riga spariva comunque e il file restava a pagare per sempre senza più nulla
+  // che lo nominasse. Su Bunny lo stesso difetto si paga al GB.
+  if (video.provider === "bunny") {
+    if (video.bunny_guid) {
+      try {
+        await deleteStreamVideo(video.bunny_guid);
+      } catch (e) {
+        logger.error("dashboard/video", "deleteStreamVideo fallita", e);
+        return {
+          ok: false as const,
+          error: "Non è stato possibile rimuovere il video. Riprova fra poco.",
+        };
+      }
+    }
+  } else if (video.storage_path) {
+    const { error: rmErr } = await admin.storage
+      .from(ARTIST_VIDEO_BUCKET)
+      .remove([video.storage_path]);
+    if (rmErr) {
+      logger.error("dashboard/video", "remove da Storage fallita", rmErr);
+      return {
+        ok: false as const,
+        error: "Non è stato possibile rimuovere il video. Riprova fra poco.",
+      };
+    }
   }
+
   const { error } = await admin.from("artist_videos").delete().eq("id", videoId);
   if (error) return { ok: false as const, error: error.message };
   await revalidateArtistVideoPaths(video.artist_id);
   return { ok: true as const };
 }
-
 // =========================================
 // Mass editing disponibilità
 // =========================================

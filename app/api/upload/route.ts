@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { allowByIp, LIMITI } from "@/lib/security/rate-limit";
+import { bunnyUploadsEnabled } from "@/lib/storage/bunny/config";
+import { putObject } from "@/lib/storage/bunny/storage";
+import { imageExtForMime, mediaKey } from "@/lib/storage/bunny/paths";
+import { storageCdnUrl } from "@/lib/storage/bunny/urls";
+import { recordMediaAsset } from "@/lib/storage/bunny/registry";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,7 +45,17 @@ const AUDIO_MIME = /^audio\//;
 const VIDEO_MIME = /^video\/(mp4|webm|quicktime)$/;
 const AUDIO_MAX = 25 * 1024 * 1024; // 25MB
 const VIDEO_MAX = 50 * 1024 * 1024; // 50MB
-const IMAGE_MAX = 5 * 1024 * 1024; // 5MB
+/**
+ * 4 MB, non 5.
+ *
+ * ⚠️ Il body di una funzione Vercel si ferma a 4,5 MB, ed è un limite di
+ * piattaforma. Il vecchio tetto di 5 MB mentiva: una foto fra 4,5 e 5 MB — uno
+ * scatto normale da smartphone — riceveva un 413 opaco dalla piattaforma senza
+ * mai arrivare qui. Con 4 MB l'errore è nostro, arriva prima ed è leggibile.
+ * Le foto della gallery vengono comunque compresse nel browser (~250 KB) prima
+ * di partire, quindi in pratica non lo tocca nessuno.
+ */
+const IMAGE_MAX = 4 * 1024 * 1024;
 
 export async function POST(request: Request) {
   // Auth check: solo utenti loggati possono caricare
@@ -121,6 +137,63 @@ export async function POST(request: Request) {
     }
   }
 
+  const isImage = kind !== "audio" && !kind.endsWith("-video");
+  const arrayBuffer = await file.arrayBuffer();
+
+  // -------------------------------------------------------------------------
+  // Ramo Bunny Storage — solo le immagini
+  // -------------------------------------------------------------------------
+  // Audio e video NON passano di qui a interruttore acceso: hanno rotte di
+  // firma dedicate (/api/upload/audio/sign, /api/upload/video) perché non
+  // possono attraversare una funzione Vercel. Restano su questa rotta solo
+  // finché l'interruttore è spento, cioè come percorso di ripiego.
+  if (bunnyUploadsEnabled() && isImage) {
+    const bunnyExt = imageExtForMime(file.type);
+    if (!bunnyExt) {
+      return NextResponse.json(
+        { error: "Formato immagine non supportato (JPEG, PNG, WebP, AVIF o GIF)." },
+        { status: 415 }
+      );
+    }
+
+    // Lo scope è l'utente e non l'entità: quando si carica la copertina di un
+    // evento in creazione, quell'evento non ha ancora un id. Vedi la nota in
+    // lib/storage/bunny/paths.ts.
+    const key = mediaKey({ scope: "users", ownerId: user.id, kind, ext: bunnyExt });
+
+    try {
+      await putObject({ key, body: arrayBuffer, contentType: file.type });
+    } catch (e) {
+      logger.error("api/upload", "putObject su Bunny fallita", e);
+      return NextResponse.json({ error: "Caricamento non riuscito" }, { status: 500 });
+    }
+
+    const url = storageCdnUrl(key);
+    // Best-effort: un errore qui non deve far fallire un upload riuscito.
+    await recordMediaAsset({
+      storageKey: key,
+      publicUrl: url,
+      kind: "image",
+      ownerUserId: user.id,
+      bytes: file.size,
+      mimeType: file.type,
+    });
+
+    // Stessa forma di risposta del ramo Supabase: ImageUpload, GalleryUpload,
+    // RichTextEditor ed EventVideoUpload non devono accorgersi di niente.
+    return NextResponse.json({
+      url,
+      path: key,
+      bucket: null,
+      name: file.name,
+      size: file.size,
+      contentType: file.type,
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Ramo Supabase Storage — il percorso di sempre, invariato
+  // -------------------------------------------------------------------------
   const defaultExt =
     kind === "audio"
       ? "mp3"
@@ -133,7 +206,6 @@ export async function POST(request: Request) {
   const path = `${user.id}/${Date.now()}-${safeKind}.${ext}`;
 
   const admin = createAdminClient();
-  const arrayBuffer = await file.arrayBuffer();
   const { error: upErr } = await admin.storage.from(bucket).upload(path, arrayBuffer, {
     contentType: file.type,
     upsert: false,

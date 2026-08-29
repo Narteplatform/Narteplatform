@@ -754,37 +754,105 @@ export interface Database {
         };
         Relationships: [];
       };
+      // `url` e `storage_path` sono nullable da 0050: un video su Bunny Stream
+      // non ha né l'uno né l'altro, il suo indirizzo si deriva dal guid.
       artist_videos: {
         Row: {
           id: string;
           artist_id: string;
-          url: string;
-          storage_path: string;
+          url: string | null;
+          storage_path: string | null;
           title: string | null;
           duration_ms: number | null;
           size_bytes: number | null;
           mime_type: string | null;
           created_at: string;
+          provider: string;
+          bunny_guid: string | null;
+          bunny_status: number | null;
+          playback_state: string;
+          upload_state: string;
+          width: number | null;
+          height: number | null;
+          bunny_error: string | null;
+          ready_at: string | null;
         };
         Insert: {
           id?: string;
           artist_id: string;
-          url: string;
-          storage_path: string;
+          url?: string | null;
+          storage_path?: string | null;
           title?: string | null;
           duration_ms?: number | null;
           size_bytes?: number | null;
           mime_type?: string | null;
           created_at?: string;
+          provider?: string;
+          bunny_guid?: string | null;
+          bunny_status?: number | null;
+          playback_state?: string;
+          upload_state?: string;
+          width?: number | null;
+          height?: number | null;
+          bunny_error?: string | null;
+          ready_at?: string | null;
         };
         Update: {
           id?: string;
           artist_id?: string;
-          url?: string;
-          storage_path?: string;
+          url?: string | null;
+          storage_path?: string | null;
           title?: string | null;
           duration_ms?: number | null;
           size_bytes?: number | null;
+          mime_type?: string | null;
+          created_at?: string;
+          provider?: string;
+          bunny_guid?: string | null;
+          bunny_status?: number | null;
+          playback_state?: string;
+          upload_state?: string;
+          width?: number | null;
+          height?: number | null;
+          bunny_error?: string | null;
+          ready_at?: string | null;
+        };
+        Relationships: [];
+      };
+      media_assets: {
+        Row: {
+          id: string;
+          provider: string;
+          storage_key: string;
+          public_url: string;
+          kind: string;
+          owner_user_id: string | null;
+          artist_id: string | null;
+          bytes: number | null;
+          mime_type: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          provider?: string;
+          storage_key: string;
+          public_url: string;
+          kind: string;
+          owner_user_id?: string | null;
+          artist_id?: string | null;
+          bytes?: number | null;
+          mime_type?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          provider?: string;
+          storage_key?: string;
+          public_url?: string;
+          kind?: string;
+          owner_user_id?: string | null;
+          artist_id?: string | null;
+          bytes?: number | null;
           mime_type?: string | null;
           created_at?: string;
         };

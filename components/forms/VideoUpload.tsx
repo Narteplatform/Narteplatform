@@ -1,130 +1,243 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { Upload, X, Film } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import * as tus from "tus-js-client";
+import { Upload, X, Film, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Input";
-import { addArtistVideo, deleteArtistVideo } from "@/app/(artist)/dashboard/_actions";
+import {
+  addArtistVideo,
+  confirmArtistVideoUpload,
+  deleteArtistVideo,
+  refreshArtistVideoStatus,
+} from "@/app/(artist)/dashboard/_actions";
 import { probeVideo } from "@/lib/upload/probeVideo";
 import { putWithProgress, UploadAbortedError } from "@/lib/upload/putWithProgress";
+import { streamThumbnailUrl } from "@/lib/storage/bunny/urls";
 import {
-  MAX_VIDEO_BYTES,
-  MAX_VIDEO_PER_ARTIST,
-  VIDEO_ACCEPT_ATTR,
+  MAX_VIDEO_BYTES_BUNNY,
   formatMb,
   guessVideoMime,
-  isAllowedVideoMime,
+  videoLimitsFor,
 } from "@/lib/upload/video-limits";
 
 export type ArtistVideoItem = {
   id: string;
-  url: string;
-  storage_path: string;
+  url: string | null;
+  storage_path: string | null;
   title: string | null;
   duration_ms: number | null;
   size_bytes: number | null;
   mime_type: string | null;
   created_at: string;
+  provider: string;
+  bunny_guid: string | null;
+  playback_state: string;
+  upload_state: string;
+  bunny_error: string | null;
 };
 
-type SignResponse = {
-  signedUrl: string;
-  path: string;
-  publicUrl: string;
-};
+type SignResponse =
+  | { uploadKind: "supabase-signed"; signedUrl: string; path: string; publicUrl: string }
+  | {
+      uploadKind: "bunny-tus";
+      videoId: string;
+      videoGuid: string;
+      libraryId: string;
+      signature: string;
+      expire: number;
+      tusEndpoint: string;
+      title: string;
+    };
 
 type Props = {
   artistId: string;
   initialVideos: ArtistVideoItem[];
+  /** Tetto del PIANO dell'artista (1 Free / 3 Pro / 3 Max), non una costante piatta. */
+  videoMax: number;
 };
 
-const MOV_HELP =
-  "I file .mov non sono supportati: usano quasi sempre il codec HEVC, che non si riproduce su Chrome, Firefox e Android. Esporta il video in MP4. Su iPhone: Impostazioni → Fotocamera → Formati → «Massima compatibilità».";
+/** Ogni quanto chiedere a Bunny se il video è pronto, e per quanto insistere. */
+const POLL_MS = 5000;
+const POLL_MAX_ATTEMPTS = 60;
 
-export function VideoUpload({ artistId, initialVideos }: Props) {
+export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const abortRef = useRef<(() => void) | null>(null);
   const [videos, setVideos] = useState<ArtistVideoItem[]>(initialVideos);
   const [progress, setProgress] = useState<{ name: string; pct: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const uploading = progress !== null;
-  const slotsLeft = MAX_VIDEO_PER_ARTIST - videos.length;
+  const slotsLeft = videoMax - videos.length;
+
+  // Il ramo Bunny è il più permissivo: la validazione vera la fa il server, che
+  // conosce la destinazione e risponde con un messaggio già scritto in italiano.
+  // Qui si scarta solo ciò che è palesemente fuori scala, per non far partire
+  // un trasferimento destinato a essere rifiutato.
+  const clientAccept = videoLimitsFor("bunny").accept;
 
   function pick() {
     inputRef.current?.click();
   }
 
-  async function uploadOne(file: File, currentCount: number) {
-    if (currentCount >= MAX_VIDEO_PER_ARTIST) {
-      throw new Error(
-        `Puoi caricare al massimo ${MAX_VIDEO_PER_ARTIST} video. Eliminane uno per caricarne un altro.`
-      );
-    }
+  // --- Rete di sicurezza n.2: il polling ------------------------------------
+  // Il webhook di Bunny può non arrivare, e in sviluppo NON PUÒ arrivare
+  // (localhost non è raggiungibile da Bunny). Senza questo, un video appena
+  // caricato resterebbe "in elaborazione" per sempre.
+  const processingIds = videos
+    .filter((v) => v.provider === "bunny" && v.playback_state === "processing")
+    .map((v) => v.id)
+    .join(",");
 
-    const mime = guessVideoMime(file);
-    if (mime === "video/quicktime") throw new Error(MOV_HELP);
-    if (!mime || !isAllowedVideoMime(mime)) {
-      throw new Error(`"${file.name}": formato non supportato. Carica un MP4 o un WebM.`);
-    }
-    if (file.size > MAX_VIDEO_BYTES) {
-      throw new Error(
-        `"${file.name}" pesa ${formatMb(file.size)} e supera il limite di ${formatMb(
-          MAX_VIDEO_BYTES
-        )}.`
-      );
-    }
+  useEffect(() => {
+    if (!processingIds) return;
+    let attempts = 0;
+    let stopped = false;
 
-    // Meglio scoprire ora che il browser non decodifica il file, non dopo
-    // averne trasferiti decine di MB.
-    const { durationMs, playable } = await probeVideo(file);
-    if (!playable) {
-      const proceed = window.confirm(
-        `"${file.name}" non sembra riproducibile in questo browser: probabilmente usa un codec non supportato (es. HEVC).\n\nSe lo carichi, molti visitatori non riusciranno a vederlo. Consigliamo di riesportarlo in MP4 (H.264).\n\nCaricarlo lo stesso?`
-      );
-      if (!proceed) return null;
-    }
+    const tick = async () => {
+      if (stopped) return;
+      // Non si interroga il server mentre la scheda è in secondo piano.
+      if (document.visibilityState !== "visible") return;
+      attempts += 1;
+      if (attempts > POLL_MAX_ATTEMPTS) {
+        stopped = true;
+        clearInterval(timer);
+        return;
+      }
+      for (const id of processingIds.split(",")) {
+        const res = await refreshArtistVideoStatus(id);
+        if (res.ok && res.video) {
+          const updated = res.video as ArtistVideoItem;
+          setVideos((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+        }
+      }
+    };
 
-    const signRes = await fetch("/api/upload/video", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        artistId,
-        fileName: file.name,
-        contentType: mime,
-        size: file.size,
-      }),
-    });
-    if (!signRes.ok) {
-      const j = (await signRes.json().catch(() => ({}))) as { error?: string };
-      throw new Error(j.error ?? `Impossibile avviare il caricamento (${signRes.status})`);
-    }
-    const { signedUrl, path, publicUrl } = (await signRes.json()) as SignResponse;
+    const timer = setInterval(tick, POLL_MS);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [processingIds]);
 
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setProgress({ name: file.name, pct: 0 });
+  const uploadOne = useCallback(
+    async (file: File, currentCount: number): Promise<ArtistVideoItem | null> => {
+      if (currentCount >= videoMax) {
+        throw new Error(
+          `Il tuo piano include ${videoMax} ${videoMax === 1 ? "video" : "video"}. Eliminane uno per caricarne un altro.`
+        );
+      }
 
-    await putWithProgress({
-      signedUrl,
-      file,
-      signal: controller.signal,
-      onProgress: ({ pct }) => setProgress({ name: file.name, pct }),
-    });
+      const mime = guessVideoMime(file);
+      if (!mime) {
+        throw new Error(`"${file.name}": non sembra un file video.`);
+      }
+      if (file.size > MAX_VIDEO_BYTES_BUNNY) {
+        throw new Error(
+          `"${file.name}" pesa ${formatMb(file.size)} e supera il limite di ${formatMb(MAX_VIDEO_BYTES_BUNNY)}.`
+        );
+      }
 
-    const ack = await addArtistVideo({
-      artist_id: artistId,
-      url: publicUrl,
-      storage_path: path,
-      size_bytes: file.size,
-      mime_type: mime,
-      duration_ms: durationMs,
-      title: file.name.replace(/\.[^.]+$/, "").slice(0, 120),
-    });
-    if (!ack.ok) throw new Error(ack.error);
-    return (ack.video ?? null) as ArtistVideoItem | null;
-  }
+      const signRes = await fetch("/api/upload/video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artistId,
+          fileName: file.name,
+          contentType: mime,
+          size: file.size,
+        }),
+      });
+      if (!signRes.ok) {
+        const j = (await signRes.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error ?? `Impossibile avviare il caricamento (${signRes.status})`);
+      }
+      const sign = (await signRes.json()) as SignResponse;
+
+      setProgress({ name: file.name, pct: 0 });
+
+      // ---------------------------------------------------------------------
+      // Ramo Bunny Stream — TUS a chunk, riprendibile
+      // ---------------------------------------------------------------------
+      if (sign.uploadKind === "bunny-tus") {
+        await new Promise<void>((resolve, reject) => {
+          const upload = new tus.Upload(file, {
+            endpoint: sign.tusEndpoint,
+            // Un chunk esplicito è ciò che rende la ripresa davvero utile: senza,
+            // una connessione persa a 400 MB farebbe ricominciare da zero.
+            chunkSize: 8 * 1024 * 1024,
+            retryDelays: [0, 3000, 5000, 10000, 20000, 60000, 60000],
+            headers: {
+              AuthorizationSignature: sign.signature,
+              AuthorizationExpire: String(sign.expire),
+              VideoId: sign.videoGuid,
+              LibraryId: sign.libraryId,
+            },
+            metadata: { filetype: mime, title: sign.title },
+            onError: (e) => reject(e instanceof Error ? e : new Error(String(e))),
+            onProgress: (uploaded, total) =>
+              setProgress({ name: file.name, pct: Math.round((uploaded / total) * 100) }),
+            onSuccess: () => resolve(),
+          });
+
+          abortRef.current = () => {
+            void upload.abort();
+            reject(new UploadAbortedError());
+          };
+
+          // Se un upload precedente dello stesso file era rimasto a metà, si
+          // riparte da dove si era interrotto invece che dall'inizio.
+          void upload.findPreviousUploads().then((previous) => {
+            if (previous.length > 0) upload.resumeFromPreviousUpload(previous[0]);
+            upload.start();
+          });
+        });
+
+        const ack = await confirmArtistVideoUpload(sign.videoId);
+        if (!ack.ok) throw new Error(ack.error);
+        return (ack.video ?? null) as ArtistVideoItem | null;
+      }
+
+      // ---------------------------------------------------------------------
+      // Ramo Supabase — il percorso di sempre
+      // ---------------------------------------------------------------------
+      // Su questo ramo il browser deve poter decodificare il file: Supabase non
+      // transcodifica. Su Bunny il controllo non serve, perché è proprio ciò che
+      // Bunny risolve.
+      const { durationMs, playable } = await probeVideo(file);
+      if (!playable) {
+        const proceed = window.confirm(
+          `"${file.name}" non sembra riproducibile in questo browser: probabilmente usa un codec non supportato (es. HEVC).\n\nSe lo carichi, molti visitatori non riusciranno a vederlo. Consigliamo di riesportarlo in MP4 (H.264).\n\nCaricarlo lo stesso?`
+        );
+        if (!proceed) return null;
+      }
+
+      const controller = new AbortController();
+      abortRef.current = () => controller.abort();
+
+      await putWithProgress({
+        signedUrl: sign.signedUrl,
+        file,
+        signal: controller.signal,
+        onProgress: ({ pct }) => setProgress({ name: file.name, pct }),
+      });
+
+      const ack = await addArtistVideo({
+        artist_id: artistId,
+        url: sign.publicUrl,
+        storage_path: sign.path,
+        size_bytes: file.size,
+        mime_type: mime,
+        duration_ms: durationMs,
+        title: file.name.replace(/\.[^.]+$/, "").slice(0, 120),
+      });
+      if (!ack.ok) throw new Error(ack.error);
+      return (ack.video ?? null) as ArtistVideoItem | null;
+    },
+    [artistId, videoMax]
+  );
 
   async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -156,7 +269,7 @@ export function VideoUpload({ artistId, initialVideos }: Props) {
   }
 
   function cancel() {
-    abortRef.current?.abort();
+    abortRef.current?.();
   }
 
   function remove(videoId: string) {
@@ -175,8 +288,7 @@ export function VideoUpload({ artistId, initialVideos }: Props) {
   return (
     <div className="space-y-3">
       <Label>
-        I tuoi video (max {MAX_VIDEO_PER_ARTIST}, fino a {formatMb(MAX_VIDEO_BYTES)} ciascuno,
-        MP4 o WebM)
+        I tuoi video (max {videoMax}, fino a {formatMb(MAX_VIDEO_BYTES_BUNNY)} ciascuno)
       </Label>
 
       {videos.length > 0 && (
@@ -186,13 +298,7 @@ export function VideoUpload({ artistId, initialVideos }: Props) {
               key={v.id}
               className="group relative overflow-hidden rounded-md border border-border bg-black"
             >
-              <video
-                src={v.url}
-                className="aspect-video w-full bg-black"
-                controls
-                preload="metadata"
-                playsInline
-              />
+              <VideoPreview video={v} />
               <button
                 type="button"
                 onClick={() => remove(v.id)}
@@ -234,7 +340,8 @@ export function VideoUpload({ artistId, initialVideos }: Props) {
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            {progress.pct}% — non chiudere questa pagina finché il caricamento non è completo.
+            {progress.pct}% — se la connessione cade, il caricamento riprende da dove si era
+            interrotto.
           </p>
         </div>
       )}
@@ -242,7 +349,7 @@ export function VideoUpload({ artistId, initialVideos }: Props) {
       <input
         ref={inputRef}
         type="file"
-        accept={VIDEO_ACCEPT_ATTR}
+        accept={clientAccept}
         multiple
         className="hidden"
         onChange={onFiles}
@@ -259,8 +366,8 @@ export function VideoUpload({ artistId, initialVideos }: Props) {
         </Button>
         {slotsLeft <= 0 ? (
           <span className="text-xs text-muted-foreground">
-            Hai raggiunto il massimo di {MAX_VIDEO_PER_ARTIST} video. Eliminane uno per
-            caricarne un altro.
+            Hai raggiunto il massimo di {videoMax} {videoMax === 1 ? "video" : "video"} del tuo
+            piano. Eliminane uno per caricarne un altro.
           </span>
         ) : (
           videos.length === 0 && (
@@ -272,5 +379,59 @@ export function VideoUpload({ artistId, initialVideos }: Props) {
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
+  );
+}
+
+/**
+ * Un video su Bunny non è riproducibile nell'istante in cui l'upload finisce:
+ * va transcodificato. Mostrare un player rotto sarebbe peggio che dire cosa sta
+ * succedendo, quindi finché non è pronto si mostra lo stato.
+ */
+function VideoPreview({ video }: { video: ArtistVideoItem }) {
+  if (video.playback_state === "failed") {
+    return (
+      <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-muted px-4 text-center">
+        <AlertTriangle className="size-5 text-red-600" aria-hidden />
+        <p className="text-xs text-muted-foreground">
+          {video.bunny_error ?? "La conversione non è riuscita."} Prova a ricaricarlo.
+        </p>
+      </div>
+    );
+  }
+
+  if (video.playback_state === "processing") {
+    return (
+      <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-muted">
+        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden />
+        <p className="text-xs text-muted-foreground">In elaborazione…</p>
+        <p className="px-4 text-center text-[11px] text-muted-foreground">
+          Puoi chiudere questa pagina: il video comparirà da solo.
+        </p>
+      </div>
+    );
+  }
+
+  if (video.provider === "bunny" && video.bunny_guid) {
+    // Nell'editor basta il poster: montare l'iframe del player per ogni video
+    // scaricherebbe il suo bundle anche solo aprendo la pagina del profilo.
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={streamThumbnailUrl(video.bunny_guid)}
+        alt=""
+        className="aspect-video w-full bg-black object-cover"
+        loading="lazy"
+      />
+    );
+  }
+
+  return (
+    <video
+      src={video.url ?? undefined}
+      className="aspect-video w-full bg-black"
+      controls
+      preload="metadata"
+      playsInline
+    />
   );
 }

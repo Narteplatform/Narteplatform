@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/server";
+import { getEntitlements } from "@/lib/billing/entitlements";
 import { requireRole } from "@/lib/auth/guards";
 import { getActiveArtistRow } from "@/lib/artist/current";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -38,13 +39,20 @@ export default async function ArtistProfileEditPage() {
     );
   }
 
-  const [{ data: genresData }, { data: videosData }] = await Promise.all([
+  const [{ data: genresData }, { data: videosData }, ent] = await Promise.all([
     supabase.from("genres").select("name").order("order_index"),
     supabase
       .from("artist_videos")
-      .select("id, url, storage_path, title, duration_ms, size_bytes, mime_type, created_at")
+      .select(
+        "id, url, storage_path, title, duration_ms, size_bytes, mime_type, created_at, provider, bunny_guid, playback_state, upload_state, bunny_error"
+      )
       .eq("artist_id", artist.id)
       .order("created_at", { ascending: false }),
+    // Il tetto video dipende dal PIANO. Prima VideoUpload mostrava a tutti la
+    // costante piatta MAX_VIDEO_PER_ARTIST = 3: un artista Free leggeva
+    // "max 3 video" e scopriva il vero limite (1) solo quando il server lo
+    // bloccava.
+    getEntitlements(artist.id),
   ]);
 
   const genreOptions = (genresData ?? []).map((g) => g.name as string);
@@ -57,6 +65,11 @@ export default async function ArtistProfileEditPage() {
     size_bytes: v.size_bytes,
     mime_type: v.mime_type,
     created_at: v.created_at,
+    provider: v.provider,
+    bunny_guid: v.bunny_guid,
+    playback_state: v.playback_state,
+    upload_state: v.upload_state,
+    bunny_error: v.bunny_error,
   }));
 
   // getActiveArtistRow torna un record non tipizzato: il cast si fa qui una
@@ -84,7 +97,7 @@ export default async function ArtistProfileEditPage() {
       <div className="space-y-3">
         <InfoArtistaBlock artist={profile} genreOptions={genreOptions} />
         <GalleryBlock artist={profile} />
-        <VideoBlock artist={profile} initialVideos={initialVideos} />
+        <VideoBlock artist={profile} initialVideos={initialVideos} videoMax={ent.videoMax} />
         <AudioBlock artist={profile} />
         <BookingBlock artist={profile} />
         <SocialBlock artist={profile} />

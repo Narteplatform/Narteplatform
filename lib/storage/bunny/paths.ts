@@ -17,8 +17,26 @@
  *    cancellazione a cascata diventa la rimozione di un prefisso.
  */
 
-export type MediaScope = "artists" | "events" | "venues" | "formats" | "blog";
-export type MediaKind = "cover" | "gallery" | "audio" | "inline";
+export type MediaScope = "artists" | "events" | "venues" | "formats" | "blog" | "users";
+/**
+ * Cartella dentro l'entità. È una stringa e non un'unione chiusa perché i
+ * chiamanti hanno già insiemi chiusi propri (la mappa BUCKETS di /api/upload),
+ * e duplicarli qui li farebbe divergere al primo kind nuovo. La sicurezza la dà
+ * la normalizzazione in mediaKey, non il tipo.
+ */
+export type MediaKind = string;
+
+/**
+ * ⚠️ Lo scope `users` esiste per una ragione concreta e non aggirabile: quando
+ * si carica la copertina di un evento o di un articolo, quell'evento spesso NON
+ * ESISTE ANCORA — il form è aperto in creazione e l'id nascerà solo al
+ * salvataggio. Non c'è nessuna entità a cui agganciare il file.
+ *
+ * In quei casi il prefisso resta l'utente, esattamente come oggi su Supabase, e
+ * la tracciabilità la garantisce la tabella `media_assets`. Gli scope per
+ * entità si usano dove l'id è certo — l'audio, la cui rotta di firma riceve già
+ * `artistId`.
+ */
 
 /**
  * Mappe MIME → estensione, volutamente chiuse.
@@ -104,7 +122,10 @@ export function mediaKey(input: {
   const owner = assertSafeOwner(input.ownerId);
   const ext = input.ext.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5);
   if (!ext) throw new Error("[bunny/paths] estensione non valida");
-  return `${input.scope}/${owner}/${input.kind}/${randomToken()}.${ext}`;
+  const folder =
+    input.kind.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").slice(0, 32) ||
+    "misc";
+  return `${input.scope}/${owner}/${folder}/${randomToken()}.${ext}`;
 }
 
 /**

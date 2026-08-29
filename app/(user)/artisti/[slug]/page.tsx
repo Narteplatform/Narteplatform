@@ -14,6 +14,10 @@ import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
 import { BookingInformation } from "@/components/marketing/BookingInformation";
 import { TikTokIcon, SpotifyIcon } from "@/components/marketing/SocialIcons";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
+import {
+  ArtistVideoPlayer,
+  type PlayableArtistVideo,
+} from "@/components/media/ArtistVideoPlayer";
 import { ProfileViewBeacon } from "@/components/analytics/ProfileViewBeacon";
 import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
 import { entitlementsFor } from "@/lib/billing/plans";
@@ -360,14 +364,26 @@ export default async function ArtistDetailPage({
 
   // Video caricati dall'artista dal proprio dispositivo (artist_videos), distinti
   // dagli URL YouTube/Vimeo in artists.videos.
-  let uploadedVideos: { id: string; url: string; title: string | null }[] = [];
+  let uploadedVideos: PlayableArtistVideo[] = [];
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("artist_videos")
-      .select("id, url, title")
+      .select("id, url, title, provider, bunny_guid, playback_state")
       .eq("artist_id", artist.id)
       .order("created_at", { ascending: false });
-    uploadedVideos = (data ?? []) as { id: string; url: string; title: string | null }[];
+    // L'errore veniva ingoiato da un `data ?? []`: un guasto transitorio
+    // nascondeva TUTTI i video di un artista, in modo indistinguibile da
+    // "non ne ha". Non è distruttivo, ma va almeno detto.
+    if (error) {
+      console.error("[ArtistDetailPage] artist_videos fetch error", error);
+    }
+    // Un video ancora in elaborazione, o la cui conversione è fallita, non si
+    // mostra: un player rotto è peggio di un video assente. Il filtro sta QUI e
+    // non dopo il cap di piano, altrimenti un video non pronto occuperebbe uno
+    // dei posti disponibili e ne nasconderebbe uno pronto.
+    uploadedVideos = ((data ?? []) as (PlayableArtistVideo & { playback_state: string })[]).filter(
+      (v) => v.provider !== "bunny" || v.playback_state === "ready"
+    );
   } catch (e) {
     console.error("[ArtistDetailPage] artist_videos fetch error", e);
   }
@@ -763,15 +779,7 @@ export default async function ArtistDetailPage({
                       key={v.id}
                       className="overflow-hidden rounded-2xl border border-border bg-black"
                     >
-                      {/* preload="metadata" è obbligatorio: senza, ogni visita
-                          scaricherebbe i video interi. */}
-                      <video
-                        src={v.url}
-                        controls
-                        preload="metadata"
-                        playsInline
-                        className="aspect-video w-full bg-black"
-                      />
+                      <ArtistVideoPlayer video={v} />
                       {v.title && (
                         <figcaption className="truncate border-t border-border bg-background px-4 py-2 text-sm">
                           {v.title}

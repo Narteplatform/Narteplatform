@@ -65,6 +65,7 @@ export function AudioBlock({ artist }: { artist: ArtistProfileData }) {
               label="Carica demo, brani o estratti dal vivo (MP3/WAV/M4A)"
               value={(field.value ?? []) as AudioTrack[]}
               onChange={field.onChange}
+              artistId={artist.id}
             />
           )}
         />

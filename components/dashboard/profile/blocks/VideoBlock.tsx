@@ -27,9 +27,12 @@ import type { ArtistProfileData } from "@/components/dashboard/profile/types";
 export function VideoBlock({
   artist,
   initialVideos,
+  videoMax,
 }: {
   artist: ArtistProfileData;
   initialVideos: ArtistVideoItem[];
+  /** Tetto del piano dell'artista, risolto lato server: 1 Free, 3 Pro, 3 Max. */
+  videoMax: number;
 }) {
   const defaultValues = React.useMemo<VideosSectionValues>(
     () => ({ videos: (artist.videos ?? []).join("\n") }),
@@ -84,7 +87,7 @@ export function VideoBlock({
           <p className="mb-3 text-xs text-muted-foreground">
             Video caricati — si salvano da soli, senza passare dal pulsante qui sopra.
           </p>
-          <VideoUpload artistId={artist.id} initialVideos={initialVideos} />
+          <VideoUpload artistId={artist.id} initialVideos={initialVideos} videoMax={videoMax} />
         </div>
       </div>
     </ProfileSection>

@@ -20,6 +20,7 @@ Piattaforma italiana che mette in contatto artisti emergenti, organizzatori di e
 
 - **Next.js 16** (App Router, Server Actions, Turbopack) su **Vercel** (Fluid Compute)
 - **Supabase**: Postgres + Auth + Storage (RLS attivo su tutto)
+- **bunny.net**: Stream (video) + Storage/CDN (immagini, audio) — vedi «Media» qui sotto
 - **Brevo** come provider email principale, **Resend** come rete di sicurezza (vedi `lib/emails/dispatch.ts`)
 - **Stripe** per gli abbonamenti artista (Free / Pro / Max)
 - **Tailwind CSS v4** + componenti shadcn-style + **Framer Motion** per le animazioni
@@ -84,6 +85,39 @@ Non erano documentate ma sono costruite e attive:
 - **`/__health` non è più pubblica**: solo superadmin root.
 - **Consensi** registrati in `user_consents` (migration 0049).
 
+## Media — dove finiscono i file
+
+**Interruttore: `BUNNY_UPLOADS_ENABLED`.** Vuoto o `0` = ogni caricamento va su
+Supabase Storage, esattamente come prima dell'integrazione. `1` = i **nuovi**
+caricamenti vanno su bunny.net. I contenuti già caricati funzionano in entrambi
+i casi: gli URL sono assoluti in colonna e i due mondi convivono. **Il ritorno
+indietro è questa variabile più un redeploy, non un revert di codice.**
+
+| Contenuto | Destinazione a interruttore acceso | Percorso |
+|---|---|---|
+| Video artista | Bunny **Stream** (transcodifica, HLS) | `/api/upload/video` firma → TUS dal browser |
+| Immagini | Bunny **Storage** | `/api/upload` (compresse nel browser a ~250 KB) |
+| Audio | Bunny **Storage** | `/api/upload/audio/sign` → PUT presigned dal browser |
+| Allegati chat | **restano su Supabase** | contenuto privato, mai su una pull zone pubblica |
+| Video eventi/format/candidature | **restano su Supabase** | fase successiva |
+
+**Perché audio e video non passano dal server.** Il body di una funzione Vercel
+si ferma a **4,5 MB** ed è un limite di piattaforma: una traccia da 25 MB o un
+video da 500 MB non possono attraversarlo. Le rotte di firma firmano e non
+trasportano. Le immagini invece passano ancora dal server, per scelta: dopo la
+compressione lato client pesano ~250 KB e il passaggio permette di ispezionare i byte.
+
+**Tre cose da non rompere:**
+1. `playback_state` **non** è lo stato grezzo di Bunny. Lo stato 4 arriva prima
+   del 3, e 9/10 arrivano dopo: filtrare sullo stato grezzo farebbe sparire un
+   video funzionante. La colonna avanza verso `ready` e non regredisce mai.
+2. Il webhook si verifica sul **body grezzo** (`await request.text()`) con la
+   **Read-Only** key della library — che è un segreto diverso dalla API key.
+3. La chiave dell'oggetto la sceglie **sempre il server**: l'URL presigned
+   autorizza la scrittura su quel solo percorso.
+
+Verifica della configurazione: `npm run bunny:check` (non stampa segreti).
+
 ## Documenti legali
 
 `lib/legal/content.ts` contiene bozze **non ancora validate da un avvocato**,
@@ -107,6 +141,15 @@ Da eseguire dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md):
   senza protezione.
 - `0049_user_consents.sql` — registro dei consensi. Finché manca, la casella in
   registrazione è obbligatoria lato modulo ma il consenso non viene archiviato.
+- `0050_bunny_video.sql` — colonne per Bunny Stream su `artist_videos` +
+  tabella `media_assets`. Interamente additiva. **Da applicare DOPO 0048 e 0049.**
+  ⚠️ Il default di `playback_state` è `'ready'` e deve restare tale: con
+  `'processing'` tutti i video già online sparirebbero dai profili nell'istante
+  dell'esecuzione. Verifica subito dopo:
+  `select provider, playback_state, count(*) from artist_videos group by 1,2;`
+  → deve dare una sola riga, `supabase | ready | <totale>`.
+- `0050_bunny_video_validate.sql` — validazione dei vincoli, passo separato da
+  eseguire solo dopo aver letto l'esito dei tre controlli scritti nel file.
 
 ## Comandi
 

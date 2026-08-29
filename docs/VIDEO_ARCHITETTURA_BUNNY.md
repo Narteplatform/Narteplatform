@@ -1,7 +1,52 @@
 # Archiviazione contenuti artisti su bunny.net — documento tecnico
 
 > Destinatario: sviluppo. Versione per il cliente: [`VIDEO_SOLUZIONE_CLIENTE.md`](./VIDEO_SOLUZIONE_CLIENTE.md)
-> Stato: **analisi e progetto**, nessuna riga implementata. Dati API e prezzi verificati sulla documentazione ufficiale il 30/07/2026.
+> Stato: **implementato** il 29/08/2026, dietro l'interruttore `BUNNY_UPLOADS_ENABLED`. Dati API e prezzi verificati sulla documentazione ufficiale il 30/07/2026, **rivisti il 29/08/2026**.
+
+---
+
+## ⚠️ Errata — quattro punti superati (verificati il 29/08/2026)
+
+Il resto del documento regge; questi quattro no. Leggerli prima di usare il resto.
+
+1. **§5 — l'hostname del player è `player.mediadelivery.net`**, non
+   `iframe.mediadelivery.net`. Nel codice è la variabile
+   `NEXT_PUBLIC_BUNNY_PLAYER_HOST`, così si allinea a quello che mostra la tab
+   Embed della library senza ricompilare.
+
+2. **§6 — «Bunny Storage non ha un meccanismo di firma presigned» è FALSO.**
+   L'API S3-compatibile (`{region}-s3.storage.bunnycdn.com`) firma con
+   AWS4-HMAC-SHA256 da 1 secondo a 7 giorni, e l'endpoint risponde al preflight
+   con `Access-Control-Allow-Origin: *` e `PUT` fra i metodi consentiti
+   (verificato con `curl -X OPTIONS`). **La PUT diretta dal browser funziona**,
+   ed è ciò che sblocca l'audio oltre i 4,5 MB di Vercel — un limite che oggi
+   rendeva falsa la promessa «max 25MB» di `AudioUpload`.
+   Conseguenza: far passare le immagini dal server resta una **scelta**
+   (ispezione dei byte), non un vincolo.
+
+3. **§7 — «oggi `next.config.ts` non ha una CSP» non è più vero.** È stata
+   aggiunta il 28/08/2026 in `Content-Security-Policy-Report-Only` e va
+   **estesa**, non creata. Le direttive toccate sono `img-src`, `media-src`,
+   `connect-src` (per TUS e per la PUT presigned) e `frame-src`.
+
+4. **§8 — «pubblicabile = `status === 3 || status === 4`» è incompleto e
+   introduce un bug.** Gli stati **9** (CaptionsGenerated) e **10**
+   (TitleOrDescriptionGenerated) arrivano DOPO il 3: con quella regola l'arrivo
+   di un 9 farebbe **sparire dal profilo** un video perfettamente funzionante.
+   Nel codice la pubblicabilità vive in `artist_videos.playback_state`, che
+   avanza verso `ready` e non regredisce mai; `bunny_status` conserva l'ultimo
+   valore grezzo solo per diagnostica.
+
+Inoltre, due scelte prese in implementazione e non contemplate qui:
+- **`putWithProgress` NON è stato sostituito da `tus-js-client`** (§12): è stato
+  generalizzato. La macchina XHR serve alla PUT presigned dell'audio, dove TUS
+  non c'entra. TUS si usa solo per i video.
+- **La riga di `artist_videos` nasce alla firma**, non dopo l'upload (§12,
+  `addArtistVideo`): così il guid non torna dal client come token di fiducia, il
+  tetto di piano non ha corse, e un upload abbandonato resta visibile e
+  cancellabile invece di essere un video fantasma a pagamento su Bunny.
+
+---
 > Convenzione: ✅ = verificato sui doc ufficiali · 🔷 = proposta di design, da validare in implementazione.
 >
 > Copre l'intero archivio caricato dagli artisti — video, immagini, audio — non solo i video.
