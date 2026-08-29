@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ExternalLink, Pencil, Plus, UserPlus } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
+import { isBunnyEmbedUrl } from "@/lib/storage/bunny/urls";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";

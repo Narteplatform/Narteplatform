@@ -158,6 +158,43 @@ export function isBunnyStreamUrl(url: string): boolean {
   }
 }
 
+const GUID_RE = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+
+/**
+ * Estrae il GUID di un video Bunny da un URL, se e solo se l'URL è nostro.
+ *
+ * Serve dove il video non ha una riga dedicata: gli array `events.videos` e
+ * `formats.videos` sono `text[]` e contengono URL misti — YouTube, Vimeo,
+ * incollati a mano e ora anche Bunny. Salvare l'URL di embed invece del solo
+ * guid evita una migrazione di schema e mantiene la libertà di incollare un
+ * link esterno; il guid si rilegge da qui quando serve (cancellazione,
+ * riconciliazione).
+ *
+ * Il controllo sull'hostname NON è formalità: senza, un URL esterno che
+ * contenesse un UUID verrebbe scambiato per un nostro video.
+ */
+export function bunnyStreamGuidFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.host.toLowerCase();
+    let ours = false;
+    try {
+      ours = host === playerHost().toLowerCase() || host === streamCdnHost().toLowerCase();
+    } catch {
+      return null;
+    }
+    if (!ours) return null;
+    return u.pathname.match(GUID_RE)?.[1]?.toLowerCase() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** true se l'URL è un embed del nostro player Bunny. */
+export function isBunnyEmbedUrl(url: string): boolean {
+  return bunnyStreamGuidFromUrl(url) !== null && /\/embed\//.test(url);
+}
+
 /**
  * true per un URL pubblico dello Storage Supabase di QUESTO progetto.
  *

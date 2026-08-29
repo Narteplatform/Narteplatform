@@ -4,6 +4,10 @@ import { useRef, useState } from "react";
 import { Upload, X, Film } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Input";
+import { uploadViaTus } from "@/lib/upload/tusUpload";
+import { UploadAbortedError } from "@/lib/upload/putWithProgress";
+import { guessVideoMime, videoLimitsFor } from "@/lib/upload/video-limits";
+import { isBunnyEmbedUrl } from "@/lib/storage/bunny/urls";
 
 type UploadResult = {
   url: string;
@@ -16,21 +20,88 @@ type Props = {
   label?: string;
 };
 
-const ACCEPT = "video/mp4,video/webm,video/quicktime";
-const MAX = 50 * 1024 * 1024;
+type SignResponse =
+  | { uploadKind: "vercel-proxy" }
+  | {
+      uploadKind: "bunny-tus";
+      videoGuid: string;
+      libraryId: string;
+      signature: string;
+      expire: number;
+      tusEndpoint: string;
+      embedUrl: string;
+    };
+
+/** Ramo Bunny: accetta anche i container che il browser non decodifica. */
+const ACCEPT = videoLimitsFor("bunny").accept;
+
+/**
+ * Tetto lato client. Il limite vero lo applica il server, che sa dove sta
+ * scrivendo: 500 MB su Bunny, 50 MB (in pratica 4,5) sul ripiego Supabase.
+ */
+const MAX = 500 * 1024 * 1024;
 
 export function EventVideoUpload({
   value,
   onChange,
   kind = "event-video",
-  label = "Video da dispositivo (max 50MB, mp4/webm/mov)",
+  label = "Video da dispositivo",
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<{ name: string; pct: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function pick() {
     inputRef.current?.click();
+  }
+
+  async function uploadOne(file: File): Promise<string> {
+    const mime = guessVideoMime(file) ?? file.type;
+
+    // È il server a decidere la destinazione e a rispondere con l'errore già
+    // scritto in italiano: qui si scarta solo ciò che è palesemente fuori scala.
+    const signRes = await fetch("/api/upload/stream/sign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind, fileName: file.name, contentType: mime, size: file.size }),
+    });
+    if (!signRes.ok) {
+      const j = (await signRes.json().catch(() => ({}))) as { error?: string };
+      throw new Error(j.error ?? `Impossibile avviare il caricamento (${signRes.status})`);
+    }
+    const sign = (await signRes.json()) as SignResponse;
+
+    if (sign.uploadKind === "bunny-tus") {
+      setProgress({ name: file.name, pct: 0 });
+      await uploadViaTus({
+        file,
+        endpoint: sign.tusEndpoint,
+        libraryId: sign.libraryId,
+        videoGuid: sign.videoGuid,
+        signature: sign.signature,
+        expire: sign.expire,
+        title: file.name,
+        contentType: mime,
+        onProgress: (pct) => setProgress({ name: file.name, pct }),
+      });
+      // Si salva l'URL di EMBED: gli array events.videos e formats.videos sono
+      // text[] e contengono già URL misti (YouTube, Vimeo, incollati a mano).
+      // Il guid resta rileggibile dall'URL, quindi non serve una colonna nuova.
+      return sign.embedUrl;
+    }
+
+    // Percorso di sempre: multipart attraverso la funzione Vercel.
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("kind", kind);
+    const res = await fetch("/api/upload", { method: "POST", body: fd });
+    if (!res.ok) {
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(j.error ?? `Upload fallito (${res.status})`);
+    }
+    const { url } = (await res.json()) as UploadResult;
+    return url;
   }
 
   async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
@@ -43,29 +114,20 @@ export function EventVideoUpload({
     try {
       for (const file of files) {
         if (file.size > MAX) {
-          setError(`"${file.name}" supera 50MB.`);
+          setError(`"${file.name}" supera il limite di dimensione.`);
           continue;
         }
-        const acceptedTypes = ACCEPT.split(",");
-        if (!acceptedTypes.includes(file.type)) {
-          setError(`"${file.name}" formato non supportato (mp4/webm/mov).`);
-          continue;
-        }
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("kind", kind);
-        const res = await fetch("/api/upload", { method: "POST", body: fd });
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({})) as { error?: string };
-          throw new Error(j.error ?? `Upload fallito (${res.status})`);
-        }
-        const { url } = (await res.json()) as UploadResult;
-        next.push(url);
+        next.push(await uploadOne(file));
       }
       onChange(next);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Errore upload");
+      if (err instanceof UploadAbortedError) {
+        setError("Caricamento annullato.");
+      } else {
+        setError(err instanceof Error ? err.message : "Errore upload");
+      }
     } finally {
+      setProgress(null);
       setUploading(false);
     }
   }
@@ -85,12 +147,25 @@ export function EventVideoUpload({
               key={`${url}-${idx}`}
               className="group relative overflow-hidden rounded-md border border-border bg-black"
             >
-              <video
-                src={url}
-                className="aspect-video w-full bg-black"
-                controls
-                preload="metadata"
-              />
+              {isBunnyEmbedUrl(url) ? (
+                // Un URL di embed è una pagina, non un file: dentro <video>
+                // non suonerebbe. In un form di redazione basta l'iframe.
+                <iframe
+                  src={url}
+                  title="Anteprima video"
+                  loading="lazy"
+                  allow="accelerometer; gyroscope; encrypted-media; picture-in-picture;"
+                  allowFullScreen
+                  className="aspect-video w-full border-0 bg-black"
+                />
+              ) : (
+                <video
+                  src={url}
+                  className="aspect-video w-full bg-black"
+                  controls
+                  preload="metadata"
+                />
+              )}
               <button
                 type="button"
                 onClick={() => remove(idx)}
@@ -122,6 +197,24 @@ export function EventVideoUpload({
           </span>
         )}
       </div>
+      {progress && (
+        <div className="space-y-1.5 rounded-lg border border-border bg-muted p-3">
+          <p className="min-w-0 truncate text-xs">{progress.name}</p>
+          <div
+            role="progressbar"
+            aria-valuenow={progress.pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Caricamento di ${progress.name}`}
+            className="h-1.5 w-full overflow-hidden rounded-full bg-background"
+          >
+            <div
+              className="h-full rounded-full bg-accent transition-all duration-200"
+              style={{ width: `${progress.pct}%` }}
+            />
+          </div>
+        </div>
+      )}
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import * as tus from "tus-js-client";
 import { Upload, X, Film, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Input";
@@ -13,6 +12,7 @@ import {
 } from "@/app/(artist)/dashboard/_actions";
 import { probeVideo } from "@/lib/upload/probeVideo";
 import { putWithProgress, UploadAbortedError } from "@/lib/upload/putWithProgress";
+import { uploadViaTus } from "@/lib/upload/tusUpload";
 import { streamThumbnailUrl } from "@/lib/storage/bunny/urls";
 import {
   MAX_VIDEO_BYTES_BUNNY,
@@ -162,37 +162,19 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
       // Ramo Bunny Stream — TUS a chunk, riprendibile
       // ---------------------------------------------------------------------
       if (sign.uploadKind === "bunny-tus") {
-        await new Promise<void>((resolve, reject) => {
-          const upload = new tus.Upload(file, {
-            endpoint: sign.tusEndpoint,
-            // Un chunk esplicito è ciò che rende la ripresa davvero utile: senza,
-            // una connessione persa a 400 MB farebbe ricominciare da zero.
-            chunkSize: 8 * 1024 * 1024,
-            retryDelays: [0, 3000, 5000, 10000, 20000, 60000, 60000],
-            headers: {
-              AuthorizationSignature: sign.signature,
-              AuthorizationExpire: String(sign.expire),
-              VideoId: sign.videoGuid,
-              LibraryId: sign.libraryId,
-            },
-            metadata: { filetype: mime, title: sign.title },
-            onError: (e) => reject(e instanceof Error ? e : new Error(String(e))),
-            onProgress: (uploaded, total) =>
-              setProgress({ name: file.name, pct: Math.round((uploaded / total) * 100) }),
-            onSuccess: () => resolve(),
-          });
-
-          abortRef.current = () => {
-            void upload.abort();
-            reject(new UploadAbortedError());
-          };
-
-          // Se un upload precedente dello stesso file era rimasto a metà, si
-          // riparte da dove si era interrotto invece che dall'inizio.
-          void upload.findPreviousUploads().then((previous) => {
-            if (previous.length > 0) upload.resumeFromPreviousUpload(previous[0]);
-            upload.start();
-          });
+        await uploadViaTus({
+          file,
+          endpoint: sign.tusEndpoint,
+          libraryId: sign.libraryId,
+          videoGuid: sign.videoGuid,
+          signature: sign.signature,
+          expire: sign.expire,
+          title: sign.title,
+          contentType: mime,
+          onProgress: (pct) => setProgress({ name: file.name, pct }),
+          registerAbort: (abort) => {
+            abortRef.current = abort;
+          },
         });
 
         const ack = await confirmArtistVideoUpload(sign.videoId);

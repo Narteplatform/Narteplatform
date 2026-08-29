@@ -3,10 +3,35 @@
 import { useRef, useState } from "react";
 import { Upload, X, Film } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { uploadViaTus } from "@/lib/upload/tusUpload";
+import { isBunnyEmbedUrl } from "@/lib/storage/bunny/urls";
+import { guessVideoMime, videoLimitsFor } from "@/lib/upload/video-limits";
 
-const ACCEPT = "video/mp4,video/webm,video/quicktime";
-const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
-const VALID_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
+/**
+ * Ramo Bunny: si accettano anche i container che il browser non sa decodificare
+ * (i .mov HEVC dell'iPhone su tutti), perché è Bunny a transcodificarli. Sul
+ * ripiego Supabase il server rifiuta comunque ciò che non sa servire.
+ */
+const ACCEPT = videoLimitsFor("bunny").accept;
+
+/**
+ * Tetto lato client. Il limite vero lo applica il server: 200 MB su Bunny —
+ * più basso degli altri perché questa è una rotta PUBBLICA — e 50 MB dichiarati
+ * (4,5 reali) sul ripiego.
+ */
+const MAX_BYTES = 200 * 1024 * 1024;
+
+type SignResponse =
+  | { uploadKind: "vercel-proxy" }
+  | {
+      uploadKind: "bunny-tus";
+      videoGuid: string;
+      libraryId: string;
+      signature: string;
+      expire: number;
+      tusEndpoint: string;
+      embedUrl: string;
+    };
 
 type UploadResult = {
   url: string;
@@ -36,33 +61,65 @@ export function ApplicationVideoUpload({ onUploaded, onRemoved, uploadedUrl }: P
 
     setError(null);
 
-    if (!VALID_TYPES.includes(file.type)) {
-      setError("Formato non supportato. Usa mp4, webm o mov.");
+    const mime = guessVideoMime(file) ?? file.type;
+    if (!mime.startsWith("video/")) {
+      setError("Il file selezionato non sembra un video.");
       return;
     }
     if (file.size > MAX_BYTES) {
-      setError("Il video supera il limite di 50MB.");
+      setError("Il video è troppo grande.");
       return;
     }
 
     setUploading(true);
-    setProgress("Caricamento in corso…");
+    setProgress("Preparazione…");
 
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-
-      const res = await fetch("/api/upload-application-video", {
+      const signRes = await fetch("/api/upload/stream/sign", {
         method: "POST",
-        body: fd,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "application-video",
+          fileName: file.name,
+          contentType: mime,
+          size: file.size,
+        }),
       });
+      if (!signRes.ok) {
+        const j = (await signRes.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error ?? `Errore upload (${signRes.status})`);
+      }
+      const sign = (await signRes.json()) as SignResponse;
 
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({})) as { error?: string };
-        throw new Error(json.error ?? `Errore upload (${res.status})`);
+      if (sign.uploadKind === "bunny-tus") {
+        await uploadViaTus({
+          file,
+          endpoint: sign.tusEndpoint,
+          libraryId: sign.libraryId,
+          videoGuid: sign.videoGuid,
+          signature: sign.signature,
+          expire: sign.expire,
+          title: file.name,
+          contentType: mime,
+          onProgress: (pct) => setProgress(`Caricamento ${pct}%`),
+        });
+        // `path` porta il guid: è ciò che rende cancellabile il video di
+        // candidatura, cosa che oggi non è (video_path è validato ma non viene
+        // mai persistito).
+        onUploaded({ url: sign.embedUrl, path: sign.videoGuid });
+        setProgress(null);
+        return;
       }
 
-      const json = await res.json() as { url: string; path: string };
+      setProgress("Caricamento in corso…");
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload-application-video", { method: "POST", body: fd });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(json.error ?? `Errore upload (${res.status})`);
+      }
+      const json = (await res.json()) as { url: string; path: string };
       onUploaded({ url: json.url, path: json.path });
       setProgress(null);
     } catch (err) {
@@ -91,12 +148,23 @@ export function ApplicationVideoUpload({ onUploaded, onRemoved, uploadedUrl }: P
 
       {uploadedUrl ? (
         <div className="relative overflow-hidden rounded-md border border-border bg-black">
-          <video
-            src={uploadedUrl}
-            className="aspect-video w-full bg-black"
-            controls
-            preload="metadata"
-          />
+          {isBunnyEmbedUrl(uploadedUrl) ? (
+            <iframe
+              src={uploadedUrl}
+              title="Anteprima video"
+              loading="lazy"
+              allow="accelerometer; gyroscope; encrypted-media; picture-in-picture;"
+              allowFullScreen
+              className="aspect-video w-full border-0 bg-black"
+            />
+          ) : (
+            <video
+              src={uploadedUrl}
+              className="aspect-video w-full bg-black"
+              controls
+              preload="metadata"
+            />
+          )}
           <button
             type="button"
             onClick={remove}
