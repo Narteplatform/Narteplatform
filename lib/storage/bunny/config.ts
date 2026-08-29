@@ -86,5 +86,11 @@ export function bunnyStorageConfig(): BunnyStorageConfig {
  * nella risposta della rotta di firma.
  */
 export function bunnyUploadsEnabled(): boolean {
-  return process.env.BUNNY_UPLOADS_ENABLED?.trim() === "1";
+  // Accetta più di "1" di proposito. Chi configura una variabile d'ambiente su
+  // un pannello scrive naturalmente "true" o "on", e il modo in cui questo
+  // sbaglia è il peggiore: nessun errore, nessun log, semplicemente i
+  // caricamenti continuano ad andare dove andavano prima e ci si chiede perché.
+  // Qualunque altro valore — vuoto, "0", "false" — resta spento.
+  const raw = process.env.BUNNY_UPLOADS_ENABLED?.trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "on" || raw === "yes" || raw === "si";
 }
