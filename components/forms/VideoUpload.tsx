@@ -377,16 +377,21 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
           )
         )}
       </div>
+      {/* Prevenire costa meno che spiegare dopo: un video registrato in H.264 è
+          online all'istante, uno in HEVC può richiedere qualche minuto di
+          conversione prima di essere visibile a tutti i browser. */}
+      <p className="text-xs text-muted-foreground">
+        Suggerimento: se riprendi con l&apos;iPhone, imposta{" "}
+        <span className="font-medium text-foreground">
+          Impostazioni → Fotocamera → Formati → «Massima compatibilità»
+        </span>
+        . I video saranno online subito.
+      </p>
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );
 }
 
-/**
- * Un video su Bunny non è riproducibile nell'istante in cui l'upload finisce:
- * va transcodificato. Mostrare un player rotto sarebbe peggio che dire cosa sta
- * succedendo, quindi finché non è pronto si mostra lo stato.
- */
 /**
  * Anteprima nell'editor mentre la conversione è in corso.
  *
@@ -471,8 +476,6 @@ function VideoPreview({ video }: { video: ArtistVideoItem }) {
   if (video.provider === "bunny" && video.bunny_guid) {
     // Nell'editor basta il poster: montare l'iframe del player per ogni video
     // scaricherebbe il suo bundle anche solo aprendo la pagina del profilo.
-    // Se la library ha la token authentication attiva il poster risponde 403:
-    // meglio un riquadro pulito con l'icona che un'immagine rotta.
     return <BunnyThumb guid={video.bunny_guid} />;
   }
 
