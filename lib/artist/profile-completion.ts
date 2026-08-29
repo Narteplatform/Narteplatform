@@ -18,7 +18,21 @@ export type ProfileCompletionSource = {
   cover_image?: string | null;
   bio?: string | null;
   gallery?: unknown[] | null;
+  /**
+   * Link YouTube/Vimeo incollati a mano. Il campo non è più modificabile
+   * dall'editor — i video ora si caricano — ma resta popolato per i profili
+   * che lo usavano, quindi continua a contare.
+   */
   videos?: unknown[] | null;
+  /**
+   * Video CARICATI dall'artista (tabella `artist_videos`).
+   *
+   * ⚠️ Va passato dal chiamante: vive in un'altra tabella e non arriva con la
+   * riga di `artists`. Senza, un artista con tre video caricati e nessun link
+   * esterno leggerebbe «Aggiungi almeno un video» — un compito che ha già
+   * svolto. È il caso normale ora che il caricamento ha sostituito i link.
+   */
+  uploadedVideoCount?: number | null;
   genre?: unknown[] | null;
   price_range?: string | null;
   languages?: unknown[] | null;
@@ -71,8 +85,8 @@ export function computeProfileCompletion(
     {
       key: "videos",
       label: "video",
-      action: "Aggiungi almeno un video",
-      done: (a.videos?.length ?? 0) >= 1,
+      action: "Carica almeno un video",
+      done: (a.uploadedVideoCount ?? 0) + (a.videos?.length ?? 0) >= 1,
     },
     {
       key: "genre",

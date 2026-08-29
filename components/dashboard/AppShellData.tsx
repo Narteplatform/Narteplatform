@@ -345,6 +345,19 @@ async function loadArtistShell(userId: string): Promise<{
     : null;
   const artist = artistRes?.data ?? null;
 
+  // I video caricati vivono in un'altra tabella: senza questo conteggio il
+  // completamento del profilo direbbe «carica almeno un video» a chi ne ha
+  // già caricati tre.
+  const uploadedVideosRes = activeArtist
+    ? await safe(
+        admin
+          .from("artist_videos")
+          .select("id", { count: "exact", head: true })
+          .eq("artist_id", activeArtist.id)
+      )
+    : null;
+  const uploadedVideoCount = uploadedVideosRes?.count ?? 0;
+
   let newLeads = 0;
   let contactedLeads = 0;
   let closedLeads = 0;
@@ -451,9 +464,10 @@ async function loadArtistShell(userId: string): Promise<{
 
   let storage: AppShellStorage | undefined;
   if (artist) {
-    const completion = computeProfileCompletion(
-      artist as unknown as ProfileCompletionSource
-    );
+    const completion = computeProfileCompletion({
+      ...(artist as unknown as ProfileCompletionSource),
+      uploadedVideoCount,
+    });
     storage = {
       label: "Profilo completo",
       used: completion.filled,

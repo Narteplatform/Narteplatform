@@ -66,6 +66,7 @@ export default async function ArtistOverviewPage() {
     { count: availableCount },
     { count: newLeadsCount },
     { data: recentLeads },
+    { count: uploadedVideoCount },
     unreadChat,
   ] = await Promise.all([
     supabase
@@ -93,12 +94,24 @@ export default async function ArtistOverviewPage() {
       .eq("artist_id", artist.id)
       .order("created_at", { ascending: false })
       .limit(5),
+    // I video CARICATI vivono in artist_videos, non nella riga di artists.
+    supabase
+      .from("artist_videos")
+      .select("id", { count: "exact", head: true })
+      .eq("artist_id", artist.id),
     // Stesso conteggio del badge in sidebar (AppShellData): unica fonte.
     getUnreadCountForUser(user.id, "artist"),
   ]);
 
   const gallery = artist.gallery ?? [];
-  const videos = artist.videos ?? [];
+  // ⚠️ `artist.videos` sono i LINK YouTube/Vimeo, non i video caricati. La
+  // scheda mostrava solo quelli: un artista con tre video caricati e nessun
+  // link leggeva «0 video». Ora riflette ciò che c'è davvero sulla pagina
+  // pubblica, cioè la somma dei due.
+  const externalVideos = (artist.videos ?? []) as unknown[];
+  const uploadedVideos = uploadedVideoCount ?? 0;
+  const totalVideos = uploadedVideos + externalVideos.length;
+  const audioTracks = Array.isArray(artist.audio_files) ? artist.audio_files.length : 0;
   // La chat è una feature Pro/Max: l'enforcement vero sta in lib/chat/actions.ts,
   // qui serve solo a decidere se mostrare il conteggio o il lucchetto.
   const canUseChat = entitlementsFor(artist.tier).canUseChat;
@@ -145,7 +158,12 @@ export default async function ArtistOverviewPage() {
         secondary={{ label: "Modifica profilo", href: "/dashboard/profilo-artista" }}
       />
 
-      <ProfileCompletionCard artist={artist as unknown as ProfileCompletionSource} />
+      <ProfileCompletionCard
+        artist={{
+          ...(artist as unknown as ProfileCompletionSource),
+          uploadedVideoCount: uploadedVideos,
+        }}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard
@@ -156,9 +174,15 @@ export default async function ArtistOverviewPage() {
         />
         <KpiCard
           label="Video"
-          value={videos.length}
+          value={totalVideos}
           icon={<Video className="size-4" />}
-          sublabel={videos.length > 0 ? "Embed e link" : "Aggiungi link YouTube/Vimeo"}
+          sublabel={
+            totalVideos > 0
+              ? `${uploadedVideos} caricat${uploadedVideos === 1 ? "o" : "i"}${
+                  externalVideos.length ? ` · ${externalVideos.length} da link` : ""
+                }${audioTracks ? ` · ${audioTracks} audio` : ""}`
+              : "Carica il tuo primo video"
+          }
         />
         <KpiCard
           label="Date libere 30gg"
