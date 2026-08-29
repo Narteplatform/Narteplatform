@@ -217,6 +217,21 @@ export const authSchema = z.object({
 });
 export type AuthInput = z.infer<typeof authSchema>;
 
+/**
+ * ACCESSO — solo email e password.
+ *
+ * ⚠️ Non riusare `authSchema` qui, ed è il motivo per cui questo schema esiste.
+ * `authSchema` serve alla REGISTRAZIONE e richiede `acceptedTerms: literal(true)`.
+ * Il form di accesso non ha quella casella — accettare i termini si fa una volta
+ * sola, quando l'account nasce — quindi il campo restava `undefined`, la
+ * validazione falliva su di esso e `handleSubmit` non arrivava mai a chiamare
+ * l'invio. Il risultato era il peggiore possibile: il pulsante «Accedi» non
+ * faceva NULLA, senza un messaggio, perché nel form non c'era alcun elemento
+ * legato a quell'errore. Nessuno poteva più entrare nella piattaforma.
+ */
+export const loginSchema = authSchema.pick({ email: true, password: true });
+export type LoginInput = z.infer<typeof loginSchema>;
+
 /** Richiesta del link di recupero: serve la sola email. */
 export const passwordResetRequestSchema = z.object({
   email: z.string().email(),

@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle } from "lucide-react";
-import { authSchema, type AuthInput } from "@/lib/validators/schemas";
+import { loginSchema, type LoginInput } from "@/lib/validators/schemas";
 import { authErrorMessage } from "@/lib/auth/error-messages";
 import { createClient } from "@/lib/supabase/client";
 import { Input, Label } from "@/components/ui/Input";
@@ -22,9 +22,9 @@ export function LoginForm() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<AuthInput>({ resolver: zodResolver(authSchema) });
+  } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
 
-  async function onSubmit(values: AuthInput) {
+  async function onSubmit(values: LoginInput) {
     setError(null);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
