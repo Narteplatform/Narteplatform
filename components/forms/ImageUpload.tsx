@@ -4,18 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { Upload, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
+import {
+  CROP_QUALITY,
+  IMAGE_TARGETS,
+  canvasToBlob,
+  paintCrop,
+  type ImageKind,
+} from "@/lib/upload/compressImage";
 
-type Kind = "artist" | "event" | "event_home" | "avatar" | "venue" | "format" | "blog";
-
-const SIZES: Record<Kind, { w: number; h: number; aspect: string }> = {
-  artist: { w: 900, h: 1200, aspect: "3 / 4" },
-  event: { w: 1600, h: 900, aspect: "16 / 9" },
-  event_home: { w: 900, h: 1200, aspect: "3 / 4" },
-  avatar: { w: 400, h: 400, aspect: "1 / 1" },
-  venue: { w: 1600, h: 900, aspect: "16 / 9" },
-  format: { w: 900, h: 1200, aspect: "3 / 4" },
-  blog: { w: 1600, h: 900, aspect: "16 / 9" },
-};
+// Le dimensioni di uscita vivono in lib/upload/compressImage.ts: le usa anche
+// GalleryUpload, che prima non comprimeva affatto.
+type Kind = ImageKind;
 
 type Props = {
   label: string;
@@ -36,7 +35,7 @@ export function ImageUpload({ label, value, onChange, kind = "artist" }: Props) 
   const inputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const target = SIZES[kind];
+  const target = IMAGE_TARGETS[kind];
 
   function pick() {
     inputRef.current?.click();
@@ -72,13 +71,13 @@ export function ImageUpload({ label, value, onChange, kind = "artist" }: Props) 
     if (!ctx) return;
     canvas.width = target.w;
     canvas.height = target.h;
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, target.w, target.h);
-    const dw = imgEl.width * zoom;
-    const dh = imgEl.height * zoom;
-    const dx = (target.w - dw) / 2 + offset.x;
-    const dy = (target.h - dh) / 2 + offset.y;
-    ctx.drawImage(imgEl, dx, dy, dw, dh);
+    paintCrop(ctx, {
+      img: imgEl,
+      targetW: target.w,
+      targetH: target.h,
+      zoom,
+      offset,
+    });
   }, [imgEl, zoom, offset, open, target.w, target.h]);
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -102,11 +101,8 @@ export function ImageUpload({ label, value, onChange, kind = "artist" }: Props) 
     setError(null);
     setUploading(true);
     try {
-      const blob: Blob | null = await new Promise((resolve) =>
-        canvasRef.current!.toBlob((b) => resolve(b), "image/jpeg", 0.88)
-      );
-      if (!blob) throw new Error("Conversione immagine fallita");
-      const file = new File([blob], `image.jpg`, { type: "image/jpeg" });
+      const blob = await canvasToBlob(canvasRef.current, "image/jpeg", CROP_QUALITY);
+      const file = new File([blob], "image.jpg", { type: "image/jpeg" });
       const fd = new FormData();
       fd.append("file", file);
       fd.append("kind", kind);

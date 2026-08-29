@@ -3,7 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
+      // *.supabase.co RESTA: è la convivenza. I contenuti già caricati hanno un
+      // URL Supabase assoluto in colonna e continuano a passare di lì anche
+      // dopo il passaggio a bunny.net. Rimuoverlo li renderebbe invisibili.
       { protocol: "https", hostname: "*.supabase.co" },
+      // bunny.net: sia la pull zone dello storage (immagini, audio) sia quella
+      // di Stream (poster e anteprime dei video).
+      { protocol: "https", hostname: "*.b-cdn.net" },
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "source.unsplash.com" },
     ],
@@ -51,10 +57,17 @@ const nextConfig: NextConfig = {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       // blob: serve alle anteprime locali degli upload prima dell'invio.
-      "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://source.unsplash.com",
-      "media-src 'self' blob: https://*.supabase.co",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com",
-      "frame-src https://js.stripe.com https://hooks.stripe.com",
+      "img-src 'self' data: blob: https://*.supabase.co https://*.b-cdn.net https://images.unsplash.com https://source.unsplash.com",
+      "media-src 'self' blob: https://*.supabase.co https://*.b-cdn.net",
+      // video.bunnycdn.com  → l'upload TUS dei video, che parte dal browser.
+      // *.storage.bunnycdn.com → la PUT presigned dell'audio: il file non può
+      //   passare dal server perché il body di una funzione Vercel si ferma a
+      //   4,5 MB e una traccia arriva a 25 MB.
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://video.bunnycdn.com https://*.storage.bunnycdn.com https://*.b-cdn.net",
+      // Il player dei video è un iframe Bunny. Entrambi gli hostname: la
+      // documentazione indica player.mediadelivery.net, ma il pannello ha
+      // storicamente proposto anche iframe.mediadelivery.net.
+      "frame-src https://js.stripe.com https://hooks.stripe.com https://player.mediadelivery.net https://iframe.mediadelivery.net",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

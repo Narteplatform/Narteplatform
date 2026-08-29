@@ -30,6 +30,21 @@ const EXPORTABLE = [
   // Senza questa, le statistiche del piano Max restano a zero in produzione:
   // il tracking delle visite fallisce chiuso quando il salt manca.
   "VISIT_HASH_SALT",
+  // bunny.net. Le NEXT_PUBLIC_ servono anche a BUNNY_UPLOADS_ENABLED spento:
+  // senza, i contenuti già su Bunny non verrebbero mostrati.
+  "BUNNY_STREAM_LIBRARY_ID",
+  "BUNNY_STREAM_API_KEY",
+  "BUNNY_STREAM_WEBHOOK_KEY",
+  "BUNNY_STORAGE_ZONE",
+  "BUNNY_STORAGE_PASSWORD",
+  "BUNNY_STORAGE_HOST",
+  "BUNNY_STORAGE_S3_HOST",
+  "BUNNY_STORAGE_S3_REGION",
+  "BUNNY_UPLOADS_ENABLED",
+  "NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID",
+  "NEXT_PUBLIC_BUNNY_STREAM_CDN",
+  "NEXT_PUBLIC_BUNNY_STORAGE_CDN",
+  "NEXT_PUBLIC_BUNNY_PLAYER_HOST",
 ];
 
 if (!existsSync(ENV_FILE)) {
