@@ -6,6 +6,7 @@ import {
   FileText,
   Inbox,
   LayoutDashboard,
+  LifeBuoy,
   Mail,
   MessageCircle,
   CreditCard,
@@ -462,6 +463,14 @@ async function loadArtistShell(userId: string): Promise<{
     });
   }
 
+  // Dalle aree riservate il Centro Assistenza non era raggiungibile: si usciva
+  // sul sito pubblico e lo si cercava a mano.
+  navSections.push({
+    href: "/help",
+    label: "Aiuto",
+    icon: <LifeBuoy className="size-4" />,
+  });
+
   let storage: AppShellStorage | undefined;
   if (artist) {
     const completion = computeProfileCompletion({
@@ -757,6 +766,11 @@ async function loadOrganizerShell(userId: string): Promise<{
       href: "/organizzatore/profilo",
       label: "Profilo",
       icon: <UserCog className="size-4" />,
+    },
+    {
+      href: "/help",
+      label: "Aiuto",
+      icon: <LifeBuoy className="size-4" />,
     },
   ];
 

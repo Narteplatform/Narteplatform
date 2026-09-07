@@ -5,7 +5,8 @@ import { ArrowRight, ChevronRight, FileText, Hourglass } from "lucide-react";
 import { Reveal } from "@/components/animations/Reveal";
 import { CategoryIcon } from "@/lib/help/icons";
 import { HelpSearch } from "@/components/help/HelpSearch";
-import { HELP_CATEGORIES, findCategory } from "@/lib/help/content";
+import { HELP_CATEGORIES, findCategory, searchIndex } from "@/lib/help/content";
+import { JsonLd, breadcrumbJsonLd } from "@/components/seo/JsonLd";
 
 type Params = Promise<{ category: string }>;
 
@@ -21,10 +22,22 @@ export async function generateMetadata({
   const { category } = await params;
   const c = findCategory(category);
   if (!c) return { title: "Categoria non trovata — N'arte Help" };
+  const title = `${c.title} — Centro Assistenza N'arte`;
   return {
-    title: `${c.title} — Centro Assistenza N'arte`,
+    title,
     description: c.description,
     alternates: { canonical: `/help/${c.slug}` },
+    openGraph: {
+      title,
+      description: c.description,
+      url: `/help/${c.slug}`,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: c.description,
+    },
   };
 }
 
@@ -33,12 +46,16 @@ export default async function HelpCategoryPage({ params }: { params: Params }) {
   const c = findCategory(category);
   if (!c) notFound();
 
-  const index = HELP_CATEGORIES.flatMap((cat) =>
-    cat.articles.map((article) => ({ category: cat, article }))
-  );
+  const index = searchIndex();
 
   return (
     <div className="bg-background pb-24">
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Centro Assistenza", path: "/help" },
+          { name: c.title, path: `/help/${c.slug}` },
+        ])}
+      />
       {/* HEADER */}
       <section className="border-b border-border bg-muted/40 pt-32 pb-12 md:pt-36">
         <div className="container-narte">

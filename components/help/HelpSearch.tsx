@@ -3,16 +3,16 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, ArrowRight } from "lucide-react";
-import type { HelpCategory, HelpArticle } from "@/lib/help/content";
+import type { HelpSearchItem } from "@/lib/help/content";
 
-type Indexed = { category: HelpCategory; article: HelpArticle; hay: string };
+type Indexed = HelpSearchItem & { hay: string };
 
 export function HelpSearch({
   index,
   placeholder = "Cerca nel Centro Assistenza…",
   size = "lg",
 }: {
-  index: { category: HelpCategory; article: HelpArticle }[];
+  index: HelpSearchItem[];
   placeholder?: string;
   size?: "lg" | "sm";
 }) {
@@ -22,7 +22,7 @@ export function HelpSearch({
     () =>
       index.map((i) => ({
         ...i,
-        hay: `${i.article.title} ${i.article.excerpt}`.toLowerCase(),
+        hay: `${i.title} ${i.excerpt}`.toLowerCase(),
       })),
     [index]
   );
@@ -63,21 +63,21 @@ export function HelpSearch({
           ) : (
             <ul className="max-h-[420px] overflow-y-auto">
               {results.map((r) => (
-                <li key={`${r.category.slug}/${r.article.slug}`}>
+                <li key={`${r.categorySlug}/${r.articleSlug}`}>
                   <Link
-                    href={`/help/${r.category.slug}/${r.article.slug}`}
+                    href={`/help/${r.categorySlug}/${r.articleSlug}`}
                     className="group flex items-start gap-4 border-b border-border px-5 py-4 last:border-b-0 hover:bg-muted/40"
                     onClick={() => setQuery("")}
                   >
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
-                        {r.category.title}
+                        {r.categoryTitle}
                       </p>
                       <p className="mt-1 font-display text-base group-hover:text-accent">
-                        {r.article.title}
+                        {r.title}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                        {r.article.excerpt}
+                        {r.excerpt}
                       </p>
                     </div>
                     <ArrowRight className="size-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-accent" />

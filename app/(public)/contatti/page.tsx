@@ -16,7 +16,7 @@ export default function ContattiPage() {
         description={
           <>
             Per booking, collaborazioni o richieste generiche scrivici. Rispondiamo in genere
-            entro 48 ore.
+            entro 1-2 giorni lavorativi.
           </>
         }
       />

@@ -164,3 +164,44 @@ export function breadcrumbJsonLd(items: { name: string; path: string }[]): Json 
     })),
   };
 }
+
+/**
+ * Articolo del Centro Assistenza.
+ *
+ * `TechArticle` e non `Article`: è il tipo che schema.org riserva alla
+ * documentazione e alle guide, ed è ciò che questi testi sono. `dateModified`
+ * viene da `updatedAt`, obbligatorio su ogni articolo proprio per questo.
+ *
+ * Nota su `FAQPage`: sarebbe la marcatura più ovvia per un centro assistenza,
+ * ma da agosto 2023 Google mostra i risultati arricchiti FAQ solo a siti
+ * istituzionali e sanitari di riconosciuta autorevolezza. Su N'arte non
+ * produrrebbe alcun risultato visibile, quindi non la aggiungiamo qui.
+ */
+export function helpArticleJsonLd(a: {
+  title: string;
+  excerpt: string;
+  path: string;
+  updatedAt?: string | null;
+  categoryTitle?: string | null;
+}): Json {
+  const base = getSiteUrl().replace(/\/$/, "");
+  return clean({
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: a.title,
+    description: a.excerpt,
+    url: abs(a.path),
+    mainEntityOfPage: { "@type": "WebPage", "@id": abs(a.path) },
+    inLanguage: "it-IT",
+    articleSection: a.categoryTitle ?? undefined,
+    datePublished: a.updatedAt ?? undefined,
+    dateModified: a.updatedAt ?? undefined,
+    author: { "@type": "Organization", name: "N'arte", url: base },
+    publisher: {
+      "@type": "Organization",
+      name: "N'arte",
+      url: base,
+      logo: { "@type": "ImageObject", url: `${base}/logo-narte.png` },
+    },
+  });
+}

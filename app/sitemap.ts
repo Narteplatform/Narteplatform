@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
+import { HELP_CATEGORIES, allArticles } from "@/lib/help/content";
 import { logger } from "@/lib/logger";
 
 /**
@@ -60,6 +61,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/collaborazioni`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/contatti`, changeFrequency: "yearly", priority: 0.5 },
     { url: `${base}/help`, changeFrequency: "weekly", priority: 0.6 },
+
+    // Centro assistenza: categorie e articoli. Sono contenuti statici di un
+    // file TypeScript, non righe di database — per questo stanno fra le
+    // statiche e non nel blocco che interroga Supabase: non c'è un `error` da
+    // controllare e non possono mai risolversi in un elenco vuoto.
+    ...HELP_CATEGORIES.map((c) => ({
+      url: `${base}/help/${c.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    })),
+    ...allArticles().map(({ category, article }) => ({
+      url: `${base}/help/${category.slug}/${article.slug}`,
+      lastModified: article.updatedAt ? new Date(article.updatedAt) : undefined,
+      changeFrequency: "monthly" as const,
+      priority: 0.4,
+    })),
   ];
 
   try {

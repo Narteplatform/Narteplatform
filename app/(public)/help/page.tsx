@@ -6,20 +6,28 @@ import { PageHero } from "@/components/marketing/PageHero";
 import { heroImageFor } from "@/lib/content/hero-images";
 import { CategoryIcon } from "@/lib/help/icons";
 import { HelpSearch } from "@/components/help/HelpSearch";
-import { HELP_CATEGORIES, popularArticles } from "@/lib/help/content";
+import { HELP_CATEGORIES, popularArticles, searchIndex } from "@/lib/help/content";
+
+const TITLE = "Centro Assistenza — N'arte";
+const DESCRIPTION =
+  "Guide e risposte su N'arte: candidatura artista, richieste di booking, trattativa in chat, abbonamenti, account e regole d'uso del brand.";
 
 export const metadata: Metadata = {
-  title: "Centro Assistenza — N'arte",
-  description:
-    "Risposte, guide e tutorial su N'arte: candidatura artista, booking, consulenza, gestione profilo, pagamenti.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/help" },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/help",
+    type: "website",
+  },
+  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
 };
 
 export default function HelpHomePage() {
   const popular = popularArticles(6);
-  const index = HELP_CATEGORIES.flatMap((category) =>
-    category.articles.map((article) => ({ category, article }))
-  );
+  const index = searchIndex();
 
   return (
     <div className="bg-background pb-24">
@@ -113,7 +121,7 @@ export default function HelpHomePage() {
                 Non trovi quello che cerchi?
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Scrivici e ti rispondiamo entro 24 ore.
+                Scrivici: rispondiamo entro 1-2 giorni lavorativi.
               </p>
               <Link
                 href="/contatti"
@@ -127,10 +135,11 @@ export default function HelpHomePage() {
                 <Phone className="size-5" />
               </div>
               <h3 className="mt-4 font-display text-xl">
-                Vuoi parlare con un consulente?
+                Sei un artista abbonato?
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Prenota una chiamata gratuita di 30 minuti con il team N&rsquo;arte.
+                La consulenza con il team N&rsquo;arte è inclusa nei piani Pro e Max:
+                prenoti uno slot dalla tua area riservata.
               </p>
               <Link
                 href="/help/consulenza/prenotare-chiamata"

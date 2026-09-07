@@ -9,6 +9,11 @@ import {
   findArticle,
   relatedArticles,
 } from "@/lib/help/content";
+import {
+  JsonLd,
+  breadcrumbJsonLd,
+  helpArticleJsonLd,
+} from "@/components/seo/JsonLd";
 
 type Params = Promise<{ category: string; article: string }>;
 
@@ -26,10 +31,24 @@ export async function generateMetadata({
   const { category, article } = await params;
   const found = findArticle(category, article);
   if (!found) return { title: "Articolo non trovato — N'arte Help" };
+  const title = `${found.article.title} — Centro Assistenza N'arte`;
+  const path = `/help/${category}/${article}`;
   return {
-    title: `${found.article.title} — N'arte Help`,
+    title,
     description: found.article.excerpt,
-    alternates: { canonical: `/help/${category}/${article}` },
+    alternates: { canonical: path },
+    openGraph: {
+      title,
+      description: found.article.excerpt,
+      url: path,
+      type: "article",
+      modifiedTime: found.article.updatedAt,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: found.article.excerpt,
+    },
   };
 }
 
@@ -40,8 +59,26 @@ export default async function HelpArticlePage({ params }: { params: Params }) {
   const { category: cat, article: art } = found;
   const related = relatedArticles(cat.slug, art.slug, 4);
 
+  const path = `/help/${cat.slug}/${art.slug}`;
+
   return (
     <article className="bg-background pb-24 pt-28">
+      <JsonLd
+        data={[
+          breadcrumbJsonLd([
+            { name: "Centro Assistenza", path: "/help" },
+            { name: cat.title, path: `/help/${cat.slug}` },
+            { name: art.title, path },
+          ]),
+          helpArticleJsonLd({
+            title: art.title,
+            excerpt: art.excerpt,
+            path,
+            updatedAt: art.updatedAt,
+            categoryTitle: cat.title,
+          }),
+        ]}
+      />
       <div className="container-narte grid gap-12 lg:grid-cols-[1fr_280px]">
         {/* MAIN */}
         <div className="min-w-0">
@@ -140,15 +177,20 @@ export default async function HelpArticlePage({ params }: { params: Params }) {
               </p>
               <ul className="space-y-3">
                 {related.map((r) => (
-                  <li key={r.slug}>
+                  <li key={`${r.category.slug}/${r.article.slug}`}>
                     <Link
-                      href={`/help/${cat.slug}/${r.slug}`}
+                      href={`/help/${r.category.slug}/${r.article.slug}`}
                       className="group block rounded-lg border border-border bg-card p-3 transition hover:border-accent"
                     >
+                      {r.category.slug !== cat.slug && (
+                        <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+                          {r.category.title}
+                        </span>
+                      )}
                       <p className="font-display text-sm leading-tight group-hover:text-accent">
-                        {r.title}
+                        {r.article.title}
                       </p>
-                      {r.placeholder && (
+                      {r.article.placeholder && (
                         <span className="mt-1 inline-block text-[10px] uppercase tracking-wider text-muted-foreground">
                           In preparazione
                         </span>

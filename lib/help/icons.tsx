@@ -1,6 +1,7 @@
 import {
   Calendar,
   CreditCard,
+  Megaphone,
   Music,
   Phone,
   Rocket,
@@ -20,6 +21,7 @@ const ICONS: Record<HelpCategory["icon"], LucideIcon> = {
   "user-cog": UserCog,
   "credit-card": CreditCard,
   shield: Shield,
+  megaphone: Megaphone,
 };
 
 export function CategoryIcon({
