@@ -98,6 +98,12 @@ export function MediaModerationViewer({
                 disabled={busy}
                 className="bg-white/90 text-sm"
               />
+              {viewerItem.kind === "video" && (
+                <p className="text-[11px] text-white/70">
+                  Rifiutando, il file viene rimosso da bunny.net per non
+                  occupare spazio a pagamento. L&rsquo;artista dovrà ricaricarlo.
+                </p>
+              )}
               <div className="flex justify-end gap-2">
                 <Button
                   type="button"

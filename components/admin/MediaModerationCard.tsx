@@ -185,6 +185,11 @@ function MediaItemCard({
             disabled={pending}
             className="text-xs"
           />
+          {item.kind === "video" && (
+            <p className="text-[11px] text-muted-foreground">
+              Il file verrà rimosso da bunny.net: l&rsquo;artista dovrà ricaricarlo.
+            </p>
+          )}
           <div className="flex gap-2">
             <Button
               type="button"

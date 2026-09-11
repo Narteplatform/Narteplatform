@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { deleteStreamVideo } from "@/lib/storage/bunny/stream";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { logger } from "@/lib/logger";
@@ -139,7 +140,7 @@ export async function rejectArtistVideo(id: string, note: string): Promise<Resul
 
   const { data: video, error: fetchError } = await admin
     .from("artist_videos")
-    .select("id, artist_id, moderation_state")
+    .select("id, artist_id, moderation_state, provider, bunny_guid")
     .eq("id", id)
     .maybeSingle();
   if (fetchError) return { ok: false, error: fetchError.message };
@@ -158,6 +159,32 @@ export async function rejectArtistVideo(id: string, note: string): Promise<Resul
     })
     .eq("id", id);
   if (error) return { ok: false, error: error.message };
+
+  // Il file esce da Bunny, la riga resta.
+  //
+  // Un video rifiutato non tornerà mai pubblico, ma su Bunny continuerebbe a
+  // occupare storage a pagamento per sempre — e se la conversione non è ancora
+  // partita, a consumare anche minuti di encoding per produrre risoluzioni che
+  // nessuno guarderà. È credito speso per niente.
+  //
+  // La riga in `artist_videos` NON viene toccata: restano titolo, data,
+  // motivazione e chi ha deciso, così lo storico della moderazione resta
+  // leggibile e l'artista continua a vedere il suo "non approvato" con il
+  // perché. Sparisce il file, non la memoria di cosa è successo.
+  //
+  // L'esito non blocca il rifiuto: se Bunny è irraggiungibile la decisione vale
+  // lo stesso e il file resterà da ripulire, che è meno grave di una
+  // moderazione che si inceppa.
+  if (video.provider === "bunny" && video.bunny_guid) {
+    try {
+      await deleteStreamVideo(video.bunny_guid);
+    } catch (e) {
+      logger.error("admin/moderazione", "rimozione da Bunny del video rifiutato fallita", {
+        videoId: id,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
 
   await revalidateArtist(admin, video.artist_id);
   return { ok: true };
