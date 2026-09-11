@@ -45,7 +45,7 @@ export default async function ArtistProfileEditPage() {
     supabase
       .from("artist_videos")
       .select(
-        "id, url, storage_path, title, duration_ms, size_bytes, mime_type, created_at, provider, bunny_guid, playback_state, upload_state, bunny_error, width, height"
+        "id, url, storage_path, title, duration_ms, size_bytes, mime_type, created_at, provider, bunny_guid, playback_state, upload_state, bunny_error, width, height, moderation_state, moderation_note"
       )
       .eq("artist_id", artist.id)
       .order("created_at", { ascending: false }),
@@ -73,6 +73,8 @@ export default async function ArtistProfileEditPage() {
     bunny_guid: v.bunny_guid,
     playback_state: v.playback_state,
     upload_state: v.upload_state,
+    moderation_state: v.moderation_state,
+    moderation_note: v.moderation_note,
     bunny_error: v.bunny_error,
     width: v.width,
     height: v.height,

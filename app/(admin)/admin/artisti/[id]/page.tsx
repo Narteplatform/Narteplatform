@@ -3,6 +3,10 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { BreadcrumbTitle } from "@/components/layout/BreadcrumbTitle";
+import {
+  ArtistMediaPanel,
+  type ArtistMediaItem,
+} from "@/components/admin/ArtistMediaPanel";
 import type { ArtistTier } from "@/lib/supabase/types";
 import { ArtistStatusToggle } from "@/components/admin/ArtistStatusToggle";
 import { ArtistEditForm } from "@/components/admin/ArtistEditForm";
@@ -42,7 +46,13 @@ export default async function AdminArtistDetailPage({
 }) {
   const { id } = await params;
   const supabase = createAdminClient();
-  const [{ data: artist }, { data: genresData }, { data: confirmedBookings }] = await Promise.all([
+  const [
+    { data: artist },
+    { data: genresData },
+    { data: confirmedBookings },
+    { data: videoRows },
+    { data: submissionRows },
+  ] = await Promise.all([
     supabase.from("artists").select("*").eq("id", id).single(),
     supabase.from("genres").select("name").order("order_index"),
     supabase
@@ -53,6 +63,19 @@ export default async function AdminArtistDetailPage({
       .eq("artist_id", id)
       .eq("status", "confermata")
       .order("event_date", { ascending: true }),
+    supabase
+      .from("artist_videos")
+      .select("id, url, title, provider, bunny_guid, moderation_state, moderation_note, created_at")
+      .eq("artist_id", id)
+      .order("created_at", { ascending: false }),
+    // Foto e tracce ancora in coda: sono proprio quelle che il profilo pubblico
+    // non mostra, quindi le uniche che qui servono davvero.
+    supabase
+      .from("artist_media_submissions")
+      .select("id, target, media_kind, url, title, status, review_note, created_at")
+      .eq("artist_id", id)
+      .in("status", ["pending", "rejected"])
+      .order("created_at", { ascending: false }),
   ]);
   if (!artist) notFound();
 
@@ -75,6 +98,69 @@ export default async function AdminArtistDetailPage({
     venues: { name: string; city: string | null } | null;
   };
   const bookings = (confirmedBookings ?? []) as unknown as ConfirmedRow[];
+
+  // Tutto ciò che l'artista ha caricato, pubblicato o in attesa, in un elenco
+  // solo: la foto profilo, la galleria, le tracce, i video.
+  const mediaItems: ArtistMediaItem[] = [
+    ...(artist.cover_image
+      ? [
+          {
+            id: "cover",
+            kind: "image" as const,
+            url: artist.cover_image,
+            label: "Foto profilo",
+            title: null,
+          },
+        ]
+      : []),
+    ...((artist.gallery ?? []) as string[]).map((url, i) => ({
+      id: `gallery-${i}`,
+      kind: "image" as const,
+      url,
+      label: "Galleria",
+      title: null,
+    })),
+    ...((Array.isArray(artist.audio_files) ? artist.audio_files : []) as {
+      url: string;
+      title?: string;
+    }[]).map((t, i) => ({
+      id: `audio-${i}`,
+      kind: "audio" as const,
+      url: t.url,
+      label: "Audio",
+      title: t.title ?? null,
+    })),
+    ...(videoRows ?? []).map((v) => ({
+      id: v.id as string,
+      kind: "video" as const,
+      url: v.url as string | null,
+      bunnyGuid: v.bunny_guid as string | null,
+      provider: v.provider as string | null,
+      label: "Video",
+      title: v.title as string | null,
+      moderation:
+        v.moderation_state === "pending"
+          ? ("pending" as const)
+          : v.moderation_state === "rejected"
+            ? ("rejected" as const)
+            : null,
+      moderationNote: v.moderation_note as string | null,
+    })),
+    ...(submissionRows ?? []).map((r) => ({
+      id: r.id as string,
+      kind: (r.media_kind === "audio" ? "audio" : "image") as "audio" | "image",
+      url: r.url as string,
+      label:
+        r.target === "cover_image"
+          ? "Foto profilo"
+          : r.target === "audio_files"
+            ? "Audio"
+            : "Galleria",
+      title: r.title as string | null,
+      moderation: r.status as "pending" | "rejected",
+      moderationNote: r.review_note as string | null,
+    })),
+  ];
 
   return (
     <div className="space-y-6">
@@ -147,6 +233,15 @@ export default async function AdminArtistDetailPage({
             progetto inedito) è visibile e modificabile solo per i tier <strong>pro</strong> e{" "}
             <strong>max</strong>.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Contenuti caricati</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <ArtistMediaPanel artistName={artist.stage_name} items={mediaItems} />
         </CardContent>
       </Card>
 

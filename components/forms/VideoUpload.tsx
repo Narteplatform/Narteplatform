@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { Upload, Film, Loader2, AlertTriangle, Trash2 } from "lucide-react";
+import { Upload, Film, Loader2, AlertTriangle, Trash2, Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Input";
 import {
@@ -41,6 +41,9 @@ export type ArtistVideoItem = {
   bunny_error: string | null;
   width: number | null;
   height: number | null;
+  /** Stato editoriale: 'pending' finché il superadmin non approva. */
+  moderation_state?: string | null;
+  moderation_note?: string | null;
 };
 
 type SignResponse =
@@ -463,13 +466,48 @@ function VideoCard({
     setTimeout(() => setSaved(false), 1800);
   }
 
+  // Stato editoriale, che non c'entra con la conversione: un video può essere
+  // pronto tecnicamente e non ancora approvato, o viceversa.
+  const inAttesa = video.moderation_state === "pending";
+  const rifiutato = video.moderation_state === "rejected";
+
   return (
-    <div className="overflow-hidden rounded-md border border-border bg-background">
+    <div
+      className={`overflow-hidden rounded-md border bg-background ${
+        rifiutato ? "border-red-300" : inAttesa ? "border-amber-300" : "border-border"
+      }`}
+    >
       <div
-        className="w-full overflow-hidden bg-black"
+        className="relative w-full overflow-hidden bg-black"
         style={{ aspectRatio: videoAspectRatio(video.width, video.height) }}
       >
         <VideoPreview video={video} />
+
+        {/* La targhetta sta sopra l'anteprima: senza, un video caricato e non
+            ancora approvato sembra identico a uno già pubblicato, e l'artista
+            non capisce perché sul suo profilo non compaia. */}
+        {(inAttesa || rifiutato) && (
+          <span
+            className={`absolute inset-x-0 bottom-0 flex items-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold text-white ${
+              rifiutato ? "bg-red-600/90" : "bg-amber-600/90"
+            }`}
+          >
+            {rifiutato ? (
+              <>
+                <AlertTriangle className="size-3.5 shrink-0" aria-hidden />
+                <span className="truncate">
+                  Non approvato
+                  {video.moderation_note ? ` — ${video.moderation_note}` : ""}
+                </span>
+              </>
+            ) : (
+              <>
+                <Clock3 className="size-3.5 shrink-0" aria-hidden />
+                <span className="truncate">In attesa di approvazione</span>
+              </>
+            )}
+          </span>
+        )}
       </div>
       <div className="space-y-2 border-t border-border p-3">
         <label className="sr-only" htmlFor={`titolo-${video.id}`}>

@@ -4,7 +4,7 @@ import * as React from "react";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ExternalLink, X } from "lucide-react";
+import { Check, ExternalLink, Maximize2, Music4, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -18,6 +18,7 @@ import {
   rejectArtistVideo,
   rejectMediaSubmission,
 } from "@/app/(admin)/admin/moderazione/_actions";
+import { MediaModerationViewer } from "@/components/admin/MediaModerationViewer";
 import type { ModerationArtistGroup, ModerationItem } from "@/lib/media/moderation-queries";
 
 const TARGET_LABEL: Record<"gallery" | "audio_files" | "cover_image", string> = {
@@ -48,12 +49,20 @@ function itemLabel(item: ModerationItem): string {
  * ma senza questo l'admin vedrebbe ancora per un istante bottoni disabilitati
  * su un contenuto già evaso.
  */
-function MediaItemCard({ item, onDone }: { item: ModerationItem; onDone: () => void }) {
+function MediaItemCard({
+  item,
+  onDone,
+  onOpen,
+}: {
+  item: ModerationItem;
+  onDone: (item: ModerationItem) => void;
+  /** Apre il contenuto a schermo intero: nella tessera è ritagliato. */
+  onOpen: () => void;
+}) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const [note, setNote] = useState("");
-  const [decided, setDecided] = useState(false);
 
   function approve() {
     setError(null);
@@ -66,8 +75,7 @@ function MediaItemCard({ item, onDone }: { item: ModerationItem; onDone: () => v
         setError(res.error);
         return;
       }
-      setDecided(true);
-      onDone();
+      onDone(item);
     });
   }
 
@@ -82,12 +90,9 @@ function MediaItemCard({ item, onDone }: { item: ModerationItem; onDone: () => v
         setError(res.error);
         return;
       }
-      setDecided(true);
-      onDone();
+      onDone(item);
     });
   }
-
-  if (decided) return null;
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
@@ -96,7 +101,22 @@ function MediaItemCard({ item, onDone }: { item: ModerationItem; onDone: () => v
         <span className="text-[11px] text-muted-foreground">{formatDate(item.created_at)}</span>
       </div>
 
-      <div className="flex aspect-video items-center justify-center overflow-hidden rounded-md bg-muted">
+      {/* L'anteprima apre il contenuto intero: qui è ritagliata a 16:9 e su una
+          foto verticale se ne vede solo la fascia centrale. */}
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Apri ${itemLabel(item).toLowerCase()} a schermo intero`}
+        className="group relative flex aspect-video items-center justify-center overflow-hidden rounded-md bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azzurro"
+      >
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100"
+        >
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-notte">
+            <Maximize2 className="size-3.5" /> Apri
+          </span>
+        </span>
         {item.kind === "submission" && item.media_kind === "image" && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -106,11 +126,18 @@ function MediaItemCard({ item, onDone }: { item: ModerationItem; onDone: () => v
           />
         )}
         {item.kind === "submission" && item.media_kind === "audio" && (
-          <audio controls src={item.url} className="w-full px-2" />
+          // Niente <audio controls> qui dentro: i suoi comandi non sarebbero
+          // raggiungibili dentro un bottone. Si ascolta a schermo intero.
+          <span className="flex flex-col items-center gap-1 text-muted-foreground">
+            <Music4 className="size-7" aria-hidden />
+            <span className="text-xs">Traccia audio</span>
+          </span>
         )}
         {item.kind === "video" && item.provider === "supabase" && item.url && (
+          // Senza `controls`: si guarda a schermo intero, dove i comandi
+          // funzionano. Qui serve solo il primo fotogramma come anteprima.
           // eslint-disable-next-line jsx-a11y/media-has-caption
-          <video controls src={item.url} className="h-full w-full object-cover" />
+          <video src={item.url} preload="metadata" className="h-full w-full object-cover" />
         )}
         {item.kind === "video" && item.provider !== "supabase" && item.bunny_guid && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -125,7 +152,7 @@ function MediaItemCard({ item, onDone }: { item: ModerationItem; onDone: () => v
             Anteprima non ancora disponibile (transcodifica in corso)
           </span>
         )}
-      </div>
+      </button>
 
       {item.title && <p className="truncate text-xs text-muted-foreground">{item.title}</p>}
 
@@ -195,6 +222,73 @@ export function MediaModerationCard({ group }: { group: ModerationArtistGroup })
   const [pendingAll, startAll] = useTransition();
   const [allError, setAllError] = useState<string | null>(null);
 
+  // Contenuto aperto a schermo intero, per posizione nell'elenco del gruppo.
+  const [aperto, setAperto] = useState<number | null>(null);
+  const [decisione, startDecisione] = useTransition();
+
+  // Ciò che è già stato approvato o rifiutato in questa schermata.
+  //
+  // Il router.refresh() che segue ogni decisione impiega qualche centinaio di
+  // millisecondi: senza questo elenco, in quel frattempo il contenuto appena
+  // evaso resterebbe lì con i pulsanti ancora attivi. Le azioni sono comunque
+  // idempotenti — la funzione SQL lavora solo sulle righe ancora "pending" — ma
+  // vedere riapparire qualcosa che si è appena approvato fa dubitare di averlo
+  // fatto davvero.
+  const [decisi, setDecisi] = useState<Set<string>>(new Set());
+  const chiave = (i: ModerationItem) => `${i.kind}-${i.id}`;
+  const visibili = group.items.filter((i) => !decisi.has(chiave(i)));
+
+  function segnaDeciso(item: ModerationItem) {
+    setDecisi((prev) => new Set(prev).add(chiave(item)));
+  }
+
+  /**
+   * Dopo una decisione presa a schermo intero non si chiude: si passa al
+   * contenuto seguente. Chi modera una coda la scorre, e richiudere ogni volta
+   * per riaprire la tessera dopo sarebbe un giro inutile a ogni foto.
+   * Sull'ultimo si chiude, perché non c'è un seguente.
+   */
+  function dopoLaDecisione(posizione: number) {
+    // Tolto l'elemento corrente, in quella stessa posizione scorre il seguente.
+    if (posizione < visibili.length - 1) setAperto(posizione);
+    else setAperto(null);
+    router.refresh();
+  }
+
+  function approvaDalVisualizzatore(item: ModerationItem) {
+    const posizione = aperto ?? 0;
+    startDecisione(async () => {
+      const res =
+        item.kind === "submission"
+          ? await approveMediaSubmission(item.id)
+          : await approveArtistVideo(item.id);
+      if (!res.ok) {
+        setAllError(res.error);
+        setAperto(null);
+        return;
+      }
+      segnaDeciso(item);
+      dopoLaDecisione(posizione);
+    });
+  }
+
+  function rifiutaDalVisualizzatore(item: ModerationItem, note: string) {
+    const posizione = aperto ?? 0;
+    startDecisione(async () => {
+      const res =
+        item.kind === "submission"
+          ? await rejectMediaSubmission(item.id, note)
+          : await rejectArtistVideo(item.id, note);
+      if (!res.ok) {
+        setAllError(res.error);
+        setAperto(null);
+        return;
+      }
+      segnaDeciso(item);
+      dopoLaDecisione(posizione);
+    });
+  }
+
   function approveAll() {
     setAllError(null);
     startAll(async () => {
@@ -207,7 +301,8 @@ export function MediaModerationCard({ group }: { group: ModerationArtistGroup })
     });
   }
 
-  function onItemDone() {
+  function onItemDone(item: ModerationItem) {
+    segnaDeciso(item);
     router.refresh();
   }
 
@@ -219,9 +314,9 @@ export function MediaModerationCard({ group }: { group: ModerationArtistGroup })
           <div>
             <CardTitle className="text-base">{group.artist.stage_name}</CardTitle>
             <p className="text-xs text-muted-foreground">
-              {group.items.length === 1
+              {visibili.length === 1
                 ? "1 contenuto in attesa"
-                : `${group.items.length} contenuti in attesa`}
+                : `${visibili.length} contenuti in attesa`}
             </p>
           </div>
         </div>
@@ -248,11 +343,27 @@ export function MediaModerationCard({ group }: { group: ModerationArtistGroup })
           </p>
         )}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {group.items.map((item) => (
-            <MediaItemCard key={`${item.kind}-${item.id}`} item={item} onDone={onItemDone} />
+          {visibili.map((item, i) => (
+            <MediaItemCard
+              key={`${item.kind}-${item.id}`}
+              item={item}
+              onDone={onItemDone}
+              onOpen={() => setAperto(i)}
+            />
           ))}
         </div>
       </CardContent>
+
+      <MediaModerationViewer
+        items={visibili}
+        index={aperto}
+        artistName={group.artist.stage_name}
+        onClose={() => setAperto(null)}
+        onNavigate={setAperto}
+        onApprove={approvaDalVisualizzatore}
+        onReject={rifiutaDalVisualizzatore}
+        busy={decisione}
+      />
     </Card>
   );
 }

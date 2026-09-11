@@ -47,6 +47,14 @@ export function VideoBlock({
           : { tone: "todo", label: "Nessun video" }
       }
     >
+      {/* Detto una volta sopra l'elenco: sulle singole tessere c'è la targhetta,
+          ma chi carica il primo video deve sapere in anticipo che non comparirà
+          subito, altrimenti lo ricarica pensando che non sia andato. */}
+      <p className="mb-3 text-sm text-muted-foreground">
+        I video caricati vengono controllati dallo staff N&rsquo;arte prima di
+        comparire sul tuo profilo pubblico: finché sono in attesa li vedi solo tu,
+        contrassegnati qui sotto.
+      </p>
       <VideoUpload artistId={artist.id} initialVideos={initialVideos} videoMax={videoMax} />
     </ProfileSection>
   );
