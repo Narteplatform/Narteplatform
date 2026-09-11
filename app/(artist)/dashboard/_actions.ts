@@ -225,13 +225,15 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
   // isMediaModerationEnabled per il perché.
   const moderationOn = await isMediaModerationEnabled(admin);
 
-  // Quanti contenuti sono già in coda: servono a contare il tetto di piano su
-  // pubblicati + in attesa.
+  // Cosa c'è già in coda per questo artista. Serve a due cose: contare il tetto
+  // di piano su pubblicati + in attesa, e non riaccodare una seconda volta un
+  // contenuto già in attesa.
   const pendingCounts = { gallery: 0, audio_files: 0 };
-  if (moderationOn && ("gallery" in patch || "audio_files" in patch)) {
+  const giaInCoda = new Set<string>();
+  if (moderationOn) {
     const { data: queued, error: queuedErr } = await admin
       .from("artist_media_submissions")
-      .select("target")
+      .select("target, url")
       .eq("artist_id", artistId)
       .eq("status", "pending");
     if (queuedErr) {
@@ -243,6 +245,7 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
     for (const row of queued ?? []) {
       if (row.target === "gallery") pendingCounts.gallery += 1;
       else if (row.target === "audio_files") pendingCounts.audio_files += 1;
+      giaInCoda.add(`${row.target}|${row.url}`);
     }
   }
 
@@ -353,18 +356,24 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
   // sul profilo fallisce non si mette in attesa di approvazione un contenuto
   // legato a un salvataggio che non è mai avvenuto.
   //
-  // `ignoreDuplicates` per l'indice parziale su (artist_id, target, url): due
-  // clic su Salva non devono produrre due richieste per la stessa foto.
+  // NIENTE UPSERT, e il motivo è preciso: l'indice che impedisce i doppioni è
+  // PARZIALE (`where status = 'pending'`), e Postgres non sa dedurre un indice
+  // parziale da `on conflict (colonne)` — risponde 42P10, "no unique or
+  // exclusion constraint matching". Era questo a far fallire l'accodamento, con
+  // il salvataggio che riusciva e la richiesta che non partiva. Si filtra
+  // invece su quello che è già in attesa, letto poco sopra, e si inserisce solo
+  // il resto. Stessa soluzione già adottata per gli slot del calendario.
   let queued = 0;
-  if (pending.length > 0) {
-    const { error: subErr, count } = await admin
+  const daAccodare = pending.filter(
+    (p) => !giaInCoda.has(`${p.target}|${p.url}`)
+  );
+  if (daAccodare.length > 0) {
+    const { error: subErr } = await admin
       .from("artist_media_submissions")
-      .upsert(pending, {
-        onConflict: "artist_id,target,url",
-        ignoreDuplicates: true,
-        count: "exact",
-      });
-    if (subErr) {
+      .insert(daAccodare);
+    // 23505 = l'indice parziale ha fermato un doppione arrivato nel frattempo
+    // da un altro salvataggio: il contenuto È in coda, che è quanto serve.
+    if (subErr && subErr.code !== "23505") {
       logger.error("[updateArtistProfileSection] coda media fallita", {
         artistId,
         section,
@@ -376,7 +385,7 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
           "Le modifiche sono state salvate, ma i contenuti nuovi non sono stati messi in coda per l'approvazione. Riprova a caricarli.",
       };
     }
-    queued = count ?? pending.length;
+    queued = daAccodare.length;
 
     // La mail al superadmin non deve mai far fallire un salvataggio riuscito:
     // se Brevo è giù, il contenuto è comunque in coda e visibile in /admin.
