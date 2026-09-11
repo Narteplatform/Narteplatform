@@ -1,8 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { streamEmbedUrl } from "@/lib/storage/bunny/urls";
+import { ChevronLeft, ChevronRight, ExternalLink, Loader2, X } from "lucide-react";
+import {
+  streamEmbedUrl,
+  streamMp4Url,
+  streamOriginalUrl,
+} from "@/lib/storage/bunny/urls";
 
 /**
  * Il contenuto a schermo intero, senza ritagli.
@@ -25,6 +29,12 @@ export type MediaViewerItem = {
   bunnyGuid?: string | null;
   /** 'bunny' | 'supabase'. Decide se serve il player incorporato. */
   provider?: string | null;
+  /**
+   * Stato della conversione su Bunny. Finché è 'processing' il player non ha
+   * nulla da riprodurre — poster, HLS e mp4 rispondono 404 — mentre il file
+   * originale è già servibile.
+   */
+  playbackState?: string | null;
   title?: string | null;
   /** Etichetta mostrata in alto, es. "Galleria" o "Video". */
   label?: string;
@@ -187,17 +197,7 @@ function Contenuto({ item }: { item: MediaViewerItem }) {
   }
 
   if (item.provider !== "supabase" && item.bunnyGuid) {
-    return (
-      <div className="aspect-video w-full max-w-4xl bg-black">
-        <iframe
-          src={streamEmbedUrl(item.bunnyGuid, { muted: true, playsinline: true })}
-          title={item.title ?? "Video"}
-          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-          allowFullScreen
-          className="h-full w-full border-0"
-        />
-      </div>
-    );
+    return <VideoBunny item={item} guid={item.bunnyGuid} />;
   }
 
   if (item.url) {
@@ -209,8 +209,80 @@ function Contenuto({ item }: { item: MediaViewerItem }) {
 
   return (
     <p className="max-w-sm text-center text-sm text-white/80">
-      Il video è ancora in lavorazione: l&rsquo;anteprima comparirà a conversione
-      finita.
+      Questo contenuto non ha un file associato.
     </p>
+  );
+}
+
+/**
+ * Un video su Bunny Stream, in due situazioni diverse.
+ *
+ * CONVERSIONE IN CORSO. Finché Bunny sta lavorando il file, il player
+ * incorporato non ha niente da mostrare: poster, HLS e mp4 rispondono tutti
+ * 404, e il riquadro resta nero. È il motivo per cui un video appena caricato
+ * risultava invisibile in moderazione pur essendo arrivato benissimo. Il file
+ * ORIGINALE però è già lì e si riproduce: si usa quello, esattamente come fa
+ * già la dashboard dell'artista.
+ *
+ * CONVERSIONE FINITA. Si monta il player di Bunny, che sceglie da sé la qualità
+ * giusta. Sotto resta comunque il collegamento diretto al file: se il player
+ * non parte — un browser troppo vecchio, una rete aziendale che blocca gli
+ * iframe di terze parti, un'estensione — il video si guarda lo stesso, e chi
+ * deve approvarlo non resta bloccato.
+ */
+function VideoBunny({ item, guid }: { item: MediaViewerItem; guid: string }) {
+  const inConversione = item.playbackState === "processing";
+  const [originaleNonDisponibile, setOriginaleNonDisponibile] = React.useState(false);
+  const diretto = inConversione ? streamOriginalUrl(guid) : streamMp4Url(guid, "720p");
+
+  return (
+    <div className="flex w-full max-w-4xl flex-col items-center gap-3">
+      {inConversione ? (
+        originaleNonDisponibile ? (
+          <p className="max-w-sm text-center text-sm text-white/80">
+            Bunny sta ancora convertendo questo video e il file originale non è
+            raggiungibile. Riprova fra qualche minuto.
+          </p>
+        ) : (
+          // eslint-disable-next-line jsx-a11y/media-has-caption
+          <video
+            controls
+            src={streamOriginalUrl(guid)}
+            preload="metadata"
+            playsInline
+            className="max-h-[65vh] max-w-full bg-black"
+            onError={() => setOriginaleNonDisponibile(true)}
+          />
+        )
+      ) : (
+        <div className="aspect-video w-full bg-black">
+          <iframe
+            src={streamEmbedUrl(guid, { muted: true, playsinline: true })}
+            title={item.title ?? "Video"}
+            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+            allowFullScreen
+            className="h-full w-full border-0"
+          />
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
+        {inConversione && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-white/80">
+            <Loader2 className="size-3 animate-spin" aria-hidden />
+            Conversione in corso: stai guardando il file originale
+          </span>
+        )}
+        <a
+          href={diretto}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-white underline-offset-2 transition hover:bg-white/20 hover:underline"
+        >
+          <ExternalLink className="size-3" aria-hidden />
+          Apri il video in una nuova scheda
+        </a>
+      </div>
+    </div>
   );
 }

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Clock3, Images, Maximize2, Music4, Video, XCircle } from "lucide-react";
 import { VideoPoster } from "@/components/media/VideoPoster";
+import { streamOriginalUrl } from "@/lib/storage/bunny/urls";
 import { MediaViewer, type MediaViewerItem } from "@/components/media/MediaViewer";
 
 /**
@@ -120,6 +121,18 @@ function Anteprima({ item }: { item: ArtistMediaItem }) {
 
   if (item.kind === "video") {
     if (item.provider !== "supabase" && item.bunnyGuid) {
+      // In conversione il poster non esiste ancora (404): si usa l'originale,
+      // che Bunny serve da subito.
+      if (item.playbackState === "processing") {
+        // eslint-disable-next-line jsx-a11y/media-has-caption
+        return (
+          <video
+            src={streamOriginalUrl(item.bunnyGuid)}
+            preload="metadata"
+            className="h-full w-full object-cover"
+          />
+        );
+      }
       return <VideoPoster guid={item.bunnyGuid} className="h-full w-full object-cover" />;
     }
     if (item.url) {

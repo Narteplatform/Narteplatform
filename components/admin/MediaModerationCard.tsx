@@ -10,7 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
-import { streamThumbnailUrl } from "@/lib/storage/bunny/urls";
+import { streamOriginalUrl, streamThumbnailUrl } from "@/lib/storage/bunny/urls";
 import {
   approveAllForArtist,
   approveArtistVideo,
@@ -139,17 +139,30 @@ function MediaItemCard({
           // eslint-disable-next-line jsx-a11y/media-has-caption
           <video src={item.url} preload="metadata" className="h-full w-full object-cover" />
         )}
-        {item.kind === "video" && item.provider !== "supabase" && item.bunny_guid && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={streamThumbnailUrl(item.bunny_guid)}
-            alt={item.title ?? "Anteprima video"}
-            className="h-full w-full object-cover"
-          />
-        )}
+        {item.kind === "video" &&
+          item.provider !== "supabase" &&
+          item.bunny_guid &&
+          (item.playback_state === "processing" ? (
+            // Durante la conversione il poster di Bunny risponde 404: il
+            // riquadro resterebbe vuoto e il video sembrerebbe non arrivato.
+            // Il file originale invece c'è già.
+            // eslint-disable-next-line jsx-a11y/media-has-caption
+            <video
+              src={streamOriginalUrl(item.bunny_guid)}
+              preload="metadata"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={streamThumbnailUrl(item.bunny_guid)}
+              alt={item.title ?? "Anteprima video"}
+              className="h-full w-full object-cover"
+            />
+          ))}
         {item.kind === "video" && item.provider !== "supabase" && !item.bunny_guid && (
           <span className="px-2 text-center text-xs text-muted-foreground">
-            Anteprima non ancora disponibile (transcodifica in corso)
+            Caricamento non ancora completato
           </span>
         )}
       </button>

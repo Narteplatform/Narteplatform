@@ -31,6 +31,7 @@ function toViewerItem(item: ModerationItem): MediaViewerItem {
       url: item.url,
       bunnyGuid: item.bunny_guid,
       provider: item.provider,
+      playbackState: item.playback_state,
       title: item.title,
       label: "Video",
     };

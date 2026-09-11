@@ -36,6 +36,8 @@ export type ModerationVideoItem = {
   title: string | null;
   provider: string;
   bunny_guid: string | null;
+  /** Stato della conversione Bunny: serve a sapere se il player può partire. */
+  playback_state: string | null;
   created_at: string;
 };
 
@@ -78,6 +80,8 @@ type VideoRow = {
   title: string | null;
   provider: string;
   bunny_guid: string | null;
+  /** Stato della conversione Bunny: serve a sapere se il player può partire. */
+  playback_state: string | null;
   created_at: string;
   artists: ModerationArtistRef | null;
 };
@@ -108,7 +112,7 @@ export async function getModerationQueue(): Promise<ModerationQueue> {
     admin
       .from("artist_videos")
       .select(
-        "id, artist_id, url, storage_path, title, provider, bunny_guid, created_at, artists(id, stage_name, slug, cover_image)"
+        "id, artist_id, url, storage_path, title, provider, bunny_guid, playback_state, created_at, artists(id, stage_name, slug, cover_image)"
       )
       .eq("moderation_state", "pending")
       .order("created_at", { ascending: true }),
@@ -167,6 +171,7 @@ export async function getModerationQueue(): Promise<ModerationQueue> {
       title: v.title,
       provider: v.provider,
       bunny_guid: v.bunny_guid,
+      playback_state: v.playback_state,
       created_at: v.created_at,
     });
   }

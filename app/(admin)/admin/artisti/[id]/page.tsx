@@ -65,7 +65,7 @@ export default async function AdminArtistDetailPage({
       .order("event_date", { ascending: true }),
     supabase
       .from("artist_videos")
-      .select("id, url, title, provider, bunny_guid, moderation_state, moderation_note, created_at")
+      .select("id, url, title, provider, bunny_guid, playback_state, moderation_state, moderation_note, created_at")
       .eq("artist_id", id)
       .order("created_at", { ascending: false }),
     // Foto e tracce ancora in coda: sono proprio quelle che il profilo pubblico
@@ -136,6 +136,7 @@ export default async function AdminArtistDetailPage({
       url: v.url as string | null,
       bunnyGuid: v.bunny_guid as string | null,
       provider: v.provider as string | null,
+      playbackState: v.playback_state as string | null,
       label: "Video",
       title: v.title as string | null,
       moderation:
