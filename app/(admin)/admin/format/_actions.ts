@@ -1,26 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { formatSchema, type FormatInput } from "@/lib/validators/schemas";
 import { slugify } from "@/lib/utils";
+import { requireAdminPageAccess } from "@/lib/admin/permissions";
 
-async function ensureAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false as const, error: "Non autorizzato" };
-  const admin = createAdminClient();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (profile?.role !== "superadmin")
-    return { ok: false as const, error: "Permessi insufficienti" };
-  return { ok: true as const, user, db: admin };
-}
+// Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
+// controllo del ruolo superadmin non bastava, perché un superadmin delegato
+// senza accesso alla pagina "Format" poteva comunque invocare queste azioni.
+// requireAdminPageAccess applica anche il permesso per-pagina (chiave dedicata
+// "format" in ADMIN_PAGE_KEYS, distinta da "eventi").
 
 function revalidateAll(slug?: string) {
   revalidatePath("/admin/format");
@@ -29,8 +19,7 @@ function revalidateAll(slug?: string) {
 }
 
 export async function createFormat(input: FormatInput) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("format");
   const parsed = formatSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
   const data = parsed.data;
@@ -38,7 +27,8 @@ export async function createFormat(input: FormatInput) {
   const slugBase = data.slug?.trim() || slugify(data.title);
   const slug = `${slugBase}-${Date.now().toString(36).slice(-4)}`;
 
-  const { error } = await ctx.db.from("formats").insert({
+  const admin = createAdminClient();
+  const { error } = await admin.from("formats").insert({
     title: data.title,
     slug,
     tagline: data.tagline ?? null,
@@ -59,13 +49,13 @@ export async function createFormat(input: FormatInput) {
 }
 
 export async function updateFormat(id: string, input: FormatInput) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("format");
   const parsed = formatSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
   const data = parsed.data;
 
-  const { error } = await ctx.db
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("formats")
     .update({
       title: data.title,
@@ -88,9 +78,9 @@ export async function updateFormat(id: string, input: FormatInput) {
 }
 
 export async function deleteFormat(id: string) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
-  const { error } = await ctx.db.from("formats").delete().eq("id", id);
+  await requireAdminPageAccess("format");
+  const admin = createAdminClient();
+  const { error } = await admin.from("formats").delete().eq("id", id);
   if (error) return { ok: false as const, error: error.message };
   revalidateAll();
   return { ok: true as const };

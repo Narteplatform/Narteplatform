@@ -1,27 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { eventSchema, type EventInput } from "@/lib/validators/schemas";
 import { slugify } from "@/lib/utils";
+import { requireAdminPageAccess } from "@/lib/admin/permissions";
 
-async function ensureAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false as const, error: "Non autorizzato" };
-  // Lettura ruolo via service-role per evitare ricorsione policy.
-  const admin = createAdminClient();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (profile?.role !== "superadmin")
-    return { ok: false as const, error: "Permessi insufficienti" };
-  return { ok: true as const, user, db: admin };
-}
+// Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
+// controllo del ruolo superadmin non bastava, perché un superadmin delegato
+// senza accesso alla pagina "Eventi" poteva comunque invocare queste azioni
+// (es. deleteEvent). requireAdminPageAccess applica anche il permesso per-pagina.
 
 function revalidateAll() {
   revalidatePath("/admin/eventi");
@@ -30,8 +18,7 @@ function revalidateAll() {
 }
 
 export async function createEvent(input: EventInput) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  const user = await requireAdminPageAccess("eventi");
   const parsed = eventSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
   const data = parsed.data;
@@ -39,7 +26,8 @@ export async function createEvent(input: EventInput) {
   const slugBase = slugify(data.title);
   const slug = `${slugBase}-${Date.now().toString(36).slice(-4)}`;
 
-  const { error } = await ctx.db.from("events").insert({
+  const admin = createAdminClient();
+  const { error } = await admin.from("events").insert({
     title: data.title,
     slug,
     category: data.category,
@@ -54,7 +42,7 @@ export async function createEvent(input: EventInput) {
     ticket_url: data.ticketUrl ?? null,
     description: data.description ?? null,
     featured: data.featured ?? false,
-    created_by: ctx.user.id,
+    created_by: user.id,
   });
   if (error) return { ok: false as const, error: error.message };
   revalidateAll();
@@ -62,13 +50,13 @@ export async function createEvent(input: EventInput) {
 }
 
 export async function updateEvent(id: string, input: EventInput) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("eventi");
   const parsed = eventSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
   const data = parsed.data;
 
-  const { error } = await ctx.db
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("events")
     .update({
       title: data.title,
@@ -92,9 +80,9 @@ export async function updateEvent(id: string, input: EventInput) {
 }
 
 export async function deleteEvent(id: string) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
-  const { error } = await ctx.db.from("events").delete().eq("id", id);
+  await requireAdminPageAccess("eventi");
+  const admin = createAdminClient();
+  const { error } = await admin.from("events").delete().eq("id", id);
   if (error) return { ok: false as const, error: error.message };
   revalidateAll();
   return { ok: true as const };

@@ -342,6 +342,25 @@ export async function respondToOffer(
 
 type AttachmentKind = "image" | "document" | "voice";
 
+/**
+ * L'URL punta a uno storage nostro?
+ *
+ * Gli allegati di chat salgono su Supabase Storage (lib/chat/upload.ts); si
+ * accetta anche la CDN di bunny.net, che è l'altra destinazione legittima dei
+ * media della piattaforma. Qualunque altro host è rifiutato.
+ */
+function isNostroStorage(raw: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (u.protocol !== "https:") return false;
+  const host = u.hostname.toLowerCase();
+  return host.endsWith(".supabase.co") || host.endsWith(".b-cdn.net");
+}
+
 export async function sendAttachment(input: {
   conversation_id: string;
   kind: AttachmentKind;
@@ -357,7 +376,12 @@ export async function sendAttachment(input: {
   if (typeof input.size !== "number" || input.size <= 0 || input.size > 25 * 1024 * 1024) {
     return { ok: false, error: "File troppo grande (max 25 MB)" };
   }
-  if (!input.url || !input.url.startsWith("http")) {
+  // L'allegato deve stare sul NOSTRO storage. Con il solo controllo "inizia per
+  // http" una parte della conversazione poteva far puntare l'allegato a un
+  // dominio qualsiasi: l'altra vedeva un'anteprima che sembra nostra ma la
+  // richiesta la serve un terzo, che così sa quando e da dove è stata aperta —
+  // e può cambiare il contenuto dopo l'invio.
+  if (!input.url || !isNostroStorage(input.url)) {
     return { ok: false, error: "URL allegato non valido" };
   }
   const supabase = await createClient();

@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { leadSchema, type LeadInput } from "@/lib/validators/schemas";
 import { sendEmail } from "@/lib/emails/send";
 import BookingRequestEmail from "@/lib/emails/templates/BookingRequestEmail";
+import { allowByIp, LIMITI } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
 import {
   artistInterestSchema,
@@ -42,6 +43,13 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
       return publicError(rid, "Dati non validi");
     }
     const data = parsed.data;
+
+    // Freno: modulo pubblico che manda una mail all'indirizzo reale dell'artista
+    // con testo scelto da chi invia. Senza limite è un relay di molestie dal
+    // nostro mittente verificato, oltre che un modo per riempire la tabella.
+    if (!(await allowByIp(LIMITI.booking))) {
+      return publicError(rid, "Troppe richieste. Riprova fra un'ora.");
+    }
 
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error("[booking]", rid, "step=env-missing", "SUPABASE_SERVICE_ROLE_KEY");

@@ -198,6 +198,24 @@ export const passwordChangeSchema = z.object({
 });
 export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
 
+/**
+ * Cambio password dall'area account, cioè da chi è già dentro.
+ *
+ * Schema separato da `passwordChangeSchema` di proposito: quello serve anche al
+ * reset via link email, dove la password attuale non si può chiedere — chi la
+ * sta reimpostando è proprio chi l'ha dimenticata. Qui invece si può, e si deve:
+ * senza, una sessione rubata (un portatile lasciato aperto, un cookie esfiltrato)
+ * si trasforma in perdita definitiva dell'account, perché l'attaccante cambia la
+ * password e il proprietario resta fuori.
+ */
+export const passwordChangeAuthenticatedSchema = z.object({
+  currentPassword: z.string().min(1, "Inserisci la password attuale").max(72),
+  password: z.string().min(8, "Almeno 8 caratteri").max(72),
+});
+export type PasswordChangeAuthenticatedInput = z.infer<
+  typeof passwordChangeAuthenticatedSchema
+>;
+
 export const authSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, "Almeno 8 caratteri"),

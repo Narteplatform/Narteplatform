@@ -17,6 +17,51 @@ funzionalità nuove restano spente finché non si arriva in fondo.
 
 ---
 
+---
+
+# ⛔ PRIORITÀ ASSOLUTA — le due migration di sicurezza
+
+Queste due **vengono prima di tutto il resto** e non dipendono dalle altre.
+
+## `0056_security_hardening.sql` — falla critica
+
+**Il problema, verificato sul database di produzione con un test che non ha
+scritto nulla:** RLS è *row-level*, non *column-level*. La policy
+`profiles update self` decide quale RIGA puoi modificare, non quali COLONNE — e
+fra le colonne di `profiles` c'è `role`.
+
+Chiunque si registri (la registrazione è aperta) poteva prendere la anon key —
+che è pubblica, sta nel bundle del browser — e fare:
+
+```
+PATCH /rest/v1/profiles?id=eq.<proprio_id>   {"role":"superadmin"}
+```
+
+diventando amministratore della piattaforma: accesso a `/admin`, a tutte le
+chat, a tutti i lead, cancellazione artisti, override dei piani.
+
+È **lo stesso identico buco** che `0038_artists_column_hardening.sql` aveva già
+diagnosticato e chiuso per `artists`. La stessa medicina non era mai stata data
+a `profiles`, né a `booking_requests` (dove permetteva a un organizzatore di
+confermare una data da solo, bloccando il calendario dell'artista senza il suo
+consenso).
+
+Dopo l'esecuzione, la verifica scritta in fondo al file deve restituire **zero
+righe**.
+
+## `0057_storage_hardening.sql` — allegati di chat enumerabili
+
+Il bucket `chat-attachments` concedeva `select` ad `anon`: un anonimo poteva
+elencare e scaricare **tutti i file di tutte le trattative**. Stessa cosa per i
+video di candidatura, che sono dati personali. E su `application-videos`
+chiunque poteva scrivere file arbitrari senza passare da nessun controllo.
+
+**Va applicata ora perché i due bucket sono ancora vuoti**: zero file da
+migrare, zero rischio di far sparire qualcosa. Fra un mese, con le trattative
+in corso, sarebbe un'operazione ben più delicata.
+
+---
+
 ## Prerequisito: il lotto già in attesa
 
 Queste erano già da applicare prima di questo lavoro e **vengono per prime**:
@@ -125,6 +170,9 @@ deve rompersi nella finestra fra il rilascio del codice e l'esecuzione qui).
 ## Riepilogo dell'ordine
 
 ```
+0056 → [verifica grant]        ← PRIMA DI TUTTO: falla critica
+0057                            ← finché i bucket sono vuoti
+
 0048 → 0049 → 0050 → [verifica] → 0050_validate
      → 0051 → [verifica] → [validate constraint] → 0052
      → [conteggio duplicati] → 0053 → 0054

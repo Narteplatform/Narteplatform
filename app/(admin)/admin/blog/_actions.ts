@@ -3,25 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { formatContentToSeoHtml, deriveFullSeo, stripUnsafe } from "@/lib/blog/seo-format";
+import { requireAdminPageAccess } from "@/lib/admin/permissions";
 
-async function ensureSuperadmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false as const, error: "Non autorizzato" };
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "superadmin") {
-    return { ok: false as const, error: "Permessi insufficienti" };
-  }
-  return { ok: true as const };
-}
+// Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
+// controllo del ruolo superadmin non bastava, perché un superadmin delegato
+// senza accesso alla pagina "Blog" poteva comunque invocare queste azioni.
+// requireAdminPageAccess applica anche il permesso per-pagina.
 
 function slugify(input: string) {
   return input
@@ -88,8 +77,7 @@ function buildSeoFields(d: {
 }
 
 export async function createBlogPost(input: BlogPostInput) {
-  const ctx = await ensureSuperadmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("blog");
   const parsed = postSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
@@ -135,8 +123,7 @@ export async function createBlogPost(input: BlogPostInput) {
 }
 
 export async function updateBlogPost(id: string, input: BlogPostInput) {
-  const ctx = await ensureSuperadmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("blog");
   const parsed = postSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
@@ -205,8 +192,7 @@ export async function updateBlogPost(id: string, input: BlogPostInput) {
 }
 
 export async function deleteBlogPost(id: string) {
-  const ctx = await ensureSuperadmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("blog");
   const admin = createAdminClient();
   const { data: existing } = await admin
     .from("blog_posts")

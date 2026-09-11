@@ -6,6 +6,12 @@ import { bookingRequestPublicSchema } from "@/app/(user)/artisti/[slug]/_schema"
 import { sendEmail } from "@/lib/emails/send";
 import BookingRequestEmail from "@/lib/emails/templates/BookingRequestEmail";
 import type { Database } from "@/lib/supabase/types";
+import {
+  allowByIp,
+  checkRateLimit,
+  emailFingerprint,
+  LIMITI,
+} from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -56,6 +62,35 @@ export async function POST(req: Request) {
       return fail(rid, "zod", issues || "Dati non validi");
     }
     const data = parsed.data;
+
+    // --- Freno: questa rotta è pubblica E CREA ACCOUNT (più sotto, per gli
+    // anonimi, con admin.auth.admin.createUser). Senza limite uno script crea
+    // utenti confermati a ripetizione, gonfia la MAU di Supabase e riempie il
+    // database di produzione; e ogni richiesta fa partire una mail all'indirizzo
+    // reale dell'artista, con testo scelto da chi invia — cioè un relay di
+    // molestie dal nostro mittente verificato.
+    // Doppia soglia: per indirizzo IP e per email, perché cambiare l'una senza
+    // l'altra è banale.
+    const freno = await allowByIp(LIMITI.booking);
+    if (!freno) {
+      return fail(rid, "rate-limit", "Troppe richieste. Riprova fra un'ora.", 429);
+    }
+    // L'email arriva solo da chi non è ancora registrato — ed è proprio il ramo
+    // che crea l'account, quindi quello da frenare più stretto.
+    if (data.email) {
+      const frenoEmail = await checkRateLimit(
+        { ...LIMITI.booking, scope: "booking-email" },
+        emailFingerprint(data.email)
+      );
+      if (!frenoEmail) {
+        return fail(
+          rid,
+          "rate-limit",
+          "Troppe richieste da questo indirizzo. Riprova fra un'ora.",
+          429
+        );
+      }
+    }
 
     // --- Env check
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {

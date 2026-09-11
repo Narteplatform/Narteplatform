@@ -1,20 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
+import { requireAdminPageAccess } from "@/lib/admin/permissions";
 
-async function ensureAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false as const, error: "Non autorizzato" };
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "superadmin") return { ok: false as const, error: "Permessi insufficienti" };
-  return { ok: true as const };
-}
+// Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
+// controllo del ruolo superadmin non bastava, perché un superadmin delegato
+// senza accesso alla pagina "Generi" poteva comunque invocare queste azioni.
+// requireAdminPageAccess applica anche il permesso per-pagina.
 
 export async function createGenre(name: string) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("generi");
   const trimmed = name.trim();
   if (trimmed.length < 2 || trimmed.length > 60) {
     return { ok: false as const, error: "Nome non valido (2-60 caratteri)" };
@@ -34,8 +30,7 @@ export async function createGenre(name: string) {
 }
 
 export async function deleteGenre(id: string) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("generi");
   const admin = createAdminClient();
   const { error } = await admin.from("genres").delete().eq("id", id);
   if (error) return { ok: false as const, error: error.message };

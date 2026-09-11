@@ -11,7 +11,7 @@ import {
 } from "@/app/account/_actions";
 
 type ProfileValues = { fullName: string; avatarUrl: string };
-type PasswordValues = { password: string };
+type PasswordValues = { currentPassword: string; password: string };
 
 export function AccountSettingsForm({
   email,
@@ -25,7 +25,9 @@ export function AccountSettingsForm({
 
   const profileForm = useForm<ProfileValues>({ defaultValues: defaults });
   const { control: profileControl } = profileForm;
-  const pwForm = useForm<PasswordValues>({ defaultValues: { password: "" } });
+  const pwForm = useForm<PasswordValues>({
+    defaultValues: { currentPassword: "", password: "" },
+  });
 
   async function onSaveProfile(values: ProfileValues) {
     setProfileMsg(null);
@@ -42,9 +44,12 @@ export function AccountSettingsForm({
 
   async function onChangePw(values: PasswordValues) {
     setPwMsg(null);
-    const res = await changePassword({ password: values.password });
+    const res = await changePassword({
+      currentPassword: values.currentPassword,
+      password: values.password,
+    });
     if (res.ok) {
-      pwForm.reset({ password: "" });
+      pwForm.reset({ currentPassword: "", password: "" });
       setPwMsg({ type: "ok", text: "Password aggiornata." });
     } else {
       setPwMsg({ type: "err", text: res.error ?? "Errore" });
@@ -101,6 +106,16 @@ export function AccountSettingsForm({
           </p>
         </header>
         <form onSubmit={pwForm.handleSubmit(onChangePw)} className="space-y-4">
+          {/* La password attuale si chiede per davvero: senza, chi mette le mani
+              su una sessione aperta può cambiarla e chiudere fuori il
+              proprietario dell'account. */}
+          <Field label="Password attuale">
+            <Input
+              type="password"
+              autoComplete="current-password"
+              {...pwForm.register("currentPassword", { required: true })}
+            />
+          </Field>
           <Field label="Nuova password">
             <Input type="password" autoComplete="new-password" {...pwForm.register("password", { required: true, minLength: 8 })} />
           </Field>

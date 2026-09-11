@@ -9,15 +9,14 @@ import { getSiteUrl } from "@/lib/site-url";
 import { artistSchema, type ArtistInput } from "@/lib/validators/schemas";
 import { sendEmail, sendBookingCancelledByAdminEmail } from "@/lib/emails/send";
 import ArtistApprovedEmail from "@/lib/emails/templates/ArtistApprovedEmail";
+import { requireAdminPageAccess } from "@/lib/admin/permissions";
 
-async function ensureAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false as const, error: "Non autorizzato" };
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "superadmin") return { ok: false as const, error: "Permessi insufficienti" };
-  return { ok: true as const, user };
-}
+// Una Server Action è un endpoint HTTP raggiungibile direttamente (non solo
+// dalla UI): il solo controllo `role === "superadmin"` non bastava, perché un
+// superadmin delegato a cui la pagina "Artisti" è nascosta poteva comunque
+// invocare queste azioni (es. regalarsi un piano Max via updateArtistTier).
+// requireAdminPageAccess verifica anche il permesso per-pagina e, se manca,
+// ridireziona — lo stesso comportamento già applicato alla pagina.
 
 const tierOverrideSchema = z.object({
   tier: z.enum(["free", "pro", "max"]),
@@ -42,8 +41,7 @@ export type TierOverrideInput = z.infer<typeof tierOverrideSchema>;
  * cancella la subscription su Stripe.
  */
 export async function updateArtistTier(artistId: string, input: TierOverrideInput) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("artisti");
 
   const parsed = tierOverrideSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Dati override non validi" };
@@ -65,8 +63,7 @@ export async function updateArtistTier(artistId: string, input: TierOverrideInpu
 }
 
 export async function approveApplication(applicationId: string) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("artisti");
 
   const admin = createAdminClient();
   const { data: app, error: appErr } = await admin
@@ -155,8 +152,7 @@ export async function approveApplication(applicationId: string) {
 }
 
 export async function rejectApplication(applicationId: string) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("artisti");
   const admin = createAdminClient();
   const { error } = await admin
     .from("artist_applications")
@@ -168,8 +164,7 @@ export async function rejectApplication(applicationId: string) {
 }
 
 export async function updateArtistStatus(artistId: string, status: "pending" | "approved" | "rejected") {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("artisti");
   const admin = createAdminClient();
   const { error } = await admin.from("artists").update({ status }).eq("id", artistId);
   if (error) return { ok: false as const, error: error.message };
@@ -179,8 +174,7 @@ export async function updateArtistStatus(artistId: string, status: "pending" | "
 }
 
 export async function updateArtist(artistId: string, input: ArtistInput) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("artisti");
   const parsed = artistSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
   const data = parsed.data;
@@ -219,8 +213,7 @@ export async function updateArtist(artistId: string, input: ArtistInput) {
 }
 
 export async function deleteArtist(artistId: string) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("artisti");
   const admin = createAdminClient();
   const { error } = await admin.from("artists").delete().eq("id", artistId);
   if (error) return { ok: false as const, error: error.message };
@@ -236,8 +229,7 @@ const cancelBookingSchema = z.object({
 });
 
 export async function cancelConfirmedBooking(input: { bookingId: string; reason: string }) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("artisti");
 
   const parsed = cancelBookingSchema.safeParse(input);
   if (!parsed.success) {
@@ -275,8 +267,7 @@ export async function createArtistManual(input: {
   bio?: string;
   cover_image?: string;
 }) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("artisti");
   const admin = createAdminClient();
 
   let userId: string | null = null;

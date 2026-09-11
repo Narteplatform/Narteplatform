@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { artistInterestSchema } from "@/app/(user)/artisti/[slug]/_schema";
+import { allowByIp, LIMITI } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -31,6 +32,16 @@ export async function POST(req: Request) {
     }
 
     logger.debug("booking-api", rid, "step=start");
+
+    // Freno: modulo pubblico che manda una mail all'indirizzo reale dell'artista
+    // con testo scelto da chi invia. Senza limite è un relay di molestie dal
+    // nostro mittente verificato, oltre che un modo per riempire la tabella.
+    if (!(await allowByIp(LIMITI.booking))) {
+      return NextResponse.json(
+        { ok: false, rid, error: "Troppe richieste. Riprova fra un'ora." },
+        { status: 429 }
+      );
+    }
 
     const parsed = artistInterestSchema.safeParse(body);
     if (!parsed.success) {
