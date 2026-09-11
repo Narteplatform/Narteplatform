@@ -13,6 +13,7 @@ import {
   Phone,
   Settings,
   Shapes,
+  ShieldCheck,
   Star,
   Tags,
   User,
@@ -128,6 +129,8 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     newLeads,
     contactedLeads,
     closedLeads,
+    pendingMediaSubmissions,
+    pendingModerationVideos,
   ] = await Promise.all([
     safe(admin.from("events").select("id", { count: "exact", head: true }).gte("date", today)),
     safe(admin.from("events").select("id", { count: "exact", head: true }).lt("date", today)),
@@ -136,10 +139,15 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "new").in("source", ["format", "contatti"])),
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "contacted")),
     safe(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "closed")),
+    // Coda di moderazione media (0051): submission pending + video pending,
+    // sommati nel badge di navigazione.
+    safe(admin.from("artist_media_submissions").select("id", { count: "exact", head: true }).eq("status", "pending")),
+    safe(admin.from("artist_videos").select("id", { count: "exact", head: true }).eq("moderation_state", "pending")),
   ]);
 
   const c = (n: { count: number | null } | null) => n?.count ?? 0;
   const newLeadsCount = c(newLeads);
+  const pendingModerationCount = c(pendingMediaSubmissions) + c(pendingModerationVideos);
   const activeChats = await safe(getActiveConversationsCountSuperadmin()).then((v) => v ?? 0);
   const pendingConsultations = await safe(
     admin
@@ -235,6 +243,15 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       label: "Feedback",
       icon: <Star className="size-4" />,
     },
+    moderazione: {
+      href: "/admin/moderazione",
+      label: "Moderazione",
+      icon: <ShieldCheck className="size-4" />,
+      badge:
+        pendingModerationCount > 0
+          ? { label: String(pendingModerationCount), variant: "accent" }
+          : undefined,
+    },
     impostazioni: opts?.isRoot
       ? {
           href: "/admin/impostazioni",
@@ -262,6 +279,7 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     "blog",
     "email",
     "feedback",
+    "moderazione",
     "impostazioni",
     "profilo",
   ];
@@ -505,6 +523,7 @@ function defaultAdminNav(): NavSection[] {
     { href: "/admin/artisti", label: "Artisti", icon: <Users className="size-4" /> },
     { href: "/admin/generi", label: "Generi", icon: <Tags className="size-4" /> },
     { href: "/admin/leads", label: "Lead", icon: <Inbox className="size-4" /> },
+    { href: "/admin/moderazione", label: "Moderazione", icon: <ShieldCheck className="size-4" /> },
     { href: "/admin/profilo", label: "Profilo", icon: <UserCog className="size-4" /> },
   ];
 }

@@ -7,6 +7,14 @@ Le migration qui elencate vanno eseguite **nell'ordine indicato**. Fermarsi a
 metà non rompe niente — sono tutte additive tranne dove segnalato — ma le
 funzionalità nuove restano spente finché non si arriva in fondo.
 
+> **L'ordine fra codice e migration non conta.** Il codice rileva da solo se lo
+> schema è già stato aggiornato: finché la `0051` non è applicata, i video si
+> vedono tutti e i media si pubblicano senza approvazione, cioè esattamente
+> come prima. Nessuna finestra in cui i contenuti spariscono dai profili o in
+> cui un artista non riesce a salvare. Vale anche per la `0055`: finché manca,
+> il pulsante di blocco in chat non ha dove scrivere e la chat funziona come
+> oggi.
+
 ---
 
 ## Prerequisito: il lotto già in attesa

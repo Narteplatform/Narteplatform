@@ -131,3 +131,45 @@ export function toCoverSubmission(
     title: null,
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Convivenza con il database non ancora migrato
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * La moderazione è attiva su questo database?
+ *
+ * Le migration di questo progetto si applicano A MANO dal SQL editor, quindi
+ * esiste sempre una finestra in cui il codice nuovo gira su uno schema vecchio.
+ * Senza questo controllo quella finestra sarebbe un disastro silenzioso:
+ *
+ *  - il profilo pubblico filtra su `artist_videos.moderation_state`, che non
+ *    esisterebbe: la query fallisce e TUTTI i video sparirebbero dai profili;
+ *  - il salvataggio del profilo scriverebbe la sola intersezione in `gallery`
+ *    per poi non riuscire ad accodare le aggiunte, che andrebbero perse.
+ *
+ * Finché la 0051 non è applicata la piattaforma si comporta esattamente come
+ * prima: si pubblica senza approvazione. È lo stesso criterio già adottato qui
+ * per il limitatore di frequenza e per Bunny — la funzione nuova resta spenta,
+ * niente si rompe e niente sparisce.
+ *
+ * Il risultato si memorizza per la durata dell'istanza: è una proprietà dello
+ * schema, non un dato, e cambia una volta sola nella vita del progetto. Un esito
+ * negativo NON si memorizza, così l'applicazione della migration ha effetto
+ * senza bisogno di un nuovo deploy.
+ */
+let moderationReady: boolean | null = null;
+
+export async function isMediaModerationEnabled(
+  admin: { from: (t: string) => { select: (c: string) => { limit: (n: number) => PromiseLike<{ error: { message: string } | null }> } } }
+): Promise<boolean> {
+  if (moderationReady === true) return true;
+
+  const { error } = await admin.from("artist_media_submissions").select("id").limit(1);
+  if (error) {
+    moderationReady = null;
+    return false;
+  }
+  moderationReady = true;
+  return true;
+}

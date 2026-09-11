@@ -366,15 +366,34 @@ export default async function ArtistDetailPage({
   // Video caricati dall'artista dal proprio dispositivo (artist_videos).
   let uploadedVideos: PlayableArtistVideo[] = [];
   try {
-    const { data, error } = await supabase
+    const SELECT =
+      "id, url, title, provider, bunny_guid, playback_state, mime_type, width, height";
+
+    // Solo i video approvati dal superadmin. Il filtro è sicuro perché la
+    // colonna nasce con default 'approved' (migration 0051): i video già online
+    // restano online, in attesa finiscono solo i nuovi caricamenti.
+    let { data, error } = await supabase
       .from("artist_videos")
-      .select("id, url, title, provider, bunny_guid, playback_state, mime_type, width, height")
+      .select(SELECT)
       .eq("artist_id", artist.id)
-      // Solo i video approvati dal superadmin. Il filtro è sicuro perché la
-      // colonna nasce con default 'approved' (migration 0051): i video già
-      // online restano online, in attesa entrano solo i nuovi caricamenti.
       .eq("moderation_state", "approved")
       .order("created_at", { ascending: false });
+
+    // Ripiego per il database non ancora migrato. Le migration qui si applicano
+    // a mano, quindi esiste una finestra in cui questo codice gira su uno
+    // schema che la colonna non ce l'ha: la query fallisce in blocco e senza
+    // questo secondo tentativo il profilo mostrerebbe ZERO video, che è
+    // esattamente il modo in cui un contenuto sparisce senza che nessuno se ne
+    // accorga. Finché la 0051 non è applicata si vedono tutti, come prima.
+    if (error) {
+      const retry = await supabase
+        .from("artist_videos")
+        .select(SELECT)
+        .eq("artist_id", artist.id)
+        .order("created_at", { ascending: false });
+      data = retry.data;
+      error = retry.error;
+    }
     // L'errore veniva ingoiato da un `data ?? []`: un guasto transitorio
     // nascondeva TUTTI i video di un artista, in modo indistinguibile da
     // "non ne ha". Non è distruttivo, ma va almeno detto.

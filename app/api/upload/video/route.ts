@@ -139,31 +139,47 @@ export async function POST(request: Request) {
     //    occupato nell'istante in cui viene concesso;
     //  - un upload abbandonato resta visibile e cancellabile invece di essere
     //    un video fantasma che paghiamo su Bunny senza saperlo.
-    const { data: row, error } = await admin
+    const baseRow = {
+      artist_id: artistId,
+      provider: "bunny",
+      bunny_guid: guid,
+      bunny_status: 0,
+      playback_state: "processing",
+      upload_state: "pending",
+      title,
+      size_bytes: size,
+      mime_type: contentType,
+      width: typeof body.width === "number" && body.width > 0 ? body.width : null,
+      height: typeof body.height === "number" && body.height > 0 ? body.height : null,
+      url: null,
+      storage_path: null,
+    };
+
+    // `moderation_state` è editoriale, non tecnico: il video esiste e si
+    // trascodifica, ma non compare sul profilo finché il superadmin non lo
+    // approva. Le due cose sono indipendenti — il webhook Bunny non tocca
+    // questa colonna — e vanno tenute separate: un video pronto può essere
+    // ancora da approvare, e viceversa.
+    let { data: row, error } = await admin
       .from("artist_videos")
-      .insert({
-        artist_id: artistId,
-        provider: "bunny",
-        bunny_guid: guid,
-        bunny_status: 0,
-        playback_state: "processing",
-        upload_state: "pending",
-        // Editoriale, non tecnico: il video esiste e si trascodifica, ma non
-        // compare sul profilo pubblico finché il superadmin non lo approva.
-        // Le due cose sono indipendenti — il webhook Bunny non tocca questa
-        // colonna — e vanno tenute separate: un video pronto può essere
-        // ancora da approvare, e viceversa.
-        moderation_state: "pending",
-        title,
-        size_bytes: size,
-        mime_type: contentType,
-        width: typeof body.width === "number" && body.width > 0 ? body.width : null,
-        height: typeof body.height === "number" && body.height > 0 ? body.height : null,
-        url: null,
-        storage_path: null,
-      })
+      .insert({ ...baseRow, moderation_state: "pending" })
       .select("id")
       .single();
+
+    // Ripiego per il database non ancora migrato: le migration qui si applicano
+    // a mano, e senza questo secondo tentativo il caricamento video sarebbe
+    // rotto per tutti nella finestra fra il rilascio del codice e l'esecuzione
+    // della 0051. Finché la colonna non c'è si pubblica senza approvazione,
+    // come si è sempre fatto.
+    if (error) {
+      const retry = await admin
+        .from("artist_videos")
+        .insert(baseRow)
+        .select("id")
+        .single();
+      row = retry.data;
+      error = retry.error;
+    }
 
     if (error || !row) {
       // Senza questa pulizia resterebbe su Bunny un video che nessuna riga

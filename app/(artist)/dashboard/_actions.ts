@@ -18,6 +18,7 @@ import {
   toAudioSubmissions,
   toCoverSubmission,
   toGallerySubmissions,
+  isMediaModerationEnabled,
   type PendingSubmission,
 } from "@/lib/media/moderation";
 import { notifyMediaSubmission } from "@/lib/media/notify";
@@ -218,10 +219,16 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
     user_id?: string | null;
   };
 
+  // La moderazione esiste su questo database? Se la migration 0051 non è ancora
+  // stata applicata a mano, tutto il blocco qui sotto va saltato e il
+  // salvataggio si comporta come prima: si pubblica senza approvazione. Vedi
+  // isMediaModerationEnabled per il perché.
+  const moderationOn = await isMediaModerationEnabled(admin);
+
   // Quanti contenuti sono già in coda: servono a contare il tetto di piano su
   // pubblicati + in attesa.
   const pendingCounts = { gallery: 0, audio_files: 0 };
-  if ("gallery" in patch || "audio_files" in patch) {
+  if (moderationOn && ("gallery" in patch || "audio_files" in patch)) {
     const { data: queued, error: queuedErr } = await admin
       .from("artist_media_submissions")
       .select("target")
@@ -256,7 +263,7 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
   // lib/media/moderation.ts.
   const pending: PendingSubmission[] = [];
 
-  if ("gallery" in patch) {
+  if (moderationOn && "gallery" in patch) {
     const { kept, added } = diffGallery(
       current?.gallery ?? [],
       (patch.gallery as string[]) ?? []
@@ -275,7 +282,7 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
     pending.push(...toGallerySubmissions(artistId, user.id, added));
   }
 
-  if ("audio_files" in patch) {
+  if (moderationOn && "audio_files" in patch) {
     const { kept, added } = diffAudio(
       current?.audio_files ?? [],
       (patch.audio_files as AudioTrack[]) ?? []
@@ -292,12 +299,34 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
     pending.push(...toAudioSubmissions(artistId, user.id, added));
   }
 
+  // Senza moderazione i tetti di piano vanno comunque controllati, sul payload
+  // intero come si è sempre fatto.
+  if (!moderationOn && "gallery" in patch) {
+    const check = checkCollectionLimit(
+      ent,
+      "gallery",
+      current.gallery?.length ?? 0,
+      ((patch.gallery as string[]) ?? []).length
+    );
+    if (!check.ok) return { ok: false as const, error: check.error };
+  }
+  if (!moderationOn && "audio_files" in patch) {
+    const check = checkCollectionLimit(
+      ent,
+      "audio",
+      current.audio_files?.length ?? 0,
+      ((patch.audio_files as AudioTrack[]) ?? []).length
+    );
+    if (!check.ok) return { ok: false as const, error: check.error };
+  }
+
   // La foto del profilo è uno scalare: qui non c'è un delta da calcolare, o è
   // cambiata o no. Se è cambiata la chiave esce dal patch e quella vecchia
   // resta online finché non arriva l'approvazione: meglio una foto superata di
   // un profilo senza volto.
   let coverPending: string | null = null;
   if (
+    moderationOn &&
     "cover_image" in patch &&
     typeof patch.cover_image === "string" &&
     patch.cover_image.length > 0 &&
@@ -586,26 +615,38 @@ export async function addArtistVideo(input: {
   const videoCheck = checkCollectionLimit(ent, "video", count ?? 0, (count ?? 0) + 1);
   if (!videoCheck.ok) return { ok: false as const, error: videoCheck.error };
 
-  const { data, error } = await admin
+  const baseRow = {
+    artist_id: input.artist_id,
+    provider: "supabase",
+    // Un file su Supabase Storage è riproducibile nell'istante in cui
+    // l'upload finisce: non c'è nessuna elaborazione da attendere.
+    playback_state: "ready",
+    upload_state: "uploaded",
+    url: input.url,
+    storage_path: input.storage_path,
+    size_bytes: input.size_bytes,
+    mime_type: input.mime_type,
+    duration_ms: input.duration_ms ?? null,
+    title: input.title ?? null,
+  };
+
+  // Riproducibile subito, pubblicabile solo dopo l'approvazione. Il secondo
+  // tentativo serve al database non ancora migrato: senza, il caricamento
+  // sarebbe rotto fra il rilascio del codice e l'esecuzione a mano della 0051.
+  let { data, error } = await admin
     .from("artist_videos")
-    .insert({
-      artist_id: input.artist_id,
-      provider: "supabase",
-      // Un file su Supabase Storage è riproducibile nell'istante in cui
-      // l'upload finisce: non c'è nessuna elaborazione da attendere.
-      playback_state: "ready",
-      upload_state: "uploaded",
-      // Riproducibile subito, pubblicabile solo dopo l'approvazione.
-      moderation_state: "pending",
-      url: input.url,
-      storage_path: input.storage_path,
-      size_bytes: input.size_bytes,
-      mime_type: input.mime_type,
-      duration_ms: input.duration_ms ?? null,
-      title: input.title ?? null,
-    })
+    .insert({ ...baseRow, moderation_state: "pending" })
     .select(ARTIST_VIDEO_SELECT)
     .single();
+  if (error) {
+    const retry = await admin
+      .from("artist_videos")
+      .insert(baseRow)
+      .select(ARTIST_VIDEO_SELECT)
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
   if (error || !data) return { ok: false as const, error: error?.message ?? "Errore" };
   await revalidateArtistVideoPaths(input.artist_id);
   return { ok: true as const, video: data };

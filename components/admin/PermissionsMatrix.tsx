@@ -20,6 +20,7 @@ const PAGE_LABELS: Record<AdminPageKey, string> = {
   profilo: "Profilo",
   impostazioni: "Impostazioni",
   feedback: "Feedback",
+  moderazione: "Moderazione",
 };
 
 const FORCED: AdminPageKey[] = ["overview", "profilo"];
