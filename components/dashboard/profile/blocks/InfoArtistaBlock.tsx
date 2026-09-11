@@ -10,6 +10,7 @@ import { ProfileSection } from "@/components/dashboard/profile/ProfileSection";
 import { Field, ProfileSectionForm } from "@/components/dashboard/profile/ProfileSectionForm";
 import { useProfileSectionForm } from "@/components/dashboard/profile/useProfileSectionForm";
 import { PendingMediaNotice } from "@/components/dashboard/PendingMediaNotice";
+import { PendingMediaThumbs } from "@/components/dashboard/PendingMediaThumbs";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
 import {
   infoSectionSchema,
@@ -186,6 +187,10 @@ export function InfoArtistaBlock({
               />
             )}
           />
+          {/* La foto profilo in attesa: quella vecchia resta online — meglio
+              una copertina superata di un profilo senza volto — e la nuova si
+              vede qui finché non viene approvata. */}
+          <PendingMediaThumbs items={pendingCover} />
         </div>
       </ProfileSectionForm>
     </ProfileSection>

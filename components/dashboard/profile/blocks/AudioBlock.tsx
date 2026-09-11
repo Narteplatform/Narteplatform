@@ -8,6 +8,7 @@ import { ProfileSection } from "@/components/dashboard/profile/ProfileSection";
 import { ProfileSectionForm } from "@/components/dashboard/profile/ProfileSectionForm";
 import { useProfileSectionForm } from "@/components/dashboard/profile/useProfileSectionForm";
 import { PendingMediaNotice } from "@/components/dashboard/PendingMediaNotice";
+import { PendingMediaThumbs } from "@/components/dashboard/PendingMediaThumbs";
 import {
   audioSectionSchema,
   toAudioPayload,
@@ -78,6 +79,10 @@ export function AudioBlock({
             />
           )}
         />
+        {/* Anche le tracce in attesa restano visibili: dopo il salvataggio
+            escono dall'elenco pubblicato e senza questa fila sembrerebbero
+            non essere mai state caricate. */}
+        <PendingMediaThumbs items={pendingMedia} kind="audio" />
       </ProfileSectionForm>
     </ProfileSection>
   );

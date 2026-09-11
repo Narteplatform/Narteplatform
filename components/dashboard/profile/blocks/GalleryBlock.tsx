@@ -8,6 +8,7 @@ import { ProfileSection } from "@/components/dashboard/profile/ProfileSection";
 import { ProfileSectionForm } from "@/components/dashboard/profile/ProfileSectionForm";
 import { useProfileSectionForm } from "@/components/dashboard/profile/useProfileSectionForm";
 import { PendingMediaNotice } from "@/components/dashboard/PendingMediaNotice";
+import { PendingMediaThumbs } from "@/components/dashboard/PendingMediaThumbs";
 import {
   gallerySectionSchema,
   toGalleryPayload,
@@ -77,6 +78,10 @@ export function GalleryBlock({
             />
           )}
         />
+        {/* Le foto in attesa restano visibili qui sotto, nella stessa griglia:
+            dopo il salvataggio escono dalla galleria pubblicata, e senza questa
+            fila sembrerebbero perdute. */}
+        <PendingMediaThumbs items={pendingMedia} />
       </ProfileSectionForm>
     </ProfileSection>
   );
