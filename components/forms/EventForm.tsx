@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/Button";
 import { ImageUpload } from "@/components/forms/ImageUpload";
 import { GalleryUpload } from "@/components/forms/GalleryUpload";
 import { EventVideoUpload } from "@/components/forms/EventVideoUpload";
-import { createEvent, updateEvent } from "@/app/(admin)/admin/eventi/_actions";
+import {
+  attachEventVideo,
+  createEvent,
+  updateEvent,
+} from "@/app/(admin)/admin/eventi/_actions";
 
 const CATEGORIES = [
   "music", "clubs", "festivals", "dating", "culture", "art", "food", "workshops", "comedy", "business",
@@ -159,6 +163,17 @@ export function EventForm({
               value={field.value ?? []}
               onChange={field.onChange}
               kind="event-video"
+              // Su un evento già salvato il video si collega subito, come per
+              // l'artista: così non va perso se il modulo non passa la
+              // validazione per un altro campo.
+              onPersist={
+                eventId
+                  ? async (url) => {
+                      const res = await attachEventVideo(eventId, url);
+                      return res.ok ? { ok: true } : { ok: false, error: res.error };
+                    }
+                  : undefined
+              }
             />
           )}
         />

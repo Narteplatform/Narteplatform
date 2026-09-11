@@ -18,6 +18,14 @@ type Props = {
   onChange: (next: string[]) => void;
   kind?: "event-video" | "format-video";
   label?: string;
+  /**
+   * Salva il video appena caricato, senza aspettare il Salva del modulo.
+   *
+   * Presente solo quando la cosa a cui il video appartiene esiste già: su un
+   * evento nuovo non c'è ancora un id a cui collegarlo, e lì il salvataggio
+   * resta quello del modulo.
+   */
+  onPersist?: (url: string) => Promise<{ ok: boolean; error?: string }>;
 };
 
 type SignResponse =
@@ -64,6 +72,7 @@ export function EventVideoUpload({
   onChange,
   kind = "event-video",
   label = "Video da dispositivo",
+  onPersist,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -135,7 +144,21 @@ export function EventVideoUpload({
           setError(`"${file.name}" supera il limite di dimensione.`);
           continue;
         }
-        next.push(await uploadOne(file));
+        const url = await uploadOne(file);
+        next.push(url);
+
+        // Salvato subito, come fa la dashboard artista. Se non riesce non si
+        // interrompe il caricamento: il video è comunque nel modulo e il Salva
+        // lo persiste — ma chi sta lavorando deve sapere che per ora è appeso.
+        if (onPersist) {
+          const res = await onPersist(url);
+          if (!res.ok) {
+            setError(
+              res.error ??
+                "Video caricato, ma non ancora collegato all'evento: premi Salva per confermarlo."
+            );
+          }
+        }
       }
       onChange(next);
     } catch (err) {
@@ -157,6 +180,13 @@ export function EventVideoUpload({
   return (
     <div className="space-y-3">
       <Label>{label}</Label>
+
+      {!onPersist && (
+        <p className="text-xs text-muted-foreground">
+          I video caricati qui vengono collegati quando salvi. Su un contenuto
+          nuovo è inevitabile: prima deve esistere, poi può avere dei video.
+        </p>
+      )}
 
       {value.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

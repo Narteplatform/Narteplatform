@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/Button";
 import { ImageUpload } from "@/components/forms/ImageUpload";
 import { GalleryUpload } from "@/components/forms/GalleryUpload";
 import { EventVideoUpload } from "@/components/forms/EventVideoUpload";
-import { createFormat, updateFormat } from "@/app/(admin)/admin/format/_actions";
+import {
+  attachFormatVideo,
+  createFormat,
+  updateFormat,
+} from "@/app/(admin)/admin/format/_actions";
 
 type Values = {
   title: string;
@@ -148,6 +152,14 @@ export function FormatForm({
               value={field.value ?? []}
               onChange={field.onChange}
               kind="format-video"
+              onPersist={
+                formatId
+                  ? async (url) => {
+                      const res = await attachFormatVideo(formatId, url);
+                      return res.ok ? { ok: true } : { ok: false, error: res.error };
+                    }
+                  : undefined
+              }
             />
           )}
         />

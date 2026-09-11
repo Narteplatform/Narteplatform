@@ -85,3 +85,37 @@ export async function deleteFormat(id: string) {
   revalidateAll();
   return { ok: true as const };
 }
+
+
+/**
+ * Collega un video a un format già salvato, subito dopo il caricamento.
+ * Stesso motivo dell'omologa per gli eventi: senza, il video resta appeso nel
+ * modulo e un errore di validazione su un altro campo lo fa perdere.
+ * Si APPENDE leggendo l'array corrente, non si riscrive da fuori.
+ */
+export async function attachFormatVideo(formatId: string, url: string) {
+  await requireAdminPageAccess("format");
+  if (!formatId || !url) return { ok: false as const, error: "Parametri mancanti" };
+
+  const admin = createAdminClient();
+  const { data: format, error: letturaErr } = await admin
+    .from("formats")
+    .select("videos")
+    .eq("id", formatId)
+    .maybeSingle();
+  if (letturaErr) return { ok: false as const, error: letturaErr.message };
+  if (!format) return { ok: false as const, error: "Format non trovato" };
+
+  const attuali = Array.isArray(format.videos) ? (format.videos as string[]) : [];
+  if (attuali.includes(url)) return { ok: true as const };
+
+  const { error } = await admin
+    .from("formats")
+    .update({ videos: [...attuali, url] })
+    .eq("id", formatId);
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/admin/format");
+  revalidatePath("/format");
+  return { ok: true as const };
+}
