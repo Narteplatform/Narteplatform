@@ -53,6 +53,40 @@ async function resolveConversationRole(
 }
 
 /**
+ * Blocco per persona dentro UNA conversazione (Feature C, moderazione
+ * superadmin): legge blocked_user_id, non sender_role, perché lo stesso
+ * artista può restare bloccato solo con questo organizzatore e libero con
+ * tutti gli altri. Va controllato PRIMA del paywall (assertArtistCanChat):
+ * un artista bloccato deve vedere il vero motivo, non l'invito a fare
+ * upgrade al piano.
+ *
+ * Fail-open sulla sola UX in caso di errore di lettura: la tabella
+ * conversation_blocks (migration 0055) è additiva e può non esistere ancora
+ * sul DB finché non viene applicata a mano da SQL editor. Finché manca, il
+ * blocco semplicemente non ha effetto — esattamente come una tabella vuota —
+ * invece di rompere l'invio dei messaggi per tutti.
+ */
+async function assertNotBlocked(conversationId: string, userId: string): Promise<ActionResult | null> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("conversation_blocks")
+    .select("reason")
+    .eq("conversation_id", conversationId)
+    .eq("blocked_user_id", userId)
+    .is("lifted_at", null)
+    .maybeSingle();
+  if (error) {
+    console.error("[chat] verifica blocco conversazione:", error);
+    return null;
+  }
+  if (!data) return null;
+  return {
+    ok: false,
+    error: `Un amministratore ti ha bloccato in questa conversazione. Motivo: ${data.reason}`,
+  };
+}
+
+/**
  * Paywall della chat: la negoziazione è inclusa nei piani Pro e Max.
  *
  * Vale SOLO per l'artista. L'organizzatore non paga mai e non va mai fermato:
@@ -136,6 +170,8 @@ export async function sendMessage(input: ChatMessageInput): Promise<ActionResult
     user.id,
   );
   if (!isParty || !role) return { ok: false, error: "Non sei parte di questa conversazione" };
+  const blocked = await assertNotBlocked(parsed.data.conversation_id, user.id);
+  if (blocked) return blocked;
   const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
   if (gate) return gate;
 
@@ -183,6 +219,8 @@ export async function sendOffer(input: ChatOfferInput): Promise<ActionResult> {
     user.id,
   );
   if (!isParty || !role) return { ok: false, error: "Non sei parte di questa conversazione" };
+  const blocked = await assertNotBlocked(parsed.data.conversation_id, user.id);
+  if (blocked) return blocked;
   const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
   if (gate) return gate;
 
@@ -250,6 +288,8 @@ export async function respondToOffer(
       user.id,
     );
     if (!isParty) return { ok: false, error: "Non autorizzato" };
+    const blocked = await assertNotBlocked(msg.conversation_id, user.id);
+    if (blocked) return blocked;
     const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
     if (gate) return gate;
 
@@ -271,10 +311,10 @@ export async function respondToOffer(
       .eq("id", messageId)
       .maybeSingle();
     if (!msg) return { ok: false, error: "Offerta non trovata" };
-    const { role, isSuperadmin, artistId } = await resolveConversationRole(
-      (msg as { conversation_id: string }).conversation_id,
-      user.id,
-    );
+    const convId = (msg as { conversation_id: string }).conversation_id;
+    const { role, isSuperadmin, artistId } = await resolveConversationRole(convId, user.id);
+    const blocked = await assertNotBlocked(convId, user.id);
+    if (blocked) return blocked;
     const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
     if (gate) return gate;
   }
@@ -331,6 +371,8 @@ export async function sendAttachment(input: {
     user.id,
   );
   if (!isParty || !role) return { ok: false, error: "Non sei parte di questa conversazione" };
+  const blocked = await assertNotBlocked(input.conversation_id, user.id);
+  if (blocked) return blocked;
   const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
   if (gate) return gate;
 

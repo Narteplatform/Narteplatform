@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { DayPicker } from "react-day-picker";
 import { it } from "date-fns/locale";
 import "react-day-picker/style.css";
@@ -14,6 +14,7 @@ import {
   deleteDateSlot,
 } from "@/app/(artist)/dashboard/_actions";
 import { normalizeTime } from "@/lib/slots";
+import { useArtistCalendarChannel } from "@/hooks/useArtistCalendarChannel";
 
 type DateSlot = {
   id: string;
@@ -58,6 +59,31 @@ export function AvailabilityCalendar({
 }) {
   const [busy, setBusy] = useState<Set<string>>(new Set(initialBusy));
   const [dateSlots, setDateSlots] = useState<DateSlot[]>(initialDateSlots);
+
+  // Il calendario si aggiorna da solo: se l'artista lo modifica da un'altra
+  // scheda, o se una conferma di booking gli occupa una data, qui si vede
+  // senza ricaricare.
+  useArtistCalendarChannel(artistId);
+
+  // Riconciliazione con il server dopo un refresh.
+  //
+  // Questo componente tiene uno stato ottimistico locale — il giorno diventa
+  // rosso prima che la scrittura torni — e senza queste due righe quello stato
+  // vincerebbe per sempre sulle props: un refresh porterebbe dati nuovi che
+  // nessuno guarda, e una modifica fatta altrove verrebbe ridipinta indietro.
+  // La chiave è il contenuto: React riesegue solo quando cambia davvero.
+  const busyKey = initialBusy.join(",");
+  const slotsKey = initialDateSlots
+    .map((s) => `${s.id}:${s.date}:${s.start_time}:${s.end_time}:${s.label ?? ""}`)
+    .join(",");
+  useEffect(() => {
+    setBusy(new Set(initialBusy));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busyKey]);
+  useEffect(() => {
+    setDateSlots(initialDateSlots);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slotsKey]);
   const [openIso, setOpenIso] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [slotError, setSlotError] = useState<string | null>(null);

@@ -36,6 +36,24 @@ type SignResponse =
 const ACCEPT = videoLimitsFor("bunny").accept;
 
 /**
+ * Un URL che punta a una piattaforma esterna, non a un file caricato da noi.
+ * Serve solo a distinguere i residui YouTube/Vimeo dai video su Supabase
+ * Storage, che sono file veri e continuano a suonare dentro un <video>.
+ */
+function isExternalVideo(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return (
+      host.includes("youtube.com") ||
+      host.includes("youtu.be") ||
+      host.includes("vimeo.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Tetto lato client. Il limite vero lo applica il server, che sa dove sta
  * scrivendo: 500 MB su Bunny, 50 MB (in pratica 4,5) sul ripiego Supabase.
  */
@@ -158,6 +176,29 @@ export function EventVideoUpload({
                   allowFullScreen
                   className="aspect-video w-full border-0 bg-black"
                 />
+              ) : isExternalVideo(url) ? (
+                /* I vecchi link YouTube/Vimeo non si mostrano più sul sito. La
+                   riga resta in database — non si cancella niente da sola — ma
+                   da qualche parte bisogna pur dire quali video sono rimasti
+                   scoperti, e questo è il posto in cui si rimedia: l'URL è
+                   cliccabile per ritrovare il file e ricaricarlo qui sopra. */
+                <div className="flex aspect-video w-full flex-col justify-center gap-2 bg-amber-50 p-4 text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+                    Video esterno non più supportato
+                  </p>
+                  <p className="text-xs leading-relaxed text-amber-900/80">
+                    Non compare sul sito. Recupera il file e ricaricalo qui
+                    sopra, poi togli questa riga.
+                  </p>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate text-xs text-amber-900 underline underline-offset-2 hover:text-amber-950"
+                  >
+                    {url}
+                  </a>
+                </div>
               ) : (
                 <video
                   src={url}

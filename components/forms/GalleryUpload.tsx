@@ -10,6 +10,18 @@ type Props = {
   label: string;
   value: string[];
   onChange: (urls: string[]) => void;
+  /**
+   * Determina il bucket/percorso di destinazione lato /api/upload.
+   *
+   * Default "artist" per compatibilità: prima di questa prop ogni gallery
+   * (artista, evento, format) finiva comunque sotto "artist", quindi non
+   * passare la prop riproduce esattamente il comportamento di prima.
+   *
+   * ⚠️ Cambia solo dove finiscono i file NUOVI da qui in avanti: gli URL già
+   * salvati in events.gallery/formats.gallery sono assoluti e continuano a
+   * risolvere da dove sono, nessun contenuto esistente si sposta o sparisce.
+   */
+  kind?: "artist" | "event" | "format";
 };
 
 /**
@@ -23,7 +35,7 @@ type Props = {
  */
 const MAX_INPUT_BYTES = 20 * 1024 * 1024;
 
-export function GalleryUpload({ label, value, onChange }: Props) {
+export function GalleryUpload({ label, value, onChange, kind = "artist" }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [phase, setPhase] = useState<string | null>(null);
@@ -66,7 +78,7 @@ export function GalleryUpload({ label, value, onChange }: Props) {
         setPhase(`Caricamento ${index}/${files.length}…`);
         const fd = new FormData();
         fd.append("file", optimized);
-        fd.append("kind", "artist");
+        fd.append("kind", kind);
         const res = await fetch("/api/upload", { method: "POST", body: fd });
         if (!res.ok) {
           const j = await res.json().catch(() => ({}));

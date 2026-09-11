@@ -143,6 +143,7 @@ export function EventForm({
               label="Foto evento (caricamento diretto)"
               value={field.value ?? []}
               onChange={field.onChange}
+              kind="event"
             />
           )}
         />

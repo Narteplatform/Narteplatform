@@ -148,6 +148,12 @@ export async function POST(request: Request) {
         bunny_status: 0,
         playback_state: "processing",
         upload_state: "pending",
+        // Editoriale, non tecnico: il video esiste e si trascodifica, ma non
+        // compare sul profilo pubblico finché il superadmin non lo approva.
+        // Le due cose sono indipendenti — il webhook Bunny non tocca questa
+        // colonna — e vanno tenute separate: un video pronto può essere
+        // ancora da approvare, e viceversa.
+        moderation_state: "pending",
         title,
         size_bytes: size,
         mime_type: contentType,

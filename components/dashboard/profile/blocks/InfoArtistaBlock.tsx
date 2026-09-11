@@ -9,13 +9,14 @@ import { ImageUpload } from "@/components/forms/ImageUpload";
 import { ProfileSection } from "@/components/dashboard/profile/ProfileSection";
 import { Field, ProfileSectionForm } from "@/components/dashboard/profile/ProfileSectionForm";
 import { useProfileSectionForm } from "@/components/dashboard/profile/useProfileSectionForm";
+import { PendingMediaNotice } from "@/components/dashboard/PendingMediaNotice";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
 import {
   infoSectionSchema,
   toInfoPayload,
   type InfoSectionValues,
 } from "@/lib/validators/artist-profile";
-import type { ArtistProfileData } from "@/components/dashboard/profile/types";
+import type { ArtistProfileData, MediaSubmissionNotice } from "@/components/dashboard/profile/types";
 
 const PERCORSO_LABEL = {
   cover_artist: "Cover artist",
@@ -29,9 +30,12 @@ const MIN_BIO_LENGTH = 30;
 export function InfoArtistaBlock({
   artist,
   genreOptions,
+  pendingCover = [],
 }: {
   artist: ArtistProfileData;
   genreOptions: string[];
+  /** Foto profilo in attesa di approvazione o rifiutata, dalla coda di moderazione. */
+  pendingCover?: MediaSubmissionNotice[];
 }) {
   const tier = artist.tier ?? "free";
   const canEditPercorso = tier === "pro" || tier === "max";
@@ -169,6 +173,7 @@ export function InfoArtistaBlock({
 
         <div className="space-y-2 border-t border-border pt-5">
           <Label>Immagine principale</Label>
+          <PendingMediaNotice items={pendingCover} />
           <Controller
             control={form.control}
             name="cover_image"

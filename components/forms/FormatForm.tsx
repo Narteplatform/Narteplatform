@@ -132,6 +132,7 @@ export function FormatForm({
               label="Foto del format (caricamento diretto)"
               value={field.value ?? []}
               onChange={field.onChange}
+              kind="format"
             />
           )}
         />

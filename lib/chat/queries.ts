@@ -21,6 +21,18 @@ export type ConversationItem = {
   } | null;
   unreadCount: number;
   lastMessageAt: string;
+  /** True se una delle due parti è attualmente bloccata in questa conversazione (Feature C). */
+  hasActiveBlock: boolean;
+};
+
+/** Blocco attivo (Feature C): una riga per utente bloccato, mai per ruolo. */
+export type ActiveConversationBlock = {
+  id: string;
+  blockedUserId: string;
+  blockedRole: Role;
+  reason: string;
+  createdAt: string;
+  createdBy: string | null;
 };
 
 export type ChatMessage = {
@@ -75,7 +87,61 @@ export type ChatPartyMeta = {
     instagram?: string | null;
     website?: string | null;
   };
+  /** Blocchi attivi su questa conversazione (0-2: al più uno per parte). */
+  activeBlocks: ActiveConversationBlock[];
 };
+
+/**
+ * Legge i blocchi attivi (lifted_at is null) di una conversazione.
+ *
+ * Fail-open: la tabella conversation_blocks (migration 0055) è additiva e
+ * potrebbe non esistere ancora sul DB finché non viene applicata a mano da
+ * SQL editor. Un errore di lettura qui non deve rompere il caricamento della
+ * chat — restituisce semplicemente "nessun blocco", come su una tabella vuota.
+ */
+async function getActiveBlocksForConversation(
+  admin: ReturnType<typeof createAdminClient>,
+  conversationId: string,
+): Promise<ActiveConversationBlock[]> {
+  const { data, error } = await admin
+    .from("conversation_blocks")
+    .select("id, blocked_user_id, blocked_role, reason, created_at, created_by")
+    .eq("conversation_id", conversationId)
+    .is("lifted_at", null);
+  if (error) {
+    console.error("[chat] lettura blocchi conversazione:", error);
+    return [];
+  }
+  return (data ?? []).map((b) => ({
+    id: b.id,
+    blockedUserId: b.blocked_user_id,
+    blockedRole: b.blocked_role,
+    reason: b.reason,
+    createdAt: b.created_at,
+    createdBy: b.created_by,
+  }));
+}
+
+/**
+ * Insieme delle conversazioni (tra quelle in `ids`) con almeno un blocco
+ * attivo. Stesso fail-open di getActiveBlocksForConversation.
+ */
+async function getConversationIdsWithActiveBlock(
+  admin: ReturnType<typeof createAdminClient>,
+  ids: string[],
+): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const { data, error } = await admin
+    .from("conversation_blocks")
+    .select("conversation_id")
+    .in("conversation_id", ids)
+    .is("lifted_at", null);
+  if (error) {
+    console.error("[chat] lettura blocchi lista conversazioni:", error);
+    return new Set();
+  }
+  return new Set((data ?? []).map((b) => b.conversation_id));
+}
 
 type ConvRow = {
   id: string;
@@ -120,6 +186,8 @@ async function rowsToConversations(
     }
   }
 
+  const blockedConvIds = await getConversationIdsWithActiveBlock(admin, ids);
+
   return rows.map((r) => {
     const a = r.artists;
     const o = r.organizers;
@@ -156,6 +224,7 @@ async function rowsToConversations(
         : null,
       unreadCount: unread.get(r.id) ?? 0,
       lastMessageAt: r.last_message_at,
+      hasActiveBlock: blockedConvIds.has(r.id),
     };
   });
 }
@@ -298,6 +367,7 @@ export async function getConversationMeta(conversationId: string): Promise<ChatP
   ).organizers;
   if (!a || !o) return null;
   const social = a.social_links ?? {};
+  const activeBlocks = await getActiveBlocksForConversation(admin, conversationId);
   return {
     conversationId: data.id,
     artist: {
@@ -325,6 +395,7 @@ export async function getConversationMeta(conversationId: string): Promise<ChatP
       instagram: o.instagram ?? null,
       website: o.website ?? null,
     },
+    activeBlocks,
   };
 }
 

@@ -2,60 +2,54 @@
 
 import { useState } from "react";
 import { Play, X, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  bunnyStreamGuidFromUrl,
+  isBunnyEmbedUrl,
+  streamEmbedUrl,
+  streamThumbnailUrl,
+} from "@/lib/storage/bunny/urls";
 
 type Props = {
   gallery: string[];
   videos: string[];
 };
 
-function youTubeId(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (u.hostname === "youtu.be") return u.pathname.slice(1);
-    if (u.hostname.includes("youtube.com")) {
-      const v = u.searchParams.get("v");
-      if (v) return v;
-      // /embed/ID o /shorts/ID
-      const parts = u.pathname.split("/").filter(Boolean);
-      const i = parts.findIndex((p) => p === "embed" || p === "shorts");
-      if (i >= 0 && parts[i + 1]) return parts[i + 1];
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-function vimeoId(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes("vimeo.com")) {
-      const id = u.pathname.split("/").filter(Boolean)[0];
-      if (id && /^\d+$/.test(id)) return id;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
+/**
+ * I video di eventi e format si guardano su N'arte, non altrove.
+ *
+ * Qui vivevano un parser di id YouTube, uno di Vimeo e i rispettivi embed:
+ * l'unico punto del progetto che incorporasse piattaforme terze. Ora i video si
+ * caricano su Bunny Stream, quindi restano solo quelli.
+ *
+ * Gli URL esterni ancora salvati in events.videos[] e formats.videos[] NON
+ * vengono cancellati dal database: semplicemente non si rendono più. Se un
+ * evento non ha nessun video Bunny, la sezione Video sparisce invece di
+ * mostrare riquadri vuoti. Il superadmin li ritrova elencati nel form
+ * dell'evento, con l'invito a ricaricarli.
+ *
+ * In più se ne va una chiamata a img.youtube.com che partiva al primo render,
+ * prima di qualunque click del visitatore.
+ */
 function videoThumb(url: string): string | null {
-  const yt = youTubeId(url);
-  if (yt) return `https://img.youtube.com/vi/${yt}/hqdefault.jpg`;
-  return null;
+  const guid = bunnyStreamGuidFromUrl(url);
+  return guid ? streamThumbnailUrl(guid) : null;
 }
 
 function videoEmbed(url: string): string {
-  const yt = youTubeId(url);
-  if (yt) return `https://www.youtube.com/embed/${yt}`;
-  const vm = vimeoId(url);
-  if (vm) return `https://player.vimeo.com/video/${vm}`;
-  return url;
+  const guid = bunnyStreamGuidFromUrl(url);
+  // muted: il gesto dell'utente è avvenuto nel documento padre, non dentro
+  // l'iframe, e col sonoro acceso il browser rifiuterebbe di far partire il
+  // video. Il player mostra il suo controllo volume.
+  return guid
+    ? streamEmbedUrl(guid, { autoplay: true, muted: true, playsinline: true })
+    : url;
 }
 
 export function EventMediaGallery({ gallery, videos }: Props) {
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+
+  const playable = videos.filter(isBunnyEmbedUrl);
 
   function next() {
     if (lightbox == null) return;
@@ -66,7 +60,7 @@ export function EventMediaGallery({ gallery, videos }: Props) {
     setLightbox((lightbox - 1 + gallery.length) % gallery.length);
   }
 
-  const isEmpty = gallery.length === 0 && videos.length === 0;
+  const isEmpty = gallery.length === 0 && playable.length === 0;
 
   if (isEmpty) {
     return (
@@ -102,11 +96,11 @@ export function EventMediaGallery({ gallery, videos }: Props) {
         </div>
       )}
 
-      {videos.length > 0 && (
+      {playable.length > 0 && (
         <div>
           <h3 className="font-display text-base">Video</h3>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {videos.map((url) => {
+            {playable.map((url) => {
               const thumb = videoThumb(url);
               return (
                 <button

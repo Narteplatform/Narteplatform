@@ -7,14 +7,22 @@ import { GalleryUpload } from "@/components/forms/GalleryUpload";
 import { ProfileSection } from "@/components/dashboard/profile/ProfileSection";
 import { ProfileSectionForm } from "@/components/dashboard/profile/ProfileSectionForm";
 import { useProfileSectionForm } from "@/components/dashboard/profile/useProfileSectionForm";
+import { PendingMediaNotice } from "@/components/dashboard/PendingMediaNotice";
 import {
   gallerySectionSchema,
   toGalleryPayload,
   type GallerySectionValues,
 } from "@/lib/validators/artist-profile";
-import type { ArtistProfileData } from "@/components/dashboard/profile/types";
+import type { ArtistProfileData, MediaSubmissionNotice } from "@/components/dashboard/profile/types";
 
-export function GalleryBlock({ artist }: { artist: ArtistProfileData }) {
+export function GalleryBlock({
+  artist,
+  pendingMedia = [],
+}: {
+  artist: ArtistProfileData;
+  /** Foto in attesa di approvazione o rifiutate, dalla coda di moderazione. */
+  pendingMedia?: MediaSubmissionNotice[];
+}) {
   const defaultValues = React.useMemo<GallerySectionValues>(
     () => ({ gallery: artist.gallery ?? [] }),
     [artist.gallery]
@@ -44,6 +52,7 @@ export function GalleryBlock({ artist }: { artist: ArtistProfileData }) {
       }
       dirty={isDirty}
     >
+      <PendingMediaNotice items={pendingMedia} />
       <ProfileSectionForm
         onSubmit={onSubmit}
         isDirty={isDirty}

@@ -43,6 +43,7 @@ export type EmailKey =
   | "booking_cancelled_admin"
   | "booking_cancelled_organizer"
   // --- chat e trattativa ---
+  | "media_pending_admin"
   | "chat_new_message"
   | "chat_new_offer"
   | "price_proposed"
@@ -336,6 +337,19 @@ export interface FeedbackRequestParams {
   feedbackUrl: string;
 }
 
+/**
+ * Contenuti di un artista in attesa di approvazione.
+ *
+ * Va al superadmin, non all'artista: senza, la coda di moderazione andrebbe
+ * guardata a mano, e un contenuto caricato di venerdì resterebbe invisibile
+ * fino a lunedì senza che nessuno se ne accorga.
+ */
+export interface MediaPendingAdminParams {
+  artistName: string;
+  count: number;
+  moderationUrl: string;
+}
+
 /** Mappa chiave → tipo dei parametri. Fonte di verità per `sendTransactional`. */
 export interface EmailParamsMap {
   application_received: ApplicationReceivedParams;
@@ -354,6 +368,7 @@ export interface EmailParamsMap {
   booking_declined: BookingStatusParams;
   booking_cancelled_admin: BookingStatusParams;
   booking_cancelled_organizer: BookingStatusParams;
+  media_pending_admin: MediaPendingAdminParams;
   chat_new_message: ChatNewMessageParams;
   chat_new_offer: ChatNewOfferParams;
   price_proposed: PriceParams;
@@ -460,6 +475,10 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
   booking_cancelled_admin: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_CANCELLED_ADMIN),
     label: "Data annullata da N'arte",
+  },
+  media_pending_admin: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_MEDIA_PENDING_ADMIN),
+    label: "Media da approvare — copia interna",
   },
   chat_new_message: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CHAT_NEW_MESSAGE),

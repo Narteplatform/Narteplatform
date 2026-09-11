@@ -34,6 +34,22 @@ export type ArtistProfileData = {
   setup_requirements: string | null;
 };
 
+/**
+ * Una riga di `artist_media_submissions` così come serve all'avviso "in
+ * attesa di approvazione" nella dashboard artista (PendingMediaNotice).
+ * Solo pending/rejected: le submission approvate non vanno più segnalate,
+ * il contenuto è già dentro `gallery`/`audio_files`/`cover_image`.
+ */
+export type MediaSubmissionNotice = {
+  id: string;
+  target: "gallery" | "audio_files" | "cover_image";
+  title: string | null;
+  url: string;
+  status: "pending" | "rejected";
+  review_note: string | null;
+  created_at: string;
+};
+
 /** Legge una chiave da `social_links`, che in DB è jsonb non tipizzato. */
 export function readLink(links: unknown, key: string): string {
   if (links && typeof links === "object" && !Array.isArray(links)) {

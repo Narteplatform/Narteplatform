@@ -9,7 +9,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { Reveal } from "@/components/animations/Reveal";
 import { BookingCalendar, type ViewerRole, type ConfirmedBookingInfo } from "@/components/marketing/BookingCalendar";
-import { PriceBandBadge } from "@/components/marketing/PriceBandBadge";
+import { ArtistAvailability } from "@/components/marketing/ArtistAvailability";
 import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
 import { BookingInformation } from "@/components/marketing/BookingInformation";
 import { TikTokIcon, SpotifyIcon } from "@/components/marketing/SocialIcons";
@@ -363,14 +363,17 @@ export default async function ArtistDetailPage({
     console.error("[ArtistDetailPage] confirmed bookings fetch error", e);
   }
 
-  // Video caricati dall'artista dal proprio dispositivo (artist_videos), distinti
-  // dagli URL YouTube/Vimeo in artists.videos.
+  // Video caricati dall'artista dal proprio dispositivo (artist_videos).
   let uploadedVideos: PlayableArtistVideo[] = [];
   try {
     const { data, error } = await supabase
       .from("artist_videos")
       .select("id, url, title, provider, bunny_guid, playback_state, mime_type, width, height")
       .eq("artist_id", artist.id)
+      // Solo i video approvati dal superadmin. Il filtro è sicuro perché la
+      // colonna nasce con default 'approved' (migration 0051): i video già
+      // online restano online, in attesa entrano solo i nuovi caricamenti.
+      .eq("moderation_state", "approved")
       .order("created_at", { ascending: false });
     // L'errore veniva ingoiato da un `data ?? []`: un guasto transitorio
     // nascondeva TUTTI i video di un artista, in modo indistinguibile da
@@ -423,13 +426,8 @@ export default async function ArtistDetailPage({
     0,
     ent.galleryMax
   );
-  // `videos` (URL YouTube/Vimeo) e `uploadedVideos` (file su artist_videos)
-  // sono due collezioni distinte ma un'unica feature di piano: vanno cappate
-  // insieme, altrimenti un artista Free continuerebbe a mostrare i suoi
-  // YouTube dopo il downgrade.
-  const videos: string[] = ent.videoMax === 0
-    ? []
-    : (Array.isArray(artist.videos) ? artist.videos : []).slice(0, ent.videoMax);
+  // Il cap di piano vale sui video caricati su N'arte, ormai l'unica collezione
+  // mostrata: i vecchi URL esterni in artists.videos non si rendono più.
   if (ent.videoMax === 0) uploadedVideos = [];
   else uploadedVideos = uploadedVideos.slice(0, ent.videoMax);
   const audioTracks: { url: string; title: string }[] = (
@@ -603,15 +601,6 @@ export default async function ArtistDetailPage({
 
             <Reveal delay={0.25}>
               <div className="mt-5 flex flex-wrap items-center gap-3 text-sm">
-                {viewerRole !== "artist" && (
-                  <>
-                    <span className="text-muted-foreground">Fascia di prezzo:</span>
-                    <PriceBandBadge
-                      band={artist.price_band ?? "standard"}
-                      canSee={viewerRole === "organizer" || viewerRole === "superadmin"}
-                    />
-                  </>
-                )}
                 <FavoriteToggle
                   artist={{
                     id: artist.id,
@@ -649,33 +638,50 @@ export default async function ArtistDetailPage({
                   Disponibilità &amp; booking
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Clicca un giorno libero per vedere i turni di {artist.stage_name},
-                  poi scegli uno slot per inviare la richiesta.
+                  {viewerRole === "artist"
+                    ? `Le date in nero sono già impegnate. Bloccare una data è riservato agli organizzatori: come artista puoi consultare il calendario di ${artist.stage_name}, non prenotarlo.`
+                    : `Clicca un giorno libero per vedere i turni di ${artist.stage_name}, poi scegli uno slot per inviare la richiesta.`}
                 </p>
                 <div className="mt-6">
-                  <BookingCalendar
-                    artistId={artist.id}
-                    artistName={artist.stage_name}
-                    busyDates={busyDates}
-                    defaultSlots={(defaultSlots ?? []).map((s) => ({
-                      id: s.id,
-                      label: s.label,
-                      start_time: s.start_time,
-                      end_time: s.end_time,
-                    }))}
-                    dateSlots={(dateSlots ?? []).map((s) => ({
-                      id: s.id,
-                      date: s.date,
-                      label: s.label,
-                      start_time: s.start_time,
-                      end_time: s.end_time,
-                    }))}
-                    viewerRole={viewerRole}
-                    viewerEmail={viewer?.email ?? null}
-                    viewerName={viewer?.profile?.full_name ?? null}
-                    organizerVenues={organizerVenues}
-                    confirmedBookings={confirmedBookings}
-                  />
+                  {/* Un artista che guarda il profilo di un collega vede la
+                      disponibilità, non il modulo di richiesta. Prima poteva
+                      scegliere la data, aprire lo slot e compilare tutto, per
+                      trovare spento solo l'ultimo pulsante: il divieto arrivava
+                      dopo il lavoro. Il server risponde comunque 403
+                      (app/api/booking-request/route.ts), quindi qui cambia il
+                      percorso, non la sicurezza. */}
+                  {viewerRole === "artist" ? (
+                    <ArtistAvailability
+                      availability={busyDates.map((date) => ({
+                        date,
+                        status: "busy" as const,
+                      }))}
+                    />
+                  ) : (
+                    <BookingCalendar
+                      artistId={artist.id}
+                      artistName={artist.stage_name}
+                      busyDates={busyDates}
+                      defaultSlots={(defaultSlots ?? []).map((s) => ({
+                        id: s.id,
+                        label: s.label,
+                        start_time: s.start_time,
+                        end_time: s.end_time,
+                      }))}
+                      dateSlots={(dateSlots ?? []).map((s) => ({
+                        id: s.id,
+                        date: s.date,
+                        label: s.label,
+                        start_time: s.start_time,
+                        end_time: s.end_time,
+                      }))}
+                      viewerRole={viewerRole}
+                      viewerEmail={viewer?.email ?? null}
+                      viewerName={viewer?.profile?.full_name ?? null}
+                      organizerVenues={organizerVenues}
+                      confirmedBookings={confirmedBookings}
+                    />
+                  )}
                 </div>
               </div>
             </Reveal>
@@ -767,8 +773,13 @@ export default async function ArtistDetailPage({
         </section>
       )}
 
-      {/* VIDEOS */}
-      {(videos.length > 0 || uploadedVideos.length > 0) && (
+      {/* VIDEOS — solo i video caricati su N'arte.
+          I vecchi link YouTube/Vimeo incollati a mano in artists.videos non si
+          mostrano più: i video ora si caricano e si guardano qui, senza mandare
+          il visitatore su una piattaforma terza né chiamare img.youtube.com
+          prima che abbia cliccato qualcosa. La colonna in database non è stata
+          toccata, i link restano recuperabili. */}
+      {uploadedVideos.length > 0 && (
         <section className="border-t border-border bg-muted py-16 md:py-24">
           <div className="container-narte">
             <Reveal>
@@ -778,44 +789,23 @@ export default async function ArtistDetailPage({
               <h2 className="display-xl text-3xl md:text-5xl">Performance.</h2>
             </Reveal>
 
-            {uploadedVideos.length > 0 && (
-              <Reveal delay={0.2}>
-                <div className="mt-8 grid gap-4 md:grid-cols-2">
-                  {uploadedVideos.map((v) => (
-                    <figure
-                      key={v.id}
-                      className="overflow-hidden rounded-2xl border border-border bg-black"
-                    >
-                      <ArtistVideoPlayer video={v} />
-                      {v.title && (
-                        <figcaption className="truncate border-t border-border bg-background px-4 py-2 text-sm">
-                          {v.title}
-                        </figcaption>
-                      )}
-                    </figure>
-                  ))}
-                </div>
-              </Reveal>
-            )}
-
-            {videos.length > 0 && (
-              <Reveal delay={0.25}>
-                <ul className="mt-8 grid gap-3 md:grid-cols-2">
-                  {videos.map((v) => (
-                    <li key={v}>
-                      <a
-                        href={v}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block truncate rounded-2xl border border-border bg-background p-4 text-sm transition hover:border-accent hover:text-accent"
-                      >
-                        ▶︎ {v}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </Reveal>
-            )}
+            <Reveal delay={0.2}>
+              <div className="mt-8 grid gap-4 md:grid-cols-2">
+                {uploadedVideos.map((v) => (
+                  <figure
+                    key={v.id}
+                    className="overflow-hidden rounded-2xl border border-border bg-black"
+                  >
+                    <ArtistVideoPlayer video={v} />
+                    {v.title && (
+                      <figcaption className="truncate border-t border-border bg-background px-4 py-2 text-sm">
+                        {v.title}
+                      </figcaption>
+                    )}
+                  </figure>
+                ))}
+              </div>
+            </Reveal>
           </div>
         </section>
       )}

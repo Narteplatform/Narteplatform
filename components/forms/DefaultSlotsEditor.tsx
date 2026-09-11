@@ -38,7 +38,15 @@ export function DefaultSlotsEditor({
         end_time: endTime,
       });
       if (!res.ok) {
-        setError(res.error ?? "Errore");
+        // 23505 è il codice del vincolo di unicità: l'errore grezzo di Postgres
+        // parla di indici, che a chi sta scrivendo i propri orari non dice
+        // niente.
+        setError(
+          res.error?.includes("23505") ||
+            res.error?.toLowerCase().includes("duplicate")
+            ? "Hai già questo turno."
+            : res.error ?? "Errore"
+        );
         return;
       }
       setLabel("");

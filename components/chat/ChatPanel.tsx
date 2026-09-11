@@ -2,14 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MessageList } from "./MessageList";
 import { MessageComposer } from "./MessageComposer";
 import { ProfileDialog } from "./ProfileDialog";
 import { useChatChannel } from "@/hooks/useChatChannel";
+import { useConversationBlock } from "@/hooks/useConversationBlock";
 import { markConversationRead } from "@/lib/chat/actions";
 import type { ChatMessage, ChatPartyMeta } from "@/lib/chat/queries";
+
+type ActiveBlock = { id: string; reason: string; blockedUserId: string };
 
 export function ChatPanel({
   meta,
@@ -19,6 +22,7 @@ export function ChatPanel({
   readOnly = false,
   compact = false,
   backHref,
+  block,
 }: {
   meta: ChatPartyMeta;
   initialMessages: ChatMessage[];
@@ -27,10 +31,25 @@ export function ChatPanel({
   readOnly?: boolean;
   compact?: boolean;
   backHref?: string;
+  /**
+   * Blocco da mostrare per l'utente corrente. Opzionale: se non passato,
+   * viene derivato da meta.activeBlocks (già popolato da getConversationMeta
+   * per tutte le viste — dashboard, organizzatore, admin, dock) e tenuto
+   * aggiornato in tempo reale da useConversationBlock, così il composer si
+   * spegne/riaccende senza refresh anche senza che il chiamante lo passi.
+   */
+  block?: ActiveBlock | null;
 }) {
   const router = useRouter();
   const { messages } = useChatChannel(meta.conversationId, initialMessages);
+  const { blocks } = useConversationBlock(meta.conversationId, meta.activeBlocks);
   const [profileOpen, setProfileOpen] = useState<"artist" | "organizer" | null>(null);
+
+  const myBlock: ActiveBlock | null =
+    block !== undefined
+      ? block
+      : (blocks.find((b) => b.blockedUserId === currentUserId) ?? null);
+  const isBlocked = myBlock !== null;
 
   const counterpartParty: "artist" | "organizer" =
     viewerRole === "artist" ? "organizer" : "artist";
@@ -45,10 +64,13 @@ export function ChatPanel({
     markConversationRead(meta.conversationId).catch(() => {});
   }, [meta.conversationId, readOnly, viewerRole, messages.length]);
 
-  const canWrite = !readOnly && viewerRole !== "superadmin";
+  const canWrite = !readOnly && viewerRole !== "superadmin" && !isBlocked;
   const canOffer = canWrite;
-  const disabledReason =
-    viewerRole === "superadmin" ? "Vista superadmin (sola lettura)" : undefined;
+  const disabledReason = isBlocked
+    ? `Sei stato bloccato in questa conversazione da un amministratore. Motivo: ${myBlock!.reason}`
+    : viewerRole === "superadmin"
+    ? "Vista superadmin (sola lettura)"
+    : undefined;
 
   return (
     <div className={`flex h-full min-h-0 flex-col ${compact ? "" : "rounded-xl border border-border bg-surface overflow-hidden"}`}>
@@ -114,6 +136,15 @@ export function ChatPanel({
         viewerRole={viewerRole}
         readOnly={readOnly || viewerRole === "superadmin"}
       />
+      {isBlocked && (
+        <div className="flex items-start gap-2 border-t border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
+          <ShieldAlert className="size-4 shrink-0 mt-0.5" />
+          <p>
+            <span className="font-semibold">Sei stato bloccato in questa conversazione da un amministratore.</span>{" "}
+            Non puoi inviare messaggi, offerte o allegati. Motivo: {myBlock!.reason}
+          </p>
+        </div>
+      )}
       <MessageComposer
         conversationId={meta.conversationId}
         disabled={!canWrite}

@@ -4,6 +4,7 @@ import { Eye } from "lucide-react";
 import { requireRole } from "@/lib/auth/guards";
 import { ConversationList } from "@/components/chat/ConversationList";
 import { ChatPanel } from "@/components/chat/ChatPanel";
+import { ConversationBlockControls } from "@/components/admin/ConversationBlockControls";
 import {
   getConversationMeta,
   getConversationsForSuperadmin,
@@ -39,9 +40,19 @@ export default async function AdminChatDetailPage({
           <ConversationList items={items} basePath="/admin/chat" activeId={id} mode="superadmin" />
         </aside>
         <section className="min-h-0 flex flex-col">
-          <div className="flex items-center gap-2 px-3 py-2 bg-corallo-subtle/60 border-b border-border text-xs text-corallo-dark">
-            <Eye className="size-3.5" />
-            Vista superadmin — sola lettura
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-corallo-subtle/60 border-b border-border text-xs text-corallo-dark">
+            <span className="flex items-center gap-2">
+              <Eye className="size-3.5" />
+              Vista superadmin — sola lettura
+            </span>
+            <ConversationBlockControls
+              conversationId={id}
+              artistName={meta.artist.name}
+              organizerName={meta.organizer.name}
+              artistUserId={meta.artist.userId}
+              organizerUserId={meta.organizer.userId}
+              activeBlocks={meta.activeBlocks}
+            />
           </div>
           <div className="flex-1 min-h-0">
             <ChatPanel

@@ -105,6 +105,7 @@ export async function middleware(request: NextRequest) {
             "/admin/blog": "blog",
             "/admin/email": "email",
             "/admin/feedback": "feedback",
+            "/admin/moderazione": "moderazione",
             "/admin/impostazioni": "impostazioni",
             "/admin/profilo": "profilo",
           };

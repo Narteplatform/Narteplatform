@@ -13,6 +13,7 @@ import { CityAutocomplete } from "@/components/forms/CityAutocomplete";
 import { BUDGET_RANGES, rangeToMin, type BudgetRangeValue } from "@/lib/constants/budget-ranges";
 import { formatSlot, normalizeTime, resolveSlotsForDate, type Slot } from "@/lib/slots";
 import type { ArtistInterestInput } from "@/app/(user)/artisti/[slug]/_schema";
+import { useArtistCalendarChannel } from "@/hooks/useArtistCalendarChannel";
 
 type DefaultSlot = {
   id: string;
@@ -95,6 +96,11 @@ export function BookingCalendar({
   organizerVenues = [],
   confirmedBookings = [],
 }: Props) {
+  // Se l'artista cambia la propria disponibilità mentre un organizzatore sta
+  // guardando questa pagina, il calendario si aggiorna sotto i suoi occhi:
+  // meglio che scoprire a richiesta inviata che quella sera non era libera.
+  useArtistCalendarChannel(artistId);
+
   const canSubmit = viewerRole !== "artist"; // tutti tranne artist
   const needsSignup = viewerRole === "anon";
   const isUserToPromote = viewerRole === "user";

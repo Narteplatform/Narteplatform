@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { resolveActiveArtist } from "@/lib/artist/current";
 import { AvailabilityCalendar } from "@/components/forms/AvailabilityCalendar";
 import { BulkAvailabilityPanel } from "@/components/dashboard/BulkAvailabilityPanel";
+import { DefaultSlotsEditor } from "@/components/forms/DefaultSlotsEditor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
 export const dynamic = "force-dynamic";
@@ -58,12 +59,39 @@ export default async function CalendarioPage() {
         </p>
       </header>
 
+      {/* I turni abituali vengono prima, e non è un dettaglio di impaginazione:
+          sono il valore predefinito su cui si appoggiano sia il calendario sia
+          la modifica in massa. Finora non esisteva nessuna schermata per
+          crearli — l'editor c'era in codice ma non lo montava nessuno — quindi
+          il fallback di tutta la logica degli orari restava vuoto. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Turni abituali</CardTitle>
+          <CardDescription>
+            Gli orari in cui suoni di solito. Valgono per ogni giorno libero,
+            finché non imposti orari diversi su una data precisa.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DefaultSlotsEditor
+            artistId={artist.id}
+            slots={(defaultSlots ?? []).map((s) => ({
+              id: s.id,
+              label: s.label,
+              start_time: s.start_time,
+              end_time: s.end_time,
+            }))}
+          />
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Modifica in massa</CardTitle>
           <CardDescription>
-            Imposta disponibilità su un intervallo di date con un click. Spunta opzionalmente gli
-            slot da copiare come override per ogni giorno selezionato.
+            Per esempio: tutti i lunedì del mese occupati, oppure i venerdì e i
+            sabati liberi dalle 21 alle 24. Prima di scrivere vedi sempre quanti
+            giorni stai per cambiare.
           </CardDescription>
         </CardHeader>
         <CardContent>

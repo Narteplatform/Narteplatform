@@ -333,6 +333,18 @@ export const chatOfferSchema = z.object({
 });
 export type ChatOfferInput = z.infer<typeof chatOfferSchema>;
 
+/**
+ * Motivazione per blocco/sblocco di un utente in una conversazione (Feature C,
+ * moderazione superadmin). Stessi limiti della colonna `reason` in
+ * conversation_blocks (3-500 caratteri): lo schema deve restare in sincrono
+ * col check constraint della migration 0055.
+ */
+export const conversationBlockReasonSchema = z
+  .string()
+  .trim()
+  .min(3, "La motivazione deve avere almeno 3 caratteri")
+  .max(500, "Massimo 500 caratteri");
+
 // =========================================
 // Superadmin: invito + permessi pagine admin
 // =========================================
@@ -351,6 +363,7 @@ export const ADMIN_PAGE_KEYS = [
   "profilo",
   "impostazioni",
   "feedback",
+  "moderazione",
 ] as const;
 export type AdminPageKey = (typeof ADMIN_PAGE_KEYS)[number];
 

@@ -3,6 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  BreadcrumbTitleProvider,
+  useBreadcrumbTitle,
+} from "@/components/layout/BreadcrumbTitle";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   ChevronDown,
@@ -85,6 +89,11 @@ export interface AppShellProps {
    * accanto al breadcrumb e non fra i pulsanti a destra.
    */
   topbarSlot?: React.ReactNode;
+  /**
+   * Sostituisce l'ultima voce del breadcrumb. Serve alle rotte [id], dove il
+   * percorso contiene un uuid e solo la pagina sa come si chiama la cosa.
+   */
+  breadcrumbLabel?: string;
   children: React.ReactNode;
 }
 
@@ -102,7 +111,17 @@ function isSectionActive(pathname: string, section: NavSection): boolean {
 
 const numberFormatter = new Intl.NumberFormat("it-IT");
 
-export function AppShell({
+export function AppShell(props: AppShellProps) {
+  // Il provider avvolge la shell intera: le pagine figlie rendono
+  // <BreadcrumbTitle /> e la topbar legge il nome dal contesto.
+  return (
+    <BreadcrumbTitleProvider>
+      <AppShellInner {...props} />
+    </BreadcrumbTitleProvider>
+  );
+}
+
+function AppShellInner({
   brand,
   brandHref,
   user,
@@ -113,11 +132,15 @@ export function AppShell({
   whatsNewHref,
   showSearch = false,
   topbarSlot,
+  breadcrumbLabel,
   children,
 }: AppShellProps) {
   const pathname = usePathname() ?? "/";
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const hasBottomNav = (bottomNav?.length ?? 0) > 0;
+  // La prop esplicita vince sul contesto: chi monta la shell sa quello che fa.
+  const titleFromPage = useBreadcrumbTitle();
+  const currentLabel = breadcrumbLabel ?? titleFromPage;
 
   const sidebar = (
     <SidebarContent
@@ -177,7 +200,11 @@ export function AppShell({
             >
               <Menu className="size-4" />
             </button>
-            <Breadcrumb pathname={pathname} brand={brand} />
+            <Breadcrumb
+              pathname={pathname}
+              brand={brand}
+              currentLabel={currentLabel}
+            />
             {topbarSlot && (
               <>
                 <span aria-hidden className="hidden h-5 w-px shrink-0 bg-border sm:block" />
@@ -274,7 +301,21 @@ function BottomNav({
   );
 }
 
-function Breadcrumb({ pathname, brand }: { pathname: string; brand: React.ReactNode }) {
+function Breadcrumb({
+  pathname,
+  brand,
+  currentLabel,
+}: {
+  pathname: string;
+  brand: React.ReactNode;
+  /**
+   * Etichetta dell'ultimo segmento, quando la pagina sa dire una cosa che il
+   * percorso non sa: il nome d'arte al posto dell'id, il titolo dell'evento al
+   * posto dell'uuid. Il breadcrumb si costruisce dal solo pathname, quindi
+   * senza questa prop una rotta [id] non può che stampare l'identificativo.
+   */
+  currentLabel?: string;
+}) {
   const segments = pathname.split("/").filter(Boolean);
   const items: { label: string; href: string }[] = [];
   let acc = "";
@@ -286,7 +327,10 @@ function Breadcrumb({ pathname, brand }: { pathname: string; brand: React.ReactN
     return <span className="font-display text-sm">{brand}</span>;
   }
   const parent = items[items.length - 2];
-  const current = items[items.length - 1];
+  const last = items[items.length - 1];
+  const current = currentLabel?.trim()
+    ? { ...last, label: currentLabel.trim() }
+    : last;
   return (
     <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2">
       {parent ? (
@@ -319,8 +363,17 @@ function prettifySegment(seg: string): string {
     calendario: "Calendario",
     new: "Nuovo",
   };
-  return map[seg] ?? seg.charAt(0).toUpperCase() + seg.slice(1);
+  if (map[seg]) return map[seg];
+  // Un uuid in barra non dice niente a nessuno: "9d1fe8a2-…" non è il nome di
+  // una pagina. Le rotte [id] che sanno fare di meglio passano `currentLabel`
+  // e sovrascrivono questa etichetta; le altre almeno smettono di esibire
+  // codici esadecimali all'utente.
+  if (UUID_RE.test(seg)) return "Dettaglio";
+  return seg.charAt(0).toUpperCase() + seg.slice(1);
 }
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function SidebarContent({
   brand,

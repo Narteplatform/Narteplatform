@@ -7,14 +7,22 @@ import { AudioUpload, type AudioTrack } from "@/components/forms/AudioUpload";
 import { ProfileSection } from "@/components/dashboard/profile/ProfileSection";
 import { ProfileSectionForm } from "@/components/dashboard/profile/ProfileSectionForm";
 import { useProfileSectionForm } from "@/components/dashboard/profile/useProfileSectionForm";
+import { PendingMediaNotice } from "@/components/dashboard/PendingMediaNotice";
 import {
   audioSectionSchema,
   toAudioPayload,
   type AudioSectionValues,
 } from "@/lib/validators/artist-profile";
-import type { ArtistProfileData } from "@/components/dashboard/profile/types";
+import type { ArtistProfileData, MediaSubmissionNotice } from "@/components/dashboard/profile/types";
 
-export function AudioBlock({ artist }: { artist: ArtistProfileData }) {
+export function AudioBlock({
+  artist,
+  pendingMedia = [],
+}: {
+  artist: ArtistProfileData;
+  /** Tracce in attesa di approvazione o rifiutate, dalla coda di moderazione. */
+  pendingMedia?: MediaSubmissionNotice[];
+}) {
   const defaultValues = React.useMemo<AudioSectionValues>(
     () => ({ audio_files: (artist.audio_files ?? []) as AudioTrack[] }),
     [artist.audio_files]
@@ -44,6 +52,7 @@ export function AudioBlock({ artist }: { artist: ArtistProfileData }) {
       }
       dirty={isDirty}
     >
+      <PendingMediaNotice items={pendingMedia} />
       <ProfileSectionForm
         onSubmit={onSubmit}
         isDirty={isDirty}

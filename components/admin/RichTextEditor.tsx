@@ -31,6 +31,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +53,11 @@ type Props = {
 export function RichTextEditor({ value, onChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  // Prima un 413 (o qualsiasi altro errore) spariva in un window.alert: sotto
+  // toolbar sticky e overlay dell'editor capitava che il popup nascesse fuori
+  // vista, e il click sembrava semplicemente non fare nulla. L'errore ora
+  // resta visibile finché non si riprova.
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -104,20 +110,23 @@ export function RichTextEditor({ value, onChange }: Props) {
       const file = e.target.files?.[0];
       e.target.value = ""; // consente di ricaricare lo stesso file
       if (!file || !editor) return;
+      // Azzerato a ogni tentativo: un errore precedente non deve restare
+      // appeso sotto la toolbar dopo che l'utente ha riprovato con successo.
+      setImageError(null);
       setUploading(true);
       try {
         const fd = new FormData();
         fd.append("file", file);
         fd.append("kind", "blog");
         const res = await fetch("/api/upload", { method: "POST", body: fd });
-        const data = (await res.json()) as { url?: string; error?: string };
+        const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
         if (!res.ok || !data.url) {
-          window.alert(data.error ?? "Upload non riuscito");
+          setImageError(data.error ?? `Upload non riuscito (${res.status})`);
           return;
         }
         editor.chain().focus().setImage({ src: data.url }).run();
       } catch {
-        window.alert("Errore durante l'upload dell'immagine");
+        setImageError("Errore di rete durante l'upload dell'immagine");
       } finally {
         setUploading(false);
       }
@@ -193,8 +202,17 @@ export function RichTextEditor({ value, onChange }: Props) {
         >
           <Unlink className="size-4" />
         </TB>
-        <TB onClick={() => fileInputRef.current?.click()} active={false} disabled={uploading} label="Immagine">
-          <ImageIcon className="size-4" />
+        <TB
+          onClick={() => fileInputRef.current?.click()}
+          active={false}
+          disabled={uploading}
+          label={uploading ? "Caricamento immagine in corso" : "Immagine"}
+        >
+          {uploading ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <ImageIcon className="size-4" />
+          )}
         </TB>
 
         <Divider />
@@ -213,6 +231,14 @@ export function RichTextEditor({ value, onChange }: Props) {
           <RemoveFormatting className="size-4" />
         </TB>
       </div>
+
+      {/* Sotto la toolbar, non in un alert: coerente con come GalleryUpload e
+          ImageUpload mostrano i propri errori di caricamento. */}
+      {imageError && (
+        <p role="alert" className="border-b border-border bg-muted/40 px-4 py-2 text-sm text-red-600">
+          {imageError}
+        </p>
+      )}
 
       <EditorContent editor={editor} />
 

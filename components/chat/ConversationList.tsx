@@ -82,7 +82,17 @@ export function ConversationList({
                   isActive ? "bg-azzurro-subtle" : "hover:bg-muted/60 active:bg-muted/80",
                 )}
               >
-                <Avatar src={it.counterpartAvatarUrl} name={it.counterpartName} size="md" />
+                <div className="relative shrink-0">
+                  <Avatar src={it.counterpartAvatarUrl} name={it.counterpartName} size="md" />
+                  {it.hasActiveBlock && (
+                    <span
+                      className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-red-600 ring-2 ring-surface"
+                      role="img"
+                      aria-label="Blocco attivo in questa conversazione"
+                      title="Blocco attivo in questa conversazione"
+                    />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate font-semibold text-sm text-notte">

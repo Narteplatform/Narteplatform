@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import { requireRole } from "@/lib/auth/guards";
 import { getActiveArtistRow } from "@/lib/artist/current";
+import { getArtistMediaNotices } from "@/lib/media/moderation-queries";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import type { ArtistVideoItem } from "@/components/forms/VideoUpload";
@@ -39,7 +40,7 @@ export default async function ArtistProfileEditPage() {
     );
   }
 
-  const [{ data: genresData }, { data: videosData }, ent] = await Promise.all([
+  const [{ data: genresData }, { data: videosData }, ent, pendingMedia] = await Promise.all([
     supabase.from("genres").select("name").order("order_index"),
     supabase
       .from("artist_videos")
@@ -53,6 +54,9 @@ export default async function ArtistProfileEditPage() {
     // "max 3 video" e scopriva il vero limite (1) solo quando il server lo
     // bloccava.
     getEntitlements(artist.id),
+    // Foto/audio/cover in attesa di approvazione o rifiutati: senza questo,
+    // un caricamento riuscito ma ancora in coda sembra sparito nel nulla.
+    getArtistMediaNotices(artist.id),
   ]);
 
   const genreOptions = (genresData ?? []).map((g) => g.name as string);
@@ -97,10 +101,14 @@ export default async function ArtistProfileEditPage() {
       </header>
 
       <div className="space-y-3">
-        <InfoArtistaBlock artist={profile} genreOptions={genreOptions} />
-        <GalleryBlock artist={profile} />
+        <InfoArtistaBlock
+          artist={profile}
+          genreOptions={genreOptions}
+          pendingCover={pendingMedia.cover_image}
+        />
+        <GalleryBlock artist={profile} pendingMedia={pendingMedia.gallery} />
         <VideoBlock artist={profile} initialVideos={initialVideos} videoMax={ent.videoMax} />
-        <AudioBlock artist={profile} />
+        <AudioBlock artist={profile} pendingMedia={pendingMedia.audio_files} />
         <BookingBlock artist={profile} />
         <SocialBlock artist={profile} />
         <AccountBlock

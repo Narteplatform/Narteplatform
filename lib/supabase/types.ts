@@ -776,6 +776,10 @@ export interface Database {
           height: number | null;
           bunny_error: string | null;
           ready_at: string | null;
+          moderation_state: string;
+          moderation_note: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
         };
         Insert: {
           id?: string;
@@ -796,6 +800,10 @@ export interface Database {
           height?: number | null;
           bunny_error?: string | null;
           ready_at?: string | null;
+          moderation_state?: string;
+          moderation_note?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
         };
         Update: {
           id?: string;
@@ -816,6 +824,10 @@ export interface Database {
           height?: number | null;
           bunny_error?: string | null;
           ready_at?: string | null;
+          moderation_state?: string;
+          moderation_note?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
         };
         Relationships: [];
       };
@@ -1107,6 +1119,99 @@ export interface Database {
           attachment_size?: number | null;
           attachment_duration_ms?: number | null;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      artist_media_submissions: {
+        Row: {
+          id: string;
+          artist_id: string;
+          submitted_by: string | null;
+          target: "gallery" | "audio_files" | "cover_image";
+          media_kind: "image" | "audio";
+          url: string;
+          title: string | null;
+          storage_key: string | null;
+          mime_type: string | null;
+          bytes: number | null;
+          status: "pending" | "approved" | "rejected";
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          review_note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          artist_id: string;
+          submitted_by?: string | null;
+          target: "gallery" | "audio_files" | "cover_image";
+          media_kind: "image" | "audio";
+          url: string;
+          title?: string | null;
+          storage_key?: string | null;
+          mime_type?: string | null;
+          bytes?: number | null;
+          status?: "pending" | "approved" | "rejected";
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          review_note?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          artist_id?: string;
+          submitted_by?: string | null;
+          target?: "gallery" | "audio_files" | "cover_image";
+          media_kind?: "image" | "audio";
+          url?: string;
+          title?: string | null;
+          storage_key?: string | null;
+          mime_type?: string | null;
+          bytes?: number | null;
+          status?: "pending" | "approved" | "rejected";
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          review_note?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      conversation_blocks: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          blocked_user_id: string;
+          blocked_role: Role;
+          reason: string;
+          created_by: string | null;
+          created_at: string;
+          lifted_at: string | null;
+          lifted_by: string | null;
+          lift_note: string | null;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          blocked_user_id: string;
+          blocked_role: Role;
+          reason: string;
+          created_by?: string | null;
+          created_at?: string;
+          lifted_at?: string | null;
+          lifted_by?: string | null;
+          lift_note?: string | null;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          blocked_user_id?: string;
+          blocked_role?: Role;
+          reason?: string;
+          created_by?: string | null;
+          created_at?: string;
+          lifted_at?: string | null;
+          lifted_by?: string | null;
+          lift_note?: string | null;
         };
         Relationships: [];
       };

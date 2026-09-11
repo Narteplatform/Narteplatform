@@ -106,16 +106,13 @@ export function toGalleryPayload(v: GallerySectionValues) {
   return { gallery: v.gallery.filter(Boolean) };
 }
 
-// ─── galleria video (solo gli URL: i file caricati hanno action proprie) ───────
-
-export const videosSectionSchema = z.object({
-  videos: z.string().max(4000),
-});
-export type VideosSectionValues = z.infer<typeof videosSectionSchema>;
-
-export function toVideosPayload(v: VideosSectionValues) {
-  return { videos: splitLines(v.videos) };
-}
+// ─── galleria video ───────────────────────────────────────────────────────────
+// Qui stavano lo schema e il payload del campo "incolla i tuoi link YouTube".
+// Sono stati rimossi con la funzione: i video ora si caricano su N'arte e
+// vivono in artist_videos, che ha azioni proprie. Non erano più montati da
+// nessun form, ma `toVideosPayload` su una textarea vuota produceva
+// `videos: []` — cioè la cancellazione della colonna — e su questo schema una
+// funzione del genere che resta in giro prima o poi viene richiamata.
 
 // ─── tracce audio ─────────────────────────────────────────────────────────────
 

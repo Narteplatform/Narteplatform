@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
+import { BreadcrumbTitle } from "@/components/layout/BreadcrumbTitle";
 import type { ArtistTier } from "@/lib/supabase/types";
 import { ArtistStatusToggle } from "@/components/admin/ArtistStatusToggle";
 import { ArtistEditForm } from "@/components/admin/ArtistEditForm";
@@ -77,6 +78,10 @@ export default async function AdminArtistDetailPage({
 
   return (
     <div className="space-y-6">
+      {/* In cima alla shell compariva l'uuid preso dall'indirizzo. Qui il nome
+          d'arte c'è già: basta dirlo al breadcrumb. */}
+      <BreadcrumbTitle title={artist.stage_name} />
+
       <Link
         href="/admin/artisti"
         className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
