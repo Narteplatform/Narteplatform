@@ -3,26 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { requireAdminPageAccess, getAllowedAdminPages } from "@/lib/admin/permissions";
 
-async function ensureAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false as const, error: "Non autorizzato" };
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "superadmin") {
-    return { ok: false as const, error: "Permessi insufficienti" };
-  }
-  return { ok: true as const, user };
-}
+// Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
+// controllo del ruolo superadmin non bastava, perché un superadmin delegato
+// senza accesso alla pagina "Consulenza" poteva comunque invocare queste
+// azioni. requireAdminPageAccess applica anche il permesso per-pagina.
 
-// Autorizza superadmin (accesso totale) oppure consultant (limitato al proprio profilo).
-// Per il consultant restituisce anche il consultantId della sua riga in `consultants`.
+// Autorizza superadmin (accesso totale, previo permesso per-pagina) oppure
+// consultant (limitato al proprio profilo). Per il consultant restituisce
+// anche il consultantId della sua riga in `consultants`.
 async function ensureConsultantOrAdmin() {
   const supabase = await createClient();
   const {
@@ -37,6 +27,13 @@ async function ensureConsultantOrAdmin() {
     .maybeSingle();
   const role = (profile as { role?: string } | null)?.role;
   if (role === "superadmin") {
+    // Stesso controllo per-pagina di requireAdminPageAccess, ma senza
+    // ridirezionare: questa funzione è condivisa con il ramo "consultant",
+    // che si aspetta un esito {ok:false, error} e non una navigazione.
+    const allowed = await getAllowedAdminPages(user.id, user.email ?? null);
+    if (!allowed.has("consulenza")) {
+      return { ok: false as const, error: "Permessi insufficienti" };
+    }
     return { ok: true as const, user, isSuperadmin: true as const, consultantId: null as string | null };
   }
   if (role === "consultant") {
@@ -65,8 +62,7 @@ export async function createSlot(input: {
   durationMin?: number;
   consultantId?: string;
 }) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("consulenza");
   const parsed = slotSchema.safeParse({
     slotAt: input.slotAt,
     durationMin: input.durationMin ?? 30,
@@ -216,8 +212,7 @@ const consultantSchema = z.object({
 });
 
 export async function createConsultant(input: z.infer<typeof consultantSchema>) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("consulenza");
   const parsed = consultantSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
@@ -273,8 +268,7 @@ export async function linkConsultantAccount(input: {
   email: string;
   password: string;
 }) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("consulenza");
   if (!input.email || !input.password || input.password.length < 8) {
     return { ok: false as const, error: "Email valida e password (min 8) obbligatorie" };
   }
@@ -347,8 +341,7 @@ export async function updateConsultant(
 }
 
 export async function toggleConsultant(consultantId: string, isActive: boolean) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("consulenza");
   const admin = createAdminClient();
   const { error } = await admin
     .from("consultants")
@@ -363,8 +356,7 @@ export async function toggleConsultant(consultantId: string, isActive: boolean) 
 }
 
 export async function deleteConsultant(consultantId: string) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("consulenza");
   const admin = createAdminClient();
   const { error } = await admin.from("consultants").delete().eq("id", consultantId);
   if (error) return { ok: false as const, error: error.message };
@@ -465,8 +457,7 @@ export async function deleteSlotBatch(slotIds: string[]) {
 
 // #12 — Assegna un consulente reale a uno slot legacy (consultant_id NULL).
 export async function assignConsultantToSlot(slotId: string, consultantId: string) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("consulenza");
   if (!z.string().uuid().safeParse(slotId).success) {
     return { ok: false as const, error: "Slot non valido" };
   }
@@ -499,8 +490,7 @@ export async function updateConsultationStatus(
   consultationId: string,
   status: z.infer<typeof statusSchema>
 ) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("consulenza");
   if (!statusSchema.safeParse(status).success) {
     return { ok: false as const, error: "Status non valido" };
   }
@@ -515,8 +505,7 @@ export async function updateConsultationStatus(
 }
 
 export async function updateConsultationNotes(consultationId: string, notes: string) {
-  const ctx = await ensureAdmin();
-  if (!ctx.ok) return ctx;
+  await requireAdminPageAccess("consulenza");
   const admin = createAdminClient();
   const { error } = await admin
     .from("consultations")
