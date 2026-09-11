@@ -42,9 +42,12 @@ export async function uploadChatFile(
   });
   if (error) return { error: error.message };
 
-  const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  // Si salva il PERCORSO, non un indirizzo pubblico: il bucket è privato e
+  // l'indirizzo va firmato al momento della lettura, con una scadenza. Prima
+  // qui si chiamava getPublicUrl, e quell'indirizzo restava valido per sempre
+  // per chiunque lo avesse.
   return {
-    url: pub.publicUrl,
+    url: path,
     path,
     size: file.size,
     type: contentType,

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ExternalLink, Pencil, Plus, UserPlus } from "lucide-react";
+import { isUrlAssoluto, resolveMediaUrls } from "@/lib/storage/signed";
 import { createAdminClient } from "@/lib/supabase/server";
 import { isBunnyEmbedUrl } from "@/lib/storage/bunny/urls";
 import { Button } from "@/components/ui/Button";
@@ -68,6 +69,21 @@ export default async function AdminArtistsPage({
       .order("stage_name"),
   ]);
 
+  // I video di candidatura stanno in un bucket privato: in colonna c'è il
+  // percorso, e l'indirizzo apribile si firma qui. Una sola chiamata per tutte
+  // le candidature invece di una per riga.
+  const firmatiPerPath = await resolveMediaUrls(
+    "application-videos",
+    (applications ?? []).map((a) => a.video_url as string | null)
+  );
+  const videoCandidature = new Map<string, string>();
+  for (const a of applications ?? []) {
+    const salvato = a.video_url as string | null;
+    if (!salvato) continue;
+    const url = firmatiPerPath.get(salvato) ?? (isUrlAssoluto(salvato) ? salvato : null);
+    if (url) videoCandidature.set(a.id as string, url);
+  }
+
   const filteredArtists = (artists ?? [])
     .filter((a) => (filter === "all" ? true : a.status === filter))
     .filter((a) =>
@@ -135,11 +151,11 @@ export default async function AdminArtistsPage({
                         {a.bio}
                       </p>
                     )}
-                    {a.video_url && (
+                    {videoCandidature.get(a.id) && (
                       <video
                         controls
                         preload="metadata"
-                        src={a.video_url}
+                        src={videoCandidature.get(a.id)}
                         className="aspect-video w-full rounded-xl border border-border bg-black object-cover"
                       >
                         Il tuo browser non supporta la riproduzione video.

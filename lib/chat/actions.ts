@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { resolveMediaUrl } from "@/lib/storage/signed";
 import {
   chatMessageSchema,
   chatOfferSchema,
@@ -343,22 +344,26 @@ export async function respondToOffer(
 type AttachmentKind = "image" | "document" | "voice";
 
 /**
- * L'URL punta a uno storage nostro?
+ * Il valore è il percorso di un file caricato in QUESTA conversazione?
  *
- * Gli allegati di chat salgono su Supabase Storage (lib/chat/upload.ts); si
- * accetta anche la CDN di bunny.net, che è l'altra destinazione legittima dei
- * media della piattaforma. Qualunque altro host è rifiutato.
+ * lib/chat/upload.ts costruisce `<conversationId>/<uuid>-<nome>`. Legare il
+ * controllo alla conversazione, e non solo al bucket, impedisce anche di
+ * allegare a una trattativa un file caricato in un'altra.
+ *
+ * Gli URL assoluti restano accettati solo se puntano al nostro storage: è il
+ * formato che si salvava prima che il bucket diventasse privato.
  */
-function isNostroStorage(raw: string): boolean {
-  let u: URL;
-  try {
-    u = new URL(raw);
-  } catch {
-    return false;
+function isAllegatoDiQuestaConversazione(raw: string, conversationId: string): boolean {
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const host = new URL(raw).hostname.toLowerCase();
+      return host.endsWith(".supabase.co") || host.endsWith(".b-cdn.net");
+    } catch {
+      return false;
+    }
   }
-  if (u.protocol !== "https:") return false;
-  const host = u.hostname.toLowerCase();
-  return host.endsWith(".supabase.co") || host.endsWith(".b-cdn.net");
+  if (raw.includes("..") || raw.startsWith("/")) return false;
+  return raw.startsWith(`${conversationId}/`);
 }
 
 export async function sendAttachment(input: {
@@ -376,13 +381,13 @@ export async function sendAttachment(input: {
   if (typeof input.size !== "number" || input.size <= 0 || input.size > 25 * 1024 * 1024) {
     return { ok: false, error: "File troppo grande (max 25 MB)" };
   }
-  // L'allegato deve stare sul NOSTRO storage. Con il solo controllo "inizia per
-  // http" una parte della conversazione poteva far puntare l'allegato a un
-  // dominio qualsiasi: l'altra vedeva un'anteprima che sembra nostra ma la
-  // richiesta la serve un terzo, che così sa quando e da dove è stata aperta —
-  // e può cambiare il contenuto dopo l'invio.
-  if (!input.url || !isNostroStorage(input.url)) {
-    return { ok: false, error: "URL allegato non valido" };
+  // L'allegato deve stare sul NOSTRO storage, dentro la cartella di QUESTA
+  // conversazione. Con il vecchio controllo "inizia per http" una parte poteva
+  // far puntare l'allegato a un dominio qualsiasi: l'altra vedeva un'anteprima
+  // che sembra nostra, ma a servirla era un terzo — che sapeva così quando e da
+  // dove veniva aperta, e poteva cambiarne il contenuto dopo l'invio.
+  if (!input.url || !isAllegatoDiQuestaConversazione(input.url, input.conversation_id)) {
+    return { ok: false, error: "Allegato non valido" };
   }
   const supabase = await createClient();
   const {
@@ -495,4 +500,44 @@ export async function markConversationRead(conversationId: string): Promise<Acti
       .is("read_by_organizer_at", null);
   }
   return { ok: true };
+}
+
+/**
+ * Firma l'allegato di un messaggio arrivato in tempo reale.
+ *
+ * I messaggi caricati con la pagina arrivano già firmati da getMessages. Quelli
+ * che arrivano dopo, dal canale realtime, no: postgres_changes consegna la riga
+ * grezza, e in colonna c'è il percorso nel bucket privato, che il browser non
+ * sa aprire. Senza questa funzione, un allegato ricevuto a chat aperta
+ * resterebbe un riquadro vuoto fino al ricaricamento della pagina.
+ *
+ * Il controllo di appartenenza c'è lo stesso: si firma solo un allegato di una
+ * conversazione di cui si fa parte.
+ */
+export async function signMessageAttachment(
+  messageId: string
+): Promise<{ ok: true; url: string | null } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Non autorizzato" };
+
+  const admin = createAdminClient();
+  const { data: msg, error } = await admin
+    .from("messages")
+    .select("conversation_id, attachment_url")
+    .eq("id", messageId)
+    .maybeSingle();
+  if (error || !msg?.attachment_url) return { ok: false, error: "Allegato non trovato" };
+
+  const { isParty, isSuperadmin } = await resolveConversationRole(
+    msg.conversation_id,
+    user.id
+  );
+  if (!isParty && !isSuperadmin) {
+    return { ok: false, error: "Non sei parte di questa conversazione" };
+  }
+
+  return { ok: true, url: await resolveMediaUrl("chat-attachments", msg.attachment_url) };
 }

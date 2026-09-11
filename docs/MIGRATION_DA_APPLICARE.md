@@ -19,6 +19,38 @@ funzionalità nuove restano spente finché non si arriva in fondo.
 
 ---
 
+## `0058_private_buckets_and_organizers.sql` — l'ultimo residuo
+
+⚠️ **È L'UNICA MIGRATION DI TUTTO IL LAVORO CHE VA APPLICATA *DOPO* IL DEPLOY
+DEL CODICE, NON PRIMA.** Le altre si possono eseguire in qualsiasi ordine
+rispetto al rilascio; questa no.
+
+Chiude le due cose rimaste aperte dopo la `0057`:
+
+1. **I bucket diventano privati.** Prima restavano pubblici: la `0057` aveva
+   tolto la possibilità di *elencare* i file, ma chi avesse avuto l'indirizzo
+   esatto poteva ancora scaricarli senza account, per sempre. Ora gli indirizzi
+   si firmano e scadono dopo un'ora, quindi un link inoltrato o finito in un log
+   smette di valere.
+2. **L'anagrafica organizzatori non è più pubblica.** `organizers` contiene i
+   telefoni e `venues` anche indirizzi ed email: erano leggibili da chiunque con
+   la anon key. La vetrina pubblica non ne risente, perché nome e struttura
+   arrivano dalla vista `booking_requests_public`, che espone solo le colonne
+   mostrabili e gira con i privilegi del proprietario.
+
+**Perché l'ordine conta:** da quando i bucket sono privati, gli allegati si
+aprono solo tramite URL firmati, e a firmarli è il codice
+(`lib/storage/signed.ts`). Eseguendo la migration prima del deploy, nella
+finestra intermedia allegati e video di candidatura non si aprirebbero. Nessun
+file va perso in nessun caso — cambia solo come se ne ricava l'indirizzo — e
+oggi i due bucket sono comunque **vuoti**.
+
+Dopo l'esecuzione, le tre verifiche sono scritte in fondo al file. La più utile
+è la seconda: `select organizer_name, venue_name from booking_requests_public
+limit 5;` deve restituire righe come prima (al momento del controllo erano 5).
+
+---
+
 # ⛔ PRIORITÀ ASSOLUTA — le due migration di sicurezza
 
 Queste due **vengono prima di tutto il resto** e non dipendono dalle altre.
@@ -172,6 +204,7 @@ deve rompersi nella finestra fra il rilascio del codice e l'esecuzione qui).
 ```
 0056 → [verifica grant]        ← PRIMA DI TUTTO: falla critica
 0057                            ← finché i bucket sono vuoti
+0058                            ← SOLO DOPO il deploy del codice
 
 0048 → 0049 → 0050 → [verifica] → 0050_validate
      → 0051 → [verifica] → [validate constraint] → 0052

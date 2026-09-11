@@ -137,9 +137,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: upErr.message }, { status: 500 });
   }
 
-  const { data: pub } = admin.storage.from(BUCKET).getPublicUrl(path);
+  // Si restituisce il PERCORSO, non un indirizzo pubblico: il bucket è privato
+  // perché questi video sono dati personali di chi si candida, e l'indirizzo
+  // va firmato al momento in cui l'amministratore li guarda.
   return NextResponse.json({
-    url: pub.publicUrl,
+    url: path,
     path,
     bucket: BUCKET,
     name: file.name,

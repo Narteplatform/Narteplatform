@@ -1,3 +1,4 @@
+import { resolveMediaUrls } from "@/lib/storage/signed";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { ArtistTier, ChatMessageKind, ChatOfferStatus, Role } from "@/lib/supabase/types";
 
@@ -299,6 +300,15 @@ export async function getMessages(conversationId: string): Promise<ChatMessage[]
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true })
     .limit(5000);
+
+  // Gli allegati stanno in un bucket privato: in colonna c'è il percorso, e
+  // l'indirizzo apribile si firma qui, una volta sola per tutta la
+  // conversazione invece che riga per riga.
+  const firmati = await resolveMediaUrls(
+    "chat-attachments",
+    (data ?? []).map((m) => m.attachment_url)
+  );
+
   return (data ?? []).map((m) => ({
     id: m.id,
     conversationId: m.conversation_id,
@@ -315,7 +325,9 @@ export async function getMessages(conversationId: string): Promise<ChatMessage[]
     offerBookingRequestId: m.offer_booking_request_id,
     readByArtistAt: m.read_by_artist_at,
     readByOrganizerAt: m.read_by_organizer_at,
-    attachmentUrl: m.attachment_url,
+    attachmentUrl: m.attachment_url
+      ? firmati.get(m.attachment_url) ?? m.attachment_url
+      : null,
     attachmentType: m.attachment_type,
     attachmentName: m.attachment_name,
     attachmentSize: m.attachment_size,
