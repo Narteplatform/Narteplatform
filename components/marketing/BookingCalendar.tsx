@@ -10,6 +10,7 @@ import { Clock, X, CheckCircle2, ArrowRight, CalendarCheck2 } from "lucide-react
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { CityAutocomplete } from "@/components/forms/CityAutocomplete";
+import { TermsConsent } from "@/components/forms/PrivacyConsent";
 import { BUDGET_RANGES, rangeToMin, type BudgetRangeValue } from "@/lib/constants/budget-ranges";
 import { formatSlot, normalizeTime, resolveSlotsForDate, type Slot } from "@/lib/slots";
 import type { ArtistInterestInput } from "@/app/(user)/artisti/[slug]/_schema";
@@ -82,6 +83,9 @@ type FormValues = {
   message: string;
   budgetRange: BudgetRangeValue | "";
   venueId: string;
+  // Accettazione di termini e informativa. Obbligatoria: per chi non è ancora
+  // registrato questo invio CREA un account e lo promuove a organizzatore.
+  acceptedTerms: boolean;
 };
 
 export function BookingCalendar({
@@ -156,6 +160,7 @@ export function BookingCalendar({
       message: "",
       budgetRange: "",
       venueId: organizerVenues[0]?.id ?? "",
+      acceptedTerms: false,
     },
   });
 
@@ -186,6 +191,10 @@ export function BookingCalendar({
   async function onSubmit(values: FormValues) {
     if (!selectedISO) return;
     setError(null);
+    if (!values.acceptedTerms) {
+      setError("Devi accettare i termini e l'informativa privacy per inviare la richiesta.");
+      return;
+    }
     const budgetMin = rangeToMin(values.budgetRange);
     const payload: Record<string, unknown> = {
       artistId,
@@ -194,6 +203,7 @@ export function BookingCalendar({
       message: values.message,
       budgetOffer: budgetMin ?? undefined,
       budgetRange: values.budgetRange || undefined,
+      acceptedTerms: true,
     };
     if (needsSignup) {
       payload.email = values.email;
@@ -608,6 +618,10 @@ export function BookingCalendar({
                       Il profilo artista non può inviare richieste.
                     </p>
                   )}
+                  <TermsConsent
+                    register={register("acceptedTerms")}
+                    error={errors.acceptedTerms?.message}
+                  />
                   {error && <p className="text-sm text-red-500">{error}</p>}
                   <div className="flex flex-wrap items-center gap-3">
                     <Button

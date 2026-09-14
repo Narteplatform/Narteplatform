@@ -210,7 +210,62 @@ deve rompersi nella finestra fra il rilascio del codice e l'esecuzione qui).
      → 0051 → [verifica] → [validate constraint] → 0052
      → [conteggio duplicati] → 0053 → 0054
      → 0055
+
+0049 → 0059                     ← consensi: scrittura, gate, moduli pubblici
 ```
 
 `0051/0052`, `0053/0054` e `0055` sono indipendenti fra loro: si possono
 applicare in momenti diversi.
+
+---
+
+## Consensi — `0059_consents_write.sql`
+
+⚠️ **Richiede la `0049` già applicata**, e la `0049` è stata **modificata**:
+ora contiene anche i `revoke` di tabella che le mancavano. Se l'avessi già
+eseguita, riesegui solo il blocco finale (`revoke all on public.user_consents
+from anon, authenticated;` più il `grant select`): il resto del file è
+ripetibile e non fa danni, ma quel blocco è l'unica aggiunta.
+
+Cosa introduce la `0059`:
+
+| Oggetto | A cosa serve |
+|---|---|
+| `record_consent(kind, version, accepted)` | Scrive un consenso per l'utente in sessione. `accepted = false` registra un ritiro. |
+| `accept_legal_documents(version, marketing)` | Privacy + termini (+ marketing) in una transazione sola, più l'aggiornamento della cache. |
+| `profiles.legal_version_accepted` | Versione già accettata. La legge il middleware. |
+| `consent_version` / `consent_at` su 4 tabelle | Prova del consenso per chi non ha un account. |
+| `record_signup_consents()` ridefinita | Ora aggiorna anche la colonna: senza, chi si registra accettando finirebbe **comunque** nel gate al primo accesso. |
+
+Verifica subito dopo — devono uscire entrambe le funzioni:
+
+```sql
+select proname from pg_proc
+where proname in ('record_consent', 'accept_legal_documents');
+```
+
+E la colonna:
+
+```sql
+select column_name from information_schema.columns
+where table_name = 'profiles' and column_name = 'legal_version_accepted';
+```
+
+### Ordine rispetto al deploy del codice
+
+Il codice **tollera lo schema vecchio**: se arriva online prima della migration,
+il middleware si accorge che la colonna non esiste, ripiega sulla lettura del
+solo ruolo e **lascia passare tutti**. Nessuno resta chiuso fuori dalla propria
+dashboard, e il gate resta semplicemente inattivo finché la colonna non c'è.
+
+Quindi l'ordine è libero, ma conviene: **prima la migration, poi il deploy** —
+così il gate entra in funzione senza una finestra intermedia in cui il consenso
+non viene archiviato.
+
+### Cosa succede il giorno dopo
+
+Dal momento in cui la `0059` è applicata, **ogni utente già registrato** —
+artisti, organizzatori, consulenti, superadmin — trova al primo accesso alle
+aree riservate la schermata `/accetta-condizioni`. È voluto: nessuno di loro ha
+mai accettato nulla, e gli account creati da un amministratore non hanno mai
+visto una casella.

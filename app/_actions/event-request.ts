@@ -4,14 +4,22 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
-import {
-  allowByIp,
-  checkRateLimit,
-  emailFingerprint,
-  LIMITI,
-} from "@/lib/security/rate-limit";
+import { LIMITI } from "@/lib/security/rate-limit";
+import { guardPublicForm } from "@/lib/security/form-guard";
+import { honeypotShape } from "@/lib/validators/schemas";
+import { publicFormConsent } from "@/lib/legal/consents";
 
 export const eventRequestSchema = z.object({
+  ...honeypotShape,
+  /**
+   * Presa visione dell'informativa. Obbligatoria come negli altri moduli
+   * pubblici: qui si raccolgono nome, email, telefono e budget di una persona
+   * identificabile, e si conservano.
+   */
+  acceptedPrivacy: z.literal(true, {
+    errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
+  }),
+
   name: z.string().min(2).max(80),
   email: z.string().email(),
   phone: z.string().max(30).optional().or(z.literal("").transform(() => undefined)),
@@ -29,20 +37,15 @@ export async function submitEventRequest(input: EventRequestInput) {
   if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
   const data = parsed.data;
 
-  // Freno: modulo pubblico che scrive in contact_messages e fa partire una mail
-  // interna. Doppia soglia, per IP e per indirizzo: cambiare l'uno senza
-  // l'altro è troppo facile.
-  if (!(await allowByIp(LIMITI.form))) {
-    return { ok: false as const, error: "Troppe richieste. Riprova fra un'ora." };
-  }
-  if (
-    !(await checkRateLimit(
-      { ...LIMITI.form, scope: "event-request-email" },
-      emailFingerprint(data.email)
-    ))
-  ) {
-    return { ok: false as const, error: "Troppe richieste. Riprova fra un'ora." };
-  }
+  // Modulo pubblico: honeypot, controllo dei tempi di compilazione e doppia
+  // soglia per IP e per indirizzo, tutto in una chiamata. Prima c'erano solo le
+  // due soglie, montate a mano: la trappola anti-bot mancava del tutto, ed è
+  // quella che ferma i moduli compilati da uno script in mezzo secondo.
+  const guard = await guardPublicForm(input, LIMITI.form, {
+    email: data.email,
+    area: "richiesta-evento",
+  });
+  if (!guard.ok) return { ok: false as const, error: guard.error };
 
   const lines = [
     `**Tipo evento:** ${data.eventType}`,
@@ -62,6 +65,7 @@ export async function submitEventRequest(input: EventRequestInput) {
     email: data.email,
     subject: `Richiesta evento — ${data.eventType}`,
     message: lines,
+    ...publicFormConsent(),
   });
 
   if (error) return { ok: false as const, error: error.message };

@@ -13,6 +13,7 @@ import {
   LIMITI,
 } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
+import { LEGAL_VERSION } from "@/lib/legal/content";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -139,6 +140,19 @@ export async function POST(req: Request) {
           role: "organizer",
           display_name: data.displayName,
           full_name: data.displayName,
+          // Consenso. Lo schema esige `acceptedTerms: true` per arrivare fin
+          // qui, quindi a questo punto la spunta c'è stata. Questi tre campi
+          // finiscono in `raw_user_meta_data`, dove la trigger
+          // `record_signup_consents` (0049) li legge e scrive le righe di
+          // `user_consents` — le stesse che scriverebbe una registrazione dal
+          // modulo normale.
+          //
+          // Senza di essi l'account nascerebbe muto: creato, confermato e
+          // promosso a organizzatore senza una riga che dica che qualcuno ha
+          // accettato qualcosa. Era il buco più grosso del sito.
+          accepted_terms: true,
+          accepted_marketing: false,
+          legal_version: LEGAL_VERSION,
         },
       });
 

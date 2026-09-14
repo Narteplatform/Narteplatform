@@ -29,9 +29,14 @@ const nextConfig: NextConfig = {
   // admin e chat; se la console resta pulita si rinomina la chiave in
   // `Content-Security-Policy` e la policy diventa attiva.
   //
-  // QUANDO ENTRERÀ IUBENDA: aggiungere `https://cdn.iubenda.com` a script-src e
-  // connect-src, e `https://cs.iubenda.com` a script-src. Senza, il banner non
-  // si carica.
+  // ⚠️ TRAPPOLA DA TENERE PRESENTE. In sola segnalazione il browser ESEGUE
+  // comunque tutto: iubenda, Google Analytics e il pixel funzionerebbero anche
+  // con questa policy sbagliata. È facile concludere «il banner compare, la CSP
+  // va bene» e scoprire il giorno dell'attivazione che il banner non si carica
+  // più — lasciando il sito senza gestione del consenso e con il tracciamento
+  // acceso, il peggiore dei risultati possibili. I domini vanno quindi aggiunti
+  // ORA, con la policy ancora in segnalazione, e verificati leggendo i rapporti
+  // in console PRIMA di rinominare la chiave.
   // I documenti legali vivono in una sola pagina dinamica (app/(public)/legale/[doc])
   // ma devono rispondere a indirizzi brevi e stabili: `/privacy`, non
   // `/legale/privacy`. Sono URL che finiscono nelle informative, nei contratti e
@@ -53,21 +58,46 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       // 'unsafe-inline' e 'unsafe-eval' servono a Next in sviluppo e agli
       // script JSON-LD inline. Da stringere quando si passerà ai nonce.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com data:",
+      // cdn.iubenda.com  → la Cookie Solution vera e propria
+      // cs.iubenda.com   → lo script di blocco automatico
+      // googletagmanager → gtag.js di GA4 (sta lì anche senza Tag Manager)
+      // connect.facebook → il pixel di Meta
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com " +
+        "https://cdn.iubenda.com https://cs.iubenda.com " +
+        "https://www.googletagmanager.com https://connect.facebook.net",
+      // fonts.googleapis.com e fonts.gstatic.com RIMOSSI: `next/font/google` in
+      // app/layout.tsx scarica i due caratteri al momento del build e li serve
+      // da /_next/static/media. Il browser non contatta mai Google, e tenere
+      // aperti quei domini allargava la policy per una dipendenza inesistente —
+      // che per giunta andrebbe poi dichiarata nell'informativa.
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self' data:",
       // blob: serve alle anteprime locali degli upload prima dell'invio.
-      "img-src 'self' data: blob: https://*.supabase.co https://*.b-cdn.net https://images.unsplash.com https://source.unsplash.com",
+      // GA4 manda ancora parte dei colpi come immagine, e il pixel pure.
+      "img-src 'self' data: blob: https://*.supabase.co https://*.b-cdn.net " +
+        "https://images.unsplash.com https://source.unsplash.com " +
+        "https://cdn.iubenda.com https://www.google-analytics.com " +
+        "https://www.googletagmanager.com https://www.facebook.com",
       "media-src 'self' blob: https://*.supabase.co https://*.b-cdn.net",
       // video.bunnycdn.com  → l'upload TUS dei video, che parte dal browser.
       // *.storage.bunnycdn.com → la PUT presigned dell'audio: il file non può
       //   passare dal server perché il body di una funzione Vercel si ferma a
       //   4,5 MB e una traccia arriva a 25 MB.
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://video.bunnycdn.com https://*.storage.bunnycdn.com https://*.b-cdn.net",
+      // consent.iubenda.com → archiviazione delle prove di consenso.
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co " +
+        "https://api.stripe.com https://video.bunnycdn.com " +
+        "https://*.storage.bunnycdn.com https://*.b-cdn.net " +
+        "https://cdn.iubenda.com https://cs.iubenda.com https://consent.iubenda.com " +
+        "https://www.google-analytics.com https://*.google-analytics.com " +
+        "https://*.analytics.google.com https://www.googletagmanager.com " +
+        "https://www.facebook.com https://graph.facebook.com",
       // Il player dei video è un iframe Bunny. Entrambi gli hostname: la
       // documentazione indica player.mediadelivery.net, ma il pannello ha
       // storicamente proposto anche iframe.mediadelivery.net.
-      "frame-src https://js.stripe.com https://hooks.stripe.com https://player.mediadelivery.net https://iframe.mediadelivery.net",
+      // www.iubenda.com → il riquadro con l'informativa che il banner apre.
+      "frame-src https://js.stripe.com https://hooks.stripe.com " +
+        "https://player.mediadelivery.net https://iframe.mediadelivery.net " +
+        "https://www.iubenda.com https://www.facebook.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

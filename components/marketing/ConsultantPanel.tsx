@@ -4,6 +4,8 @@ import { useMemo, useState, useTransition } from "react";
 import { Phone, Calendar, CheckCircle2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { requestConsultation } from "@/app/(user)/artisti/_actions";
+import { PrivacyConsent } from "@/components/forms/PrivacyConsent";
+import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from "@/lib/security/honeypot";
 
 export type ConsultantSlot = {
   id: string;
@@ -16,7 +18,15 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [needs, setNeeds] = useState("");
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [openCalendar, setOpenCalendar] = useState(false);
+
+  // Trappola anti-bot. Questo pannello non usa react-hook-form, quindi i due
+  // campi si gestiscono a mano invece che con <HoneypotFields>: il campo
+  // esca resta vuoto per una persona, e l'istante di apertura serve a scartare
+  // i moduli compilati in mezzo secondo.
+  const [esca, setEsca] = useState("");
+  const [apertoAlle] = useState(() => Date.now());
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -43,6 +53,8 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
     if (!/^\S+@\S+\.\S+$/.test(email)) return setError("Email non valida.");
     if (phone.trim().length < 5) return setError("Inserisci un numero di telefono valido.");
     if (needs.trim().length < 10) return setError("Descrivi brevemente le tue necessità.");
+    if (!acceptedPrivacy)
+      return setError("Devi accettare l'informativa privacy per proseguire.");
     setOpenCalendar(true);
   }
 
@@ -50,7 +62,16 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
     setError(null);
     setSelectedSlot(slotId);
     start(async () => {
-      const res = await requestConsultation({ slotId, name, email, phone, needs });
+      const res = await requestConsultation({
+        slotId,
+        name,
+        email,
+        phone,
+        needs,
+        acceptedPrivacy: true,
+        [HONEYPOT_FIELD]: esca,
+        [TIMESTAMP_FIELD]: String(apertoAlle),
+      });
       if (!res.ok) {
         setError(res.error ?? "Errore. Riprova.");
         setSelectedSlot(null);
@@ -150,6 +171,42 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
               placeholder="Es: cerco un duo acustico per matrimonio a luglio, capienza 80 persone, budget 1500€…"
             />
           </Field>
+          {/* Campo esca: fuori schermo e fuori dal percorso di tabulazione, ma
+              per uno script è un campo come gli altri. Vedi lib/security/honeypot.ts. */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              width: 1,
+              height: 1,
+              overflow: "hidden",
+              clip: "rect(0 0 0 0)",
+              whiteSpace: "nowrap",
+              border: 0,
+              padding: 0,
+              margin: -1,
+            }}
+          >
+            <label htmlFor={HONEYPOT_FIELD}>
+              Non compilare questo campo
+              <input
+                id={HONEYPOT_FIELD}
+                name={HONEYPOT_FIELD}
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={esca}
+                onChange={(e) => setEsca(e.target.value)}
+              />
+            </label>
+          </div>
+          <PrivacyConsent
+            register={{
+              checked: acceptedPrivacy,
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+                setAcceptedPrivacy(e.target.checked),
+            }}
+          />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button
             type="button"

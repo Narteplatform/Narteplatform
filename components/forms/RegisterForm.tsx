@@ -11,8 +11,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Input, Label } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
-import Link from "next/link";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { TermsConsent } from "@/components/forms/PrivacyConsent";
 import { LEGAL_VERSION } from "@/lib/legal/content";
 
 type AccountKind = "user" | "organizer";
@@ -209,22 +209,14 @@ export function RegisterForm({ next }: { next?: string | null }) {
       {/* CONSENSI. Prima non c'era alcuna casella: si creava un account senza
           che nessuno avesse accettato nulla, e senza che ne restasse traccia. */}
       <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-4">
-        <Checkbox
-          {...register("acceptedTerms")}
+        <TermsConsent
+          register={register("acceptedTerms")}
           error={errors.acceptedTerms?.message}
-          label={
-            <>
-              Ho letto e accetto la{" "}
-              <Link href="/privacy" target="_blank" className="underline underline-offset-2">
-                informativa privacy
-              </Link>{" "}
-              e i{" "}
-              <Link href="/termini" target="_blank" className="underline underline-offset-2">
-                termini d&rsquo;uso
-              </Link>
-              .
-            </>
-          }
+        />
+        <Checkbox
+          {...register("acceptedAge")}
+          error={errors.acceptedAge?.message}
+          label="Dichiaro di avere almeno 18 anni."
         />
         <Checkbox
           {...register("acceptedMarketing")}

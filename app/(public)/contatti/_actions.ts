@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/server";
 import { guardPublicForm } from "@/lib/security/form-guard";
+import { publicFormConsent } from "@/lib/legal/consents";
 import { LIMITI } from "@/lib/security/rate-limit";
 import { contactSchema, type ContactInput } from "@/lib/validators/schemas";
 import { dispatchEmail } from "@/lib/emails/dispatch";
@@ -25,12 +26,18 @@ export async function submitContact(input: ContactInput) {
   try {
     const supabase = createAdminClient();
 
+    // Versione dell'informativa e istante in cui la casella è stata spuntata.
+    // Chi scrive dal modulo contatti non ha un account, quindi la prova non può
+    // stare in `user_consents`: va sulla stessa riga del dato che autorizza.
+    const consenso = publicFormConsent();
+
     // Salvataggio in contact_messages (retrocompatibilità)
     const { error } = await supabase.from("contact_messages").insert({
       name: data.name,
       email: data.email,
       subject: data.subject ?? null,
       message: data.message,
+      ...consenso,
     });
     if (error) {
       return { ok: false as const, error: "Errore salvataggio messaggio" };
@@ -47,6 +54,9 @@ export async function submitContact(input: ContactInput) {
       message: leadMessage,
       source: "contatti",
       status: "new",
+      // Lo stesso consenso, sulla copia: le due righe nascono dallo stesso
+      // invio e vanno cancellate con gli stessi criteri.
+      ...consenso,
     });
   } catch (e) {
     return { ok: false as const, error: "Errore server" };

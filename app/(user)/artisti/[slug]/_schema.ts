@@ -5,6 +5,15 @@ import { z } from "zod";
 // solo funzioni async — esportare uno schema/zod object da quel file rompe
 // la registrazione delle Server Actions su Next.js 15/16.
 export const artistInterestSchema = z.object({
+  /**
+   * Presa visione dell'informativa. Chi compila questo modulo è un visitatore
+   * non registrato che lascia nome, email e telefono: la casella è obbligatoria
+   * come su ogni altro modulo pubblico.
+   */
+  acceptedPrivacy: z.literal(true, {
+    errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
+  }),
+
   artistId: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
   timeSlot: z
@@ -31,6 +40,22 @@ export type ArtistInterestInput = z.infer<typeof artistInterestSchema>;
 
 // Nuovo flow: richiesta da organizzatore (loggato o signup inline).
 export const bookingRequestPublicSchema = z.object({
+  /**
+   * Accettazione di termini e informativa.
+   *
+   * Qui non è una formalità: questo è il flusso che, per chi non ha ancora un
+   * account, ne CREA uno già confermato e promuove la persona a organizzatore.
+   * Fino a ieri si diventava utenti della piattaforma senza aver accettato
+   * nulla — era il punto di maggiore esposizione di tutto il sito.
+   *
+   * Per chi è già loggato la spunta resta comunque richiesta dal modulo, ma il
+   * suo consenso è già nel registro: qui serve a coprire il caso della
+   * registrazione contestuale.
+   */
+  acceptedTerms: z.literal(true, {
+    errorMap: () => ({ message: "Devi accettare i termini e l'informativa privacy" }),
+  }),
+
   artistId: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
   timeSlot: z

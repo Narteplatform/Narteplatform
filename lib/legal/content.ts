@@ -37,9 +37,31 @@ export type LegalDoc = {
   body: string;
 };
 
-/** Versione dei documenti. Cambiarla quando il testo cambia in modo sostanziale:
- *  viene registrata insieme al consenso, così si sa a cosa l'utente ha aderito. */
-export const LEGAL_VERSION = "2026-08-28";
+/** Versione dei documenti. È la data dell'ultima modifica, anche minima, ed è
+ *  quella che si mostra in pagina e si registra insieme al consenso: serve a
+ *  sapere esattamente quale testo l'utente aveva davanti. */
+export const LEGAL_VERSION = "2026-09-14";
+
+/**
+ * Versione del CONSENSO — deliberatamente separata dalla precedente.
+ *
+ * È questa, e non `LEGAL_VERSION`, che il gate confronta per decidere se
+ * rimettere un utente davanti alla schermata di accettazione. Va alzata solo
+ * per modifiche SOSTANZIALI: una finalità nuova, un fornitore in più, una
+ * categoria di dati che prima non si trattava. Correggere un refuso o riscrivere
+ * un paragrafo più chiaro muove `LEGAL_VERSION` e lascia ferma questa.
+ *
+ * Senza la distinzione, ogni ritocco redazionale rimetterebbe in coda l'intera
+ * base utenti davanti a un modulo bloccante — e un consenso chiesto così spesso
+ * smette di essere letto, che è esattamente il contrario dello scopo.
+ */
+export const LEGAL_CONSENT_VERSION = "2026-08-28";
+// ⚠️ Resta ferma di proposito, benché i testi siano cambiati il 14/09/2026: le
+// aggiunte sono bozze in attesa della revisione dell'avvocato, e non ha senso
+// far accettare a tutti un testo che cambierà ancora. Va alzata UNA volta, al
+// momento della pubblicazione della versione validata. Nel frattempo il gate
+// funziona lo stesso, perché chi non ha mai accettato nulla ha la colonna
+// vuota e viene intercettato comunque.
 
 /**
  * Id dei documenti su iubenda, quando saranno disponibili.
@@ -65,6 +87,25 @@ relativa ai tuoi dati personali puoi scriverci dalla
 <p class="da-completare"><em>Da completare con l'avvocato: denominazione legale
 completa, sede, partita IVA e indirizzo email dedicato alla privacy.</em></p>
 `;
+
+/**
+ * Il sito usa strumenti di misurazione o pubblicitari?
+ *
+ * NON è una preferenza redazionale: è la stessa condizione che accende davvero
+ * i tag in `components/analytics/TrackingScripts.tsx`. Il testo della cookie
+ * policy si adegua da solo, così non può capitare ciò che sarebbe capitato
+ * altrimenti — valorizzare le variabili su Vercel e lasciare online una pagina
+ * legale che giura, nero su bianco, che nessuno traccia niente.
+ *
+ * Quando i documenti passeranno a iubenda questa pagina rimanderà comunque alla
+ * versione generata e mantenuta aggiornata; questo blocco resta la rete di
+ * sicurezza per il periodo intermedio, in cui il banner può essere già attivo e
+ * i documenti ancora locali.
+ */
+const TRACCIAMENTO_ATTIVO = Boolean(
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ||
+    process.env.NEXT_PUBLIC_META_PIXEL_ID
+);
 
 // ───────────────────────────────────────────────────────────── PRIVACY ──────
 
@@ -129,10 +170,58 @@ una funzione precisa:</p>
 <li><strong>Stripe</strong> — pagamento degli abbonamenti. I dati della carta
 sono gestiti direttamente da Stripe: <strong>non transitano mai dai nostri
 sistemi e non li vediamo</strong>.</li>
+<li><strong>bunny.net</strong> — archiviazione e distribuzione di immagini,
+tracce audio e video, e riproduzione dei video.</li>
+${
+  TRACCIAMENTO_ATTIVO
+    ? `<li><strong>Google Analytics</strong> — statistiche di navigazione in forma
+aggregata. Si attiva solo con il tuo consenso.</li>
+<li><strong>Meta</strong> — misurazione delle campagne pubblicitarie e
+remarketing. Si attiva solo con il tuo consenso, ed è un trattamento di cui Meta
+è contitolare insieme a noi.</li>`
+    : ""
+}
 </ul>
 <p class="da-completare"><em>Da completare con l'avvocato: paesi di
 archiviazione, garanzie per i trasferimenti fuori dall'Unione Europea e
 riferimenti agli accordi sottoscritti con ciascun fornitore.</em></p>
+
+<h2>Alcune cose che vale la pena spiegare per esteso</h2>
+<p>Sono i trattamenti particolari di questa piattaforma: non li si trova
+descritti in un'informativa generica, ma è giusto che tu sappia che avvengono.</p>
+
+<h3>La chat fra artisti e organizzatori</h3>
+<p>I messaggi, gli allegati e le note vocali scambiati in una trattativa sono
+conservati sui nostri sistemi. Il team N&rsquo;arte può accedervi per fornire
+assistenza, gestire una contestazione fra le parti o verificare una
+segnalazione. Non li leggiamo per altri scopi e non li usiamo a fini
+commerciali.</p>
+
+<h3>I nomi dei componenti della formazione</h3>
+<p>Un artista può indicare sul proprio profilo i nomi e i ruoli delle persone
+che suonano con lui. Sono <strong>dati di terzi, che riceviamo da lui e non
+dall&rsquo;interessato</strong>, e diventano pubblici insieme al profilo. Chiediamo
+all&rsquo;artista di averli informati e di avere il loro consenso prima di
+inserirli. Se il tuo nome compare su un profilo e non vuoi, scrivici: lo
+togliamo.</p>
+
+<h3>L&rsquo;account creato inviando una richiesta di booking</h3>
+<p>Chi invia una richiesta dal profilo di un artista senza essere registrato può
+creare l&rsquo;account nello stesso passaggio: in quel momento nasce un profilo di
+tipo &laquo;organizzatore&raquo;, con i dati indicati nel modulo e con la struttura
+eventualmente descritta. È un account a tutti gli effetti, con le stesse
+possibilità di accesso, modifica e cancellazione degli altri.</p>
+
+<h3>Le recensioni</h3>
+<p>Dopo una data confermata e passata, l&rsquo;organizzatore può lasciare una
+recensione all&rsquo;artista. La recensione è <strong>pubblica</strong> e resta sul
+profilo. Riguarda una persona identificata: per questo può essere contestata,
+e noi possiamo nasconderla se è offensiva, falsa o estranea all&rsquo;esperienza.</p>
+
+<h3>Il registro delle email inviate</h3>
+<p>Teniamo traccia delle comunicazioni che il sistema invia — destinatario,
+oggetto, esito — per accorgerci quando qualcosa non arriva a destinazione e
+poterlo correggere. È un registro tecnico, consultabile solo dal team.</p>
 
 <h2>Il compenso degli artisti non passa da noi</h2>
 <p>N'arte mette in contatto artisti e organizzatori. Il compenso di
@@ -162,17 +251,45 @@ personali.</p>
 
 // ────────────────────────────────────────────────────────────── COOKIE ──────
 
-const COOKIE: LegalDoc = {
-  slug: "cookie-policy",
-  title: "Cookie policy",
-  standfirst:
-    "Su N'arte non ci sono cookie di profilazione né strumenti di tracciamento di terze parti.",
-  updatedAt: LEGAL_VERSION,
-  body: `
+const COOKIE_IN_BREVE_SENZA_TRACCIAMENTO = `
 <h2>In breve</h2>
 <p><strong>Non usiamo Google Analytics, non usiamo il pixel di Meta, non usiamo
 alcuno strumento pubblicitario o di profilazione.</strong> Nessuno traccia la
 tua navigazione su questo sito, né noi né terzi.</p>
+`;
+
+const COOKIE_IN_BREVE_CON_TRACCIAMENTO = `
+<h2>In breve</h2>
+<p>Oltre ai cookie necessari al funzionamento del sito, usiamo strumenti di
+misurazione e pubblicitari di terze parti. <strong>Non partono finché non li
+accetti</strong>: fino a quel momento non vengono nemmeno caricati, e puoi
+cambiare idea quando vuoi dal pannello delle preferenze.</p>
+
+<h3>Statistiche di navigazione — Google Analytics</h3>
+<p>Ci dice quante persone visitano il sito e quali pagine guardano, in forma
+aggregata. Non lo usiamo per farti pubblicità: le funzioni pubblicitarie di
+Google restano disattivate.</p>
+
+<h3>Misurazione e remarketing — pixel di Meta</h3>
+<p>Serve a capire quali campagne portano iscrizioni e a riproporti i nostri
+annunci su Facebook e Instagram. È profilazione a tutti gli effetti e richiede
+il tuo consenso esplicito. Su questi dati Meta è contitolare insieme a noi.</p>
+
+<h3>Riproduzione dei video — Bunny Stream</h3>
+<p>Il riproduttore video è fornito da BunnyWay d.o.o. (Slovenia): imposta cookie
+propri e raccoglie statistiche di visione. Per questo un video non parte finché
+non acconsenti, o finché non sblocchi quel singolo contenuto.</p>
+`;
+
+const COOKIE: LegalDoc = {
+  slug: "cookie-policy",
+  title: "Cookie policy",
+  standfirst: TRACCIAMENTO_ATTIVO
+    ? "Quali cookie usiamo, quali richiedono il tuo consenso e come cambiare idea."
+    : "Su N'arte non ci sono cookie di profilazione né strumenti di tracciamento di terze parti.",
+  updatedAt: LEGAL_VERSION,
+  body: `
+${TRACCIAMENTO_ATTIVO ? COOKIE_IN_BREVE_CON_TRACCIAMENTO : COOKIE_IN_BREVE_SENZA_TRACCIAMENTO}
 
 <h2>Cosa usiamo davvero</h2>
 
@@ -196,10 +313,17 @@ registrato, e la scelta fatta su questo banner.</p>
 Bloccando quelli necessari, però, l'accesso all'area riservata smetterà di
 funzionare.</p>
 
-<h2>Se cambierà qualcosa</h2>
+${
+  TRACCIAMENTO_ATTIVO
+    ? `<h2>Come cambiare idea</h2>
+<p>Puoi rivedere o ritirare il consenso in qualunque momento dal pannello delle
+preferenze, raggiungibile dal pulsante in basso a sinistra di ogni pagina. Il
+ritiro non tocca la validità di quanto fatto prima.</p>`
+    : `<h2>Se cambierà qualcosa</h2>
 <p>Se in futuro introdurremo strumenti di misurazione o di marketing, questa
 pagina verrà aggiornata e ti verrà chiesto il consenso <strong>prima</strong>
-che vengano attivati.</p>
+che vengano attivati.</p>`
+}
 `,
 };
 
@@ -230,6 +354,49 @@ chi organizza l'evento.</li>
 chat, il tracciamento delle offerte. L'esecuzione dell'accordo riguarda solo le
 parti che l'hanno stretto.</p>
 
+<h3>Gli adempimenti dell'evento</h3>
+<p>Tutto ciò che un evento dal vivo comporta resta a carico di chi lo organizza
+— l'organizzatore o il locale che ospita:</p>
+<ul>
+<li>gli obblighi verso la <strong>SIAE</strong> e i diritti connessi;</li>
+<li>l'<strong>agibilità INPS</strong> dei lavoratori dello spettacolo e gli
+obblighi contributivi;</li>
+<li>la <strong>sicurezza</strong> del luogo e delle persone, la capienza, i
+piani di emergenza;</li>
+<li>le <strong>autorizzazioni</strong>, i permessi e le comunicazioni alle
+autorità locali;</li>
+<li>le <strong>coperture assicurative</strong> necessarie.</li>
+</ul>
+<p>Usando la piattaforma per inviare una richiesta, l'organizzatore
+<strong>garantisce</strong> di essere in regola con questi obblighi o di
+assumerli interamente, e <strong>tiene indenne N'arte</strong> da qualunque
+pretesa di terzi che ne derivi, comprese quelle di enti e autorità.</p>
+
+<h3>Il compenso annotato in chat</h3>
+<p>La chat consente di registrare il compenso concordato con la conferma di
+entrambe le parti. <strong>È un promemoria di quanto le parti si sono dette, non
+un contratto concluso tramite N'arte.</strong> Serve a evitare malintesi e a
+ricostruire la trattativa: non ci rende parte dell'accordo, non ci obbliga a
+nulla e non garantisce che il pagamento avvenga.</p>
+
+<h3>Cosa non garantiamo</h3>
+<p>Non rispondiamo dell'inadempimento di una delle parti, del mancato o ritardato
+pagamento del compenso, della qualità della prestazione artistica, di
+annullamenti, ritardi o mancate presentazioni. Verifichiamo i profili prima di
+ammetterli al catalogo, ma questo non è una garanzia sul comportamento delle
+persone.</p>
+<p class="da-completare"><em>Da rivedere con l'avvocato: questa sezione
+distribuisce responsabilità fra le parti, ma una clausola contrattuale non
+vincola automaticamente SIAE, INPS o gli organi ispettivi. Va verificato che la
+garanzia e la manleva dell'organizzatore siano formulate in modo efficace, e se
+il modello richieda un'autorizzazione all'intermediazione.</em></p>
+
+<h2>Chi può usare N'arte</h2>
+<p><strong>Il servizio è riservato ai maggiorenni.</strong> Per registrarsi,
+candidarsi come artista o inviare una richiesta di booking bisogna avere almeno
+18 anni, e lo si dichiara al momento dell'iscrizione. Se veniamo a sapere che un
+account appartiene a un minore lo chiudiamo e cancelliamo i dati collegati.</p>
+
 <h2>Account</h2>
 <p>Per usare le funzioni riservate serve un account. I dati che inserisci devono
 essere veri e aggiornati, e le credenziali vanno custodite: sei responsabile di
@@ -238,13 +405,40 @@ quanto avviene attraverso il tuo accesso.</p>
 valuta. L'approvazione non è automatica e può essere negata.</p>
 
 <h2>Contenuti caricati</h2>
-<p>Fotografie, audio, video e testi che carichi restano tuoi. Caricandoli ci
-autorizzi a mostrarli sulla piattaforma e a usarli per promuovere il tuo profilo
-e gli eventi a cui partecipi.</p>
-<p>Dichiari di avere il diritto di caricarli: che siano tuoi o che tu abbia
-ottenuto il permesso di chi ne detiene i diritti — fotografi, altri musicisti,
-autori. Possiamo rimuovere un contenuto che risulti privo di questi diritti o
-contrario a queste regole.</p>
+<p>Fotografie, audio, video e testi che carichi <strong>restano tuoi</strong>.
+Non ne acquistiamo la proprietà e non li rivendiamo.</p>
+
+<h3>Cosa ci autorizzi a fare</h3>
+<p>Caricandoli ci concedi una licenza <strong>non esclusiva e gratuita</strong>
+per: mostrarli sulla piattaforma, ridimensionarli e convertirli per adattarli ai
+diversi formati e dispositivi, e usarli per promuovere il tuo profilo, gli
+eventi a cui partecipi e la piattaforma stessa, anche sui nostri canali social.
+La licenza dura finché il contenuto resta pubblicato e <strong>cessa quando lo
+rimuovi o chiudi l'account</strong>, salvo le copie già diffuse su canali terzi
+o conservate nei backup, che si esauriscono con i normali cicli di
+sovrascrittura.</p>
+
+<h3>Cosa ci garantisci</h3>
+<p>Dichiari di avere il diritto di caricare ogni contenuto e di concedercene
+l'uso. In particolare:</p>
+<ul>
+<li>di essere l'autore dei brani, o di avere il permesso degli autori e degli
+editori per le <strong>cover</strong> e i rifacimenti;</li>
+<li>di essere titolare dei <strong>diritti sulle registrazioni</strong> che
+carichi, o di averne l'autorizzazione da chi li detiene;</li>
+<li>di avere il consenso dei <strong>fotografi e dei videomaker</strong> le cui
+opere pubblichi;</li>
+<li>di avere il consenso all'uso dell'immagine di <strong>tutte le persone
+riconoscibili</strong> nelle foto e nei video;</li>
+<li>di avere informato i <strong>componenti della tua formazione</strong> e
+raccolto il loro consenso prima di inserire i loro nomi e ruoli sul profilo
+pubblico, che è visibile a chiunque.</li>
+</ul>
+<p>Se un terzo contesta un contenuto, <strong>ne rispondi tu</strong> e ci tieni
+indenni dalle conseguenze. Possiamo rimuovere senza preavviso ciò che risulti
+privo di questi diritti o contrario a queste regole.</p>
+<p class="da-completare"><em>Da rivedere con l'avvocato: ampiezza e durata della
+licenza, sorte dei contenuti alla cessazione, e formulazione della manleva.</em></p>
 
 <h2>Comportamento</h2>
 <p>Non è consentito usare la piattaforma per molestare altre persone, pubblicare
@@ -269,9 +463,41 @@ giorni per ripensarci dalla sottoscrizione, secondo il Codice del consumo.</p>
 <p class="da-completare"><em>Da completare con l'avvocato: modalità di esercizio
 del recesso, effetti sul servizio già fruito e modulo da rendere disponibile.</em></p>
 
-<h2>Sospensione</h2>
-<p>Possiamo sospendere o chiudere un account che violi queste regole, dandone
-comunicazione. Nei casi gravi la sospensione può essere immediata.</p>
+<h2>Moderazione, sospensione e segnalazioni</h2>
+
+<h3>Cosa possiamo fare, e quando</h3>
+<p>Possiamo intervenire quando un contenuto o un comportamento viola queste
+regole o la legge. Gli interventi possibili sono, in ordine di gravità:</p>
+<ul>
+<li><strong>rimuovere un contenuto</strong> (una foto, una traccia, un video,
+una recensione);</li>
+<li><strong>nascondere una recensione</strong> offensiva, falsa o estranea
+all'esperienza dell'evento;</li>
+<li><strong>limitare una conversazione</strong> in caso di molestie;</li>
+<li><strong>sospendere un profilo</strong> dal catalogo pubblico;</li>
+<li><strong>chiudere l'account</strong> nei casi gravi o ripetuti.</li>
+</ul>
+<p>Salvo i casi in cui la legge lo impedisca, <strong>ti diciamo cosa abbiamo
+fatto e perché</strong>, e puoi contestare la decisione scrivendoci: la
+riesaminiamo e ti rispondiamo. Nei casi gravi l'intervento può essere immediato
+e la motivazione arrivare subito dopo.</p>
+
+<h3>Segnalare un contenuto</h3>
+<p>Se trovi sulla piattaforma un contenuto che ritieni illecito o contrario a
+queste regole puoi segnalarcelo dalla <a href="/contatti">pagina contatti</a>,
+indicando dove si trova, perché lo ritieni tale e come ricontattarti.
+Confermiamo la ricezione, esaminiamo la segnalazione e ti comunichiamo l'esito.
+Chi ha pubblicato il contenuto viene informato della decisione e può
+contestarla.</p>
+
+<h3>Accesso del team alle conversazioni</h3>
+<p>Il team N'arte può accedere al contenuto delle conversazioni fra artisti e
+organizzatori per fornire assistenza, gestire una contestazione fra le parti o
+verificare una segnalazione. Non le leggiamo per altri scopi e non le usiamo a
+fini commerciali.</p>
+<p class="da-completare"><em>Da rivedere con l'avvocato: tipizzazione dei casi,
+tempi di risposta alle segnalazioni, indirizzo dedicato da indicare, e verifica
+degli obblighi derivanti dal regolamento europeo sui servizi digitali.</em></p>
 
 <h2>Responsabilità</h2>
 <p>Ci impegniamo perché il servizio funzioni con continuità, ma non possiamo

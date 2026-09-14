@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Open_Sans, Space_Grotesk } from "next/font/google";
 import { getSiteUrl } from "@/lib/site-url";
+import { IubendaCs } from "@/components/legal/IubendaCs";
+import { TrackingScripts } from "@/components/analytics/TrackingScripts";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -64,7 +66,18 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="it" className={`${openSans.variable} ${spaceGrotesk.variable}`}>
-      <body>{children}</body>
+      <body>
+        {/* Gestione del consenso e tracciamento stanno QUI e non nel layout
+            pubblico, per tre ragioni che convergono: `beforeInteractive` è
+            onorato solo dal layout radice; il banner deve comparire anche nelle
+            aree riservate, dove oggi non appare mai; e la misurazione deve
+            coprire l'intero percorso dell'utente, che attraversa più gruppi di
+            rotte. Entrambi i componenti non emettono nulla finché le rispettive
+            variabili d'ambiente sono vuote. */}
+        <IubendaCs />
+        <TrackingScripts />
+        {children}
+      </body>
     </html>
   );
 }

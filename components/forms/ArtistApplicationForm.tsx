@@ -15,6 +15,7 @@ import { submitArtistApplication } from "@/app/(public)/candidatura-artista/_act
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
 import { HoneypotFields } from "@/components/forms/HoneypotField";
 import { PrivacyConsent } from "@/components/forms/PrivacyConsent";
+import { Checkbox } from "@/components/ui/Checkbox";
 
 export function ArtistApplicationForm({
   genreOptions = [],
@@ -159,6 +160,11 @@ export function ArtistApplicationForm({
       <PrivacyConsent
         register={register("acceptedPrivacy")}
         error={errors.acceptedPrivacy?.message}
+      />
+      <Checkbox
+        {...register("acceptedAge")}
+        error={errors.acceptedAge?.message}
+        label="Dichiaro di avere almeno 18 anni."
       />
 
       <Button type="submit" disabled={isSubmitting}>

@@ -105,3 +105,21 @@ drop trigger if exists on_auth_user_created_consents on auth.users;
 create trigger on_auth_user_created_consents
   after insert on auth.users
   for each row execute function public.record_signup_consents();
+
+-- ---------------------------------------------------------------------------
+-- Privilegi di tabella.
+--
+-- La RLS filtra le RIGHE, non concede l'accesso alla tabella: sono due strati
+-- distinti e servono entrambi. Senza un `revoke` esplicito, `anon` e
+-- `authenticated` ereditano i privilegi di default dello schema `public` e la
+-- tabella resta raggiungibile via PostgREST — dove a fermare una scrittura
+-- resterebbe solo l'assenza di policy. Meglio non arrivarci: si toglie tutto e
+-- si riconcede il solo `select`, che è ciò che le due policy qui sopra
+-- governano.
+--
+-- Stesso doppio strato di 0046_artist_profile_views.sql. `service_role` non
+-- viene toccato: scavalca la RLS per definizione, ed è il canale con cui la
+-- trigger `record_signup_consents` qui sopra inserisce le righe.
+-- ---------------------------------------------------------------------------
+revoke all on public.user_consents from anon, authenticated;
+grant select on public.user_consents to authenticated;

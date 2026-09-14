@@ -150,6 +150,14 @@ Da eseguire dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md):
   → deve dare una sola riga, `supabase | ready | <totale>`.
 - `0050_bunny_video_validate.sql` — validazione dei vincoli, passo separato da
   eseguire solo dopo aver letto l'esito dei tre controlli scritti nel file.
+- `0059_consents_write.sql` — funzioni di scrittura dei consensi, colonna
+  `profiles.legal_version_accepted` per il gate di accettazione, colonne di
+  prova sui moduli pubblici. **Richiede la 0049.** Additiva.
+  ⚠️ La `0049` è stata modificata: ora contiene anche i `revoke` di tabella
+  che le mancavano. Applicarla nella versione aggiornata.
+  Dal momento in cui la 0059 è applicata, ogni utente già registrato trova la
+  schermata `/accetta-condizioni` al primo accesso alle aree riservate: è voluto,
+  nessuno ha mai accettato nulla. Guida completa in `docs/IUBENDA_INTEGRAZIONE.md`.
 
 ## Comandi
 

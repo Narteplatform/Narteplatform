@@ -9,6 +9,7 @@ export type LeadStatus = "new" | "contacted" | "closed";
 export type AvailabilityStatus = "available" | "busy";
 export type PriceBand = "budget" | "standard" | "premium" | "luxury";
 export type ArtistTier = "free" | "pro" | "max";
+export type ConsentKind = "privacy" | "termini" | "marketing";
 export type ArtistPath = "cover_artist" | "tribute_band" | "progetto_inedito";
 export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "privato" | "altro";
 export type BookingStatus = "pending" | "in_trattativa" | "confermata" | "rifiutata" | "annullata";
@@ -54,6 +55,8 @@ export interface Database {
           full_name: string | null;
           avatar_url: string | null;
           created_at: string;
+          /** Ultima LEGAL_VERSION accettata. `null` = non ha mai accettato nulla. */
+          legal_version_accepted: string | null;
         };
         Insert: {
           id: string;
@@ -61,6 +64,7 @@ export interface Database {
           full_name?: string | null;
           avatar_url?: string | null;
           created_at?: string;
+          legal_version_accepted?: string | null;
         };
         Update: {
           id?: string;
@@ -68,6 +72,7 @@ export interface Database {
           full_name?: string | null;
           avatar_url?: string | null;
           created_at?: string;
+          legal_version_accepted?: string | null;
         };
         Relationships: [];
       };
@@ -354,6 +359,8 @@ export interface Database {
           source: string;
           contact_name: string | null;
           created_at: string;
+          consent_version: string | null;
+          consent_at: string | null;
         };
         Insert: {
           id?: string;
@@ -371,6 +378,8 @@ export interface Database {
           source?: string;
           contact_name?: string | null;
           created_at?: string;
+          consent_version?: string | null;
+          consent_at?: string | null;
         };
         Update: {
           id?: string;
@@ -388,6 +397,8 @@ export interface Database {
           source?: string;
           contact_name?: string | null;
           created_at?: string;
+          consent_version?: string | null;
+          consent_at?: string | null;
         };
         Relationships: [];
       };
@@ -462,6 +473,8 @@ export interface Database {
           video_path: string | null;
           instruments: string[];
           created_at: string;
+          consent_version: string | null;
+          consent_at: string | null;
         };
         Insert: {
           id?: string;
@@ -476,6 +489,8 @@ export interface Database {
           video_path?: string | null;
           instruments?: string[];
           created_at?: string;
+          consent_version?: string | null;
+          consent_at?: string | null;
         };
         Update: {
           id?: string;
@@ -490,6 +505,35 @@ export interface Database {
           video_path?: string | null;
           instruments?: string[];
           created_at?: string;
+          consent_version?: string | null;
+          consent_at?: string | null;
+        };
+        Relationships: [];
+      };
+      user_consents: {
+        Row: {
+          id: string;
+          user_id: string;
+          kind: ConsentKind;
+          version: string;
+          accepted: boolean;
+          accepted_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          kind: ConsentKind;
+          version: string;
+          accepted?: boolean;
+          accepted_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          kind?: ConsentKind;
+          version?: string;
+          accepted?: boolean;
+          accepted_at?: string;
         };
         Relationships: [];
       };
@@ -501,6 +545,8 @@ export interface Database {
           subject: string | null;
           message: string;
           created_at: string;
+          consent_version: string | null;
+          consent_at: string | null;
         };
         Insert: {
           id?: string;
@@ -509,6 +555,8 @@ export interface Database {
           subject?: string | null;
           message: string;
           created_at?: string;
+          consent_version?: string | null;
+          consent_at?: string | null;
         };
         Update: {
           id?: string;
@@ -517,6 +565,8 @@ export interface Database {
           subject?: string | null;
           message?: string;
           created_at?: string;
+          consent_version?: string | null;
+          consent_at?: string | null;
         };
         Relationships: [];
       };
@@ -1398,6 +1448,8 @@ export interface Database {
           status: "requested" | "confirmed" | "completed" | "cancelled";
           admin_notes: string | null;
           created_at: string;
+          consent_version: string | null;
+          consent_at: string | null;
         };
         Insert: {
           id?: string;
@@ -1410,6 +1462,8 @@ export interface Database {
           status?: "requested" | "confirmed" | "completed" | "cancelled";
           admin_notes?: string | null;
           created_at?: string;
+          consent_version?: string | null;
+          consent_at?: string | null;
         };
         Update: {
           id?: string;
@@ -1422,6 +1476,8 @@ export interface Database {
           status?: "requested" | "confirmed" | "completed" | "cancelled";
           admin_notes?: string | null;
           created_at?: string;
+          consent_version?: string | null;
+          consent_at?: string | null;
         };
         Relationships: [];
       };
@@ -1556,6 +1612,17 @@ export interface Database {
       artist_view_stats: {
         Args: { p_artist_id: string; p_days: number };
         Returns: { day: string; organizer_views: number; other_views: number }[];
+      };
+      // Consensi — vedi 0059_consents_write.sql e lib/legal/consents.ts.
+      // Scrivono sempre e solo per l'utente in sessione: il chiamante non
+      // sceglie per chi si sta registrando il consenso.
+      record_consent: {
+        Args: { p_kind: ConsentKind; p_version: string; p_accepted?: boolean };
+        Returns: undefined;
+      };
+      accept_legal_documents: {
+        Args: { p_version: string; p_marketing?: boolean | null };
+        Returns: undefined;
       };
     };
     Enums: {

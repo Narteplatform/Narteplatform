@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/server";
 import { guardPublicForm } from "@/lib/security/form-guard";
+import { publicFormConsent } from "@/lib/legal/consents";
 import { LIMITI } from "@/lib/security/rate-limit";
 import {
   artistApplicationSchema,
@@ -47,6 +48,9 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
       },
       video_url: data.video_url ?? null,
       video_path: data.video_path ?? null,
+      // Prova del consenso, sulla stessa riga della candidatura: quando quella
+      // non approvata verrà cancellata, se ne andrà con lei.
+      ...publicFormConsent(),
     });
     if (error) return { ok: false as const, error: "Errore salvataggio candidatura" };
   } catch {

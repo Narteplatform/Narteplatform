@@ -5,6 +5,9 @@ import { useForm } from "react-hook-form";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { submitEventRequest, type EventRequestInput } from "@/app/_actions/event-request";
+import { HoneypotFields } from "@/components/forms/HoneypotField";
+import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from "@/lib/security/honeypot";
+import { PrivacyConsent } from "@/components/forms/PrivacyConsent";
 
 type Values = {
   name: string;
@@ -15,6 +18,12 @@ type Values = {
   location: string;
   budget: string;
   message: string;
+  acceptedPrivacy: boolean;
+  // I due campi trappola. Devono stare qui e finire nel payload: la guardia
+  // lato server, se non li trova, lascia passare — quindi dimenticarli non
+  // rompe niente in modo visibile, disattiva solo l'anti-bot in silenzio.
+  [HONEYPOT_FIELD]?: string;
+  [TIMESTAMP_FIELD]?: string;
 };
 
 export function EventRequestForm() {
@@ -30,11 +39,16 @@ export function EventRequestForm() {
       location: "",
       budget: "",
       message: "",
+      acceptedPrivacy: false,
     },
   });
 
   async function onSubmit(values: Values) {
     setError(null);
+    if (!values.acceptedPrivacy) {
+      setError("Devi accettare l'informativa privacy per inviare la richiesta.");
+      return;
+    }
     const payload: EventRequestInput = {
       name: values.name,
       email: values.email,
@@ -44,6 +58,9 @@ export function EventRequestForm() {
       location: values.location || undefined,
       budget: values.budget || undefined,
       message: values.message,
+      acceptedPrivacy: true,
+      [HONEYPOT_FIELD]: values[HONEYPOT_FIELD],
+      [TIMESTAMP_FIELD]: values[TIMESTAMP_FIELD],
     };
     const res = await submitEventRequest(payload);
     if (!res.ok) {
@@ -76,6 +93,7 @@ export function EventRequestForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <HoneypotFields register={register as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Nome e cognome" required>
           <Input
@@ -142,6 +160,7 @@ export function EventRequestForm() {
           {error}
         </p>
       )}
+      <PrivacyConsent register={register("acceptedPrivacy")} />
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" variant="default" size="lg" disabled={isSubmitting}>
           {isSubmitting ? "Invio in corso…" : "Invia richiesta"}

@@ -1,7 +1,14 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-import type { Database } from "@/lib/supabase/types";
+import type { Database, Role } from "@/lib/supabase/types";
+import {
+  LEGAL_COOKIE,
+  LEGAL_COOKIE_MAX_AGE,
+  copreVersioneCorrente,
+  isGateExempt,
+  isGateSkippableRequest,
+} from "@/lib/legal/gate";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -61,25 +68,112 @@ export async function middleware(request: NextRequest) {
   // modo corretto di rispondere 404, e riusa app/not-found.tsx invece di
   // riscrivere l'URL verso una rotta interna di Next.
 
-  if (
-    user &&
+  // ───────────────────────────────────────────────────────── GATE LEGALE ──
+  //
+  // Gli account creati da un amministratore — tutti gli artisti, i consulenti,
+  // i superadmin invitati — non hanno mai accettato termini e informativa: quei
+  // percorsi non passano da `signUp`, quindi la trigger che registra il
+  // consenso non trova metadati da leggere. Lo stesso vale per chiunque si sia
+  // iscritto prima che i documenti esistessero. Qui li si intercetta.
+  //
+  // COSTO. Chi ha già accettato porta un cookie con la versione e non tocca il
+  // database: la verifica è un confronto fra stringhe. Chi non ce l'ha paga UNA
+  // query, e nelle tre aree riservate è la stessa che il middleware faceva già
+  // per leggere il ruolo — arricchita di una colonna, non raddoppiata.
+  const serveRuolo =
+    !!user &&
     (path.startsWith("/admin") ||
       path.startsWith("/dashboard") ||
-      path.startsWith("/organizzatore"))
-  ) {
-    // Lettura ruolo via service role (bypassa RLS, evita ricorsione delle policy
-    // "is superadmin" che si auto-referenziano su profiles).
-    const admin = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-    const { data: profile } = await admin
+      path.startsWith("/organizzatore"));
+
+  const gateApplicabile =
+    !!user && !isGateExempt(path) && !isGateSkippableRequest(request.headers);
+  const gateDaVerificare =
+    gateApplicabile &&
+    !copreVersioneCorrente(request.cookies.get(LEGAL_COOKIE)?.value);
+
+  let profile: { role: Role; legal_version_accepted: string | null } | null = null;
+  let letturaProfiloFallita = false;
+
+  // Client con service role: bypassa la RLS ed evita la ricorsione delle policy
+  // "is superadmin", che si auto-referenziano su `profiles`. Creato una volta
+  // sola e riusato sia dal gate sia dai controlli di ruolo qui sotto — istanziarlo
+  // non apre connessioni, ma averne due copie invita a divergere.
+  const admin =
+    user && (serveRuolo || gateDaVerificare)
+      ? createClient<Database>(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          { auth: { autoRefreshToken: false, persistSession: false } }
+        )
+      : null;
+
+  if (admin && user) {
+    const { data, error } = await admin
       .from("profiles")
-      .select("role")
+      .select("role, legal_version_accepted")
       .eq("id", user.id)
       .single();
 
+    if (error) {
+      // SCHEMA VECCHIO. Se questo codice arriva online prima che la migration
+      // 0059 sia stata applicata a mano, `legal_version_accepted` non esiste e
+      // l'intera select fallisce — portandosi via anche il RUOLO, con la
+      // conseguenza che ogni artista verrebbe sbattuto fuori dalla propria
+      // dashboard. Si riprova quindi chiedendo la sola colonna che è sempre
+      // esistita: il sito continua a funzionare come prima e il gate resta
+      // inattivo finché la colonna non c'è.
+      //
+      // Questo secondo giro costa una query in più, ma solo nella finestra fra
+      // il rilascio del codice e l'applicazione della migration. Quando la
+      // colonna esiste, non viene mai eseguito.
+      const ripiego = await admin
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      profile = ripiego.data
+        ? { role: ripiego.data.role, legal_version_accepted: null }
+        : null;
+      // In entrambi i casi il gate deve lasciar passare: o non sappiamo nulla
+      // dell'utente, o sappiamo il ruolo ma non se abbia accettato. Dedurre un
+      // "non ha accettato" dall'assenza della colonna manderebbe l'intera base
+      // utenti su una schermata che non può funzionare.
+      letturaProfiloFallita = true;
+    } else {
+      profile = data ?? null;
+    }
+  }
+
+  if (gateDaVerificare) {
+    if (letturaProfiloFallita) {
+      // Fallire APERTI, come già fa il limitatore di frequenza. Un errore
+      // transitorio del database non deve trasformarsi in un sito inaccessibile
+      // per tutti: il consenso si riguadagna alla richiesta successiva, una
+      // piattaforma ferma no. Davanti ai dati veri restano comunque
+      // l'autenticazione e le policy RLS.
+    } else if (copreVersioneCorrente(profile?.legal_version_accepted)) {
+      // Accettato: si memorizza, così le prossime navigazioni non interrogano
+      // più il database.
+      response.cookies.set(LEGAL_COOKIE, profile!.legal_version_accepted!, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: LEGAL_COOKIE_MAX_AGE,
+      });
+    } else {
+      const gate = request.nextUrl.clone();
+      gate.pathname = "/accetta-condizioni";
+      gate.search = "";
+      // Il percorso COMPLETO, non solo il pathname: chi stava aprendo
+      // /artisti/tizio?data=2026-09-01 deve tornarci con i suoi parametri.
+      gate.searchParams.set("next", `${path}${request.nextUrl.search}`);
+      return NextResponse.redirect(gate);
+    }
+  }
+
+  if (serveRuolo && admin && user) {
     const role = profile?.role;
     if (path.startsWith("/admin")) {
       if (role === "superadmin") {

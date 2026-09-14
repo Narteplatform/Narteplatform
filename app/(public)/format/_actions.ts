@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/server";
 import { guardPublicForm } from "@/lib/security/form-guard";
+import { publicFormConsent } from "@/lib/legal/consents";
 import { LIMITI } from "@/lib/security/rate-limit";
 import { formatInterestSchema, type FormatInterestInput } from "@/lib/validators/schemas";
 import { dispatchEmail } from "@/lib/emails/dispatch";
@@ -31,6 +32,7 @@ export async function submitFormatInterest(input: FormatInterestInput) {
         : data.message,
       source: "format",
       status: "new",
+      ...publicFormConsent(),
     });
     if (error) {
       return { ok: false as const, error: "Errore durante il salvataggio. Riprova." };

@@ -69,6 +69,19 @@ export const artistApplicationSchema = z.object({
   acceptedPrivacy: z.literal(true, {
     errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
   }),
+  /**
+   * Dichiarazione di maggiore età.
+   *
+   * N'arte accetta solo maggiorenni: è una scelta di prodotto, non un vincolo
+   * di legge, e chiude in partenza tutto il regime speciale dei minori —
+   * consenso genitoriale, verifica dell'età, limiti al trattamento. La
+   * dichiarazione non è un consenso e non finisce in `user_consents`: è una
+   * condizione d'accesso, e come tale sta nei Termini che si accettano qui
+   * accanto.
+   */
+  acceptedAge: z.literal(true, {
+    errorMap: () => ({ message: "Il servizio è riservato ai maggiorenni" }),
+  }),
 
   name: z.string().min(2).max(80),
   email: z.string().email(),
@@ -229,6 +242,19 @@ export const authSchema = z.object({
     errorMap: () => ({
       message: "Per creare l'account devi accettare privacy e termini",
     }),
+  }),
+  /**
+   * Dichiarazione di maggiore età.
+   *
+   * N'arte accetta solo maggiorenni: è una scelta di prodotto, non un vincolo
+   * di legge, e chiude in partenza tutto il regime speciale dei minori —
+   * consenso genitoriale, verifica dell'età, limiti al trattamento. La
+   * dichiarazione non è un consenso e non finisce in `user_consents`: è una
+   * condizione d'accesso, e come tale sta nei Termini che si accettano qui
+   * accanto.
+   */
+  acceptedAge: z.literal(true, {
+    errorMap: () => ({ message: "Il servizio è riservato ai maggiorenni" }),
   }),
   /** Facoltativo e separato: il consenso al marketing non si può accorpare. */
   acceptedMarketing: z.boolean().optional().default(false),

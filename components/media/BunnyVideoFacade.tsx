@@ -5,6 +5,8 @@ import { Play, Volume2 } from "lucide-react";
 import { streamEmbedUrl } from "@/lib/storage/bunny/urls";
 import { VideoPoster } from "@/components/media/VideoPoster";
 import { videoAspectRatio } from "@/lib/media/aspect";
+import { useTrackingConsent } from "@/lib/legal/consent-client";
+import { iubendaAttivo } from "@/lib/legal/iubenda";
 
 /**
  * Player Bunny a FACCIATA: il poster ora, l'iframe solo al click.
@@ -28,6 +30,19 @@ import { videoAspectRatio } from "@/lib/media/aspect";
  * quindi il video parte davvero al primo click. L'audio si riattiva col
  * pulsante qui sotto, che parla al player col protocollo player.js — lo stesso
  * compromesso di YouTube e Instagram, e l'unico che il browser consenta.
+ *
+ * CONSENSO. L'iframe è di terza parte: il player di Bunny (BunnyWay d.o.o.,
+ * Slovenia) imposta cookie propri e raccoglie statistiche di visione. La
+ * facciata faceva già metà del lavoro, non caricandolo finché nessuno preme
+ * play; mancava che quel play fosse informato. Da qui lo sblocco per singolo
+ * video: chi non vuole cookie di statistica in generale può comunque decidere
+ * di guardare QUESTO video, ed è il modello che il Garante considera valido per
+ * i contenuti incorporati.
+ *
+ * Se iubenda non è configurato, o il suo script è stato bloccato da
+ * un'estensione, si FALLISCE CHIUSI: compare l'avviso, non il video. Un player
+ * che parte perché il gestore del consenso non ha risposto è esattamente il
+ * caso che non deve accadere.
  */
 export function BunnyVideoFacade({
   guid,
@@ -42,6 +57,14 @@ export function BunnyVideoFacade({
 }) {
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
+  const { measurement } = useTrackingConsent();
+  const [sbloccatoQui, setSbloccatoQui] = useState(false);
+  const [avviso, setAvviso] = useState(false);
+
+  // Finché iubenda non è configurato non esiste alcun consenso da raccogliere e
+  // il player si comporta come prima. Dal momento in cui c'è, serve o il
+  // consenso generale alla misurazione o lo sblocco di questo singolo video.
+  const puoRiprodurre = !iubendaAttivo || measurement || sbloccatoQui;
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const label = title?.trim() || "Video";
   const aspectRatio = videoAspectRatio(width, height);
@@ -90,10 +113,45 @@ export function BunnyVideoFacade({
     );
   }
 
+  if (avviso) {
+    return (
+      <div
+        className="relative flex w-full flex-col items-center justify-center gap-3 bg-black/90 p-6 text-center"
+        style={{ aspectRatio }}
+      >
+        <p className="max-w-sm text-sm text-white/90">
+          Per riprodurre il video il player di <strong>Bunny Stream</strong>{" "}
+          (BunnyWay d.o.o., Slovenia) imposta cookie propri e raccoglie
+          statistiche di visione.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSbloccatoQui(true);
+              setAvviso(false);
+              setPlaying(true);
+            }}
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:opacity-90"
+          >
+            Accetta e riproduci
+          </button>
+          <button
+            type="button"
+            onClick={() => window._iub?.cs?.api?.openPreferences?.()}
+            className="rounded-full border border-white/40 px-4 py-2 text-sm text-white transition hover:bg-white/10"
+          >
+            Gestisci le preferenze
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <button
       type="button"
-      onClick={() => setPlaying(true)}
+      onClick={() => (puoRiprodurre ? setPlaying(true) : setAvviso(true))}
       aria-label={`Riproduci ${label}`}
       className="group relative block w-full overflow-hidden bg-black"
       style={{ aspectRatio }}
