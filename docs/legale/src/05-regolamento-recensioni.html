@@ -1,0 +1,274 @@
+<article class="doc" data-titolo="Regolamento delle recensioni">
+
+<div class="marchio">N'arte · Documento 05</div>
+<h1>Regolamento delle recensioni</h1>
+<p class="sottotitolo">Chi può recensire un Artista, come N'arte verifica la provenienza delle recensioni, come vengono mostrate, moderate e contestate.</p>
+
+<dl class="intestazione">
+  <dt>Documento</dt><dd>Regolamento delle recensioni</dd>
+  <dt>Versione</dt><dd>0.9 — bozza per revisione legale</dd>
+  <dt>In vigore dal</dt><dd><span class="seg">[DATA DI ENTRATA IN VIGORE]</span></dd>
+  <dt>Pagina del sito</dt><dd>/regolamento-recensioni (con estratto accanto alle recensioni sul Profilo artista: Allegato A)</dd>
+  <dt>Destinatari</dt><dd>Organizzatori che scrivono recensioni; Artisti che le ricevono; Utenti registrati che le leggono</dd>
+</dl>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — perché un regolamento a sé</strong>
+  <p>Le recensioni sono l'unico contenuto della Piattaforma scritto da un Utente <em>su</em> un altro Utente identificato e reso pubblico. Si sommano tre discipline: la tutela del consumatore contro le recensioni false e le omissioni sulla loro verifica (art. 22 e art. 23 Cod. consumo come modificati dal D.Lgs. 26/2023, attuativo della direttiva (UE) 2019/2161); il DSA per la moderazione (docc. 01, art. 4.4, e 06); la protezione dei dati e la tutela della reputazione dell'Artista (GDPR, art. 595 c.p., art. 2043 c.c.). Il testo descrive il sistema come è costruito oggi (lib/feedback, migration 0027) e indica in nota dove il prodotto va allineato.</p>
+</div>
+
+<h2>1. Oggetto e definizioni</h2>
+<p><span class="art">1.1</span> Il presente Regolamento disciplina le recensioni che gli Organizzatori lasciano agli Artisti sulla Piattaforma. Integra i Termini e condizioni generali d'uso (doc. 01), di cui adotta le definizioni, e ne attua l'art. 11.</p>
+<p><span class="art">1.2</span> Ai fini del presente Regolamento:</p>
+<ul>
+  <li><strong>Recensione</strong>: la valutazione composta da un <strong>voto da 1 a 5</strong> e da un <strong>testo</strong> obbligatorio, riferita a un Profilo artista e collegata a una specifica Data confermata;</li>
+  <li><strong>Autore</strong>: l'Organizzatore che ha scritto la Recensione;</li>
+  <li><strong>Artista recensito</strong>: l'Artista titolare del Profilo artista a cui la Recensione si riferisce;</li>
+  <li><strong>Oscuramento</strong>: la misura con cui la Recensione viene resa non visibile e smette di concorrere alla media, restando conservata e potendo essere ripristinata;</li>
+  <li><strong>Rimozione</strong>: la misura con cui la Recensione viene eliminata in via definitiva.</li>
+</ul>
+<p><span class="art">1.3</span> Le Recensioni sono Contenuti degli Utenti ai sensi del doc. 01, art. 9. Rispetto a esse N'arte agisce come prestatore di servizi di memorizzazione di informazioni (doc. 01, art. 4.4) e non ne condivide né ne fa proprio il contenuto.</p>
+
+<h2>2. Chi può recensire e quando</h2>
+<p><span class="art">2.1</span> Una Recensione può essere scritta <strong>soltanto</strong> se ricorrono tutte le condizioni seguenti:</p>
+<ol type="a">
+  <li>l'Autore ha un account con ruolo di Organizzatore;</li>
+  <li>l'Autore è lo stesso Organizzatore che ha inviato la Richiesta di booking all'Artista;</li>
+  <li>la Richiesta di booking è nello stato di <strong>Data confermata</strong> (doc. 01, art. 2);</li>
+  <li>la data dell'evento è <strong>trascorsa</strong>: la Recensione diventa possibile dal giorno successivo;</li>
+  <li>per quella Data confermata non esiste già una Recensione dello stesso Autore.</li>
+</ol>
+<p><span class="art">2.2</span> <strong>Una Recensione per ciascuna Data confermata.</strong> Se un Organizzatore ha più Date confermate con lo stesso Artista, può recensire ciascuna di esse, una sola volta.</p>
+<p><span class="art">2.3</span> Non possono scrivere Recensioni: i Visitatori; gli Utenti registrati che non sono Organizzatori; gli Artisti, né nei confronti di altri Artisti né nei confronti degli Organizzatori; i Consulenti e il Team N'arte, in quanto tali.</p>
+<p><span class="art">2.4</span> Non è possibile recensire una Richiesta di booking rifiutata, annullata o rimasta in trattativa, anche se l'evento si è poi svolto per accordi presi fuori dalla Piattaforma.</p>
+<p><span class="art">2.5</span> La Recensione si riferisce al singolo Profilo artista oggetto della Data confermata. Se lo stesso Artista gestisce più Profili artista, ciascun Profilo ha le proprie Recensioni e la propria media.</p>
+<p><span class="art">2.6</span> Non è previsto un termine finale per scrivere la Recensione. N'arte non invia inviti automatici a recensire.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <p>Le condizioni dell'art. 2.1 sono applicate due volte: dall'azione server (<em>submitFeedback</em>) e da una regola del database (policy RLS e vincolo di unicità su <em>booking_request_id</em>). È un presidio solido e documentabile. Si suggerisce di introdurre un termine finale (es. <span class="seg">[90 GIORNI]</span> dalla data dell'evento): una recensione scritta molto tempo dopo è meno attendibile e più esposta all'uso strumentale.</p>
+</div>
+
+<h2>3. Come N'arte verifica la provenienza delle Recensioni</h2>
+<div class="evidenza">
+<p><span class="art">3.1</span> <strong>Che cosa verifichiamo.</strong> Prima di pubblicare una Recensione, la Piattaforma controlla in modo automatico, per ciascuna Recensione e senza eccezioni, che:</p>
+<ul>
+  <li>l'Autore sia l'Organizzatore che ha inviato la Richiesta di booking a quel Profilo artista;</li>
+  <li>l'Artista abbia accettato la Richiesta e che le parti abbiano dichiarato di aver raggiunto un accordo, portando la Richiesta allo stato di Data confermata con le funzioni della Piattaforma;</li>
+  <li>la data dell'evento sia trascorsa;</li>
+  <li>non esista già una Recensione per quella Data confermata.</li>
+</ul>
+<p>Se una sola di queste condizioni manca, la Recensione non può essere inviata. Sulla Piattaforma, quindi, <strong>non esistono Recensioni di chi non ha avuto una Data confermata con l'Artista</strong>.</p>
+<p><span class="art">3.2</span> <strong>Che cosa non verifichiamo.</strong> N'arte <strong>non verifica</strong>:</p>
+<ul>
+  <li>che l'evento si sia effettivamente svolto, né come si sia svolto;</li>
+  <li>l'identità anagrafica della persona che usa l'account dell'Organizzatore, oltre alla titolarità dell'indirizzo email;</li>
+  <li>che Organizzatore e Artista siano soggetti indipendenti l'uno dall'altro;</li>
+  <li>la veridicità dei fatti riferiti nel testo.</li>
+</ul>
+<p><span class="art">3.3</span> Gli Autori delle Recensioni sono Organizzatori: possono essere locali, associazioni o imprese, oppure privati. Le Recensioni non provengono quindi necessariamente da consumatori.</p>
+</div>
+<p><span class="art">3.4</span> Quando emergono elementi che mettono in dubbio la provenienza o l'autenticità di una Recensione — ad esempio un legame tra Autore e Artista, più account riconducibili alla stessa persona, una Data confermata che non corrisponde a un accordo reale — N'arte può svolgere verifiche ulteriori e chiedere chiarimenti alle parti, secondo il doc. 06, e adottare le misure dell'art. 9.</p>
+<p><span class="art">3.5</span> Le informazioni di questo articolo sono riportate in forma sintetica accanto alle Recensioni, sul Profilo artista (Allegato A).</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — obbligo informativo e pratiche vietate</strong>
+  <ul>
+    <li><strong>Informazione obbligatoria.</strong> Chi dà accesso a recensioni deve indicare «se e in che modo» garantisce che provengano da chi ha realmente usato o acquistato il prodotto; l'omissione è rilevante ex art. 22 Cod. consumo (comma introdotto dal D.Lgs. 26/2023 in attuazione dell'art. 7, par. 6, dir. 2005/29/CE; si tratta, salvo verifica, del c. 4-ter). L'art. 3 è costruito per soddisfarlo, a condizione che l'estratto dell'Allegato A sia effettivamente visibile <em>accanto</em> alle recensioni, non solo in questa pagina.</li>
+    <li><strong>Pratiche in ogni caso ingannevoli.</strong> Affermare che le recensioni provengono da chi ha usato il servizio senza aver adottato misure ragionevoli e proporzionate per verificarlo, e inviare o commissionare recensioni false o travisarle, sono pratiche vietate in ogni caso (punti 23-ter e 23-quater dell'allegato I della dir. 2005/29/CE, recepiti nell'art. 23, c. 1 Cod. consumo — lettere da verificare, presumibilmente bb-ter e bb-quater). Per questo il testo dichiara esplicitamente i limiti della verifica (art. 3.2) e non usa formule come «recensioni verificate» o «date realmente svolte».</li>
+    <li><strong>Testi del sito da correggere.</strong> L'articolo del centro assistenza per organizzatori descrive le recensioni come «lasciate da altri organizzatori dopo date reali svolte tramite N'arte» (<em>lib/help/categories/organizzatori.ts</em>): la Piattaforma non verifica lo svolgimento, e la frase va riformulata («dopo una data confermata sulla Piattaforma»).</li>
+    <li><strong>Destinatari professionisti.</strong> Poiché autori e lettori sono spesso imprese, rileva anche la disciplina della pubblicità ingannevole tra professionisti (D.Lgs. 145/2007). Il testo è scritto per reggere in entrambi i casi.</li>
+  </ul>
+</div>
+
+<h2>4. Contenuto della Recensione</h2>
+<p><span class="art">4.1</span> La Recensione si compone di un voto intero da 1 a 5 e di un testo di lunghezza compresa tra 10 e 2.000 caratteri.</p>
+<p><span class="art">4.2</span> La Recensione deve riguardare <strong>l'esperienza diretta dell'Autore con l'Artista in occasione di quella Data confermata</strong>: la trattativa, la puntualità, la preparazione, la prestazione, la risposta del pubblico, la collaborazione prima e durante l'evento, eventuali imprevisti e il modo in cui sono stati gestiti. Anche la mancata esibizione dell'Artista, se riferita in modo veritiero, è un'esperienza che può essere recensita.</p>
+<p><span class="art">4.3</span> <strong>Sono ammessi</strong> giudizi negativi, anche severi, e critiche alla prestazione, purché fondati su fatti veri, pertinenti all'esperienza ed espressi in forma misurata.</p>
+<p><span class="art">4.4</span> <strong>Sono vietati</strong>, e giustificano le misure dell'art. 9:</p>
+<ul>
+  <li>affermazioni false o non riferite all'esperienza dell'Autore;</li>
+  <li>insulti, espressioni gratuitamente offensive, attacchi alla persona anziché alla prestazione;</li>
+  <li>contenuti discriminatori o d'odio, minacce, molestie;</li>
+  <li>dati personali non necessari: recapiti, indirizzi, informazioni sulla salute, sulla vita privata o familiare, nomi di terzi (ad esempio di componenti della formazione non pubblicati sul Profilo artista, o di collaboratori dell'Organizzatore);</li>
+  <li>accuse di reati o di illeciti non accertati, presentate come fatti certi;</li>
+  <li>il contenuto della Trattativa riservata tra le parti, compreso l'importo del compenso, salvo che l'Artista lo abbia reso pubblico sul proprio Profilo artista;</li>
+  <li>pubblicità, link, riferimenti ad altri servizi, recapiti per contatti fuori dalla Piattaforma;</li>
+  <li>contenuti che violano diritti di terzi o la legge.</li>
+</ul>
+<p><span class="art">4.5</span> Prima dell'invio l'Autore vede il testo completo e il voto e può correggerli. Dopo l'invio la Recensione non è più modificabile dall'Autore (art. 11).</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <p>Il divieto di riferire il compenso (art. 4.4, sesto punto) tutela la riservatezza della Trattativa e riduce il rischio che la recensione diventi uno strumento di pressione economica. Valutare se mantenerlo: è una limitazione della libertà di espressione dell'Autore, giustificabile ma non indispensabile. Il centro assistenza suggerisce all'Organizzatore, in caso di serata andata male, di parlarne «prima con l'artista»: il consiglio è corretto, ma va evitato che sia letto come invito a usare la recensione come leva (art. 6).</p>
+</div>
+
+<h2>5. Nome dell'Autore e informazioni mostrate</h2>
+<p><span class="art">5.1</span> Accanto a ciascuna Recensione sono mostrati: il <strong>nome visualizzato</strong> del profilo dell'Organizzatore Autore, il voto, il testo e il mese e l'anno di pubblicazione della Recensione.</p>
+<p><span class="art">5.2</span> Il nome visualizzato è quello che l'Organizzatore ha scelto nel proprio profilo: di norma la denominazione del locale, dell'associazione o dell'impresa. <strong>L'Organizzatore privato</strong> può usare il proprio nome o una forma abbreviata (ad esempio nome e iniziale del cognome), purché non sia fuorviante né riprenda il nome di un altro soggetto.</p>
+<p><span class="art">5.3</span> Non sono mostrati l'indirizzo email dell'Autore, la data esatta dell'evento, la Struttura né altri dati della Richiesta di booking.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <p>Oggi l'Organizzatore privato non è avvisato, quando scrive una recensione, che il suo nome visualizzato sarà pubblicato sul profilo dell'Artista: va aggiunta una riga nel modulo («La recensione sarà pubblicata con il nome "…"»), con collegamento al profilo per cambiarlo. Nell'informativa privacy va indicato che la recensione è pubblica e reca il nome visualizzato dell'Autore.</p>
+</div>
+
+<h2>6. Integrità delle Recensioni</h2>
+<p><span class="art">6.1</span> <strong>Recensioni incentivate.</strong> È vietato offrire, promettere, chiedere o accettare denaro, sconti sul compenso, prestazioni gratuite, date future o qualunque altro vantaggio in cambio di una Recensione, di una Recensione positiva, della modifica o del ritiro di una Recensione.</p>
+<p><span class="art">6.2</span> <strong>Recensioni di scambio e in conflitto d'interessi.</strong> È vietato scrivere o far scrivere una Recensione:</p>
+<ul>
+  <li>sul Profilo artista di cui l'Autore è titolare, componente o collaboratore, o che è gestito da persone a lui legate da rapporti familiari, di lavoro o societari;</li>
+  <li>nell'ambito di accordi di scambio di Recensioni o di Date confermate fittizie create allo scopo di recensire;</li>
+  <li>per conto di terzi, o usando più account riconducibili alla stessa persona.</li>
+</ul>
+<p><span class="art">6.3</span> <strong>Recensioni ritorsive o usate come leva.</strong> È vietato:</p>
+<ul>
+  <li>minacciare una Recensione negativa, o promettere una Recensione positiva, per ottenere condizioni diverse sul compenso, sulla durata della prestazione o su qualunque altro aspetto del Contratto di esibizione;</li>
+  <li>scrivere una Recensione negativa per ritorsione verso l'Artista per ragioni estranee all'esperienza dell'evento, ad esempio per il rifiuto di altre date, per una controversia personale o per una segnalazione fatta dall'Artista a N'arte;</li>
+  <li>chiedere all'Autore il ritiro di una Recensione in cambio di un vantaggio, o con minacce.</li>
+</ul>
+<p><span class="art">6.4</span> <strong>Inviti a recensire.</strong> L'Artista può invitare l'Organizzatore a lasciare una Recensione, ad esempio con un messaggio in chat dopo l'evento, purché l'invito non sia rivolto solo agli Organizzatori soddisfatti, non indichi il contenuto o il voto desiderato e non sia accompagnato da alcun vantaggio.</p>
+<p><span class="art">6.5</span> <strong>Nessuna Recensione sponsorizzata.</strong> N'arte:</p>
+<ul>
+  <li>non scrive, non commissiona e non acquista Recensioni, e il Team N'arte non recensisce gli Artisti;</li>
+  <li>non accetta pagamenti o altri vantaggi per pubblicare, oscurare, rimuovere o ordinare diversamente una Recensione;</li>
+  <li>non modifica mai il testo o il voto di una Recensione: può soltanto lasciarla, oscurarla o rimuoverla, secondo l'art. 9;</li>
+  <li>non consente all'Artista di scegliere quali Recensioni mostrare (art. 8.3).</li>
+</ul>
+<p><span class="art">6.6</span> Chi viene a conoscenza di una violazione di questo articolo può segnalarla secondo il doc. 06. Le violazioni comportano la Rimozione delle Recensioni interessate e, nei confronti del responsabile, le misure del doc. 06, fino alla chiusura dell'account.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — testimonianze sul sito</strong>
+  <p>Fuori dal sistema delle recensioni, la pagina <strong>/candidatura-artista</strong> mostra tre «storie» di artisti con citazioni in prima persona («Nei primi due mesi sul profilo mi hanno scritto in cinque…») che nel codice sono segnaposto inventati (<em>lib/content/artist-landing.ts</em>, con nomi «Nome dell'artista»). Pubblicate così, sono testimonianze non autentiche con cui N'arte promuove il proprio servizio: rientrano nel divieto di recensioni e raccomandazioni false (punto 23-quater cit.) e in ogni caso nella pratica ingannevole ex art. 21 Cod. consumo. Vanno rimosse o sostituite con testimonianze reali, documentate (consenso scritto dell'artista, conservato) prima di qualunque pubblicazione.</p>
+</div>
+
+<h2>7. Pubblicazione, ordinamento e media</h2>
+<p><span class="art">7.1</span> La Recensione viene pubblicata <strong>subito dopo l'invio</strong>, senza un controllo preventivo del Team N'arte, fermo quanto previsto dall'art. 8 sulla visibilità.</p>
+<p><span class="art">7.2</span> <strong>Ordinamento.</strong> Sul Profilo artista le Recensioni sono mostrate in ordine cronologico, <strong>dalla più recente alla meno recente</strong>, in base alla data di pubblicazione. Sono visualizzate le <span class="seg">[12]</span> più recenti; quando le Recensioni sono di più, il profilo lo indica espressamente, con il numero totale. Non esistono altri criteri di ordinamento: il voto, la lunghezza del testo o il Piano dell'Autore non influiscono sulla posizione.</p>
+<p><span class="art">7.3</span> <strong>Media.</strong> Il voto medio è la <strong>media aritmetica semplice</strong> dei voti di tutte le Recensioni visibili del Profilo artista, arrotondata a un decimale, ed è sempre mostrato insieme al numero di Recensioni su cui è calcolato. Le Recensioni oscurate o rimosse non concorrono alla media. Non sono applicati pesi, correzioni o esclusioni ulteriori.</p>
+<p><span class="art">7.4</span> Il voto medio e il numero di Recensioni possono comparire anche nella scheda dell'Artista all'interno del catalogo, alle stesse condizioni di visibilità dell'art. 8. Il voto medio non influisce sull'ordine del catalogo, che segue i Criteri di posizionamento (doc. 07).</p>
+<p><span class="art">7.5</span> Le Recensioni, come il resto del Profilo artista, sono visibili agli Utenti registrati e non ai Visitatori.</p>
+
+<h2>8. Visibilità delle Recensioni e Piano dell'Artista</h2>
+<div class="evidenza">
+<p><span class="art">8.1</span> <strong>Le Recensioni sono mostrate sul Profilo artista soltanto se l'Artista ha un Piano Pro o Max attivo</strong> (doc. 02, Allegato A). Quando l'Artista ha il Piano Free, le Recensioni ricevute sono comunque raccolte e conservate, ma non sono visibili agli altri Utenti.</p>
+<p><span class="art">8.2</span> <strong>O tutte o nessuna.</strong> La visibilità dipende solo dal Piano, mai dal contenuto o dal voto: quando le Recensioni sono visibili, lo sono <strong>tutte</strong>, positive e negative, comprese quelle ricevute quando l'Artista aveva il Piano Free; quando non lo sono, non lo è nessuna, e non è mostrata nemmeno la media.</p>
+<p><span class="art">8.3</span> L'Artista non può scegliere quali Recensioni mostrare, né nasconderle, né modificarne l'ordine.</p>
+<p><span class="art">8.4</span> L'assenza di Recensioni su un Profilo artista <strong>non significa</strong> che l'Artista non abbia avuto Date confermate o che abbia ricevuto valutazioni negative: può dipendere dal Piano. Questa informazione è riportata accanto alla sezione Recensioni e nella pagina del catalogo.</p>
+</div>
+<p><span class="art">8.5</span> <strong>Accesso dell'Artista alle proprie Recensioni.</strong> Qualunque sia il Piano, l'Artista può leggere nella propria area riservata il testo integrale e il voto di tutte le Recensioni ricevute, anche quando non sono visibili al pubblico, e può contestarle secondo l'art. 10.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — visibilità legata al Piano: rischi e scostamenti</strong>
+  <ul>
+    <li><strong>Rischio di selezione.</strong> Mostrare le recensioni solo agli abbonati può essere percepito come un modo per «comprare» la presenza di valutazioni, e più ancora come un filtro: gli artisti con recensioni negative potrebbero restare sul piano Free proprio per non mostrarle, e l'utente vedrebbe recensioni solo sui profili che hanno interesse a mostrarle. La scelta «tutte o nessuna», sganciata dal contenuto, è la condizione minima per difenderla (il considerando 47 della dir. 2019/2161 indica come travisamento la pubblicazione delle sole recensioni positive). Resta un rischio residuo di omissione ingannevole ex art. 22 Cod. consumo. L'art. 8.4 e l'estratto dell'Allegato A servono a contenerlo. <strong>Alternativa più sicura</strong>: rendere sempre visibili le recensioni e riservare ai Piani a pagamento funzioni accessorie (ad esempio la risposta pubblica, l'evidenza grafica, le statistiche).</li>
+    <li><strong>Scostamento: media visibile nel catalogo anche per i Free.</strong> Oggi il catalogo (<em>app/(user)/artisti/page.tsx</em>, <em>getRatingsForArtists</em>) mostra voto medio e numero di recensioni per <strong>tutti</strong> gli artisti, anche Free, mentre il profilo dei Free non le mostra. Il risultato è incoerente e, per l'Artista Free, peggiore: il pubblico vede un voto medio che lui non può leggere né spiegare. Allineare il catalogo alla regola dell'art. 8.1 (o abbandonare del tutto la regola).</li>
+    <li><strong>Scostamento: l'Artista Free non legge le recensioni che lo riguardano.</strong> Oggi la dashboard del Free mostra solo quante recensioni sono in attesa, senza il contenuto, e le rende leggibili solo passando a un piano a pagamento. Le recensioni sono dati personali dell'Artista: subordinarne la conoscenza al pagamento è in contrasto con il diritto di accesso gratuito (art. 15 e art. 12, par. 5 GDPR) e gli impedisce di contestare una recensione illecita prima che diventi pubblica. Il testo dell'art. 8.5 descrive il comportamento corretto; il prodotto va modificato prima della pubblicazione.</li>
+    <li>L'art. 8.4 richiede di aggiungere una riga informativa nel catalogo e sulla sezione recensioni, oggi assente.</li>
+  </ul>
+</div>
+
+<h2>9. Moderazione delle Recensioni</h2>
+<p><span class="art">9.1</span> N'arte non modera le Recensioni prima della pubblicazione. Interviene dopo, a seguito di una segnalazione o di propria iniziativa, secondo i principi e le procedure del doc. 06.</p>
+<p><span class="art">9.2</span> Le misure applicabili a una Recensione sono due:</p>
+<ul>
+  <li><strong>Oscuramento</strong>: la Recensione non è più visibile e non concorre alla media, ma resta conservata ed è ripristinabile. Si usa quando la violazione è probabile ma richiede un accertamento, o quando riguarda solo una parte del testo;</li>
+  <li><strong>Rimozione</strong>: la Recensione è eliminata in via definitiva. Si usa quando la violazione è accertata e riguarda la Recensione nel suo complesso.</li>
+</ul>
+<p>N'arte non modifica il testo della Recensione e non ne elimina singole frasi. Se la violazione riguarda solo una parte del testo, la Recensione è oscurata e l'Autore è invitato a ritirarla e, se ancora possibile, a riscriverla nel rispetto del Regolamento.</p>
+<p><span class="art">9.3</span> <strong>Criteri.</strong></p>
+<table>
+  <tr><th>Situazione</th><th>Misura</th></tr>
+  <tr><td>Insulti, espressioni gratuitamente offensive, contenuti d'odio o discriminatori, minacce</td><td>Rimozione</td></tr>
+  <tr><td>Dati personali non necessari di terzi o dell'Artista (art. 4.4)</td><td>Oscuramento; Rimozione se l'Autore non la ritira</td></tr>
+  <tr><td>Contenuto estraneo all'esperienza dell'evento, pubblicità, link</td><td>Rimozione</td></tr>
+  <tr><td>Recensione incentivata, di scambio o in conflitto d'interessi (art. 6.1, 6.2), accertata</td><td>Rimozione</td></tr>
+  <tr><td>Recensione ritorsiva o usata come leva (art. 6.3), accertata</td><td>Rimozione</td></tr>
+  <tr><td>Data confermata che risulta non corrispondere a un accordo reale tra le parti</td><td>Rimozione, e annullamento della Data confermata (doc. 06)</td></tr>
+  <tr><td>Fatti contestati dall'Artista, con elementi concreti che rendono verosimile la falsità, in attesa di accertamento</td><td>Oscuramento temporaneo</td></tr>
+  <tr><td>Contenuto manifestamente diffamatorio o illecito, o ordine di un'autorità</td><td>Rimozione, anche immediata</td></tr>
+  <tr><td>Recensione negativa, anche severa, fondata su fatti pertinenti ed espressa in forma misurata</td><td><strong>Nessuna misura</strong></td></tr>
+</table>
+<p><span class="art">9.4</span> <strong>Non sono in alcun caso motivo di Oscuramento o di Rimozione</strong>: il fatto che la Recensione sia negativa o abbia un voto basso; il fatto che abbassi la media; la richiesta dell'Artista non accompagnata da elementi concreti; il Piano sottoscritto dall'Artista; una versione dei fatti diversa da quella dell'Autore, quando entrambe sono verosimili e nessuna è dimostrata falsa.</p>
+<p><span class="art">9.5</span> <strong>Comunicazione.</strong> Di ogni Oscuramento o Rimozione N'arte informa l'Autore con una comunicazione motivata (doc. 06, art. 9) e informa l'Artista dell'esito, quando la misura segue una sua segnalazione. L'Autore può contestare la decisione con il reclamo del doc. 06, art. 10.</p>
+<p><span class="art">9.6</span> L'Oscuramento temporaneo dura il tempo strettamente necessario all'accertamento e, salvo casi motivati, non oltre <span class="seg">[30 GIORNI]</span>; al termine la Recensione è ripristinata o rimossa.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — scostamenti del prodotto</strong>
+  <ul>
+    <li>Oggi l'oscuramento (<em>toggleFeedbackHidden</em>) e la rimozione (<em>deleteFeedback</em>) non richiedono né registrano una motivazione, non registrano chi ha deciso e quando, e non inviano alcuna comunicazione all'Autore né all'Artista. L'art. 17 DSA impone la motivazione all'Autore (la recensione è un suo contenuto), quindi vanno aggiunti: campo motivazione obbligatorio, categoria della violazione (tabella 9.3), autore e data della decisione, invio automatico della comunicazione.</li>
+    <li>La rimozione è una cancellazione fisica della riga. Poiché il vincolo «una recensione per data» è un indice unico sulla stessa riga, <strong>dopo una rimozione l'Organizzatore può scrivere una nuova recensione per la stessa data</strong>. Serve una cancellazione logica (stato «rimossa») che mantenga il vincolo e conservi la traccia della decisione.</li>
+    <li>Il testo non prevede la modifica delle recensioni da parte del Team, e il prodotto correttamente non la consente.</li>
+  </ul>
+</div>
+
+<h2>10. Contestazione da parte dell'Artista</h2>
+<p><span class="art">10.1</span> L'Artista che ritiene una Recensione contraria al presente Regolamento o alla legge può segnalarla con la procedura del doc. 06, art. 5, indicando la Recensione, le ragioni della contestazione e gli eventuali elementi di prova (ad esempio la Trattativa in chat, documenti, testimonianze).</p>
+<p><span class="art">10.2</span> N'arte esamina la segnalazione con imparzialità, può chiedere la versione dell'Autore assegnandogli un termine di <span class="seg">[5 GIORNI LAVORATIVI]</span> e decide secondo i criteri dell'art. 9, nei tempi del doc. 06. Durante l'esame la Recensione resta visibile, salvo che ricorrano i presupposti dell'Oscuramento temporaneo.</p>
+<p><span class="art">10.3</span> N'arte non accerta chi abbia ragione nei rapporti contrattuali tra Artista e Organizzatore (doc. 06, art. 16). Valuta soltanto se la Recensione rispetta il presente Regolamento e la legge.</p>
+<p><span class="art">10.4</span> Oggi la Piattaforma non prevede una risposta pubblica dell'Artista alle Recensioni. Resta salvo il diritto dell'Artista di far valere le proprie ragioni davanti all'autorità giudiziaria.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — diritto di replica</strong>
+  <p>L'assenza di replica è il punto debole del sistema: l'unico rimedio dell'Artista contro una recensione negativa ma lecita è chiederne l'oscuramento, che l'art. 9.4 giustamente esclude. Ne derivano più pressione sul Team per rimuovere recensioni sgradite e più contenzioso. Si raccomanda di introdurre una <strong>risposta pubblica</strong>, con questo testo da sostituire all'art. 10.4:</p>
+  <p><em>«10.4 L'Artista può pubblicare una sola risposta a ciascuna Recensione, di lunghezza non superiore a 1.000 caratteri, che compare sotto la Recensione. La risposta è soggetta alle stesse regole di contenuto dell'art. 4 e alle stesse misure dell'art. 9, può essere modificata o ritirata dall'Artista e non comporta la notifica all'Autore di alcun obbligo di replica.»</em></p>
+  <p>La funzione di risposta andrebbe riconosciuta a tutti gli Artisti con recensioni visibili, e non trattata come beneficio di un Piano superiore.</p>
+</div>
+
+<h2>11. Modifica e ritiro da parte dell'Autore</h2>
+<p><span class="art">11.1</span> Dopo l'invio l'Autore non può modificare la Recensione. Può chiederne il <strong>ritiro</strong> in qualunque momento, senza doverlo motivare, scrivendo ai recapiti del doc. 06, art. 4. N'arte la rimuove entro <span class="seg">[5 GIORNI LAVORATIVI]</span>.</p>
+<p><span class="art">11.2</span> Il ritiro è definitivo: per la stessa Data confermata non potrà essere scritta una nuova Recensione. Se l'Autore ha commesso un errore materiale (ad esempio il voto), può segnalarlo entro <span class="seg">[7 GIORNI]</span> dalla pubblicazione e N'arte, verificato l'errore, gli consente di riscriverla una sola volta.</p>
+<p><span class="art">11.3</span> Quando risulta che il ritiro è stato chiesto per effetto di minacce o in cambio di un vantaggio (art. 6.3), N'arte può applicare le misure del doc. 06 nei confronti di chi ha esercitato la pressione.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <p>Il prodotto oggi non permette né modifica né ritiro dall'area dell'Organizzatore: il centro assistenza rimanda correttamente ai contatti. Il testo mantiene questa impostazione, che protegge dall'uso della recensione come leva, e aggiunge un canale di ritiro garantito, coerente con il diritto dell'Autore alla cancellazione dei propri dati (art. 17 GDPR). Per l'art. 11.2 serve la cancellazione logica richiamata nella nota all'art. 9. Valutare se offrire il ritiro anche in modo autonomo dall'area riservata.</p>
+</div>
+
+<h2>12. Conservazione</h2>
+<p><span class="art">12.1</span> Le Recensioni restano pubblicate finché esiste il Profilo artista a cui si riferiscono, salvo Oscuramento, Rimozione o ritiro.</p>
+<p><span class="art">12.2</span> Le Recensioni oscurate sono conservate finché esiste il Profilo artista, per consentirne il ripristino e per la difesa dei diritti.</p>
+<p><span class="art">12.3</span> Delle Recensioni rimosse o ritirate N'arte conserva, in un registro non accessibile al pubblico, il testo, il voto, la data, la motivazione e l'autore della decisione per <span class="seg">[24 MESI]</span>, al solo fine di gestire reclami, contestazioni e richieste delle autorità, e per far valere o difendere un diritto. Decorso il termine i dati sono cancellati.</p>
+
+<h2>13. Cancellazione degli account e annullamento della Data confermata</h2>
+<p><span class="art">13.1</span> <strong>Account dell'Autore.</strong> Quando l'Autore cancella il proprio account (doc. 01, art. 16.1), le sue Recensioni restano pubblicate, ma il nome visualizzato è sostituito dalla dicitura «Organizzatore — account chiuso». L'Autore può chiedere, insieme alla cancellazione o in seguito, anche la Rimozione delle proprie Recensioni: in tal caso vale l'art. 11.</p>
+<p><span class="art">13.2</span> <strong>Account o Profilo dell'Artista.</strong> Quando l'Artista cancella il proprio account o un Profilo artista, le Recensioni di quel Profilo smettono subito di essere visibili e sono cancellate insieme al Profilo, salvo quanto previsto dall'art. 12.3.</p>
+<p><span class="art">13.3</span> <strong>Sospensione del Profilo.</strong> Se il Profilo artista è sospeso dalla pubblicazione, per scelta del Team N'arte o per effetto del cambio di Piano (doc. 02, art. 11.2), le Recensioni non sono visibili per tutta la durata della sospensione e tornano visibili, senza variazioni, quando il Profilo è di nuovo pubblicato.</p>
+<p><span class="art">13.4</span> <strong>Annullamento della Data confermata.</strong> Se il Team N'arte annulla una Data confermata perché non corrispondeva a un accordo reale tra le parti o per una violazione accertata (doc. 06), la relativa Recensione è rimossa. L'annullamento per altre ragioni non comporta, di per sé, la rimozione della Recensione.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — cancellazione: scostamenti</strong>
+  <ul>
+    <li><strong>Autore.</strong> Oggi, nei 30 giorni tra disattivazione e cancellazione definitiva, le recensioni restano pubblicate con il nome dell'Organizzatore. Alla cancellazione definitiva dell'utente, i vincoli del database (<em>on delete cascade</em> da <em>auth.users</em> a <em>organizers</em> a <em>feedback</em>) le eliminano. Il centro assistenza, invece, dice che «possono restare sul profilo dell'artista, prive del riferimento a te». Il testo dell'art. 13.1 adotta la soluzione del centro assistenza: il cliente deve scegliere quale delle due (restare anonime o essere cancellate) e allineare il prodotto. Se restano, l'anonimizzazione va fatta alla disattivazione, non alla cancellazione definitiva, e il riferimento all'Organizzatore va conservato solo per il vincolo di unicità e per l'art. 12.3.</li>
+    <li><strong>Artista.</strong> Alla cancellazione dell'account il profilo è riportato a «pending» e quindi nascosto; le recensioni sono cancellate solo se il Team cancella il profilo (<em>on delete cascade</em> da <em>artists</em>). Il risultato è coerente con l'art. 13.2, purché la cancellazione del profilo avvenga davvero entro i 30 giorni.</li>
+    <li><strong>Annullamento.</strong> La funzione <em>superadmin_cancel_booking</em> può annullare anche una data già passata e già recensita, e non tocca la recensione. L'art. 13.4 va applicato a mano finché il flusso di annullamento non chiede se rimuovere la recensione collegata.</li>
+  </ul>
+</div>
+
+<h2>14. Responsabilità dell'Autore</h2>
+<p><span class="art">14.1</span> L'Autore è l'unico responsabile del contenuto delle proprie Recensioni. Una Recensione che attribuisce all'Artista fatti non veri o che ne offende la reputazione può costituire diffamazione (art. 595 del codice penale, aggravata quando commessa con un mezzo di pubblicità) e obbligare al risarcimento del danno (art. 2043 del codice civile).</p>
+<p><span class="art">14.2</span> Il diritto di critica è tutelato quando i fatti riferiti sono veri, il giudizio è pertinente all'esperienza e la forma è misurata. Il presente Regolamento non limita la libertà di esprimere giudizi negativi entro questi limiti.</p>
+<p><span class="art">14.3</span> L'Autore tiene indenne N'arte secondo il doc. 01, art. 15. N'arte comunica i dati dell'Autore all'autorità giudiziaria o ad altre autorità competenti quando ne riceve un ordine legittimo (doc. 06, art. 14) e non li comunica all'Artista o a terzi al di fuori di questi casi, salvo che la legge lo imponga.</p>
+
+<h2>15. Dati personali</h2>
+<p><span class="art">15.1</span> Le Recensioni contengono dati personali dell'Artista recensito e dell'Autore. N'arte le tratta per offrire agli Utenti un'informazione attendibile sugli Artisti, sulla base del proprio legittimo interesse e di quello degli Utenti (art. 6, par. 1, lett. f del Regolamento (UE) 2016/679), come descritto nell'Informativa privacy.</p>
+<p><span class="art">15.2</span> L'Artista può opporsi al trattamento (art. 21 del Regolamento (UE) 2016/679). N'arte valuta l'opposizione caso per caso, bilanciando l'interesse dell'Artista con l'interesse degli Utenti a un'informazione completa: l'opposizione motivata soltanto dal carattere negativo della Recensione non è, di regola, accolta.</p>
+
+<h2>16. Modifiche e rinvio</h2>
+<p><span class="art">16.1</span> Il presente Regolamento può essere modificato secondo il doc. 01, art. 17. Le modifiche non incidono sulle Recensioni già pubblicate, salvo che la legge disponga diversamente o che la modifica sia più favorevole all'Autore o all'Artista.</p>
+<p><span class="art">16.2</span> Per quanto non previsto valgono il doc. 01 e, per le segnalazioni, le misure e i reclami, il doc. 06.</p>
+
+<h2 class="salto">Allegato A — Estratto da mostrare accanto alle Recensioni</h2>
+<p>Testo da pubblicare nella sezione Recensioni del Profilo artista, subito sotto il titolo, con collegamento a /regolamento-recensioni. È la forma con cui l'informazione dell'art. 3 raggiunge davvero chi legge.</p>
+<div class="evidenza">
+<p><strong>Come funzionano queste recensioni</strong></p>
+<p>Le scrivono solo gli organizzatori che hanno avuto una data confermata con questo artista su N'arte, dopo la data dell'evento: una recensione per ogni data. N'arte controlla che la data sia stata confermata da entrambe le parti sulla piattaforma, ma non può verificare che l'evento si sia svolto né che quanto scritto sia vero.</p>
+<p>Le recensioni sono in ordine dalla più recente. La media comprende tutte le recensioni visibili. Nessuna recensione è a pagamento e l'artista non può scegliere quali mostrare: sono visibili tutte, sui profili con piano Pro o Max. <a href="/regolamento-recensioni">Leggi il regolamento</a> · <a href="/segnalazioni">Segnala una recensione</a></p>
+</div>
+
+<p>Testo breve per il catalogo e per i Profili artista con Piano Free (art. 8.4):</p>
+<div class="evidenza">
+<p>Le recensioni compaiono solo sui profili degli artisti con piano Pro o Max. Se un profilo non ne mostra, non significa che l'artista non abbia suonato o che abbia ricevuto giudizi negativi. <a href="/regolamento-recensioni">Come funzionano le recensioni</a></p>
+</div>
+
+</article>

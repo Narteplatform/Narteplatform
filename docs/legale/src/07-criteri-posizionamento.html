@@ -1,0 +1,219 @@
+<article class="doc" data-titolo="Criteri di posizionamento e trasparenza">
+
+<div class="marchio">N'arte · Documento 07</div>
+<h1>Criteri di posizionamento e trasparenza</h1>
+<p class="sottotitolo">In che ordine N'arte mostra gli artisti nel catalogo, nella ricerca e in home, quanto conta il piano di abbonamento, che cosa invece non conta e che cosa significano i badge.</p>
+
+<dl class="intestazione">
+  <dt>Documento</dt><dd>Criteri di posizionamento e trasparenza</dd>
+  <dt>Versione</dt><dd>0.9 — bozza per revisione legale</dd>
+  <dt>In vigore dal</dt><dd><span class="seg">[DATA DI ENTRATA IN VIGORE]</span></dd>
+  <dt>Pagina del sito</dt><dd>/criteri-di-posizionamento (collegata dal catalogo /artisti, dalla ricerca rapida, dalla vetrina in home, dai badge e dalla pagina /prezzi)</dd>
+  <dt>Destinatari</dt><dd>Tutti gli Utenti. Per gli Artisti è parte integrante del contratto (doc. 01, art. 3.2)</dd>
+</dl>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — perché questo documento e da dove vengono i fatti</strong>
+  <p>Il Piano di abbonamento dell'Artista è il parametro principale dell'ordinamento: è un posizionamento a pagamento e va dichiarato come tale. Tre fonti convergono: art. 5 Reg. (UE) 2019/1150 (P2B) verso gli Artisti che agiscono come imprese, da inserire nelle condizioni contrattuali, senza esenzione per le piccole imprese; art. 22, c. 4-bis Cod. consumo verso i Consumatori che cercano artisti (tipicamente chi organizza una festa privata), in una sezione «direttamente e facilmente accessibile dalla pagina in cui sono presentati i risultati»; divieto di presentare risultati di ricerca senza rivelare il posizionamento a pagamento (punto 11-bis dell'Allegato I della Dir. 2005/29/CE, introdotto dalla Dir. (UE) 2019/2161 — <em>verificare la lettera dell'art. 23 Cod. consumo in cui è stato recepito dal D.Lgs. 26/2023</em>). L'art. 27 DSA (sistemi di raccomandazione) non è obbligatorio per N'arte, che come microimpresa è esente dagli artt. 20–28 ai sensi dell'art. 19 DSA (salvo l'art. 24, c. 3); l'art. 14 si osserva comunque per trasparenza.</p>
+  <p>Tutti i fatti descritti sono stati verificati sul codice il 29/09/2026: <em>app/(user)/artisti/page.tsx</em> (ordine del catalogo), <em>components/marketing/ArtistsExplorer.tsx</em> (fascia TOP, filtri, ricerca), <em>app/api/search/route.ts</em> (ricerca rapida), <em>components/marketing/StarsSection.tsx</em> (vetrina in home), indice <em>artists_rank_idx</em> (migration 0041 e 0043), <em>lib/analytics/visitor.ts</em> e migration 0046 (statistiche). Se il codice cambia, questo documento va aggiornato prima, non dopo (art. 15).</p>
+</div>
+
+<h2>1. Oggetto</h2>
+<p><span class="art">1.1</span> Il presente documento descrive i <strong>parametri principali</strong> che determinano l'ordine in cui i Profili artista compaiono sulla Piattaforma, la loro <strong>importanza relativa</strong> e le ragioni di tale importanza, gli strumenti con cui l'Utente può modificare ciò che vede, il significato dei badge e il modo in cui N'arte comunica le modifiche. È reso ai sensi dell'art. 5 del Regolamento (UE) 2019/1150 e dell'art. 22, c. 4-bis del Codice del consumo.</p>
+<p><span class="art">1.2</span> Per gli Artisti il documento è parte integrante del contratto con N'arte (doc. 01, art. 3.2). Per gli altri Utenti ha funzione informativa.</p>
+<p><span class="art">1.3</span> I termini con l'iniziale maiuscola hanno il significato indicato nel doc. 01, art. 2. Inoltre, «<strong>Piano a pagamento</strong>» indica il Piano Pro o Max attivo, compreso il periodo in cui Stripe ritenta un addebito non riuscito (doc. 02, art. 8.1), e «<strong>Piano omaggio</strong>» il Piano Pro o Max concesso gratuitamente da N'arte (doc. 02, art. 15).</p>
+<p><span class="art">1.4</span> I criteri sono pochi e semplici, ed è per questo che il documento li descrive per intero, compresi i limiti tecnici. N'arte non è tenuta a divulgare il proprio codice sorgente (art. 5, c. 6 Reg. 2019/1150), ma la descrizione che segue è completa: nessun altro parametro, dichiarato o nascosto, interviene sull'ordine.</p>
+
+<h2>2. In sintesi</h2>
+<div class="evidenza">
+<ul>
+  <li><strong>L'ordine degli artisti dipende anzitutto dal Piano di abbonamento</strong>: prima gli artisti con Piano Max, poi Pro, poi Free. I Piani Pro e Max sono a pagamento: si tratta quindi di un <strong>posizionamento a pagamento</strong>.</li>
+  <li>A parità di Piano, nel catalogo gli artisti sono in <strong>ordine alfabetico</strong> del nome d'arte.</li>
+  <li>Gli artisti con Piano Max compaiono anche in una <strong>fascia «Top Artist»</strong> in cima alla pagina Artisti.</li>
+  <li>I <strong>filtri</strong> restringono l'elenco, non cambiano l'ordine.</li>
+  <li><strong>Non influiscono</strong> sull'ordine: recensioni e voti, visite al profilo, preferiti, numero di ingaggi, completezza del profilo, città.</li>
+  <li>L'ordine è <strong>uguale per tutti</strong>: non è personalizzato sulla persona che guarda.</li>
+  <li>Il badge «<strong>Verificato N'arte</strong>» indica soltanto che l'artista ha un abbonamento Pro o Max attivo. <strong>Non</strong> è una verifica d'identità né un giudizio sulla qualità artistica.</li>
+</ul>
+</div>
+
+<h2>3. Chi compare sulla Piattaforma</h2>
+<p><span class="art">3.1</span> Compaiono nel catalogo, nella ricerca e in home soltanto i Profili artista che, contemporaneamente:</p>
+<ul>
+  <li>sono stati <strong>ammessi dal Team N'arte</strong> (doc. 01, art. 5.3) e non sono stati nascosti per decisione di moderazione (doc. 06);</li>
+  <li><strong>non sono sospesi</strong> perché eccedono il numero di Profili consentito dal Piano dell'account (doc. 02, art. 11.2);</li>
+  <li>non appartengono a un account di cui è stata confermata la cancellazione (doc. 01, art. 16.1).</li>
+</ul>
+<p><span class="art">3.2</span> L'ammissione è una valutazione editoriale del Team N'arte e <strong>non si acquista</strong>: sottoscrivere un Piano non comporta l'ammissione, e un Profilo con Piano Free, una volta ammesso, compare esattamente come gli altri, nella posizione che gli spetta secondo l'art. 4.</p>
+
+<h2>4. Il catalogo degli artisti (pagina /artisti)</h2>
+<p><span class="art">4.1</span> <strong>Parametri e ordine.</strong> I Profili sono ordinati secondo due parametri, applicati in quest'ordine:</p>
+<ol>
+  <li><strong>il Piano</strong> dell'account a cui il Profilo appartiene: Max, poi Pro, poi Free;</li>
+  <li><strong>il nome d'arte</strong>, in ordine alfabetico, tra i Profili con lo stesso Piano.</li>
+</ol>
+<p><span class="art">4.2</span> <strong>Importanza relativa.</strong> Il Piano prevale sempre: un Profilo con Piano Free non compare mai prima di un Profilo con Piano Pro o Max nello stesso elenco, qualunque altro elemento si consideri. Il nome d'arte serve soltanto a rendere l'ordine prevedibile e neutrale tra Profili dello stesso Piano; ne consegue che, a parità di Piano, i nomi che iniziano con cifre o con le prime lettere dell'alfabeto precedono gli altri.</p>
+<p><span class="art">4.3</span> <strong>Ragioni.</strong> Il Piano è il parametro principale perché la Piattaforma è gratuita per Visitatori, Utenti registrati e Organizzatori, e si sostiene esclusivamente con gli Abbonamenti degli Artisti (doc. 01, art. 4.3). Una maggiore visibilità è uno dei benefici che l'Artista acquista con il Piano, ed è dichiarata come tale nella pagina /prezzi e nel doc. 02, art. 10.</p>
+<p><span class="art">4.4</span> <strong>Fascia «Top Artist».</strong> Quando l'Utente non ha attivato filtri né scritto nella casella di ricerca, tutti i Profili con Piano Max sono mostrati in una fascia dedicata in cima alla pagina, intitolata «Top Artist», in ordine alfabetico. Sotto la fascia, nella sezione «Tutti gli artisti», compaiono i Profili con Piano Pro e poi quelli con Piano Free, secondo l'art. 4.1. I Profili Max non si ripetono nella seconda sezione. La fascia non ha un numero massimo di posti: vi compaiono tutti i Profili Max.</p>
+<p><span class="art">4.5</span> <strong>Con filtri o ricerca attivi</strong> la fascia «Top Artist» scompare e i risultati sono mostrati in un unico elenco, nello stesso ordine dell'art. 4.1: Max, Pro, Free, e a parità di Piano in ordine alfabetico.</p>
+<p><span class="art">4.6</span> <strong>Malfunzionamenti.</strong> Se per un errore tecnico temporaneo il Piano dei Profili non è leggibile, il catalogo è mostrato in solo ordine alfabetico e senza fascia «Top Artist». N'arte ripristina l'ordine corretto senza ritardo. Per gli Artisti con Piano a pagamento restano salvi i rimedi del doc. 02, art. 13.</p>
+
+<h2>5. Filtri e ricerca nel catalogo</h2>
+<p><span class="art">5.1</span> Nella pagina Artisti l'Utente dispone di tre strumenti, utilizzabili insieme:</p>
+<ul>
+  <li><strong>Ricerca testuale</strong>: trova i Profili il cui nome d'arte o la cui città contengono il testo scritto, senza distinzione tra maiuscole e minuscole.</li>
+  <li><strong>Filtro «Categoria»</strong>: ruoli musicali (bassista, batterista, cantante, chitarrista, corista, DJ, percussionista, sassofonista, tastierista, trombettista, violinista), ricavati automaticamente dagli strumenti che l'Artista ha indicato nel proprio Profilo.</li>
+  <li><strong>Filtro «Genere»</strong>: i generi musicali indicati dagli Artisti.</li>
+</ul>
+<p><span class="art">5.2</span> All'interno dello stesso filtro basta che il Profilo corrisponda a una delle voci selezionate; tra filtri diversi il Profilo deve soddisfarli tutti. Accanto a ogni voce è indicato quanti Profili vi corrispondono.</p>
+<p><span class="art">5.3</span> <strong>I filtri restringono l'elenco, non cambiano l'ordine</strong>, che resta quello dell'art. 4.1.</p>
+<p><span class="art">5.4</span> Non sono oggi disponibili filtri per fascia di prezzo, disponibilità in una data, valutazione o distanza, e la Piattaforma non rileva la posizione dell'Utente. La città si cerca con la ricerca testuale.</p>
+<p><span class="art">5.5</span> L'esito dei filtri dipende dai dati dichiarati dagli Artisti (generi, strumenti, città), che N'arte non verifica in modo sistematico. Gli Artisti sono tenuti a indicarli in modo veritiero e pertinente, senza inserire generi o strumenti estranei alla propria proposta al solo fine di comparire in più ricerche (doc. 03).</p>
+
+<h2>6. La ricerca rapida</h2>
+<p><span class="art">6.1</span> La casella di ricerca nell'intestazione del sito mostra, dopo almeno due caratteri, fino a <strong>5 artisti</strong> e fino a <strong>5 eventi</strong>.</p>
+<p><span class="art">6.2</span> <strong>Artisti: parametri e ordine.</strong> Sono considerati i Profili che corrispondono al testo cercato. Sono ordinati in base a:</p>
+<ol>
+  <li><strong>pertinenza</strong>, in quattro livelli: nome d'arte che inizia con il testo cercato; nome d'arte che lo contiene; genere che lo contiene; città che lo contiene;</li>
+  <li><strong>Piano</strong>, a parità di pertinenza: Max, poi Pro, poi Free;</li>
+  <li><strong>data di creazione del Profilo</strong>, a parità dei precedenti: prima il più recente.</li>
+</ol>
+<p><span class="art">6.3</span> <strong>Importanza relativa.</strong> Qui la pertinenza prevale sul Piano: un artista il cui nome inizia con il testo cercato precede sempre chi suona soltanto il genere corrispondente, qualunque sia il Piano. Poiché i posti sono cinque, il Piano decide però quali artisti, tra quelli ugualmente pertinenti, vengono mostrati.</p>
+<p><span class="art">6.4</span> <strong>Limite tecnico.</strong> La ricerca rapida esamina fino a 300 Profili pubblicati, scelti in ordine di Piano e, a parità, dal più recente. Se i Profili pubblicati superano questa soglia, i Profili con Piano Free creati da più tempo possono non essere trovati dalla ricerca rapida; restano comunque presenti e trovabili nel catalogo (art. 4 e 5).</p>
+<p><span class="art">6.5</span> <strong>Eventi.</strong> Sono gli eventi pubblicati da N'arte il cui titolo o la cui città contengono il testo cercato, in ordine di data. Sono contenuti editoriali di N'arte (art. 12) e non sono ordinati in base ad alcun pagamento.</p>
+
+<h2>7. La vetrina in home («Il roster»)</h2>
+<p><span class="art">7.1</span> La pagina iniziale mostra una selezione automatica di <strong>8 Profili</strong>, ordinati per Piano (Max, Pro, Free) e, a parità di Piano, dal più recente per data di creazione. Il Team N'arte non sceglie a mano i Profili della vetrina.</p>
+<p><span class="art">7.2</span> <strong>Effetto del Piano.</strong> Quando i Profili con Piano Max o Pro sono almeno otto, <strong>la vetrina mostra soltanto Profili con Piano a pagamento</strong> e i Profili con Piano Free non vi compaiono. È un vantaggio di visibilità legato al pagamento ed è dichiarato come tale anche accanto alla vetrina (Allegato A).</p>
+
+<h2 class="salto">8. Il ruolo del pagamento: posizionamento a pagamento</h2>
+<div class="evidenza">
+<p><span class="art">8.1</span> <strong>N'arte mostra prima gli Artisti che pagano un Abbonamento Pro o Max.</strong> È un posizionamento a pagamento: l'Artista che sottoscrive un Piano superiore ottiene, in cambio del prezzo (doc. 02, art. 2.2), una posizione migliore nel catalogo, nella ricerca rapida e nella vetrina in home, oltre ai badge descritti all'art. 11.</p>
+</div>
+<p><span class="art">8.2</span> Effetti di ciascun Piano:</p>
+<table>
+  <tr><th>Piano</th><th>Catalogo /artisti</th><th>Ricerca rapida</th><th>Vetrina in home</th><th>Badge</th></tr>
+  <tr><td>Max (a pagamento)</td><td>Fascia «Top Artist» in cima; nei risultati filtrati, primi</td><td>Primi a parità di pertinenza</td><td>Primi</td><td>«TOP Artist» e «Verificato N'arte»</td></tr>
+  <tr><td>Pro (a pagamento)</td><td>Dopo i Max, prima dei Free</td><td>Dopo i Max a parità di pertinenza</td><td>Dopo i Max</td><td>«Verificato N'arte»</td></tr>
+  <tr><td>Free (gratuito)</td><td>Dopo i Pro</td><td>Dopo i Pro a parità di pertinenza</td><td>Solo se restano posti tra gli 8</td><td>Nessuno</td></tr>
+</table>
+<p><span class="art">8.3</span> <strong>È l'unica forma di pagamento che influisce sull'ordine.</strong> N'arte non vende posizioni singole, non organizza aste, non offre spazi sponsorizzati né pagamenti a clic, non riceve somme da Organizzatori o da terzi per favorire un Artista e non percepisce commissioni sugli ingaggi (doc. 01, art. 4.3).</p>
+<p><span class="art">8.4</span> <strong>Piano omaggio.</strong> Il Piano omaggio produce sull'ordine gli stessi effetti del corrispondente Piano a pagamento. N'arte lo concede secondo i criteri seguenti: <span class="seg">[CRITERI DI CONCESSIONE DEGLI OMAGGI — es. lancio della Piattaforma, artisti resident dei format N'arte, accordi di collaborazione]</span>. N'arte tiene traccia degli omaggi concessi e della loro durata.</p>
+<p><span class="art">8.5</span> <strong>Tempi.</strong> Il nuovo Piano incide sull'ordine non appena Stripe conferma il pagamento o N'arte registra l'omaggio. Durante i tentativi di addebito successivi a un pagamento non riuscito il Piano resta attivo (doc. 02, art. 8.1); alla cessazione dell'Abbonamento il Profilo torna nella posizione del Piano Free.</p>
+<p><span class="art">8.6</span> <strong>Promozione fuori dall'ordinamento.</strong> Le candidature a eventi e le proposte alle strutture incluse nel Piano Max (doc. 02, art. 9) non incidono sull'ordine descritto in questo documento. Quando il Team N'arte segnala un Artista a un Organizzatore o a una struttura nell'ambito di tali servizi, precisa che l'Artista ha sottoscritto il Piano Max e che la segnalazione fa parte del servizio a pagamento.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <ul>
+    <li><strong>Art. 8.4 — omaggi.</strong> Oggi il superadmin concede Piani omaggio a propria discrezione (<em>tier_override</em>, migration 0042–0044) e un omaggio Max colloca il Profilo nella fascia TOP senza alcun corrispettivo. Verso gli Artisti Professionisti è un trattamento differenziato che va descritto (art. 5 P2B; valutare anche l'art. 7, che però riguarda i beni e servizi offerti dal fornitore stesso o da soggetti da lui controllati — da verificare se pertinente). Servono criteri scritti, anche ampi, e un elenco degli omaggi attivi.</li>
+    <li><strong>Art. 8.6 — trasparenza della segnalazione.</strong> È una proposta, non un obbligo espressamente previsto: evita che una segnalazione pagata sia percepita come una raccomandazione indipendente della Piattaforma (artt. 21–22 Cod. consumo, omissione dell'intento commerciale).</li>
+    <li><strong>Applicabilità del P2B.</strong> Il P2B si applica ai servizi di intermediazione che consentono a utenti commerciali di offrire servizi ai consumatori. Gli Organizzatori sono spesso imprese (locali), ma non di rado Consumatori (feste private): la condizione pare soddisfatta almeno in parte. Molti Artisti non hanno partita IVA e non sono «utenti commerciali»; il documento è comunque scritto per soddisfare lo standard P2B verso tutti.</li>
+  </ul>
+</div>
+
+<h2>9. Che cosa vede chi non è registrato</h2>
+<p><span class="art">9.1</span> Il Visitatore vede lo stesso ordine e la stessa fascia «Top Artist» dell'Utente registrato, ma in forma anonima: copertina sfocata, nome d'arte sostituito da un segnaposto, generi, categoria e badge di Piano. Non vede città, fascia di prezzo e valutazioni. Aprendo un Profilo, trova un'anteprima bloccata con copertina sfocata, generi e strumenti, e l'invito a registrarsi. Anche nella ricerca rapida gli artisti sono mostrati al Visitatore senza nome.</p>
+<p><span class="art">9.2</span> L'Utente registrato vede il Profilo completo: nome, biografia, città, galleria, video, audio, collegamenti social, componenti della formazione, calendario delle disponibilità e date confermate. La <strong>fascia di prezzo</strong> è visibile soltanto agli Organizzatori. Le <strong>recensioni</strong> sono visibili sul Profilo soltanto se l'Artista ha un Piano Pro o Max (doc. 02, Allegato A e doc. 05).</p>
+<p><span class="art">9.3</span> I badge di Piano sono visibili anche al Visitatore, perché il loro significato (art. 11) va reso noto a chiunque veda l'ordine che ne deriva.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — scostamenti tra il testo e il prodotto</strong>
+  <ul>
+    <li><strong>Oscuramento solo grafico.</strong> Nel catalogo il nome d'arte e la città sono comunque trasmessi al browser del Visitatore e poi coperti a schermo: chi ispeziona la pagina li legge, e la ricerca testuale del catalogo li trova. Inoltre i metadati di condivisione del Profilo (titolo, descrizione con le prime righe della biografia, copertina non sfocata) sono pubblici. L'art. 9.1 descrive ciò che il Visitatore vede sulla pagina; se si vuole che l'anteprima sia davvero riservata, il prodotto va allineato. In ogni caso non va dichiarato ai terzi che i dati degli Artisti «non sono pubblici».</li>
+    <li><strong>Voti in catalogo per i Profili Free.</strong> La scheda del catalogo mostra agli Utenti registrati media e numero delle recensioni per <em>tutti</em> i Profili, anche Free, mentre il Profilo le mostra solo per Pro e Max e il doc. 02 le presenta come beneficio di Piano. Va scelta una regola unica, e il doc. 05 deve rispecchiarla.</li>
+  </ul>
+</div>
+
+<h2>10. Che cosa non influisce sull'ordine</h2>
+<p><span class="art">10.1</span> Non influiscono in alcun modo sull'ordine descritto agli artt. 4, 6 e 7:</p>
+<ul>
+  <li>le <strong>recensioni</strong>, il voto medio e il numero di recensioni, anche quando sono mostrati sulla scheda;</li>
+  <li>il numero di <strong>visite</strong> al Profilo e le altre statistiche (art. 13);</li>
+  <li>il numero di Utenti che hanno salvato il Profilo nei <strong>preferiti</strong>;</li>
+  <li>il numero di Richieste di booking ricevute, di Date confermate o di ingaggi;</li>
+  <li>la completezza del Profilo, il numero di foto, video e tracce, la qualità dei contenuti;</li>
+  <li>la fascia di prezzo, la città, la vicinanza all'Utente e la disponibilità nel calendario;</li>
+  <li>la rapidità di risposta dell'Artista;</li>
+  <li>il numero di Profili dello stesso account;</li>
+  <li>il ruolo, la storia di navigazione o le preferenze di chi guarda: l'ordine non è personalizzato (art. 14);</li>
+  <li>nel catalogo, la data di iscrizione. Nella ricerca rapida e nella vetrina in home la data di creazione del Profilo interviene soltanto come criterio residuo (artt. 6.2 e 7.1).</li>
+</ul>
+<p><span class="art">10.2</span> Il Team N'arte non modifica a mano la posizione di singoli Profili nel catalogo, nella ricerca o in home. Gli interventi che possono incidere sulla visibilità sono solo quelli descritti agli artt. 3 (ammissione, moderazione, sospensione per limiti di Piano) e 8.4 (Piano omaggio).</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <p>L'art. 10.2 è un impegno di fatto vero oggi e rilevante: se in futuro si introducesse una selezione manuale («artisti scelti dalla redazione», «consigliati»), andrebbe descritta qui con i relativi criteri e comunicata con il preavviso dell'art. 15. Il Centro assistenza (articolo «Badge e posizione nei risultati») parla di filtro per città: non esiste, la città si cerca col testo. Da allineare.</p>
+</div>
+
+<h2>11. I badge</h2>
+<p><span class="art">11.1</span> <strong>«Verificato N'arte».</strong> Compare sui Profili il cui account ha un Piano Pro o Max attivo, compreso il Piano omaggio. Attesta soltanto che <strong>l'Artista ha un Abbonamento Pro o Max attivo</strong> ed è stato ammesso dal Team N'arte. <strong>Non attesta</strong> la verifica dell'identità, di documenti o di titoli, la qualità artistica, l'affidabilità, la regolarità fiscale o contributiva, né l'esito di recensioni. Si ottiene automaticamente con il Piano e si perde con la sua cessazione.</p>
+<p><span class="art">11.2</span> <strong>«TOP Artist».</strong> Compare sui Profili con Piano Max, compreso l'omaggio. Indica la collocazione in evidenza a pagamento descritta agli artt. 4.4 e 8. Non è una classifica di merito né il risultato di voti o recensioni.</p>
+<p><span class="art">11.3</span> Entrambi i badge sono accompagnati, al passaggio del puntatore o al tocco, da una breve spiegazione con collegamento a questa pagina (Allegato A).</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — si raccomanda di rinominare il badge</strong>
+  <p>«Verificato» evoca, nella percezione comune, un controllo di identità o di qualità svolto da un terzo. Un badge che si ottiene soltanto pagando rischia di integrare una pratica ingannevole (art. 21, c. 1, lett. b Cod. consumo sulle caratteristiche del servizio; e il divieto di esibire marchi di fiducia o di qualità senza autorizzazione, art. 23, c. 1, lett. b), che una spiegazione in una pagina separata non basta a neutralizzare, perché il pubblico vede il badge e non legge la pagina. Si raccomanda di rinominarlo (es. «Artista Pro», «Profilo Pro») o, in subordine, di affiancarlo sempre dalla dicitura dell'Allegato A. L'art. 11.3 descrive la spiegazione al passaggio del puntatore, che oggi è solo «Verificato N'arte»: va aggiornata. Stessa cautela per «TOP Artist», che potrebbe suggerire un merito: l'art. 11.2 ne chiarisce la natura.</p>
+</div>
+
+<h2>12. Contenuti curati dal Team N'arte</h2>
+<p><span class="art">12.1</span> Alcune sezioni della Piattaforma non ordinano Profili artista ma presentano contenuti editoriali di N'arte. Non vi si applicano gli artt. 4–8 e <strong>non vi si accede a pagamento</strong>:</p>
+<ul>
+  <li><strong>Eventi</strong>: gli eventi organizzati o curati da N'arte. Quelli in programma sono in ordine di data dal più vicino; l'archivio degli eventi passati dal più recente. La home mostra i due eventi passati più recenti.</li>
+  <li><strong>Format</strong> (NaJam, NuLive, NaBand, NaCena): nell'ordine stabilito dal Team N'arte.</li>
+  <li><strong>Blog</strong>: articoli in ordine di pubblicazione, dal più recente. La scelta di citare un artista in un articolo è editoriale.</li>
+  <li><strong>Collaborazioni</strong>: i marchi di partner e locali con cui N'arte ha collaborato.</li>
+</ul>
+<p><span class="art">12.2</span> Se in futuro un contenuto editoriale fosse realizzato in cambio di un corrispettivo o di altra utilità (per esempio un articolo dedicato a un Artista a pagamento), sarà indicato in modo chiaro con la dicitura «Contenuto sponsorizzato» o equivalente, in apertura del contenuto.</p>
+<p><span class="art">12.3</span> Nella selezione degli artisti per gli eventi N'arte, il Team N'arte può tenere conto delle candidature del Piano Max (doc. 02, art. 9.2); la scelta finale spetta a chi organizza l'evento.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <p>Nel pannello eventi esiste la casella «In evidenza in home», ma oggi nessuna pagina pubblica la usa. Se venisse attivata, la home avrebbe una selezione manuale di eventi: andrà aggiunta all'art. 12.1 con il relativo criterio. La vetrina in home è intitolata «Sfoglia tra centinaia di artisti»: se il numero reale è inferiore, l'affermazione è ingannevole (art. 21 Cod. consumo) e va riformulata; lo stesso vale per le altre cifre pubbliche già segnalate nel piano di compliance (§8.5). Il rinvio all'art. 23 Cod. consumo per la pubblicità redazionale (art. 12.2) va verificato nella lettera.</p>
+</div>
+
+<h2>13. Statistiche di visita (Piano Max)</h2>
+<p><span class="art">13.1</span> Gli Artisti con Piano Max vedono, per gli ultimi 365 giorni: le visite al proprio Profilo, giorno per giorno; quante provengono da Organizzatori; le Richieste di booking ricevute; i salvataggi nei preferiti. Le statistiche non sono un parametro di posizionamento (art. 10).</p>
+<p><span class="art">13.2</span> <strong>Come si conta una visita.</strong> È contata quando la pagina del Profilo resta aperta e in primo piano per almeno due secondi in un browser che esegue JavaScript. Sono esclusi i programmi automatici riconoscibili, le visite dell'Artista stesso ai Profili del proprio account e quelle del Team N'arte. Le visite dei Visitatori non registrati sono contate. Ogni dispositivo o rete conta per una visita al giorno per ciascun Profilo.</p>
+<p><span class="art">13.3</span> <strong>Riservatezza.</strong> L'indirizzo IP di chi visita non viene conservato: al momento della visita viene trasformato, insieme alla data del giorno e al Profilo visitato, in un codice non reversibile generato con una chiave segreta; il codice cambia ogni giorno e per ogni Profilo, e non permette di seguire una persona nel tempo né tra Profili diversi. Non si usano cookie per questo conteggio. Del visitatore si registra soltanto il tipo (non registrato, Utente, Organizzatore, Artista), letto dalla sessione di accesso. L'Artista vede solo numeri aggregati, mai chi lo ha visitato. I dati sono conservati per 425 giorni. I dettagli sono nell'Informativa privacy.</p>
+<p><span class="art">13.4</span> <strong>Limiti.</strong> I numeri sono stime prudenti: più persone collegate dalla stessa rete (un ufficio, una rete mobile) possono essere contate come una sola. N'arte non garantisce l'esattezza delle statistiche, che servono all'Artista come indicazione di andamento.</p>
+
+<h2>14. Assenza di raccomandazioni personalizzate</h2>
+<p><span class="art">14.1</span> N'arte non utilizza sistemi di raccomandazione personalizzati. L'ordine descritto in questo documento è lo stesso per chiunque consulti la Piattaforma e non tiene conto della storia di navigazione, delle preferenze, della posizione o del profilo di chi guarda, né dei dati raccolti da eventuali strumenti di misurazione o pubblicitari di terze parti. L'Utente modifica ciò che vede soltanto con i filtri e la ricerca (art. 5).</p>
+<p><span class="art">14.2</span> Questa descrizione è resa anche ai fini di trasparenza dell'art. 27 del Regolamento (UE) 2022/2065.</p>
+
+<h2>15. Modifiche ai criteri</h2>
+<p><span class="art">15.1</span> Ogni modifica ai parametri principali, alla loro importanza relativa o agli effetti del Piano sull'ordine è comunicata agli Artisti via email e con un avviso nella loro area riservata <strong>almeno 15 giorni prima</strong> che abbia effetto, con l'indicazione di che cosa cambia e perché (art. 3, c. 2 Reg. 2019/1150; doc. 01, art. 17.2).</p>
+<p><span class="art">15.2</span> Il preavviso non si applica quando la modifica è imposta dalla legge o da un'autorità, o è necessaria per far fronte a un rischio imprevisto e imminente per la sicurezza della Piattaforma o degli Utenti, a frodi o ad abusi (art. 3, c. 4 Reg. 2019/1150). In questi casi N'arte ne dà notizia al più presto.</p>
+<p><span class="art">15.3</span> L'Artista che non accetta la modifica può recedere dal contratto d'uso senza costi prima che abbia effetto (doc. 01, art. 16.1). Se la modifica incide negativamente e in modo non trascurabile sui benefici del Piano a pagamento, valgono i rimedi del doc. 02, art. 12.2.</p>
+<p><span class="art">15.4</span> Questa pagina riporta sempre la data di entrata in vigore e un riepilogo delle modifiche rispetto alla versione precedente. Le versioni precedenti sono conservate e fornite su richiesta.</p>
+<p><span class="art">15.5</span> N'arte non sperimenta ordinamenti diversi su gruppi di Utenti (<em>test A/B</em>) senza averlo prima descritto in questa pagina.</p>
+
+<h2>16. Domande, segnalazioni e reclami</h2>
+<p><span class="art">16.1</span> Chi ha domande su questi criteri, o ritiene che un Profilo non sia collocato come qui descritto (per esempio perché il Piano sottoscritto non è stato applicato), può scrivere ai recapiti del doc. 01, art. 1.2. N'arte risponde entro 15 giorni lavorativi (doc. 01, art. 18.2) e, se l'errore è confermato, lo corregge senza ritardo.</p>
+<p><span class="art">16.2</span> I reclami degli Artisti sono gestiti secondo la Politica di moderazione, segnalazioni e reclami (doc. 06).</p>
+
+<h2 class="salto">Allegato A — Testi brevi da mostrare nell'interfaccia</h2>
+<p>L'art. 22, c. 4-bis Cod. consumo chiede che l'informazione sia accessibile <em>dalla pagina in cui sono presentati i risultati</em>. Una voce nel piè di pagina non basta. Proposte, ciascuna con il collegamento «Come funziona» a /criteri-di-posizionamento:</p>
+<table>
+  <tr><th>Dove</th><th>Testo proposto</th></tr>
+  <tr><td>Catalogo /artisti — riquadro sopra i risultati, visibile senza scorrere anche da telefono</td><td>«<strong>Ordine: prima gli artisti con piano Max, poi Pro (abbonamenti a pagamento), poi gli altri, in ordine alfabetico.</strong> I filtri restringono l'elenco, non cambiano l'ordine. <u>Come funziona</u>»</td></tr>
+  <tr><td>Intestazione della fascia TOP</td><td>«Top Artist — in evidenza con il piano Max, a pagamento»</td></tr>
+  <tr><td>Vetrina in home, sotto il titolo</td><td>«Selezione automatica: prima gli artisti con piano Max e Pro, a pagamento, poi i più recenti. <u>Come funziona</u>»</td></tr>
+  <tr><td>Ricerca rapida, in fondo alla tendina</td><td>«Risultati per pertinenza; a parità, prima i piani a pagamento. <u>Come funziona</u>»</td></tr>
+  <tr><td>Badge «Verificato N'arte» — spiegazione al passaggio del puntatore o al tocco</td><td>«L'artista ha un abbonamento Pro o Max attivo. Non è una verifica d'identità né un giudizio artistico.»</td></tr>
+  <tr><td>Badge «TOP Artist» — spiegazione</td><td>«In evidenza con il piano Max, a pagamento. Non è una classifica di merito.»</td></tr>
+  <tr><td>Pagina /prezzi, accanto a «Posizione nei risultati»</td><td>«La posizione migliore è un beneficio a pagamento ed è dichiarata agli utenti nel catalogo. <u>Criteri di posizionamento</u>»</td></tr>
+</table>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — da fare nel prodotto prima della pubblicazione</strong>
+  <ul>
+    <li>Creare la pagina /criteri-di-posizionamento e inserire i testi dell'Allegato A: oggi nessuna superficie dichiara l'ordine a pagamento.</li>
+    <li>Aggiornare la spiegazione dei badge (art. 11.3) e decidere la rinomina di «Verificato».</li>
+    <li>Allineare la visibilità dei voti in catalogo alla regola di Piano (art. 9, nota).</li>
+    <li>Scrivere i criteri degli omaggi (art. 8.4).</li>
+    <li>Valutare se alzare o eliminare il limite dei 300 Profili della ricerca rapida (art. 6.4): è descritto, ma una ricerca che non trova un Profilo pubblicato è un limite che conviene togliere più che dichiarare.</li>
+  </ul>
+</div>
+
+</article>
