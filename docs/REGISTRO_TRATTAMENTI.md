@@ -302,15 +302,39 @@ generale — e la questione si chiude.
 
 ## 6. Diritti degli interessati
 
-| Diritto | Come si esercita oggi | Da costruire |
-|---|---|---|
-| Accesso | Richiesta dalla pagina contatti | Esportazione in autonomia |
-| Rettifica | In autonomia dall'area personale | — |
-| Cancellazione | Richiesta al team | Richiesta in autonomia con conferma via email |
-| Portabilità | Richiesta al team | Esportazione in formato leggibile |
-| Limitazione e opposizione | Richiesta dalla pagina contatti | — |
-| Revoca del consenso | Banner per i cookie | Interruttore per il marketing nell'area personale |
-| Reclamo | Garante per la protezione dei dati personali | — |
+Tutti esercitabili dalla pagina **`/account/i-miei-dati`**, collegata dal piè di
+pagina e dal centro assistenza.
+
+| Diritto | Come si esercita |
+|---|---|
+| Accesso | Storico dei consensi in pagina + esportazione completa |
+| Portabilità | Esportazione in JSON, in autonomia |
+| Rettifica | Dal proprio profilo |
+| Cancellazione | Richiesta in pagina → conferma via email → disattivazione immediata |
+| Revoca del consenso | Interruttore per il marketing in pagina; banner per i cookie |
+| Limitazione e opposizione | Pagina contatti |
+| Reclamo | Garante per la protezione dei dati personali |
+
+### Procedura di cancellazione — cosa fa il sistema e cosa resta a mano
+
+**Automatico, alla conferma dell'interessato:** accesso bloccato; profili artista
+riportati a `pending`, quindi fuori dal catalogo pubblico. Lo stato precedente è
+registrato in `account_deletion_requests.restore_state`, così è reversibile.
+
+**A mano, entro 30 giorni**, perché tocca cose che nessun cascade raggiunge:
+
+1. `leads`, `contact_messages`, `artist_applications`, `consultations`,
+   `email_log` — non sono legate a `auth.users` e sopravvivono alla cancellazione
+   dell'utente: vanno cercate per indirizzo email.
+2. I file su **bunny.net**: il cascade del database non li tocca. Vedi
+   `scripts/bunny-orfani.mjs`.
+3. I file su **Supabase Storage** nei bucket dell'artista.
+4. Infine `auth.admin.deleteUser`, che porta via per cascade profilo, artisti,
+   consensi e preferiti.
+
+> ⛔ Ognuno di questi passaggi cancella dati di produzione. Vanno eseguiti dopo
+> aver verificato che la richiesta sia confermata e non annullata, e dopo aver
+> contato cosa si sta per rimuovere.
 
 ---
 

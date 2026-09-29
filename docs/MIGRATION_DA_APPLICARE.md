@@ -289,3 +289,43 @@ artisti, organizzatori, consulenti, superadmin — trova al primo accesso alle
 aree riservate la schermata `/accetta-condizioni`. È voluto: nessuno di loro ha
 mai accettato nulla, e gli account creati da un amministratore non hanno mai
 visto una casella.
+
+
+---
+
+## Cancellazione account — `0060_account_deletion.sql`
+
+Crea `account_deletion_requests`: la tabella delle richieste di cancellazione,
+con token di conferma (conservato come impronta, mai in chiaro), scadenza e
+stato di ripristino.
+
+Additiva, non tocca nessuna tabella esistente. RLS più `revoke`, come 0046 e
+0049: ognuno legge le proprie richieste, il superadmin tutte, e nessuno scrive
+se non dal server.
+
+Verifica subito dopo:
+
+```sql
+select column_name from information_schema.columns
+where table_name = 'account_deletion_requests'
+order by ordinal_position;
+```
+
+### Cosa cambia quando è applicata
+
+La pagina `/account/i-miei-dati` comincia a funzionare per intero. Il percorso è:
+
+1. l'utente chiede la cancellazione → si registra la richiesta e parte un'email;
+2. l'utente apre il collegamento (vale 48 ore) → **l'accesso viene chiuso e i
+   profili artista tornano a `pending`**, quindi spariscono dal catalogo;
+3. la rimozione definitiva di dati e file resta un passaggio da eseguire a mano
+   entro 30 giorni — procedura in `REGISTRO_TRATTAMENTI.md` §6.
+
+Finché la migration non è applicata, la richiesta fallisce con un messaggio che
+invita a scrivere dalla pagina contatti: non si rompe nulla, semplicemente non
+parte.
+
+> **La disattivazione è reversibile per trenta giorni**, e deve restarlo: la
+> colonna `restore_state` registra cosa è stato cambiato — quali profili sono
+> stati riportati a `pending`, e che l'accesso è stato bloccato — proprio perché
+> si possa tornare indietro finché la cancellazione non è stata eseguita.

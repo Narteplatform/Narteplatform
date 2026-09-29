@@ -510,6 +510,45 @@ export interface Database {
         };
         Relationships: [];
       };
+      account_deletion_requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          token_hash: string;
+          reason: string | null;
+          requested_at: string;
+          expires_at: string;
+          confirmed_at: string | null;
+          cancelled_at: string | null;
+          completed_at: string | null;
+          restore_state: Json | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          token_hash: string;
+          reason?: string | null;
+          requested_at?: string;
+          expires_at: string;
+          confirmed_at?: string | null;
+          cancelled_at?: string | null;
+          completed_at?: string | null;
+          restore_state?: Json | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          token_hash?: string;
+          reason?: string | null;
+          requested_at?: string;
+          expires_at?: string;
+          confirmed_at?: string | null;
+          cancelled_at?: string | null;
+          completed_at?: string | null;
+          restore_state?: Json | null;
+        };
+        Relationships: [];
+      };
       user_consents: {
         Row: {
           id: string;

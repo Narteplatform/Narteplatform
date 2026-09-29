@@ -8,6 +8,10 @@ import { recordConsent } from "@/lib/legal/consents";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
+import { createElement } from "react";
+import { sendEmail } from "@/lib/emails/send";
+import AccountDeletionConfirmEmail from "@/lib/emails/templates/AccountDeletionConfirmEmail";
+import { creaRichiestaCancellazione, SCADENZA_ORE } from "@/lib/legal/cancellazione";
 
 /**
  * Le azioni della pagina «I miei dati»: accesso, portabilità, revoca, richiesta
@@ -70,9 +74,53 @@ export async function richiediCancellazioneAccount(input: unknown) {
   const admin = createAdminClient();
 
   const nome = utente.profile?.full_name ?? "(senza nome)";
+  const destinatario = utente.email;
+
+  if (!destinatario) {
+    // Senza un indirizzo non si può mandare la conferma, e senza conferma non
+    // si disattiva niente. Meglio dirlo che registrare una richiesta che non
+    // potrà mai completarsi.
+    return {
+      ok: false as const,
+      error:
+        "Sul tuo account non risulta un indirizzo email a cui mandare la conferma. " +
+        "Scrivici dalla pagina contatti e ce ne occupiamo noi.",
+    };
+  }
+
+  const richiesta = await creaRichiestaCancellazione(utente.id, parsed.data.motivo);
+  if (!richiesta.ok) return richiesta;
+
+  const urlConferma = `${getSiteUrl()}/account/cancellazione?token=${richiesta.token}`;
+
+  // La conferma all'interessato è la parte che conta: senza, la richiesta resta
+  // aperta e non produce effetti. Se l'invio fallisce si dice, invece di
+  // lasciare qualcuno ad aspettare un messaggio che non arriverà.
+  const esitoEmail = await sendEmail({
+    to: destinatario,
+    subject: "Conferma la cancellazione del tuo account N'arte",
+    react: createElement(AccountDeletionConfirmEmail, {
+      nome,
+      url: urlConferma,
+      scadenzaOre: SCADENZA_ORE,
+    }),
+    template: "account_deletion_confirm",
+  }).catch((e) => {
+    logger.error("account/cancellazione", `invio conferma fallito: ${String(e)}`);
+    return { ok: false as const, skipped: false };
+  });
+
+  if (!esitoEmail.ok) {
+    return {
+      ok: false as const,
+      error:
+        "Non siamo riusciti a inviarti l'email di conferma. Riprova fra poco, " +
+        "oppure scrivici dalla pagina contatti: vale comunque come richiesta.",
+    };
+  }
   const ruolo = utente.profile?.role ?? "?";
   const corpo = [
-    "RICHIESTA DI CANCELLAZIONE ACCOUNT",
+    "RICHIESTA DI CANCELLAZIONE ACCOUNT (in attesa di conferma via email)",
     "",
     `Utente: ${nome}`,
     `Email: ${utente.email ?? "?"}`,
@@ -81,6 +129,10 @@ export async function richiediCancellazioneAccount(input: unknown) {
     `Ricevuta: ${new Date().toISOString()}`,
     "",
     parsed.data.motivo ? `Motivo indicato: ${parsed.data.motivo}` : "Nessun motivo indicato.",
+    "",
+    "L'account viene disattivato automaticamente quando l'interessato conferma",
+    "dal collegamento ricevuto per email. La rimozione definitiva dei dati resta",
+    "un passaggio da eseguire a mano entro 30 giorni.",
     "",
     "⚠️ Termine di legge: UN MESE dalla ricezione.",
     "Procedura in docs/REGISTRO_TRATTAMENTI.md §6.",

@@ -170,6 +170,9 @@ espone — le query sono in `docs/VERIFICA_MIGRATION.sql`.
   Dal momento in cui la 0059 è applicata, ogni utente già registrato trova la
   schermata `/accetta-condizioni` al primo accesso alle aree riservate: è voluto,
   nessuno ha mai accettato nulla. Guida completa in `docs/IUBENDA_INTEGRAZIONE.md`.
+- `0060_account_deletion.sql` — tabella delle richieste di cancellazione account,
+  con token di conferma. Additiva. Finché manca, la richiesta dalla pagina
+  `/account/i-miei-dati` non parte e invita a scrivere dalla pagina contatti.
 
 ## Comandi
 

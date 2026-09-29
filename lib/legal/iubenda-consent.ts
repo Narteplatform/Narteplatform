@@ -75,6 +75,18 @@ const ENDPOINT = USA_CHIAVE_PUBBLICA
 /** Oltre questo tempo si rinuncia: il modulo dell'utente non deve attendere. */
 const TIMEOUT_MS = 4000;
 
+/**
+ * iubenda ha già rifiutato una prova che citava «terms»?
+ *
+ * Il documento va registrato una volta con `npm run iubenda:notices`, e finché
+ * non lo è ogni invio costerebbe DUE chiamate: una rifiutata e una di ripiego.
+ * Alla prima rifiutata si impara, e per il resto della vita dell'istanza si
+ * parte già senza. Si azzera a ogni avvio a freddo, quindi il giorno in cui il
+ * documento viene registrato il comportamento torna da sé quello giusto senza
+ * che nessuno debba ricordarsene.
+ */
+let terminiRifiutati = false;
+
 export const consentDatabaseAttiva = Boolean(API_KEY);
 
 /**
@@ -116,6 +128,10 @@ export async function registraProvaSuIubenda(prova: ProvaConsenso): Promise<void
 
   const versione = prova.versione ?? LEGAL_VERSION;
 
+  const documenti = terminiRifiutati
+    ? prova.documenti.filter((d) => d !== "terms")
+    : prova.documenti;
+
   const body = {
     subject: {
       ...(prova.soggettoId ? { id: prova.soggettoId } : {}),
@@ -136,7 +152,7 @@ export async function registraProvaSuIubenda(prova: ProvaConsenso): Promise<void
     // possiede, che è esattamente quella che l'utente ha letto.
     //
     // La nostra versione non va persa: finisce nella prova, qui sotto.
-    legal_notices: prova.documenti.map((identifier) => ({ identifier })),
+    legal_notices: documenti.map((identifier) => ({ identifier })),
     preferences: prova.preferenze,
     proofs: [
       {
@@ -195,9 +211,12 @@ export async function registraProvaSuIubenda(prova: ProvaConsenso): Promise<void
         logger.warn(
           "legal/iubenda",
           `prova rifiutata (${r.status}): riprovo senza «terms». ` +
-            "Esegui `npm run iubenda:notices` per registrarlo una volta per tutte."
+            "Per registrarlo una volta per tutte: npm run iubenda:notices"
         );
         r = await invia({ ...body, legal_notices: soloNoti });
+        // Se il ripiego funziona, il problema era proprio «terms»: da qui in poi
+        // si evita la chiamata sprecata.
+        if (r.ok) terminiRifiutati = true;
       }
     }
 

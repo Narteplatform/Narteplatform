@@ -149,14 +149,14 @@ function Cancellazione() {
   if (fatto) {
     return (
       <section className="border-t border-border pt-10">
-        <h2 className="font-display text-xl">Richiesta ricevuta</h2>
+        <h2 className="font-display text-xl">Controlla la tua posta</h2>
         <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
           <Check className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
           <span>
-            Abbiamo registrato la tua richiesta di cancellazione. Ti ricontattiamo
-            per confermarla e completarla entro un mese, come prevede la legge.
-            Fino ad allora il tuo account continua a funzionare: se cambi idea,
-            scrivici.
+            Ti abbiamo mandato un&rsquo;email con un collegamento di conferma.{" "}
+            <strong>Finora non abbiamo fatto nulla</strong>: si procede solo se lo
+            apri. Il collegamento vale 48 ore; se non lo usi, il tuo account resta
+            com&rsquo;è.
           </span>
         </p>
       </section>
@@ -167,11 +167,17 @@ function Cancellazione() {
     <section className="border-t border-border pt-10">
       <h2 className="font-display text-xl">Cancellare l&rsquo;account</h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        Puoi chiedere la cancellazione dell&rsquo;account e dei dati collegati.
-        Alcune cose restano, e sono quelle che la legge ci obbliga a conservare —
-        i documenti contabili di un abbonamento, per esempio. I messaggi che hai
-        scambiato in una trattativa restano visibili all&rsquo;altra parte, che ha
-        diritto a conservare la propria conversazione.
+        Ti mandiamo un&rsquo;email con un collegamento di conferma: finché non lo
+        apri non succede niente. Quando confermi, l&rsquo;accesso viene chiuso
+        subito e il profilo pubblico sparisce dal sito; la rimozione definitiva
+        dei dati avviene entro trenta giorni, e fino ad allora si può tornare
+        indietro.
+      </p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Restano i documenti contabili degli abbonamenti, che la legge ci obbliga a
+        conservare, e i messaggi che hai scambiato in una trattativa: restano
+        visibili all&rsquo;altra parte, che ha diritto a conservare la propria
+        conversazione.
       </p>
 
       {!aperto ? (
