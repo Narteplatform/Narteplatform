@@ -93,9 +93,19 @@ export async function richiediCancellazioneAccount(input: unknown) {
 
   const urlConferma = `${getSiteUrl()}/account/cancellazione?token=${richiesta.token}`;
 
-  // La conferma all'interessato è la parte che conta: senza, la richiesta resta
-  // aperta e non produce effetti. Se l'invio fallisce si dice, invece di
-  // lasciare qualcuno ad aspettare un messaggio che non arriverà.
+  // L'INVIO PUÒ NON RIUSCIRE, E NON DEVE FAR FALLIRE LA RICHIESTA.
+  //
+  // Su questo progetto le email non partono ancora: la verifica del dominio
+  // presso il provider non è chiusa, e ogni invio finisce nel registro come
+  // «skipped». Se la richiesta di cancellazione dipendesse dall'email, sarebbe
+  // una funzione che non funziona — e il diritto che promette non è di quelli
+  // che si possono lasciare a metà.
+  //
+  // Quindi: la richiesta è già registrata e il team viene avvisato comunque. Se
+  // la conferma parte, l'interessato chiude da sé in due minuti; se non parte,
+  // la richiesta vale lo stesso e la gestisce il team entro il termine di legge.
+  // Il giorno in cui le email funzioneranno, il percorso breve si accende da
+  // solo senza che nessuno debba ricordarsene.
   const esitoEmail = await sendEmail({
     to: destinatario,
     subject: "Conferma la cancellazione del tuo account N'arte",
@@ -107,16 +117,15 @@ export async function richiediCancellazioneAccount(input: unknown) {
     template: "account_deletion_confirm",
   }).catch((e) => {
     logger.error("account/cancellazione", `invio conferma fallito: ${String(e)}`);
-    return { ok: false as const, skipped: false };
+    return { ok: false as const };
   });
 
-  if (!esitoEmail.ok) {
-    return {
-      ok: false as const,
-      error:
-        "Non siamo riusciti a inviarti l'email di conferma. Riprova fra poco, " +
-        "oppure scrivici dalla pagina contatti: vale comunque come richiesta.",
-    };
+  const confermaInviata = esitoEmail.ok === true;
+  if (!confermaInviata) {
+    logger.warn(
+      "account/cancellazione",
+      `conferma non recapitata a ${destinatario}: la richiesta va gestita a mano`
+    );
   }
   const ruolo = utente.profile?.role ?? "?";
   const corpo = [
@@ -133,6 +142,9 @@ export async function richiediCancellazioneAccount(input: unknown) {
     "L'account viene disattivato automaticamente quando l'interessato conferma",
     "dal collegamento ricevuto per email. La rimozione definitiva dei dati resta",
     "un passaggio da eseguire a mano entro 30 giorni.",
+    "",
+    "⚠️ SE L'EMAIL DI CONFERMA NON È PARTITA (controlla email_log), l'interessato",
+    "non ha modo di confermare da solo: va contattato, e la pratica è tutta a mano.",
     "",
     "⚠️ Termine di legge: UN MESE dalla ricezione.",
     "Procedura in docs/REGISTRO_TRATTAMENTI.md §6.",
@@ -184,5 +196,5 @@ export async function richiediCancellazioneAccount(input: unknown) {
     );
   }
 
-  return { ok: true as const };
+  return { ok: true as const, confermaInviata };
 }

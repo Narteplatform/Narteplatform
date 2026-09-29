@@ -243,6 +243,28 @@ const MIGRATION = [
       ],
     ],
   },
+  {
+    file: "0060_account_deletion.sql",
+    cosa: "Richieste di cancellazione account",
+    controlli: [
+      [
+        "tabella account_deletion_requests",
+        () => tabella("account_deletion_requests"),
+      ],
+      [
+        "colonna token_hash",
+        () => colonna("account_deletion_requests", "token_hash"),
+      ],
+      [
+        "colonna restore_state",
+        () => colonna("account_deletion_requests", "restore_state"),
+      ],
+      [
+        "revoke dei privilegi a anon",
+        () => privilegioAnonRevocato("account_deletion_requests"),
+      ],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };

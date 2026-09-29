@@ -130,7 +130,7 @@ function Marketing({ iniziale }: { iniziale: boolean }) {
 function Cancellazione() {
   const [aperto, setAperto] = useState(false);
   const [motivo, setMotivo] = useState("");
-  const [fatto, setFatto] = useState(false);
+  const [fatto, setFatto] = useState<null | { confermaInviata: boolean }>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -142,22 +142,36 @@ function Cancellazione() {
         setErrore(res.error);
         return;
       }
-      setFatto(true);
+      setFatto({ confermaInviata: res.confermaInviata });
     });
   }
 
   if (fatto) {
     return (
       <section className="border-t border-border pt-10">
-        <h2 className="font-display text-xl">Controlla la tua posta</h2>
+        <h2 className="font-display text-xl">
+          {fatto.confermaInviata ? "Controlla la tua posta" : "Richiesta ricevuta"}
+        </h2>
         <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
           <Check className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
-          <span>
-            Ti abbiamo mandato un&rsquo;email con un collegamento di conferma.{" "}
-            <strong>Finora non abbiamo fatto nulla</strong>: si procede solo se lo
-            apri. Il collegamento vale 48 ore; se non lo usi, il tuo account resta
-            com&rsquo;è.
-          </span>
+          {fatto.confermaInviata ? (
+            <span>
+              Ti abbiamo mandato un&rsquo;email con un collegamento di conferma.{" "}
+              <strong>Finora non abbiamo fatto nulla</strong>: si procede solo se
+              lo apri. Il collegamento vale 48 ore; se non lo usi, il tuo account
+              resta com&rsquo;è.
+            </span>
+          ) : (
+            /* L'email non è partita. Non si finge che sia andata: si dice cosa
+               succede davvero, che è comunque l'esercizio del diritto. */
+            <span>
+              Abbiamo registrato la tua richiesta. Non siamo riusciti a mandarti
+              l&rsquo;email di conferma, quindi <strong>ti ricontattiamo noi</strong>{" "}
+              per completarla, entro il termine di un mese previsto dalla legge.
+              Fino ad allora il tuo account continua a funzionare: se cambi idea,
+              scrivici.
+            </span>
+          )}
         </p>
       </section>
     );
