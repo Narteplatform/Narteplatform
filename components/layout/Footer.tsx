@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Instagram, Facebook, Phone } from "lucide-react";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { CookiePreferencesLink } from "@/components/legal/CookiePreferencesLink";
+import { titolareInLinea } from "@/lib/legal/titolare";
 
 export function Footer() {
   return (
@@ -78,7 +79,17 @@ export function Footer() {
             tematiche: è la convenzione che chiunque si aspetta, e sono link che
             si cercano di proposito, non si scoprono navigando. Prima non c'era
             alcun collegamento legale nel sito. */}
-        <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-notte-60 pt-6 text-xs text-notte-40 md:flex-row md:items-center">
+        {/* DATI DEL TITOLARE. Non è un adempimento formale da sbrigare in piccolo:
+            è ciò che permette a chi legge di sapere con chi sta trattando, e
+            senza il quale un'informativa che dice «il titolare è N'arte» non
+            identifica nessuno. Denominazione, partita IVA e sede vengono da
+            lib/legal/titolare.ts, lo stesso punto che alimenta i documenti: qui
+            e là non possono divergere. */}
+        <p className="mt-12 border-t border-notte-60 pt-6 text-xs text-notte-40">
+          {titolareInLinea()}
+        </p>
+
+        <div className="mt-4 flex flex-col items-start justify-between gap-4 text-xs text-notte-40 md:flex-row md:items-center">
           <span>© {new Date().getFullYear()} N&rsquo;Arte — Tutti i diritti riservati.</span>
 
           <nav aria-label="Documenti legali">

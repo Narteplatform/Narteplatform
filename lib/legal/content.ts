@@ -30,6 +30,8 @@
  * responsabilità su pagamenti e contestazioni.
  */
 
+import { TITOLARE, recapitoPrivacyHtml } from "@/lib/legal/titolare";
+
 export type LegalDoc = {
   slug: "privacy" | "cookie-policy" | "termini";
   title: string;
@@ -67,13 +69,15 @@ export const LEGAL_CONSENT_VERSION = "2026-08-28";
 // funziona lo stesso, perché chi non ha mai accettato nulla ha la colonna
 // vuota e viene intercettato comunque.
 
-const TITOLARE = `
+const INTESTAZIONE_TITOLARE = `
 <h2>Chi tratta i tuoi dati</h2>
-<p>Il titolare del trattamento è <strong>N'arte</strong>. Per qualunque richiesta
-relativa ai tuoi dati personali puoi scriverci dalla
-<a href="/contatti">pagina contatti</a>.</p>
-<p class="da-completare"><em>Da completare con l'avvocato: denominazione legale
-completa, sede, partita IVA e indirizzo email dedicato alla privacy.</em></p>
+<p>Il titolare del trattamento è <strong>${TITOLARE.denominazione}</strong>,
+partita IVA ${TITOLARE.partitaIva}, con sede in ${TITOLARE.indirizzo},
+${TITOLARE.cap} ${TITOLARE.citta} (${TITOLARE.paese}), che gestisce la
+piattaforma N&rsquo;arte.</p>
+<p>Per qualunque richiesta relativa ai tuoi dati personali — accesso, rettifica,
+cancellazione, opposizione, portabilità — puoi raggiungerci alla
+${recapitoPrivacyHtml()}.</p>
 `;
 
 /**
@@ -162,7 +166,7 @@ const PRIVACY: LegalDoc = {
     "Quali dati raccogliamo, perché li raccogliamo, a chi li affidiamo e come puoi intervenire su di essi.",
   updatedAt: LEGAL_VERSION,
   body: `
-${TITOLARE}
+${INTESTAZIONE_TITOLARE}
 
 <h2>Quali dati raccogliamo</h2>
 
