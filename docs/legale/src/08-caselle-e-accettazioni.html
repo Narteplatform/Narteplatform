@@ -1,0 +1,147 @@
+<article class="doc" data-titolo="Caselle di consenso e punti di accettazione">
+
+<div class="marchio">N'arte · Documento 08</div>
+<h1>Caselle di consenso e punti di accettazione</h1>
+<p class="sottotitolo">Per ogni punto della Piattaforma: cosa si accetta, con quale testo, se è obbligatorio e cosa viene registrato.</p>
+
+<dl class="intestazione">
+  <dt>Documento</dt><dd>Caselle di consenso e punti di accettazione</dd>
+  <dt>Versione</dt><dd>0.9 — bozza per revisione legale</dd>
+  <dt>In vigore dal</dt><dd>Contestualmente ai documenti 01–07</dd>
+  <dt>Destinazione</dt><dd>Documento tecnico-legale interno: non si pubblica. Guida l'implementazione dei moduli.</dd>
+  <dt>Destinatari</dt><dd>Legale (approvazione dei testi) e sviluppo (implementazione)</dd>
+</dl>
+
+<h2>1. Principi</h2>
+<p><span class="art">1.1</span> <strong>Accettare un contratto e prendere visione di un'informativa sono atti diversi.</strong> I Termini si <em>accettano</em>. L'informativa privacy si <em>legge</em>, e non va «accettata» né «consentita» quando il trattamento si basa sul contratto (art. 6, par. 1, lett. b GDPR) o sull'interesse legittimo (lett. f). Il consenso (lett. a) serve solo per ciò che è davvero facoltativo, come il marketing e i cookie non tecnici.</p>
+<p><span class="art">1.2</span> <strong>Ogni casella ha uno scopo solo.</strong> Nessuna casella preselezionata. Le caselle facoltative non condizionano l'invio del modulo.</p>
+<p><span class="art">1.3</span> <strong>Ogni accettazione lascia una prova:</strong> chi, cosa, quale versione, quando, da quale modulo. Per chi ha un account la prova va nella tabella <code>user_consents</code>; per chi non ce l'ha, sulla riga del dato raccolto (<code>consent_version</code>, <code>consent_at</code>). In entrambi i casi è inviata anche al Consent Database di iubenda.</p>
+<p><span class="art">1.4</span> <strong>Consumatore o Professionista.</strong> Dove la disciplina diverge — approvazione specifica ex art. 1341 c.c., recesso, esecuzione immediata — il modulo chiede all'Utente se agisce per un'attività professionale o con partita IVA, e mostra le caselle pertinenti.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — cosa cambia rispetto a oggi</strong>
+  <ul>
+    <li>La casella attuale dei moduli pubblici dice «Ho letto l'informativa privacy e <strong>acconsento al trattamento</strong> dei miei dati per essere ricontattato». Per rispondere a una richiesta dell'interessato la base giuridica è il contratto o le misure precontrattuali, non il consenso. Chiedere un consenso non necessario lo rende revocabile e genera ambiguità: si propone una frase informativa senza casella (art. 5).</li>
+    <li>La casella di registrazione dice «Ho letto e <strong>accetto la informativa privacy</strong> e i termini d'uso»: unisce due atti diversi e contiene un refuso («la informativa»).</li>
+    <li>La tabella <code>user_consents</code> oggi ammette solo <code>privacy</code>, <code>termini</code> e <code>marketing</code>: le nuove voci dell'art. 3 richiedono una migration.</li>
+    <li>Oggi la prova su iubenda manca proprio nei due punti in cui si accettano i Termini: la registrazione e il booking con registrazione in linea.</li>
+  </ul>
+</div>
+
+<h2>2. Punti di accettazione — tabella riassuntiva</h2>
+<table>
+  <tr><th>#</th><th>Punto</th><th>Chi</th><th>Caselle</th><th>Documenti</th></tr>
+  <tr><td>A</td><td>Registrazione (/register)</td><td>Utente, Organizzatore</td><td>A1 Termini (obbl.) · A2 18+ (obbl.) · A3 approvazione specifica (obbl. se Professionista) · A4 marketing (facolt.)</td><td>01 (+04 se Organizzatore)</td></tr>
+  <tr><td>B</td><td>Schermata di riaccettazione (/accetta-condizioni)</td><td>Tutti gli account</td><td>Come A, sui documenti pertinenti al ruolo</td><td>01 + 02/03/04 secondo il ruolo</td></tr>
+  <tr><td>C</td><td>Richiesta di booking con registrazione in linea</td><td>Nuovo Organizzatore</td><td>A1 · A2 · A3 se Professionista · A4 facolt.</td><td>01 + 04</td></tr>
+  <tr><td>D</td><td>Prima Richiesta di booking di un Utente già registrato</td><td>Utente che diventa Organizzatore</td><td>D1 Condizioni organizzatori (obbl., una tantum)</td><td>04</td></tr>
+  <tr><td>E</td><td>Candidatura artista</td><td>Aspirante Artista</td><td>E1 18+ (obbl.) · E2 veridicità e diritti sul video (obbl.) · frase informativa privacy</td><td>Informativa</td></tr>
+  <tr><td>F</td><td>Attivazione dell'account Artista (primo accesso dall'invito)</td><td>Artista</td><td>F1 Termini + Condizioni artisti (obbl.) · A3 se Professionista · A4 facolt.</td><td>01 + 03</td></tr>
+  <tr><td>G</td><td>Checkout dell'Abbonamento</td><td>Artista</td><td>G1 Condizioni di abbonamento (obbl.) · G2 esecuzione immediata (obbl. per il Consumatore) · G3 approvazione specifica (Professionista)</td><td>02</td></tr>
+  <tr><td>H</td><td>Caricamento dei media e dei componenti della band</td><td>Artista</td><td>H1 diritti sui contenuti (obbl., una tantum per versione) · H2 consenso dei componenti (obbl. quando se ne aggiunge uno)</td><td>03, artt. 4–5</td></tr>
+  <tr><td>I</td><td>Pubblicazione di una recensione</td><td>Organizzatore</td><td>I1 recensione veritiera (obbl.)</td><td>05</td></tr>
+  <tr><td>L</td><td>Invio di una segnalazione</td><td>Chiunque</td><td>L1 buona fede (obbl.)</td><td>06</td></tr>
+  <tr><td>M</td><td>Moduli pubblici (contatti, richiesta evento, interesse format, richiesta all'artista, consulenza pubblica)</td><td>Chiunque</td><td>Frase informativa privacy, nessuna casella · A4 facolt. se si vuole raccogliere il marketing</td><td>Informativa</td></tr>
+  <tr><td>N</td><td>Banner cookie</td><td>Chiunque</td><td>Gestito da iubenda: consenso granulare per finalità</td><td>Cookie policy</td></tr>
+</table>
+
+<h2>3. Voci da registrare</h2>
+<table>
+  <tr><th>Voce (<code>kind</code>)</th><th>Si registra quando</th><th>Versione</th></tr>
+  <tr><td><code>termini</code></td><td>A1, C, F1, B</td><td>versione del doc. 01</td></tr>
+  <tr><td><code>condizioni_organizzatori</code></td><td>A1 con ruolo Organizzatore, C, D1, B</td><td>versione del doc. 04</td></tr>
+  <tr><td><code>condizioni_artisti</code></td><td>F1, B</td><td>versione del doc. 03</td></tr>
+  <tr><td><code>condizioni_abbonamento</code></td><td>G1, a ogni sottoscrizione</td><td>versione del doc. 02, collegata all'id della subscription Stripe</td></tr>
+  <tr><td><code>esecuzione_immediata</code></td><td>G2</td><td>versione del doc. 02, id della subscription</td></tr>
+  <tr><td><code>clausole_specifiche</code></td><td>A3, G3</td><td>versione del documento a cui si riferisce</td></tr>
+  <tr><td><code>maggiore_eta</code></td><td>A2, E1</td><td>—</td></tr>
+  <tr><td><code>diritti_contenuti</code></td><td>H1</td><td>versione del doc. 03</td></tr>
+  <tr><td><code>marketing</code></td><td>A4 (e revoca)</td><td>versione dell'informativa</td></tr>
+  <tr><td><code>privacy_letta</code> (non è un consenso)</td><td>A, C, E, F, M: presa visione</td><td>versione dell'informativa</td></tr>
+</table>
+<p><span class="art">3.1</span> La recensione (I1) e la segnalazione (L1) non richiedono una voce separata: la dichiarazione si registra sulla riga della recensione o della segnalazione, con l'istante e la versione del documento.</p>
+
+<h2>4. Testi proposti</h2>
+
+<h3>A · Registrazione</h3>
+<div class="evidenza">
+<p><strong>A1 (obbligatoria)</strong> — «Ho letto e accetto i <u>Termini e condizioni d'uso</u>» <em>[se il ruolo scelto è Organizzatore:]</em> «e le <u>Condizioni per gli organizzatori</u>».</p>
+<p><strong>A2 (obbligatoria)</strong> — «Dichiaro di avere almeno 18 anni.»</p>
+<p><strong>Domanda</strong> — «Ti registri per un'attività professionale o con partita IVA (locale, associazione, impresa, professionista)?» ○ Sì ○ No</p>
+<p><strong>A3 (obbligatoria se «Sì»)</strong> — «Ai sensi degli artt. 1341 e 1342 del codice civile approvo specificamente le clausole elencate all'art. 19 dei Termini <em>[e all'art. N delle Condizioni per gli organizzatori]</em>: estraneità di N'arte al contratto con l'artista ed esclusioni di responsabilità; garanzie e manleva; limitazione di responsabilità; sospensione e recesso di N'arte; modifiche dei termini; foro esclusivo di Napoli.»</p>
+<p><strong>A4 (facoltativa, non preselezionata)</strong> — «Voglio ricevere via email novità su eventi, format e opportunità di N'arte. Posso annullare l'iscrizione in qualsiasi momento.»</p>
+<p><strong>Frase sotto il pulsante (nessuna casella)</strong> — «I tuoi dati sono trattati come descritto nell'<u>informativa privacy</u>.»</p>
+</div>
+
+<h3>C · Richiesta di booking con registrazione in linea</h3>
+<div class="evidenza">
+<p>Stesse caselle A1 (nella variante con le Condizioni per gli organizzatori), A2, A3 e A4, precedute da:</p>
+<p>«Inviando la richiesta crei un account N'arte come organizzatore. Ti mandiamo un'email per confermare l'indirizzo.»</p>
+</div>
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — scostamento</strong>
+  <p>Questo flusso oggi crea l'account con email già confermata, senza la verifica dell'indirizzo e senza la casella dei 18 anni. Va allineato prima della pubblicazione (nota 00, §5).</p>
+</div>
+
+<h3>D · Prima Richiesta di booking di un Utente già registrato</h3>
+<div class="evidenza">
+<p><strong>D1 (obbligatoria, solo la prima volta)</strong> — «Inviando la richiesta diventi organizzatore su N'arte. Ho letto e accetto le <u>Condizioni per gli organizzatori</u>, in particolare gli obblighi su SIAE, agibilità, permessi e sicurezza dell'evento, che restano a mio carico.»</p>
+</div>
+
+<h3>E · Candidatura artista</h3>
+<div class="evidenza">
+<p><strong>E1 (obbligatoria)</strong> — «Dichiaro di avere almeno 18 anni.»</p>
+<p><strong>E2 (obbligatoria)</strong> — «Dichiaro che le informazioni inserite sono veritiere e che ho i diritti per inviare il video e i materiali allegati, compreso il consenso delle persone che vi compaiono.»</p>
+<p><strong>Frase informativa</strong> — «Usiamo questi dati per valutare la candidatura e ricontattarti, come descritto nell'<u>informativa privacy</u>.»</p>
+</div>
+
+<h3>F · Attivazione dell'account Artista</h3>
+<div class="evidenza">
+<p><strong>F1 (obbligatoria)</strong> — «Ho letto e accetto i <u>Termini e condizioni d'uso</u> e le <u>Condizioni per gli artisti</u>, compresa la licenza sui contenuti che pubblico (art. 4) e le garanzie sui diritti (art. 5).»</p>
+<p>Poi, come in A: la domanda Professionista/Consumatore, A3 riferita alle clausole dei docc. 01 e 03, e A4.</p>
+</div>
+
+<h3>G · Checkout dell'Abbonamento</h3>
+<div class="evidenza">
+<p><strong>Riepilogo prima del pulsante</strong> — «Piano Pro, mensile, 9,99 € IVA inclusa. Si rinnova automaticamente ogni mese allo stesso prezzo finché non disdici. Puoi disdire quando vuoi dalla pagina Abbonamento.»</p>
+<p><strong>G1 (obbligatoria)</strong> — «Ho letto e accetto le <u>Condizioni di abbonamento</u>.»</p>
+<p><strong>G2 (obbligatoria per il Consumatore)</strong> — «Chiedo che l'abbonamento inizi subito. So che, se recedo entro 14 giorni, pagherò solo la parte di servizio già fruita e mi verrà rimborsato il resto.»</p>
+<p><strong>G3 (obbligatoria per il Professionista)</strong> — «Ai sensi degli artt. 1341 e 1342 c.c. approvo specificamente le clausole indicate in fondo alle Condizioni di abbonamento: rinnovo automatico, esclusione di rimborsi per il periodo in corso, obbligo di mezzi e rimedio, modifiche di prezzo e servizio, sospensione e cessazione.»</p>
+<p><strong>Pulsante</strong> — «Abbonati con obbligo di pagamento».</p>
+</div>
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — implementazione</strong>
+  <p>Le caselle vanno nella pagina Abbonamento di N'arte, prima del reindirizzamento a Stripe Checkout, perché Stripe non ospita caselle personalizzate con valore di prova per N'arte. Oppure si usa la funzione <em>consent collection / custom text</em> di Stripe Checkout, con la registrazione nel webhook. Il testo di G2 va rivisto se lo shooting del Max annuale resta nel periodo di recesso (doc. 02, art. 7.5).</p>
+</div>
+
+<h3>H · Contenuti e componenti della band</h3>
+<div class="evidenza">
+<p><strong>H1 (obbligatoria, al primo caricamento e a ogni nuova versione del doc. 03)</strong> — «Pubblico solo contenuti di cui ho i diritti: brani miei o autorizzati, registrazioni di cui ho i diritti, foto e video di cui ho il permesso dell'autore e delle persone riconoscibili.»</p>
+<p><strong>H2 (obbligatoria quando si aggiunge un componente)</strong> — «Ho informato questa persona che il suo nome e il suo ruolo compariranno sul profilo pubblico e ho il suo consenso.»</p>
+</div>
+
+<h3>I · Recensione</h3>
+<div class="evidenza">
+<p><strong>I1 (obbligatoria)</strong> — «Confermo che la recensione riguarda un evento reale con questo artista, che è la mia opinione sincera e che non ho ricevuto nulla in cambio. Rispetta il <u>Regolamento delle recensioni</u>.»</p>
+</div>
+
+<h3>L · Segnalazione</h3>
+<div class="evidenza">
+<p><strong>L1 (obbligatoria)</strong> — «Dichiaro in buona fede che le informazioni fornite sono esatte e complete.»</p>
+</div>
+
+<h3>M · Moduli pubblici</h3>
+<div class="evidenza">
+<p><strong>Frase informativa, al posto della casella attuale</strong> — «Usiamo i dati che ci lasci solo per rispondere a questa richiesta, come descritto nell'<u>informativa privacy</u>.»</p>
+</div>
+
+<h2>5. Riaccettazione e versioni</h2>
+<p><span class="art">5.1</span> Alla pubblicazione dei documenti approvati si porta <code>LEGAL_CONSENT_VERSION</code> alla data di entrata in vigore. Ogni account passa dalla schermata /accetta-condizioni e accetta i documenti del proprio ruolo. Gli Artisti con Abbonamento in corso accettano anche il doc. 02, che si applica dal rinnovo successivo, salvo le clausole più favorevoli, che si applicano subito.</p>
+<p><span class="art">5.2</span> Per le modifiche successive: le modifiche sostanziali richiedono una nuova versione con preavviso di 15 giorni (doc. 01, art. 17) e una nuova accettazione. Le correzioni formali aggiornano solo <code>LEGAL_VERSION</code> e non richiedono riaccettazione. Ogni versione pubblicata resta archiviata con la data.</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <p>La riaccettazione tramite schermata bloccante per gli utenti già registrati è già costruita e pronta (gate <code>/accetta-condizioni</code>). Va deciso se, per gli account che non accettano entro un termine, l'account resti bloccato solo nelle aree riservate (comportamento attuale) o se si proceda alla cessazione con preavviso ai sensi del doc. 01, art. 16.3.</p>
+</div>
+
+</article>

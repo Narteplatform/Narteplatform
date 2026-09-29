@@ -1,0 +1,215 @@
+/* Foglio di stile comune dei documenti legali N'arte (stampa A4 via Chrome headless). */
+
+@page {
+  size: A4;
+  margin: 22mm 20mm 20mm 22mm;
+  @bottom-right {
+    content: "Pag. " counter(page) " di " counter(pages);
+    font: 8pt "Helvetica Neue", Arial, sans-serif;
+    color: #777;
+  }
+  @bottom-left {
+    content: "Bozza per revisione legale — riservata";
+    font: 8pt "Helvetica Neue", Arial, sans-serif;
+    color: #777;
+  }
+}
+
+@page :first {
+  @top-left { content: none; }
+}
+
+:root {
+  --arancio: #FF5722;
+  --nero: #0B0B0B;
+  --grigio: #F4F4F4;
+}
+
+html { font-size: 10.5pt; }
+
+body {
+  margin: 0;
+  color: var(--nero);
+  background: #fff;
+  font-family: "Iowan Old Style", "Palatino", "Georgia", serif;
+  line-height: 1.5;
+  text-align: justify;
+  hyphens: auto;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+h1, h2, h3, h4, .intestazione, .nota-legale strong.etichetta, table, .copertina {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  text-align: left;
+  hyphens: manual;
+}
+
+h1 {
+  font-size: 20pt;
+  line-height: 1.15;
+  margin: 0 0 4mm;
+  letter-spacing: -0.01em;
+}
+
+.sottotitolo {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  color: #555;
+  font-size: 10.5pt;
+  margin: 0 0 6mm;
+  text-align: left;
+}
+
+h2 {
+  font-size: 12.5pt;
+  margin: 8mm 0 2.5mm;
+  padding-bottom: 1mm;
+  border-bottom: 0.6pt solid #ccc;
+  break-after: avoid;
+}
+
+h3 {
+  font-size: 10.5pt;
+  margin: 4.5mm 0 1.5mm;
+  break-after: avoid;
+}
+
+h4 { font-size: 10pt; margin: 3mm 0 1mm; break-after: avoid; }
+
+p { margin: 0 0 2.2mm; orphans: 3; widows: 3; }
+
+ul, ol { margin: 0 0 2.5mm; padding-left: 6mm; }
+li { margin-bottom: 1mm; }
+
+a { color: inherit; text-decoration: underline; text-decoration-color: #aaa; }
+
+/* Clausole numerate: il numero è scritto a mano nel testo per restare stabile. */
+.art { font-weight: 700; }
+
+/* Riquadro con Documento / Versione / In vigore dal */
+.intestazione {
+  border-top: 3pt solid var(--arancio);
+  background: var(--grigio);
+  padding: 3mm 4mm;
+  margin: 0 0 7mm;
+  font-size: 9pt;
+  display: grid;
+  grid-template-columns: 32mm 1fr;
+  row-gap: 1mm;
+}
+.intestazione dt { font-weight: 700; color: #444; }
+.intestazione dd { margin: 0; }
+
+.marchio {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  font-size: 9pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--arancio);
+  margin-bottom: 2mm;
+}
+
+/* Note per il legale: separate dal testo contrattuale, da eliminare in pubblicazione */
+.nota-legale {
+  border-left: 2.5pt solid var(--arancio);
+  background: #FFF4EF;
+  padding: 2.5mm 3.5mm;
+  margin: 3mm 0 4mm;
+  font-size: 9pt;
+  line-height: 1.45;
+  break-inside: avoid;
+}
+.nota-legale p:last-child, .nota-legale ul:last-child { margin-bottom: 0; }
+.nota-legale strong.etichetta {
+  display: block;
+  font-size: 7.5pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--arancio);
+  margin-bottom: 1mm;
+}
+
+/* Segnaposto da compilare */
+.seg {
+  background: #FFF0A8;
+  padding: 0 1mm;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.9em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Clausole vessatorie / testo in evidenza */
+.evidenza {
+  border: 0.8pt solid var(--nero);
+  padding: 3mm 4mm;
+  margin: 3mm 0 4mm;
+  break-inside: avoid;
+}
+
+.maiuscoletto { font-variant: small-caps; letter-spacing: 0.02em; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2mm 0 4mm;
+  font-size: 8.8pt;
+  line-height: 1.35;
+  break-inside: auto;
+}
+th, td {
+  border: 0.5pt solid #bbb;
+  padding: 1.5mm 2mm;
+  vertical-align: top;
+  text-align: left;
+}
+th { background: var(--grigio); font-weight: 700; }
+tr { break-inside: avoid; }
+
+.modulo {
+  border: 0.8pt dashed #555;
+  padding: 4mm 5mm;
+  margin: 3mm 0;
+  break-inside: avoid;
+}
+.riga-firma {
+  display: block;
+  border-bottom: 0.6pt solid #555;
+  height: 7mm;
+  margin: 1mm 0 3mm;
+}
+
+.firma-blocco {
+  margin-top: 10mm;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 12mm;
+  break-inside: avoid;
+}
+
+.salto { break-before: page; }
+
+/* Copertina e indice del fascicolo completo */
+.copertina {
+  height: 245mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  break-after: page;
+}
+.copertina h1 { font-size: 30pt; margin-top: 50mm; }
+.copertina .barra { height: 4pt; width: 40mm; background: var(--arancio); margin: 6mm 0; }
+.copertina .dati { font-size: 9.5pt; color: #444; line-height: 1.6; }
+
+.indice ol { list-style: none; padding: 0; }
+.indice li {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 0.5pt dotted #aaa;
+  padding: 1.6mm 0;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 10pt;
+}
+
+article.doc + article.doc { break-before: page; }
