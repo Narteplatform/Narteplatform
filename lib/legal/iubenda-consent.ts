@@ -32,11 +32,13 @@ import { LEGAL_VERSION } from "@/lib/legal/content";
  *    stata scritta nel nostro database un istante prima. Un consenso registrato
  *    da noi e non da loro è un disallineamento; un modulo che non parte perché
  *    un fornitore è giù è un danno.
- * 2. **Non manda l'indirizzo IP.** L'API lo accetta e lo rileva anche da sé con
- *    la chiave pubblica: usiamo quella privata, da server, proprio perché
- *    l'IP non venga registrato. Utente, istante e versione bastano a dimostrare
- *    il consenso — è la stessa scelta motivata nella migration 0049, e sarebbe
- *    incoerente raccogliere altrove ciò che si è deciso di non conservare.
+ * 2. **Non manda l'indirizzo IP.** Con la chiave privata non lo si invia; con
+ *    quella pubblica il rilevamento automatico è attivo per impostazione
+ *    predefinita e va spento esplicitamente — vedi il campo
+ *    `autodetect_ip_address` più sotto. Utente, istante e versione bastano a
+ *    dimostrare il consenso: è la stessa scelta motivata nella migration 0049, e
+ *    sarebbe incoerente raccogliere presso un fornitore ciò che si è deciso di
+ *    non conservare in casa.
  * 3. **Non manda il contenuto del messaggio.** Nella prova finisce ciò che
  *    riguarda il consenso — chi, quando, quale casella, quale versione — non
  *    il testo che la persona ha scritto nel modulo. Quel testo può contenere
@@ -44,10 +46,31 @@ import { LEGAL_VERSION } from "@/lib/legal/content";
  *    esattamente il trattamento eccessivo che si vuole evitare.
  */
 
-const ENDPOINT = "https://consent.iubenda.com/consent";
+/**
+ * DUE CHIAVI POSSIBILI, E NON SONO EQUIVALENTI.
+ *
+ * `IUBENDA_CONSENT_API_KEY` è la chiave **privata**: va sull'endpoint normale,
+ * è quella che iubenda definisce a «maggiore affidabilità», e non deve uscire
+ * dal server. È la scelta giusta.
+ *
+ * `IUBENDA_CONSENT_PUBLIC_KEY` è la chiave **pubblica**: viaggia dentro il
+ * widget della Cookie Solution, quindi la conosce già chiunque apra il sito, e
+ * funziona solo sull'endpoint `/public/consent`. Esiste qui come ripiego, per
+ * non restare senza archivio esterno mentre si recupera quella privata — la
+ * prova principale resta comunque nel nostro database.
+ *
+ * Se ci sono entrambe vince la privata. Passare dall'una all'altra è cambiare
+ * una variabile d'ambiente: nessuna modifica al codice, nessun dato da migrare.
+ */
+const CHIAVE_PRIVATA = process.env.IUBENDA_CONSENT_API_KEY ?? "";
+const CHIAVE_PUBBLICA = process.env.IUBENDA_CONSENT_PUBLIC_KEY ?? "";
 
-/** Vuota = nessuna chiamata. L'integrazione è spenta finché non si configura. */
-const API_KEY = process.env.IUBENDA_CONSENT_API_KEY ?? "";
+const API_KEY = CHIAVE_PRIVATA || CHIAVE_PUBBLICA;
+const USA_CHIAVE_PUBBLICA = !CHIAVE_PRIVATA && Boolean(CHIAVE_PUBBLICA);
+
+const ENDPOINT = USA_CHIAVE_PUBBLICA
+  ? "https://consent.iubenda.com/public/consent"
+  : "https://consent.iubenda.com/consent";
 
 /** Oltre questo tempo si rinuncia: il modulo dell'utente non deve attendere. */
 const TIMEOUT_MS = 4000;
@@ -115,6 +138,14 @@ export async function registraProvaSuIubenda(prova: ProvaConsenso): Promise<void
       },
     ],
     timestamp: new Date().toISOString(),
+    // ⚠️ Solo per la chiave pubblica, e va detto esplicitamente: su
+    // `/public/consent` il rilevamento dell'indirizzo IP è ATTIVO per
+    // impostazione predefinita. Lasciarlo acceso significherebbe far registrare
+    // a iubenda un IP che noi abbiamo deciso di non conservare — e siccome la
+    // chiamata parte dal nostro server, quell'IP non sarebbe nemmeno quello
+    // dell'utente ma quello di Vercel: un dato inutile e una contraddizione con
+    // l'informativa, nello stesso campo.
+    ...(USA_CHIAVE_PUBBLICA ? { autodetect_ip_address: false } : {}),
   };
 
   try {
