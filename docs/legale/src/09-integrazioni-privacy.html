@@ -1,0 +1,320 @@
+<article class="doc" data-titolo="Integrazioni all'informativa privacy">
+
+<div class="marchio">N'arte · Documento 09</div>
+<h1>Integrazioni all'informativa privacy</h1>
+<p class="sottotitolo">I trattamenti propri di N'arte che l'informativa generata da iubenda non descrive: chat e accesso del Team, componenti delle formazioni, account nati da una richiesta di booking, recensioni, registro delle email, statistiche di visita, moderazione e candidature, consulenze, strutture, abbonamenti, conservazione e diritti.</p>
+
+<dl class="intestazione">
+  <dt>Documento</dt><dd>Integrazioni all'informativa privacy (artt. 13 e 14 Reg. UE 2016/679)</dd>
+  <dt>Versione</dt><dd>0.9 — bozza per revisione legale</dd>
+  <dt>In vigore dal</dt><dd><span class="seg">[DATA DI ENTRATA IN VIGORE]</span></dd>
+  <dt>Pagina del sito</dt><dd>/privacy — sezione «Integrazioni N'arte all'informativa privacy», sotto il documento iubenda (blocco <em>INTEGRAZIONI_NARTE</em> in <em>lib/legal/content.ts</em>); in alternativa, testo personalizzato nel pannello iubenda se il piano lo consente</dd>
+  <dt>Destinatari</dt><dd>Tutti gli interessati: Visitatori, Utenti registrati, Artisti, Organizzatori, Consulenti, componenti delle formazioni, candidati, chi scrive dai moduli pubblici</dd>
+</dl>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — come è costruito il documento</strong>
+  <p>Il piano iubenda Essentials non accetta clausole personalizzate: queste integrazioni sono pubblicate nella pagina /privacy subito sotto l'informativa generata, in una sezione che dichiara di farne parte. Per questo ogni clausola è <strong>autoconsistente</strong>: non rinvia ad altre clausole, né alla numerazione di iubenda, né ai documenti contrattuali per numero di articolo. Ripete, quando serve, il periodo di conservazione anche se compare nella tabella finale. La numerazione dei titoli e dei commi serve solo alla revisione e va tolta in pubblicazione; nessuna clausola ne dipende.</p>
+  <p>I fatti sono verificati sul codice al 29/09/2026 (in particolare: <em>lib/chat/*</em>, <em>app/(admin)/admin/chat</em>, <em>app/api/booking-request</em>, <em>lib/feedback/queries.ts</em>, <em>app/api/artists/view</em> e <em>lib/analytics/visitor.ts</em>, migration 0046, 0051, 0055, 0058, <em>app/api/cron/retention</em>, <em>lib/legal/cancellazione.ts</em>, <em>lib/legal/export-dati.ts</em>). Dove il testo descrive un comportamento che il prodotto non ha ancora, lo segnala la nota che segue la clausola. Il testo attuale del blocco usa il «tu»; questa versione usa la terza persona, come i documenti contrattuali e come l'informativa iubenda («l'Utente»). La scelta è redazionale: se si preferisce il «tu», va applicata a tutto il blocco.</p>
+</div>
+
+<h2>0. Premessa</h2>
+<p><span class="art">0.1</span> Queste integrazioni fanno parte dell'informativa privacy di N'arte e descrivono in modo specifico alcuni trattamenti propri della piattaforma. Per i trattamenti qui descritti, in caso di divergenza con la descrizione generale dell'informativa prevale la descrizione più specifica contenuta in queste integrazioni.</p>
+<p><span class="art">0.2</span> Il titolare del trattamento è <strong>Eduardo Castronuovo</strong>, titolare dell'omonima ditta individuale che gestisce la piattaforma N'arte, con sede in Via Domenico Fontana 27, 80128 Napoli, partita IVA IT11071661216 («<strong>N'arte</strong>»). Per ogni richiesta sui dati personali: <strong>narteweb@libero.it</strong> <span class="seg">[INDIRIZZO PRIVACY DEDICATO, es. privacy@narteofficial.it]</span>, PEC <span class="seg">[PEC]</span>.</p>
+<p><span class="art">0.3</span> Nelle integrazioni: «<strong>Artista</strong>» è chi pubblica uno o più profili artistici sulla piattaforma; «<strong>Organizzatore</strong>» è chi usa la piattaforma per cercare artisti e inviare richieste di ingaggio; «<strong>Richiesta di booking</strong>» è la richiesta di disponibilità che un Organizzatore invia a un Artista; «<strong>Struttura</strong>» è il luogo di un evento inserito da un Organizzatore; «<strong>Team N'arte</strong>» è il titolare e le persone da lui autorizzate e istruite ad amministrare la piattaforma; «<strong>Consulente</strong>» è la persona incaricata da N'arte di svolgere le sessioni di consulenza con gli Artisti.</p>
+
+<h2>1. La chat tra Artisti e Organizzatori e l'accesso del Team N'arte</h2>
+<p><span class="art">1.1</span> <strong>Che cosa succede.</strong> Quando un Artista accetta una Richiesta di booking, le due parti possono scriversi in una chat interna alla piattaforma. Nella chat si scambiano messaggi di testo, proposte strutturate (data, fascia oraria, importo), l'annotazione dell'importo che le parti dichiarano di aver concordato, allegati (immagini, PDF, documenti) e note vocali registrate con il microfono del dispositivo. Messaggi e dati collegati sono conservati sui sistemi di N'arte; allegati e note vocali in un archivio non pubblico, raggiungibile solo attraverso collegamenti temporanei generati per chi ha titolo ad accedervi.</p>
+<p><span class="art">1.2</span> <strong>Notifiche.</strong> Quando arriva un nuovo messaggio, la controparte riceve un'email che <strong>non riporta il contenuto del messaggio</strong>, al massimo una ogni 30 minuti. Quando arriva una nuova proposta, l'email indica il nome di chi la invia, la data e l'importo proposti.</p>
+<p><span class="art">1.3</span> <strong>Accesso del Team N'arte.</strong> Il Team N'arte <strong>non legge le conversazioni in via ordinaria</strong>. Vi accede soltanto quando è necessario per:</p>
+<ul>
+  <li>fornire l'assistenza richiesta da una delle parti della conversazione;</li>
+  <li>gestire una contestazione tra le parti, su richiesta di almeno una di esse;</li>
+  <li>verificare una segnalazione di contenuto illecito o di violazione delle regole della piattaforma, o un fondato sospetto di frode, spam o abuso;</li>
+  <li>adempiere un obbligo di legge o un ordine dell'autorità giudiziaria o amministrativa.</li>
+</ul>
+<p><span class="art">1.4</span> <strong>Garanzie sull'accesso.</strong> Possono accedere soltanto le persone del Team N'arte espressamente autorizzate e istruite, tenute alla riservatezza. Prima di visualizzare il contenuto, chi accede indica il motivo. Ogni accesso è <strong>registrato</strong> (chi ha avuto accesso, quando, a quale conversazione, per quale motivo) ed è limitato alla parte di conversazione necessaria. Il contenuto delle conversazioni non è mai usato per finalità commerciali, pubblicitarie o di profilazione, né per addestrare sistemi automatici, e non è analizzato automaticamente.</p>
+<p><span class="art">1.5</span> <strong>Blocco in una conversazione.</strong> In caso di molestie o abusi il Team N'arte può impedire a una parte di scrivere in una singola conversazione, con una motivazione che la persona bloccata può leggere. Sono registrati motivazione, autore e data del blocco e dell'eventuale sblocco.</p>
+<p><span class="art">1.6</span> <strong>Trasparenza verso l'interessato.</strong> Su richiesta, N'arte comunica alla parte di una conversazione se e quando il Team vi ha avuto accesso e per quale motivo, salvo che l'informazione possa pregiudicare l'accertamento di un illecito, l'esercizio o la difesa di un diritto in sede giudiziaria o un obbligo di riservatezza imposto dall'autorità.</p>
+<table>
+  <tr><th style="width:28%">Finalità</th><td>Consentire la comunicazione tra le parti; assistenza, gestione delle contestazioni, verifica delle segnalazioni, prevenzione di frodi e abusi; adempimento di obblighi di legge e ordini dell'autorità; registrazione degli accessi del Team.</td></tr>
+  <tr><th>Base giuridica</th><td>Esecuzione del contratto con ciascuna delle parti per la conservazione e la trasmissione dei messaggi, e per l'assistenza chiesta dalla parte che la chiede (art. 6, par. 1, lett. b GDPR). Legittimo interesse di N'arte e degli utenti alla sicurezza e alla correttezza della piattaforma e alla tutela dei diritti, per le verifiche su contestazioni, segnalazioni e abusi e per l'accesso ai messaggi della parte che non ha chiesto assistenza (art. 6, par. 1, lett. f); l'interesse è bilanciato dai limiti, dalla motivazione e dalla registrazione degli accessi. Obbligo legale per ordini dell'autorità e obblighi derivanti dal Reg. (UE) 2022/2065 (art. 6, par. 1, lett. c). Obbligo legale di dimostrare la conformità (artt. 5, par. 2, 24 e 32 GDPR) per il registro degli accessi.</td></tr>
+  <tr><th>Dati</th><td>Contenuto dei messaggi, allegati e note vocali; mittente, data e ora, stato di lettura; proposte e importo annotato; dati dei blocchi; dati del registro degli accessi. La voce registrata non è usata per identificare nessuno. La piattaforma non chiede dati relativi alla salute, alle opinioni o ad altre categorie particolari: gli utenti sono invitati a non inserirli; se li inseriscono, sono soltanto conservati e trasmessi alla controparte.</td></tr>
+  <tr><th>Chi vi accede</th><td>Le due parti della conversazione; il personale autorizzato del Team N'arte, nei soli casi indicati sopra; i fornitori che ospitano la banca dati e l'archivio (Supabase) e quelli che inviano le notifiche email (Brevo, Resend), in qualità di responsabili del trattamento; le autorità, quando la legge lo impone.</td></tr>
+  <tr><th>Conservazione</th><td>Messaggi, allegati e note vocali: <strong>36 mesi</strong> dalla chiusura della Richiesta di booking, cioè dalla data dell'evento se la data è stata confermata, altrimenti dal rifiuto, dall'annullamento o dall'ultimo messaggio; se è in corso una contestazione, fino alla sua definizione. Registro degli accessi del Team: <span class="seg">[24 mesi]</span> dall'accesso. Blocchi: quanto la conversazione a cui si riferiscono.</td></tr>
+  <tr><th>Diritti in particolare</th><td>L'interessato può ottenere copia dei propri messaggi. Il diritto non si estende ai messaggi scritti dall'altra parte, se non per i dati che lo riguardano e nei limiti in cui ciò non lede i diritti altrui (art. 15, par. 4 GDPR). Può opporsi agli accessi fondati sul legittimo interesse: N'arte valuta la richiesta e può proseguire se esistono motivi legittimi cogenti o se l'accesso serve all'accertamento, all'esercizio o alla difesa di un diritto (art. 21, par. 1 GDPR).</td></tr>
+</table>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — scostamenti da sanare prima della pubblicazione</strong>
+  <ul>
+    <li><strong>Registro degli accessi e motivazione: non esistono.</strong> Oggi qualunque superadmin apre qualunque conversazione dalla pagina /admin/chat (intitolata nel pannello «Modalità sorveglianza»), senza motivazione e senza traccia. Risulta inoltre che la pagina verifichi solo il ruolo di superadmin e non la delega di sezione «chat»: un amministratore con deleghe limitate può leggere tutte le chat conoscendo l'indirizzo della pagina (da confermare con un test). I commi 1.4 e 1.6 descrivono il comportamento deciso dal cliente e coerente con il doc. 01, art. 8.6: vanno costruiti motivazione obbligatoria, registro, delega per sezione, e va rinominata la dicitura del pannello.</li>
+    <li><strong>Conservazione.</strong> Nessuna cancellazione automatica di chat, allegati e note vocali: il lavoro notturno di conservazione non li considera. Il periodo di 36 mesi è una proposta (piano di compliance, §8.4). Valutare se 36 mesi siano proporzionati: la prescrizione ordinaria contrattuale è decennale, ma quella per le prestazioni di lavoro autonomo e i compensi professionali può essere più breve (art. 2956 c.c. — da verificare l'applicabilità alle prestazioni artistiche).</li>
+    <li><strong>Natura della chat.</strong> La chat pare una funzione accessoria, intrinsecamente collegata al servizio di messa in contatto, e non un servizio di comunicazione interpersonale ai sensi della Dir. (UE) 2018/1972: in tal caso non si applica la disciplina della riservatezza delle comunicazioni elettroniche (art. 5 Dir. 2002/58/CE; artt. 121 ss. Codice privacy). Da confermare.</li>
+    <li><strong>DPIA.</strong> Vedi nota finale.</li>
+  </ul>
+</div>
+
+<h2>2. I componenti delle formazioni musicali: dati di terzi</h2>
+<p><span class="art">2.1</span> <strong>Che cosa succede.</strong> Nel proprio profilo l'Artista può indicare il nome (o il nome d'arte) e il ruolo delle persone che suonano o cantano con lui, per esempio i componenti di una band o i musicisti che lo accompagnano. Questi dati <strong>non sono forniti a N'arte dalle persone a cui si riferiscono, ma dall'Artista</strong>. Sono visibili, con il resto del profilo, agli utenti registrati della piattaforma.</p>
+<p><span class="art">2.2</span> <strong>Informazione alle persone interessate.</strong> N'arte non dispone dei recapiti dei componenti e li informa attraverso questa clausola, pubblicamente consultabile, e attraverso l'Artista, che si impegna con N'arte a informarli e a indicare loro questa pagina prima di inserirne il nome.</p>
+<p><span class="art">2.3</span> <strong>Rimozione su richiesta.</strong> Chi trova il proprio nome sul profilo di un Artista e non desidera che vi compaia può chiederne la rimozione scrivendo ai recapiti indicati in queste integrazioni e indicando il profilo. N'arte rimuove il nome <strong>senza chiedere motivazioni, senza ritardo e comunque entro 5 giorni lavorativi</strong>, e ne informa l'Artista. N'arte può chiedere le sole informazioni necessarie a verificare che la richiesta provenga dall'interessato. L'Artista può comunque togliere il nome in qualunque momento.</p>
+<table>
+  <tr><th style="width:28%">Finalità</th><td>Presentare correttamente la composizione della formazione a chi valuta un ingaggio.</td></tr>
+  <tr><th>Base giuridica</th><td>Legittimo interesse dell'Artista e di N'arte a presentare la formazione (art. 6, par. 1, lett. f GDPR). Si tratta di informazioni che le persone interessate rendono normalmente note esibendosi in pubblico, limitate a nome e ruolo; il bilanciamento è assicurato dal diritto di ottenere la rimozione in ogni momento, senza motivazione.</td></tr>
+  <tr><th>Dati</th><td>Nome o nome d'arte e ruolo o strumento. Le fotografie e i video in cui i componenti compaiono sono caricati dall'Artista, che dichiara di avere il consenso delle persone ritratte.</td></tr>
+  <tr><th>Fonte</th><td>L'Artista titolare del profilo (art. 14 GDPR).</td></tr>
+  <tr><th>Chi vi accede</th><td>Gli utenti registrati che consultano il profilo; il Team N'arte; i fornitori che ospitano la piattaforma (Supabase, Vercel), in qualità di responsabili del trattamento.</td></tr>
+  <tr><th>Conservazione</th><td>Finché il nome resta sul profilo. Dopo la rimozione, o dopo la cancellazione dell'account dell'Artista, i dati sono cancellati entro 30 giorni.</td></tr>
+  <tr><th>Diritti in particolare</th><td>Opposizione e cancellazione, sempre accolte per questi dati; accesso, rettifica e limitazione, ai recapiti di N'arte.</td></tr>
+</table>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <p>Il registro dei trattamenti (T3) e la bozza attuale fondano la pubblicazione sul <em>consenso</em> dei componenti raccolto dall'Artista. È una base che N'arte non può dimostrare (art. 7, par. 1 GDPR): non vede il consenso e non ne conserva la prova. Si propone il legittimo interesse con diritto di opposizione incondizionato, più difendibile; il registro va allineato. L'informazione tramite l'Artista e la pubblicazione di questa clausola sono il modo pratico di adempiere l'art. 14; valutare se invocare anche l'art. 14, par. 5, lett. b (sforzo sproporzionato), che però va motivato caso per caso e presuppone misure appropriate, tra cui la pubblicità dell'informativa. Nessuno strumento consente oggi ai terzi di chiedere la rimozione se non la pagina contatti; il termine di 5 giorni lavorativi è una proposta.</p>
+</div>
+
+<h2>3. L'account creato inviando una Richiesta di booking</h2>
+<p><span class="art">3.1</span> <strong>Che cosa succede.</strong> Chi non è registrato può inviare una Richiesta di booking dal profilo di un Artista e, nello stesso passaggio, creare un account. In quel momento nasce un account di tipo <strong>Organizzatore</strong> con i dati inseriti nel modulo: nome, email, password (custodita in forma cifrata dal fornitore di autenticazione e non leggibile da N'arte), telefono, nome e città della Struttura, e i dati della Richiesta (data, fascia oraria, budget facoltativo, messaggio). L'accesso all'account è immediato.</p>
+<p><span class="art">3.2</span> Se a inviare la prima Richiesta di booking è un utente già registrato come semplice utente, il suo account diventa automaticamente un account Organizzatore, con un profilo di Organizzatore creato a partire dal nome e dal telefono indicati.</p>
+<p><span class="art">3.3</span> <strong>Che cosa riceve l'Artista.</strong> L'Artista destinatario vede i dati della Richiesta, il nome, il telefono e i dati del profilo dell'Organizzatore e i dati della Struttura, e riceve un'email da cui può rispondere direttamente all'indirizzo email di chi ha inviato la Richiesta. Una copia della notifica è inviata al Team N'arte.</p>
+<p><span class="art">3.4</span> L'account creato in questo modo è un account a tutti gli effetti: il titolare può accedervi, modificarne i dati, esportarli e chiederne la cancellazione come per ogni altro account.</p>
+<table>
+  <tr><th style="width:28%">Finalità</th><td>Recapitare la Richiesta all'Artista, permettere la trattativa, dare all'Organizzatore un'area in cui seguirla.</td></tr>
+  <tr><th>Base giuridica</th><td>Esecuzione del contratto d'uso della piattaforma, concluso con l'accettazione dei termini nel modulo (art. 6, par. 1, lett. b GDPR).</td></tr>
+  <tr><th>Dati</th><td>Nome, email, password cifrata, telefono, dati della Struttura, dati della Richiesta; versione dei documenti accettati e momento dell'accettazione.</td></tr>
+  <tr><th>Chi vi accede</th><td>L'Artista destinatario; il Team N'arte; Supabase (banca dati e autenticazione), Vercel (esecuzione del sito), Brevo e Resend (email), in qualità di responsabili del trattamento.</td></tr>
+  <tr><th>Conservazione</th><td>Per la durata dell'account. I dati della Richiesta e della trattativa collegata: 36 mesi dalla chiusura della Richiesta.</td></tr>
+</table>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — scostamenti</strong>
+  <ul>
+    <li><strong>Nessuna dichiarazione di maggiore età</strong> in questo flusso, a differenza della registrazione ordinaria e della candidatura: da aggiungere (doc. 01, art. 5.1).</li>
+    <li><strong>Email non verificata.</strong> L'account nasce con l'email già marcata come confermata, senza alcun controllo: chiunque può creare un account Organizzatore con l'indirizzo di un altro, e N'arte invierà comunicazioni a quell'indirizzo. È un rischio di esattezza (art. 5, par. 1, lett. d) e di sicurezza (art. 32). Si raccomanda la verifica dell'email prima dell'invio della Richiesta, o almeno prima dell'accesso all'area riservata.</li>
+    <li>Esiste anche un secondo flusso, senza account, che registra la richiesta come contatto commerciale (tabella <em>leads</em>): è coperto dall'informativa iubenda come «modulo di contatto»; verificare che lo sia davvero.</li>
+  </ul>
+</div>
+
+<h2>4. Le recensioni pubbliche e la loro moderazione</h2>
+<p><span class="art">4.1</span> <strong>Che cosa succede.</strong> L'Organizzatore che ha una data confermata con un Artista, una volta passata la data dell'evento, può lasciare una recensione: un voto da 1 a 5 e un testo. È possibile una sola recensione per ciascuna data confermata. La recensione è pubblicata sul profilo dell'Artista con il <strong>nome visualizzato dell'Organizzatore</strong> e la data, ed è visibile agli utenti registrati; sul profilo compare soltanto se l'Artista ha un piano che include le recensioni, ma è raccolta in ogni caso. L'Artista non può rispondere pubblicamente né rimuoverla.</p>
+<p><span class="art">4.2</span> <strong>Moderazione.</strong> Il Team N'arte può nascondere o eliminare una recensione offensiva, falsa, estranea all'esperienza dell'evento o contenente dati personali non pertinenti, di propria iniziativa o su segnalazione, anche dell'Artista recensito. Una recensione nascosta non è più visibile e non concorre alla media dei voti. La decisione è sempre presa da una persona: non ci sono filtri automatici.</p>
+<table>
+  <tr><th style="width:28%">Finalità</th><td>Offrire a chi cerca un artista informazioni affidabili sulle esperienze di chi lo ha ingaggiato; garantire la correttezza delle recensioni.</td></tr>
+  <tr><th>Base giuridica</th><td>Per l'Organizzatore che scrive: esecuzione del contratto d'uso, che comprende il servizio di pubblicazione della recensione (art. 6, par. 1, lett. b GDPR). Per l'Artista recensito: legittimo interesse di N'arte e degli utenti alla trasparenza e all'affidabilità del catalogo (art. 6, par. 1, lett. f), bilanciato dal collegamento obbligatorio a una data realmente confermata e passata, dalla moderazione e dalla possibilità di contestare.</td></tr>
+  <tr><th>Dati</th><td>Voto, testo, data, nome visualizzato dell'Organizzatore, collegamento alla data confermata e ai profili delle parti; stato di moderazione.</td></tr>
+  <tr><th>Chi vi accede</th><td>Gli utenti registrati, se la recensione è visibile; l'Artista recensito; il Team N'arte; Supabase, in qualità di responsabile del trattamento.</td></tr>
+  <tr><th>Conservazione</th><td>Finché il profilo dell'Artista resta sulla piattaforma. Con la cancellazione dell'account dell'Organizzatore che l'ha scritta, la recensione è cancellata. Le recensioni eliminate dalla moderazione sono cancellate; quelle nascoste sono conservate, non visibili, per <span class="seg">[12 mesi]</span> a fini di prova della decisione.</td></tr>
+  <tr><th>Diritti in particolare</th><td>L'Artista recensito può chiedere la rettifica di dati inesatti e opporsi alla pubblicazione per motivi connessi alla sua situazione particolare: N'arte valuta la richiesta caso per caso. Il semplice giudizio negativo, se riferito a un'esperienza reale ed espresso in modo non offensivo, non è di per sé motivo di rimozione.</td></tr>
+</table>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <p>Nel catalogo il voto medio compare agli utenti registrati anche per gli Artisti con piano Free, mentre il profilo mostra le recensioni solo per Pro e Max: la clausola 4.1 descrive il profilo; allineare prodotto e doc. 05. La sorte delle recensioni nascoste e il periodo di 12 mesi sono proposte (oggi nulla viene cancellato). Il testo sulla verifica delle recensioni richiesto dall'art. 22, c. 4-ter Cod. consumo va nel doc. 05; qui basta il riferimento alla data confermata.</p>
+</div>
+
+<h2>5. Il registro delle email inviate</h2>
+<p><span class="art">5.1</span> <strong>Che cosa succede.</strong> Per ogni email che la piattaforma invia (conferme, notifiche, promemoria), N'arte registra destinatario, oggetto, tipo di messaggio, esito dell'invio, identificativo attribuito dal fornitore, eventuale errore e data. <strong>Il testo dell'email non è registrato.</strong> Il registro è consultabile soltanto dal Team N'arte.</p>
+<table>
+  <tr><th style="width:28%">Finalità</th><td>Accorgersi quando una comunicazione non arriva e porvi rimedio; poter dimostrare di aver inviato comunicazioni dovute (per esempio conferme e avvisi).</td></tr>
+  <tr><th>Base giuridica</th><td>Legittimo interesse di N'arte al corretto funzionamento del servizio e alla prova degli invii (art. 6, par. 1, lett. f GDPR).</td></tr>
+  <tr><th>Dati</th><td>Indirizzo email del destinatario, oggetto (che può contenere un nome, per esempio «Nuova offerta da…»), tipo di messaggio, esito, identificativo tecnico, data e ora.</td></tr>
+  <tr><th>Chi vi accede</th><td>Il Team N'arte; Supabase, e i fornitori di invio Brevo e Resend per i propri registri tecnici, in qualità di responsabili del trattamento.</td></tr>
+  <tr><th>Conservazione</th><td><strong>12 mesi</strong> dall'invio.</td></tr>
+</table>
+
+<h2>6. Le statistiche di visita dei profili</h2>
+<p><span class="art">6.1</span> <strong>Che cosa succede.</strong> Per offrire agli Artisti con piano Max le statistiche del proprio profilo, N'arte conta le visite ai profili pubblici. Quando una persona tiene aperta la pagina di un profilo per almeno due secondi, il browser invia a N'arte una segnalazione di visita. Il server di N'arte legge in quel momento l'indirizzo IP della richiesta e lo trasforma, insieme alla data del giorno e al profilo visitato, in un <strong>codice non reversibile</strong> generato con una chiave segreta custodita fuori dalla banca dati. <strong>L'indirizzo IP non viene salvato.</strong> Si registra inoltre soltanto il tipo di visitatore (non registrato, utente, Organizzatore, Artista), ricavato dalla sessione di accesso già esistente, senza alcun identificativo della persona.</p>
+<p><span class="art">6.2</span> Il codice cambia ogni giorno e per ogni profilo: non permette di riconoscere lo stesso visitatore da un giorno all'altro, né di ricostruire quali profili abbia visitato. Serve soltanto a non contare due volte la stessa visita nello stesso giorno. Per questo conteggio <strong>non si usano cookie</strong> né altri identificativi salvati sul dispositivo, e non si registrano il tipo di browser o la pagina di provenienza. Le visite dell'Artista ai profili del proprio account e quelle del Team N'arte non sono registrate.</p>
+<p><span class="art">6.3</span> L'Artista vede soltanto numeri aggregati per giorno (visite totali e visite da Organizzatori), mai l'identità o il codice dei visitatori.</p>
+<table>
+  <tr><th style="width:28%">Finalità</th><td>Fornire agli Artisti con piano Max statistiche aggregate sulle visite al proprio profilo.</td></tr>
+  <tr><th>Base giuridica</th><td>Legittimo interesse di N'arte e degli Artisti a conoscere l'andamento delle visite (art. 6, par. 1, lett. f GDPR). L'impatto sui visitatori è minimo: nessun dato identificativo conservato, pseudonimo che cambia ogni giorno, nessun cookie, solo dati aggregati comunicati all'Artista.</td></tr>
+  <tr><th>Dati</th><td>Codice pseudonimo giornaliero, profilo visitato, giorno, tipo di visitatore. L'indirizzo IP è trattato solo nell'istante del calcolo.</td></tr>
+  <tr><th>Chi vi accede</th><td>Nessuno in forma non aggregata, salvo il personale tecnico autorizzato per manutenzione; Supabase e Vercel, in qualità di responsabili del trattamento.</td></tr>
+  <tr><th>Conservazione</th><td><strong>425 giorni</strong>: l'ultimo anno mostrato all'Artista, più un margine tecnico.</td></tr>
+  <tr><th>Diritti in particolare</th><td>Il visitatore può opporsi; N'arte, non potendo ricollegare i codici a una persona senza l'indirizzo IP e la data esatta della visita, può dare seguito alla richiesta solo con tali informazioni (art. 11 GDPR).</td></tr>
+</table>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — base giuridica e art. 122 Codice privacy</strong>
+  <ul>
+    <li><strong>Correzione di un fatto.</strong> La chiave segreta (<em>VISIT_HASH_SALT</em>) è <em>fissa</em>, non giornaliera: è la data inserita nel calcolo a far cambiare il codice ogni giorno. Poiché N'arte possiede la chiave, chi conosce IP e giorno può ricalcolare il codice: il dato è <strong>pseudonimo, non anonimo</strong> (considerando 26 GDPR). Ne discendono l'applicazione del GDPR, il periodo di conservazione e l'art. 11 citato. La bozza attuale («codice non riconducibile a te») va attenuata come sopra.</li>
+    <li><strong>Consenso?</strong> Il conteggio non usa cookie né <em>localStorage</em>: lo script si limita a inviare una richiesta al server di N'arte, che legge l'IP presente in ogni richiesta web e il cookie di sessione tecnico già impostato. Le Linee guida EDPB 2/2023 sull'ambito tecnico dell'art. 5, par. 3 della Dir. 2002/58/CE (versione definitiva 2024) ritengono però rientranti nell'ambito anche gli invii di informazioni che lo script istruisce il dispositivo a compiere (<em>tracking pixel</em>, tracciamento basato sull'IP quando l'informazione origina dal terminale). Se il beacon rientra nell'art. 122 Codice privacy, il consenso non serve solo se si applica un'esenzione: quella per la misurazione dell'audience, nei termini delle Linee guida cookie del Garante del 10 giugno 2021 (strumenti analitici «assimilati» ai tecnici: dati minimizzati, solo statistiche aggregate per il titolare, nessun incrocio), pare adattabile per analogia, con la particolarità che le statistiche sono mostrate all'Artista e non solo al titolare. Conclusione proposta: consenso non necessario; <strong>da verificare</strong>.</li>
+    <li><strong>Riuso del cookie di sessione</strong> per classificare il visitatore: finalità ulteriore di un cookie tecnico, compatibile e minimizzata, ma va dichiarata anche nella cookie policy.</li>
+    <li><strong>Condizione di verità della clausola:</strong> <em>VISIT_HASH_SALT</em> impostata in produzione (≥16 caratteri). Senza, il conteggio è disattivato. Il separato limitatore di frequenza dei moduli (<em>rate_limits</em>, IP ed email pseudonimizzati, 7 giorni) senza <em>RATE_LIMIT_SALT</em> usa una chiave scritta nel codice sorgente e l'impronta diventa ricostruibile: va impostata prima di pubblicare qualunque affermazione di pseudonimizzazione.</li>
+    <li>Rischio residuo: per un profilo con pochissime visite, il dato «1 visita da Organizzatore oggi» può permettere all'Artista di intuire chi lo ha visitato. È un rischio basso, accettabile, da menzionare nel registro.</li>
+  </ul>
+</div>
+
+<h2>7. Moderazione preventiva dei contenuti e candidature degli Artisti</h2>
+<p><span class="art">7.1</span> <strong>Moderazione dei contenuti.</strong> Le nuove fotografie, copertine, tracce audio e i video che un Artista carica sul proprio profilo non sono pubblicati subito: restano in attesa finché una persona del Team N'arte non li approva. Se il contenuto è rifiutato, l'Artista vede il rifiuto con la motivazione. Sono registrati il contenuto, chi lo ha caricato, chi lo ha valutato, quando e con quale esito e motivazione. La valutazione è sempre umana: non ci sono decisioni automatizzate.</p>
+<p><span class="art">7.2</span> <strong>Candidature.</strong> Chi chiede di entrare nella piattaforma come Artista compila una candidatura con nome, email, nome d'arte, generi, strumenti, biografia, collegamenti a profili social o musicali e, facoltativamente, un video (tramite collegamento o file). Il video caricato è conservato in un archivio non pubblico, accessibile solo al Team N'arte attraverso collegamenti temporanei. Il candidato dichiara di essere maggiorenne. La valutazione è svolta da persone del Team N'arte.</p>
+<table>
+  <tr><th style="width:28%">Finalità</th><td>Verificare, prima della pubblicazione, che i contenuti rispettino la legge e le regole della piattaforma; valutare le candidature e ammettere gli Artisti.</td></tr>
+  <tr><th>Base giuridica</th><td>Moderazione: esecuzione del contratto con l'Artista, che prevede il controllo preventivo (art. 6, par. 1, lett. b GDPR), e legittimo interesse di N'arte a prevenire la diffusione di contenuti illeciti (art. 6, par. 1, lett. f). Candidature: misure precontrattuali adottate su richiesta del candidato (art. 6, par. 1, lett. b).</td></tr>
+  <tr><th>Dati</th><td>File caricati e loro titoli; esito, motivazione, autore e data della decisione; dati della candidatura, video compreso; versione dell'informativa presa visione e momento.</td></tr>
+  <tr><th>Chi vi accede</th><td>Il Team N'arte; l'Artista, per i propri contenuti; bunny.net (BunnyWay d.o.o., Slovenia) per immagini, audio e video del profilo, Supabase per le candidature e i relativi video, in qualità di responsabili del trattamento.</td></tr>
+  <tr><th>Conservazione</th><td>Contenuti approvati: finché restano sul profilo. Video rifiutati: il file è cancellato al momento del rifiuto; la registrazione della decisione resta finché esiste il profilo. Immagini e audio rifiutati: il file è cancellato entro <span class="seg">[30 giorni]</span> dal rifiuto. Candidature non accolte, video compreso: <strong>12 mesi</strong> dalla decisione. Candidature accolte: per la durata dell'account dell'Artista.</td></tr>
+</table>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — scostamenti</strong>
+  <ul>
+    <li>Immagini e audio rifiutati: il codice registra il rifiuto ma non cancella il file.</li>
+    <li>Il lavoro notturno di conservazione conta le candidature oltre 365 giorni <em>dalla creazione</em> e <em>senza distinguere l'esito</em>: se attivato così, cancellerebbe anche le candidature accolte (che forse non servono più, ma la clausola va allineata alla scelta) e comunque <strong>non cancella i video</strong>, che vivono nell'archivio file. Da correggere prima di attivarlo.</li>
+    <li>Il registro dei trattamenti (T7) fonda i moduli pubblici sul <em>consenso</em> raccolto con casella obbligatoria. Un consenso condizione per inviare una candidatura o una richiesta non è libero (art. 7, par. 4 GDPR): la base corretta è la lett. b (o f), e la casella vale come presa visione dell'informativa. Il consenso va riservato al marketing.</li>
+  </ul>
+</div>
+
+<h2>8. Le consulenze</h2>
+<p><span class="art">8.1</span> <strong>Che cosa succede.</strong> Gli Artisti con i piani che le includono possono prenotare, dalla propria area, una sessione individuale di orientamento con un Consulente su uno degli orari pubblicati. Una richiesta di consulenza può essere inviata anche da chi non ha un account, tramite il modulo pubblico. Per ogni consulenza N'arte tratta nome, email, telefono, la descrizione libera delle esigenze scritta dall'interessato, l'orario scelto, lo stato della prenotazione e le eventuali note interne del Team.</p>
+<p><span class="art">8.2</span> <strong>Chi vede i dati.</strong> Il Consulente assegnato e il Team N'arte. Il Consulente tratta i dati soltanto per svolgere la sessione, secondo le istruzioni di N'arte e con obbligo di riservatezza.</p>
+<p><span class="art">8.3</span> <strong>Testo libero.</strong> Nella descrizione delle esigenze N'arte chiede soltanto informazioni sul percorso artistico e professionale. Si invita a non inserire dati sulla salute o altre informazioni delicate; se inserite spontaneamente, non sono utilizzate e, su richiesta, sono cancellate.</p>
+<table>
+  <tr><th style="width:28%">Finalità</th><td>Organizzare e svolgere le consulenze; verificare il numero di consulenze incluse nel piano dell'Artista.</td></tr>
+  <tr><th>Base giuridica</th><td>Esecuzione del contratto di abbonamento per gli Artisti; misure precontrattuali su richiesta dell'interessato per chi scrive dal modulo pubblico (art. 6, par. 1, lett. b GDPR).</td></tr>
+  <tr><th>Dati</th><td>Nome, email, telefono, descrizione delle esigenze, orario e stato della prenotazione, note interne.</td></tr>
+  <tr><th>Chi vi accede</th><td>Il Consulente assegnato; il Team N'arte; Supabase, Brevo e Resend, in qualità di responsabili del trattamento.</td></tr>
+  <tr><th>Conservazione</th><td><strong>24 mesi</strong> dalla richiesta.</td></tr>
+</table>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <p>Qualificare il Consulente: se opera sotto l'autorità diretta del titolare è una persona autorizzata (art. 29 GDPR; art. 2-quaterdecies Codice privacy) e basta una lettera di incarico con istruzioni; se è un professionista autonomo che organizza da sé la propria attività, va nominato responsabile ex art. 28 GDPR. Il piano di compliance e il Centro assistenza parlano di consulenze «gratuite» per chi scrive dal modulo pubblico: verificare che la descrizione dell'offerta sia coerente.</p>
+</div>
+
+<h2>9. I dati delle Strutture e degli Organizzatori</h2>
+<p><span class="art">9.1</span> <strong>Che cosa succede.</strong> L'Organizzatore può inserire una o più Strutture con nome, tipo (club, pub, festival, teatro, locale, spazio privato, altro), indirizzo, città, CAP, capienza, descrizione, fino a sei fotografie, sito, profilo Instagram, telefono ed email; e un proprio profilo con nome visualizzato, immagine, biografia, telefono, sito e profilo social.</p>
+<p><span class="art">9.2</span> <strong>Chi vede che cosa.</strong></p>
+<ul>
+  <li>Tutti i dati della Struttura e del profilo sono visibili all'Organizzatore stesso e al Team N'arte.</li>
+  <li>L'Artista che riceve una Richiesta di booking vede i dati della Struttura indicata, compreso l'indirizzo, e i recapiti del profilo dell'Organizzatore.</li>
+  <li>Quando una data è confermata, il <strong>nome visualizzato e l'immagine dell'Organizzatore</strong>, il <strong>nome, la città e l'immagine di copertina della Struttura</strong>, la data e la fascia oraria diventano <strong>pubblici</strong>: compaiono nel calendario del profilo dell'Artista e sono leggibili anche senza account attraverso l'interfaccia pubblica della piattaforma. Indirizzo, telefono ed email della Struttura non sono resi pubblici.</li>
+</ul>
+<p><span class="art">9.3</span> <strong>Spazi privati.</strong> Se la Struttura è un'abitazione privata, l'Organizzatore può indicare soltanto la città e una denominazione generica (per esempio «Evento privato»), e comunicare l'indirizzo all'Artista in chat quando la trattativa lo richiede.</p>
+<table>
+  <tr><th style="width:28%">Finalità</th><td>Permettere all'Organizzatore di presentarsi e all'Artista di sapere dove e per chi suonerebbe; mostrare sul profilo dell'Artista le date già confermate.</td></tr>
+  <tr><th>Base giuridica</th><td>Esecuzione del contratto d'uso con l'Organizzatore (art. 6, par. 1, lett. b GDPR). Per la pubblicazione delle date confermate: legittimo interesse dell'Artista e di N'arte a mostrare l'attività dell'Artista e la disponibilità del calendario (art. 6, par. 1, lett. f), bilanciato dalla limitazione ai soli dati indicati e dalla possibilità di opporsi.</td></tr>
+  <tr><th>Dati</th><td>Quelli indicati sopra. Se l'Organizzatore è una persona fisica, possono coincidere con dati personali, anche relativi al domicilio.</td></tr>
+  <tr><th>Chi vi accede</th><td>Come indicato al comma 9.2; Supabase, bunny.net (immagini), Vercel, in qualità di responsabili del trattamento.</td></tr>
+  <tr><th>Conservazione</th><td>Per la durata dell'account dell'Organizzatore; le date confermate restano visibili sul profilo dell'Artista per <span class="seg">[12 mesi]</span> dopo la data dell'evento.</td></tr>
+  <tr><th>Diritti in particolare</th><td>L'Organizzatore può modificare o togliere in ogni momento i dati delle proprie Strutture, e opporsi alla pubblicazione delle date confermate che lo riguardano scrivendo a N'arte.</td></tr>
+</table>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — domicili privati: rischio da gestire</strong>
+  <ul>
+    <li><strong>Fatto da verificare.</strong> Il brief indica Strutture leggibili pubblicamente con indirizzo, telefono ed email. Nel codice la migration 0058 ha chiuso la lettura pubblica di <em>venues</em> e <em>organizers</em> (restano leggibili da proprietario e superadmin); il documento di integrazione iubenda la dà per applicata il 29/09/2026. La clausola descrive lo stato successivo alla 0058: <strong>confermare con <em>npm run db:check-migrations</em></strong> (sola lettura). Se la 0058 non fosse applicata, indirizzo, telefono ed email di ogni Struttura, anche domestica, sarebbero scaricabili da chiunque: violazione dell'art. 32 da sanare prima di ogni pubblicazione.</li>
+    <li><strong>Esposizione residua.</strong> La vista pubblica delle date confermate (<em>booking_requests_public</em>) è leggibile anche da utenti non registrati e restituisce, per tutte le date confermate della piattaforma, nome e immagine dell'Organizzatore, nome, città e copertina della Struttura, data e fascia oraria. Per un privato (festa, matrimonio) significa rendere pubblico chi organizza cosa, dove e quando. Si raccomanda di escludere dalla vista, o di mostrare come «Evento privato», le date con Organizzatore privato o Struttura di tipo «privato», e di valutare se la vista debba essere leggibile senza account. Il comma 9.3 e il periodo di 12 mesi sono proposte.</li>
+    <li>L'Artista riceve l'indirizzo della Struttura con la sola Richiesta: per un domicilio privato è un dato comunicato a ogni artista contattato. Il comma 9.3 dà all'Organizzatore un modo per evitarlo; valutare un avviso nel modulo quando si sceglie il tipo «privato».</li>
+  </ul>
+</div>
+
+<h2>10. Gli abbonamenti e Stripe</h2>
+<p><span class="art">10.1</span> <strong>Che cosa succede.</strong> Gli Artisti pagano gli abbonamenti sulla pagina di pagamento di Stripe. <strong>I dati della carta non passano dai sistemi di N'arte</strong> e N'arte non li vede. N'arte conserva l'identificativo che Stripe attribuisce al cliente e all'abbonamento, il piano, la periodicità, lo stato e le date di inizio e fine del periodo, e i messaggi tecnici con cui Stripe comunica a N'arte gli eventi dell'abbonamento (pagamento riuscito o non riuscito, rinnovo, disdetta), che possono contenere nome, email e dati di fatturazione inseriti dall'Artista su Stripe.</p>
+<table>
+  <tr><th style="width:28%">Finalità</th><td>Gestire l'abbonamento e applicare i benefici del piano; adempiere gli obblighi contabili e fiscali; gestire contestazioni sui pagamenti.</td></tr>
+  <tr><th>Base giuridica</th><td>Esecuzione del contratto di abbonamento (art. 6, par. 1, lett. b GDPR); obblighi di legge contabili e fiscali (art. 6, par. 1, lett. c).</td></tr>
+  <tr><th>Dati</th><td>Identificativi Stripe di cliente e abbonamento, piano, periodicità, stato, date; messaggi tecnici degli eventi di pagamento; documenti contabili.</td></tr>
+  <tr><th>Chi vi accede</th><td>Il Team N'arte; Stripe Payments Europe Ltd. (Irlanda), che tratta i dati di pagamento per fornire il servizio e, per alcune finalità proprie (prevenzione delle frodi, obblighi antiriciclaggio), come titolare autonomo secondo la propria informativa; Supabase; il consulente fiscale di N'arte.</td></tr>
+  <tr><th>Conservazione</th><td>Dati dell'abbonamento: per la durata dell'account. Messaggi tecnici di Stripe: <strong>24 mesi</strong> dalla ricezione. Documenti contabili: <strong>10 anni</strong> (art. 2220 c.c.).</td></tr>
+</table>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale</strong>
+  <p>Il ruolo di Stripe (responsabile per il servizio di pagamento, titolare autonomo per antifrode e obblighi regolamentari) va confermato sul contratto Stripe in vigore: la formulazione è quella usuale, <em>da verificare</em>. Oggi N'arte non emette fatture proprie (doc. 02, nota art. 2.3): quando lo farà, il fornitore di fatturazione elettronica va aggiunto tra i destinatari.</p>
+</div>
+
+<h2 class="salto">11. Per quanto tempo conserviamo i dati</h2>
+<p><span class="art">11.1</span> La tabella riassume i periodi di conservazione dei dati trattati dalla piattaforma. Alla scadenza i dati sono cancellati o resi anonimi. Restano salvi i periodi più lunghi imposti dalla legge e la conservazione necessaria per accertare, esercitare o difendere un diritto in sede giudiziaria, limitatamente ai dati pertinenti e fino alla definizione della controversia.</p>
+
+<table>
+  <tr><th>Dato</th><th>Periodo</th><th>Motivazione</th><th>Stato attuale nel prodotto <em>(nota di lavoro, da togliere)</em></th></tr>
+  <tr><td>Account e profilo utente</td><td>Durata dell'account; chiusura dopo 24 mesi di inattività, con avviso 30 giorni prima</td><td>Minimizzazione: un account abbandonato non serve a nessuno</td><td>Chiusura per inattività non implementata</td></tr>
+  <tr><td>Profili artista, contenuti pubblicati, nomi dei componenti</td><td>Finché pubblicati; entro 30 giorni dalla cancellazione dell'account, file compresi</td><td>Servizio richiesto; tempo tecnico per la rimozione completa</td><td>Rimozione manuale (procedura del registro, §6); i file su bunny.net e Supabase non sono toccati dalla cancellazione del record</td></tr>
+  <tr><td>Contenuti rifiutati in moderazione</td><td>Video: file cancellato al rifiuto. Immagini e audio: 30 giorni dal rifiuto. Decisione: quanto il profilo</td><td>Il contenuto non sarà pubblicato; la decisione può essere contestata</td><td>Video: sì. Immagini e audio: file non cancellati</td></tr>
+  <tr><td>Messaggi, allegati, note vocali, Richieste di booking</td><td>36 mesi dalla chiusura della Richiesta</td><td>Prova in caso di contestazione tra le parti</td><td>Nessuna cancellazione automatica</td></tr>
+  <tr><td>Registro degli accessi del Team alle chat</td><td>24 mesi dall'accesso</td><td>Dimostrare la correttezza degli accessi</td><td>Registro non esistente</td></tr>
+  <tr><td>Recensioni</td><td>Finché esiste il profilo; cancellate con l'account dell'autore; nascoste: 12 mesi</td><td>Informazione agli utenti; prova della moderazione</td><td>Nascoste conservate senza limite</td></tr>
+  <tr><td>Candidature non accolte, video compreso</td><td>12 mesi dalla decisione</td><td>Riesame e risposta a eventuali richieste</td><td>Lavoro notturno in sola conta: 365 giorni dalla creazione, senza distinguere l'esito; video esclusi</td></tr>
+  <tr><td>Consulenze</td><td>24 mesi dalla richiesta</td><td>Gestione del rapporto e dei limiti di piano</td><td>Sola conta (730 giorni)</td></tr>
+  <tr><td>Messaggi dal modulo contatti e richieste commerciali</td><td>24 mesi</td><td>Gestione della relazione</td><td>Sola conta (730 giorni)</td></tr>
+  <tr><td>Registro delle email inviate</td><td>12 mesi</td><td>Diagnostica e prova degli invii</td><td>Sola conta (365 giorni)</td></tr>
+  <tr><td>Statistiche di visita</td><td>425 giorni</td><td>Un anno di statistiche più un margine</td><td>Sola conta (425 giorni)</td></tr>
+  <tr><td>Limitatore di frequenza dei moduli (impronte di IP ed email)</td><td>7 giorni</td><td>Sicurezza contro gli invii automatizzati</td><td>Pulizia prevista solo a cancellazione attiva</td></tr>
+  <tr><td>Messaggi tecnici di Stripe</td><td>24 mesi</td><td>Gestione di contestazioni sui pagamenti</td><td>Sola conta (730 giorni)</td></tr>
+  <tr><td>Documenti contabili</td><td>10 anni</td><td>Art. 2220 c.c.</td><td>Gestiti su Stripe</td></tr>
+  <tr><td>Registro dei consensi e delle accettazioni</td><td>Durata dell'account e successivi <span class="seg">[10 anni]</span></td><td>Prova del consenso e dell'accettazione dei termini (art. 7, par. 1 GDPR); prescrizione ordinaria</td><td>Nessuna scadenza; non va cancellato insieme all'account (oggi la cancellazione dell'utente lo porta via per cascata)</td></tr>
+  <tr><td>Richieste di cancellazione dell'account</td><td><span class="seg">[3 anni]</span> dalla conclusione</td><td>Prova dell'adempimento della richiesta</td><td>Cancellate a cascata insieme all'utente: con la cancellazione definitiva si perde la prova di averla eseguita</td></tr>
+  <tr><td>Blocchi nelle conversazioni</td><td>Quanto la conversazione</td><td>Prova della misura</td><td>Nessuna scadenza</td></tr>
+</table>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — la conservazione dichiarata oggi non è applicata</strong>
+  <p>Il lavoro notturno <em>/api/cron/retention</em> gira in <strong>sola conta</strong> finché la variabile <em>RETENTION_ENFORCE</em> non vale <em>1</em>: legge quante righe supererebbero ciascun periodo e lo scrive nei log, ma <strong>non cancella nulla</strong>. Pubblicare questi periodi senza attivarlo significa dichiarare una conservazione che non avviene (artt. 5, par. 1, lett. e e 13, par. 2, lett. a GDPR). Prima dell'attivazione vanno: approvati i periodi; corretta la regola delle candidature; aggiunte le categorie oggi assenti (chat, allegati, recensioni nascoste, account inattivi); previsto il trattamento dei file, che il lavoro non tocca. Periodi in giallo e periodi senza fonte normativa sono proposte da confermare. La colonna «stato attuale» va tolta in pubblicazione.</p>
+</div>
+
+<h2>12. I diritti dell'interessato e come esercitarli</h2>
+<p><span class="art">12.1</span> L'interessato ha diritto di chiedere a N'arte l'accesso ai propri dati, la rettifica, la cancellazione, la limitazione del trattamento, la portabilità dei dati forniti, e di opporsi ai trattamenti fondati sul legittimo interesse. Può revocare in qualunque momento un consenso dato, senza pregiudicare la liceità del trattamento precedente. Ha diritto di proporre reclamo al Garante per la protezione dei dati personali (www.garanteprivacy.it) o all'autorità del Paese in cui risiede o lavora.</p>
+<p><span class="art">12.2</span> <strong>Strumenti diretti.</strong> Chi ha un account trova nella pagina <strong>/account/i-miei-dati</strong>:</p>
+<ul>
+  <li>lo storico dei documenti accettati e dei consensi dati, con versione e data;</li>
+  <li>la revoca del consenso alle comunicazioni promozionali;</li>
+  <li>l'<strong>esportazione dei dati</strong> in un file in formato JSON, leggibile e riutilizzabile: profilo, consensi, profili artista con l'elenco dei contenuti caricati, profilo di Organizzatore, preferiti, recensioni scritte, abbonamento;</li>
+  <li>la <strong>richiesta di cancellazione dell'account</strong>.</li>
+</ul>
+<p><span class="art">12.3</span> I dati non compresi nell'esportazione (per esempio i propri messaggi in chat, le Richieste di booking, le Strutture, le consulenze) sono forniti su richiesta ai recapiti di N'arte. La rettifica della maggior parte dei dati si fa direttamente dal proprio profilo.</p>
+<p><span class="art">12.4</span> <strong>Cancellazione dell'account.</strong> La richiesta si conferma con il collegamento inviato all'email dell'account, <strong>valido 48 ore</strong>. Con la conferma l'accesso è bloccato subito e i profili artista escono dalla parte pubblica della piattaforma. La cancellazione definitiva dei dati, compresi i file caricati, avviene <strong>entro 30 giorni</strong>; in questo periodo l'interessato può chiedere di annullarla. La cancellazione dell'account non disdice l'abbonamento: va disdetto prima, dalla pagina Abbonamento.</p>
+<p><span class="art">12.5</span> <strong>Che cosa resta dopo la cancellazione.</strong></p>
+<ul>
+  <li><strong>I messaggi inviati in chat restano visibili all'altra parte della conversazione</strong>, con il nome del mittente sostituito dalla dicitura «Utente cancellato», fino alla scadenza del periodo di conservazione delle conversazioni. Fanno parte anche della corrispondenza dell'altra parte, che può averne bisogno per far valere i propri diritti relativi all'ingaggio (art. 17, par. 3, lett. e GDPR) e che ha diritto a conservarne traccia.</li>
+  <li>Sono conservati i documenti contabili per il periodo di legge, il registro dei consensi e delle accettazioni come prova, e i dati necessari a una contestazione o a un procedimento già in corso.</li>
+  <li>Copie nei sistemi di salvataggio dei fornitori sono sovrascritte secondo i loro cicli ordinari e non sono usate per altri fini.</li>
+</ul>
+<p><span class="art">12.6</span> <strong>Richieste senza account e altri diritti.</strong> Chi non ha un account, o vuole esercitare diritti diversi da quelli disponibili in autonomia, scrive ai recapiti indicati in queste integrazioni o usa la pagina /contatti. N'arte può chiedere le informazioni strettamente necessarie a verificare l'identità del richiedente. Risponde <strong>entro un mese</strong> dalla ricezione, prorogabile di due mesi nei casi complessi, con comunicazione motivata della proroga entro il primo mese (art. 12, par. 3 GDPR).</p>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nota per il legale — scostamenti sui diritti</strong>
+  <ul>
+    <li><strong>Messaggi dopo la cancellazione: oggi il prodotto fa il contrario, e in modo asimmetrico.</strong> Nello schema, <em>organizers</em> è cancellato a cascata con l'utente, e con lui conversazioni, Richieste di booking e recensioni scritte: cancellando definitivamente un Organizzatore, l'Artista perde l'intera conversazione, compresi i propri messaggi, e le recensioni ricevute. Cancellando un Artista invece il profilo artista non è rimosso dalla cascata (<em>user_id</em> impostato a <em>null</em>) e i messaggi restano, con mittente nullo. Il comma 12.5 descrive la regola che si propone di adottare; il prodotto va allineato (anonimizzazione del mittente invece della cascata) o, in alternativa, la clausola va riscritta dichiarando che la cancellazione di un account elimina l'intera conversazione anche per l'altra parte, con le conseguenze probatorie del caso. Da decidere prima della pubblicazione. Anche il registro dei consensi è oggi cancellato a cascata con l'utente: va preservato.</li>
+    <li><strong>Esportazione incompleta.</strong> Non comprende i messaggi scritti dall'interessato, le Richieste di booking, le Strutture, le consulenze, il calendario e l'indirizzo email dell'account. Per la portabilità (art. 20) i messaggi scritti e le Richieste inviate sono dati «forniti» dall'interessato: il comma 12.3 rimedia con la richiesta manuale, ma conviene estendere l'esportazione.</li>
+    <li><strong>La cancellazione self-service dipende dall'invio delle email.</strong> Se il mittente su dominio verificato non è attivo (questione aperta: guida iubenda, §7), l'email di conferma può non arrivare e la procedura si blocca; il codice lo segnala al Team, ma il termine di un mese decorre comunque.</li>
+    <li>La rimozione definitiva «entro 30 giorni» è manuale e tocca cinque aree diverse (registro, §6): va assegnata una persona responsabile e un promemoria.</li>
+  </ul>
+</div>
+
+<h2 class="salto">Nota finale per il legale</h2>
+
+<div class="nota-legale">
+  <strong class="etichetta">Valutazione d'impatto (art. 35 GDPR)</strong>
+  <p>L'unico trattamento che la rende plausibile è l'accesso del Team al contenuto integrale delle conversazioni private: riguarda comunicazioni di natura personale, incluse note vocali, ed è esercitato da chi gestisce la piattaforma. Dei criteri delle Linee guida WP248 rev.01 ricorrono i «dati di natura altamente personale» e, in parte, il «monitoraggio»; non ricorrono la larga scala, le categorie particolari per finalità dichiarate, le decisioni automatizzate. Va controllato se una voce dell'elenco del Garante (Allegato 1 al provvedimento n. 467 dell'11 ottobre 2018) sia pertinente — <em>da verificare</em>. Proposta: una valutazione preliminare scritta che concluda per la non necessità della DPIA <strong>a condizione</strong> che siano attuati accesso su motivo, registro, delega per sezione e divieto di analisi automatica (clausola 1). Senza queste misure la conclusione non regge e la DPIA va fatta.</p>
+</div>
+
+<div class="nota-legale">
+  <strong class="etichetta">Responsabile della protezione dei dati (art. 37 GDPR)</strong>
+  <p>Presumibilmente non necessario. N'arte è un soggetto privato; le sue attività principali non consistono in trattamenti che richiedono il monitoraggio regolare e sistematico degli interessati su larga scala (art. 37, par. 1, lett. b), né nel trattamento su larga scala di categorie particolari o di dati giudiziari (lett. c). Le statistiche di visita sono pseudonime, giornaliere e aggregate; l'accesso alle chat è occasionale e motivato; i volumi sono ridotti. La valutazione va documentata per iscritto (Linee guida WP243 rev.01) e rivista se crescono i volumi o se si introduce profilazione pubblicitaria su larga scala (pixel Meta, clausola T14 del registro).</p>
+</div>
+
+<div class="nota-legale">
+  <strong class="etichetta">Trasferimenti fuori dall'Unione europea (artt. 44 ss. GDPR)</strong>
+  <ul>
+    <li><strong>Supabase</strong> (società statunitense; infrastruttura AWS): verificare la <em>regione</em> del progetto. Se è europea, il trasferimento si riduce agli accessi di assistenza dagli USA; in ogni caso verificare la certificazione al Data Privacy Framework UE-USA (decisione di adeguatezza (UE) 2023/1795 del 10 luglio 2023) o, in mancanza, le clausole contrattuali tipo (decisione (UE) 2021/914) nel DPA.</li>
+    <li><strong>Vercel</strong> (USA; esecuzione delle funzioni a Francoforte da confermare nella configurazione del progetto), <strong>Resend</strong> (USA), <strong>Google</strong> (Analytics) e <strong>Meta</strong> (pixel): stessa verifica DPF o SCC. Google e Meta risultano certificati DPF, da controllare su dataprivacyframework.gov alla data di pubblicazione.</li>
+    <li>Il Tribunale UE ha respinto il ricorso contro il DPF (causa T-553/23, Latombe, sentenza del 3 settembre 2025): <em>verificare</em> se pende un'impugnazione davanti alla Corte di giustizia e tenerne conto nella formulazione dell'informativa.</li>
+    <li>bunny.net (Slovenia), Brevo (Francia), Stripe Payments Europe (Irlanda), iubenda (Italia) trattano nell'UE; verificare nei rispettivi DPA l'eventuale ricorso a sub-responsabili extra-UE (per bunny.net, i nodi della rete di distribuzione fuori dall'UE servono copie dei contenuti pubblici; per i file privati va impostata una regione europea).</li>
+  </ul>
+</div>
+
+<div class="nota-legale">
+  <strong class="etichetta">Nomine a responsabile (art. 28) e altri adempimenti</strong>
+  <ul>
+    <li>Accettare il DPA nei pannelli di: Supabase, Vercel, bunny.net, Brevo, Resend, Stripe (ruolo misto, clausola 10), iubenda. Conservare copia datata di ciascuno.</li>
+    <li>Google Analytics: termini per il trattamento dei dati nella proprietà GA4. Meta: addendum per i titolari congiunti (art. 26 GDPR) in Business Manager, e nell'informativa l'«essenziale dell'accordo» di contitolarità (art. 26, par. 2).</li>
+    <li>Persone del Team N'arte con accesso al pannello (superadmin con delega) e Consulenti: atti di autorizzazione con istruzioni scritte e obbligo di riservatezza (art. 29 GDPR; art. 2-quaterdecies Codice privacy), o nomina ex art. 28 per i Consulenti autonomi (clausola 8).</li>
+    <li>Allineare il registro dei trattamenti a questo documento: basi giuridiche delle clausole 2 (componenti) e 7 (moduli pubblici), periodi di conservazione, categoria «registro accessi chat», vista pubblica delle date confermate (clausola 9).</li>
+    <li>Quando il testo è approvato, alzare <em>LEGAL_CONSENT_VERSION</em> in <em>lib/legal/content.ts</em> una sola volta, perché il cambiamento è sostanziale (nuove informazioni su accessi, basi giuridiche e conservazione).</li>
+  </ul>
+</div>
+
+</article>

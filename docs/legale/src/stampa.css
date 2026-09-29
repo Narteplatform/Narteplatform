@@ -137,7 +137,8 @@ a { color: inherit; text-decoration: underline; text-decoration-color: #aaa; }
   font-family: "Helvetica Neue", Arial, sans-serif;
   font-size: 0.9em;
   font-weight: 600;
-  white-space: nowrap;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 /* Clausole vessatorie / testo in evidenza */
@@ -152,12 +153,17 @@ a { color: inherit; text-decoration: underline; text-decoration-color: #aaa; }
 
 table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   margin: 2mm 0 4mm;
   font-size: 8.8pt;
   line-height: 1.35;
   break-inside: auto;
 }
+code { font-size: 0.9em; overflow-wrap: anywhere; }
+th, td, li, p { overflow-wrap: break-word; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
 th, td {
   border: 0.5pt solid #bbb;
   padding: 1.5mm 2mm;
