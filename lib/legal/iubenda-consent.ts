@@ -126,15 +126,27 @@ export async function registraProvaSuIubenda(prova: ProvaConsenso): Promise<void
       // meno credibile invece che più forte.
       verified: false,
     },
-    legal_notices: prova.documenti.map((identifier) => ({
-      identifier,
-      version: versione,
-    })),
+    // ⚠️ NESSUN `version` QUI, ed è deliberato.
+    //
+    // Le versioni dei legal notice le assegna iubenda, come numeri progressivi
+    // (1, 2, 3…) a ogni invio del testo. La nostra `LEGAL_VERSION` è una data
+    // — «2026-09-14» — e appartiene a un altro sistema di numerazione: passarla
+    // qui significherebbe riferirsi a una versione che iubenda non ha. Omettendo
+    // il campo, iubenda aggancia la prova all'ultima versione del testo che
+    // possiede, che è esattamente quella che l'utente ha letto.
+    //
+    // La nostra versione non va persa: finisce nella prova, qui sotto.
+    legal_notices: prova.documenti.map((identifier) => ({ identifier })),
     preferences: prova.preferenze,
     proofs: [
       {
         form: prova.modulo,
-        content: prova.testoCasella ?? "",
+        content: [
+          prova.testoCasella ?? "",
+          `[versione documenti N'arte: ${versione}]`,
+        ]
+          .filter(Boolean)
+          .join(" "),
       },
     ],
     timestamp: new Date().toISOString(),

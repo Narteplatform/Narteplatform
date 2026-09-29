@@ -183,20 +183,37 @@ dello stesso.
 
 Due cose da fare qui.
 
-**a) Dichiarare i documenti** sotto «Legal notices». Servono **due** voci, con
-questi identificativi **esatti** — se non combaciano, l'API rifiuta la chiamata e
-le prove non arrivano:
+**a) I «legal notices» — e non si fanno dal pannello.**
 
-| Identificativo | A cosa punta |
+Un legal notice è l'etichetta del testo che l'utente aveva davanti quando ha
+accettato. Ne servono due, `privacy_policy` e `terms`, e si gestiscono in due
+modi diversi perché hanno origine diversa:
+
+| Identificativo | Come si registra |
 |---|---|
-| `privacy_policy` | il documento iubenda: `https://www.iubenda.com/privacy-policy/<id>` |
-| `terms` | **la nostra pagina**: `https://narteofficial.it/termini` |
+| `privacy_policy` | **Una casella nel pannello.** Dashboard → [sito] → Consent Database → **EMBED** → ☑ *Sync your iubenda legal documents with the Consent Database*. Da lì in poi ogni nuova versione dell'informativa si sincronizza da sé |
+| `terms` | **Un comando**: `npm run iubenda:notices`. Il pannello non offre un modo per registrare un documento che iubenda non genera, e i nostri Termini stanno nel codice |
 
-Il secondo è il punto che confonde: un «legal notice» della Consent Database non
-deve essere un documento generato da iubenda. È un'etichetta con un indirizzo,
-e serve a dire *quale testo l'utente aveva davanti quando ha accettato*. I
-Termini di N'arte stanno nel nostro codice, quindi qui si indica il loro
-indirizzo. Nessun upgrade necessario.
+```bash
+npm run iubenda:notices -- --dry-run    # mostra cosa invierebbe, non scrive
+npm run iubenda:notices                 # registra
+```
+
+Lo script legge i Termini **dalla pagina pubblicata**, non dal sorgente: così
+registra ciò che gli utenti vedono davvero e non ciò che sta nel ramo corrente.
+Se il deploy è indietro rispetto al codice, lo script se ne accorge — e in una
+prova di consenso quella differenza conta. Verifica anche di aver estratto il
+testo intero, e fallisce invece di registrarne uno troncato.
+
+Va rieseguito ogni volta che i Termini cambiano in modo sostanziale. iubenda
+conserva le versioni precedenti, quindi le prove già raccolte restano agganciate
+al testo che era in vigore allora.
+
+> **Le versioni sono due sistemi diversi, e non vanno mescolati.** iubenda numera
+> i legal notice progressivamente (1, 2, 3…); la nostra `LEGAL_VERSION` è una
+> data. Il codice quindi **non** passa una versione nelle prove — iubenda aggancia
+> l'ultima che possiede, che è quella che l'utente ha letto — e la nostra la
+> scrive dentro il testo della prova, dove resta leggibile.
 
 **b) Generare la chiave API privata.** Quella pubblica non serve: le prove le
 manda il nostro server, non il browser. Va in `IUBENDA_CONSENT_API_KEY`, **senza**
@@ -401,18 +418,16 @@ produce guasti silenziosi — non errori, comportamenti sbagliati.
 | 1 | Vercel → Domains | Aggiungere `www.narteofficial.it` e puntare il DNS su Aruba | — |
 | 2 | Vercel → `NEXT_PUBLIC_SITE_URL` | `https://www.narteofficial.it` | Indirizzi canonici, anteprime social, sitemap e **tutti i collegamenti dentro le email** continuano a puntare a vercel.app. Lo usano 16 file |
 | 3 | iubenda → impostazioni del sito | Il dominio della licenza | I documenti nominano un sito dove la piattaforma non sta |
-| 4 | iubenda → Consent Database → legal notice `terms` | `https://www.narteofficial.it/termini` | La prova di consenso rimanda a una pagina inesistente: è come non averla |
+| 4 | `npm run iubenda:notices` | Rieseguirlo, così il testo registrato è quello servito dal nuovo dominio | Il testo resta quello vecchio: non è grave, ma la prova cita una pagina che non è più quella |
 | 5 | `lib/legal/titolare.ts` → `emailPrivacy` | `privacy@narteofficial.it`, quando la casella esiste | Resta libero.it: funziona, ma è l'indirizzo sbagliato su un documento legale |
 | 6 | Brevo → verifica del dominio, e `BREVO_SENDER_EMAIL` | Mittente su `narteofficial.it` | **Nessuna email parte.** È la questione aperta da luglio |
 | 7 | Vercel → `BREVO_ASSET_BASE_URL` | `https://www.narteofficial.it` | Logo e immagini rotti dentro le email |
 | 8 | Supabase → Auth → Site URL e Redirect URLs | Il nuovo dominio | Conferma email e recupero password rimandano al dominio vecchio: i collegamenti si aprono altrove |
 | 9 | Stripe → webhook endpoint | Il nuovo indirizzo | Gli abbonamenti si pagano e la piattaforma non lo viene a sapere |
 
-> **Il numero 4 vale adesso, non al lancio.** Il consenso lo stiamo già
-> raccogliendo, e il «legal notice» `terms` deve puntare a una pagina che
-> esiste: finché il dominio non è migrato va indicato
-> `https://narteplatform.vercel.app/termini`. Un consenso la cui prova rimanda a
-> un 404 è una prova che non prova niente.
+> **Il numero 2 è quello che fa più danni se sfugge**, perché non dà errore: le
+> email continuano a partire con collegamenti al dominio vecchio, e nessuno se ne
+> accorge finché un utente non ci clicca.
 
 Nessuno di questi punti è nel codice tranne il 5: sono configurazioni. Il codice
 legge già tutto da variabili d'ambiente, quindi il passaggio è un cambio di
