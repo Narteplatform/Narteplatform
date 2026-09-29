@@ -7,6 +7,10 @@ import { guardPublicForm } from "@/lib/security/form-guard";
 import { LIMITI } from "@/lib/security/rate-limit";
 import { honeypotShape } from "@/lib/validators/schemas";
 import { publicFormConsent, recordConsent } from "@/lib/legal/consents";
+import {
+  registraProvaSuIubendaInBackground,
+  TESTO_CASELLA,
+} from "@/lib/legal/iubenda-consent";
 import { sendEmail } from "@/lib/emails/send";
 import ConsultationRequestEmail from "@/lib/emails/templates/ConsultationRequestEmail";
 import { createElement } from "react";
@@ -96,6 +100,16 @@ export async function requestConsultation(input: ConsultationInput) {
   // colonna su `consultations` non permette. Non blocca la prenotazione se
   // fallisce — la prova è già sulla riga qui sopra.
   if (user) await recordConsent("privacy");
+
+  registraProvaSuIubendaInBackground({
+    soggettoId: user?.id,
+    email: data.email,
+    nomeCompleto: data.name,
+    documenti: ["privacy_policy"],
+    preferenze: { privacy_policy: true },
+    modulo: "Richiesta di consulenza",
+    testoCasella: TESTO_CASELLA.privacy,
+  });
 
   const slotAt = new Date(slot.slot_at).toLocaleString("it-IT", {
     dateStyle: "full",

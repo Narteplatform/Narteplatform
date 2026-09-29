@@ -1,9 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ExternalLink } from "lucide-react";
 import { Reveal } from "@/components/animations/Reveal";
-import { LEGAL_DOCS, findLegalDoc, iubendaUrlFor } from "@/lib/legal/content";
+import {
+  INTEGRAZIONI_NARTE,
+  LEGAL_DOCS,
+  findLegalDoc,
+} from "@/lib/legal/content";
+import { iubendaDocUrl } from "@/lib/legal/iubenda";
+import { IubendaPolicyEmbed } from "@/components/legal/IubendaPolicyEmbed";
 
 /**
  * Le tre pagine legali — privacy, cookie policy e termini — servite da una sola
@@ -15,10 +20,19 @@ import { LEGAL_DOCS, findLegalDoc, iubendaUrlFor } from "@/lib/legal/content";
  * devono essere brevi e stabili. Ci arrivano tramite riscrittura (vedi
  * `next.config.ts`), così l'URL che l'utente vede non contiene mai `/legale/`.
  *
- * QUANDO ARRIVERÀ IUBENDA: se la variabile d'ambiente del documento è
- * valorizzata, la pagina smette di mostrare la bozza locale e rimanda al
- * documento ospitato da iubenda, sempre aggiornato. Nessuna rotta cambia e
- * nessun collegamento si rompe.
+ * DUE FONTI, UNA PAGINA. Privacy e cookie policy, quando iubenda è
+ * configurato, arrivano da lui: sono documenti standard che hanno valore
+ * soprattutto se restano aggiornati da soli al variare della normativa e dei
+ * fornitori. I TERMINI restano invece sempre locali — vedi
+ * `TERMINI_SONO_LOCALI` in lib/legal/iubenda.ts per il perché.
+ *
+ * E sotto l'informativa di iubenda la pagina aggiunge comunque le cinque
+ * descrizioni su misura di N'arte, che il suo catalogo non contiene e che il
+ * piano Essentials non permette di inserire come clausole personalizzate.
+ * Senza quella sezione, il giorno in cui iubenda si accende l'informativa
+ * smetterebbe di descrivere la metà delle cose che accadono davvero qui.
+ *
+ * Nessuna rotta cambia in nessuno dei due casi, e nessun collegamento si rompe.
  */
 
 export const revalidate = 3600;
@@ -62,7 +76,10 @@ export default async function LegalPage({
   const documento = findLegalDoc(doc);
   if (!documento) notFound();
 
-  const urlIubenda = iubendaUrlFor(documento.slug);
+  // I termini non passano da iubenda: la stringa resta vuota e si mostra sempre
+  // il documento locale.
+  const urlIubenda =
+    documento.slug === "termini" ? "" : iubendaDocUrl(documento.slug);
 
   return (
     <article className="pb-24 pt-28 md:pt-36">
@@ -89,23 +106,33 @@ export default async function LegalPage({
           </Reveal>
 
           {urlIubenda ? (
-            /* Documento ospitato da iubenda: è la versione che fa fede. */
             <Reveal delay={0.2}>
-              <div className="mt-10 rounded-2xl border border-border bg-muted p-6">
-                <p className="text-sm text-muted-foreground">
-                  Questo documento è gestito e mantenuto aggiornato tramite
-                  iubenda.
-                </p>
-                <a
-                  href={urlIubenda}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 font-display text-sm text-background transition-opacity hover:opacity-90"
-                >
-                  Leggi il documento completo
-                  <ExternalLink className="size-4" />
-                </a>
-              </div>
+              <IubendaPolicyEmbed
+                doc={documento.slug === "privacy" ? "privacy" : "cookie-policy"}
+                titolo={documento.title}
+              />
+
+              {/* Le cinque descrizioni che il catalogo di iubenda non copre.
+                  Restano sulla nostra pagina, sotto il documento generato, e
+                  sono indicate come parte dell'informativa e non come una nota
+                  a margine: sono trattamenti, non commenti. */}
+              {documento.slug === "privacy" && (
+                <section className="mt-12 border-t border-border pt-10">
+                  <p className="narte-label mb-4">
+                    integrazione specifica di N&rsquo;arte
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Quanto segue fa parte dell&rsquo;informativa a tutti gli
+                    effetti. Riguarda trattamenti propri di questa piattaforma,
+                    che un documento generato da un catalogo standard non
+                    descrive.
+                  </p>
+                  <div
+                    className="blog-prose mt-8"
+                    dangerouslySetInnerHTML={{ __html: INTEGRAZIONI_NARTE }}
+                  />
+                </section>
+              )}
             </Reveal>
           ) : (
             <Reveal delay={0.2}>

@@ -10,12 +10,16 @@
  * Vanno revisionati e approvati prima di considerarli vincolanti.
  * ────────────────────────────────────────────────────────────────────────────
  *
- * PREDISPOSTO PER IUBENDA
- * La fonte dei testi passa da `LEGAL_SOURCE`. Quando iubenda sarà attivo basta
- * impostare la variabile d'ambiente `NEXT_PUBLIC_IUBENDA_*` con gli id dei
- * documenti: le pagine si limiteranno a rimandare ai documenti ospitati da
- * iubenda, sempre aggiornati, e queste bozze resteranno qui come storico senza
- * più essere mostrate. Nessuna rotta cambia, nessun link si rompe.
+ * RAPPORTO CON IUBENDA
+ * La configurazione sta in `lib/legal/iubenda.ts`, non qui: questo file
+ * contiene testo, quello contiene indirizzi e interruttori. Quando iubenda è
+ * attivo, privacy e cookie policy arrivano da lui e queste due bozze restano
+ * come storico; i TERMINI invece restano sempre questi, perché il generatore
+ * di iubenda non li produce sotto il piano Advanced e non coprirebbe comunque
+ * le tre parti che contano per N'arte.
+ *
+ * `INTEGRAZIONI_NARTE` è l'eccezione che continua a essere mostrata in ogni
+ * caso: sono i trattamenti su misura che nessun catalogo standard descrive.
  *
  * IL PRESUPPOSTO CHE REGGE TUTTO IL TESTO
  * N'arte mette in contatto artisti e organizzatori e si ferma lì. Non incassa,
@@ -63,22 +67,6 @@ export const LEGAL_CONSENT_VERSION = "2026-08-28";
 // funziona lo stesso, perché chi non ha mai accettato nulla ha la colonna
 // vuota e viene intercettato comunque.
 
-/**
- * Id dei documenti su iubenda, quando saranno disponibili.
- * Finché sono vuoti, si mostrano le bozze locali.
- */
-export const IUBENDA = {
-  privacy: process.env.NEXT_PUBLIC_IUBENDA_PRIVACY_URL ?? "",
-  cookie: process.env.NEXT_PUBLIC_IUBENDA_COOKIE_URL ?? "",
-  termini: process.env.NEXT_PUBLIC_IUBENDA_TERMS_URL ?? "",
-} as const;
-
-export function iubendaUrlFor(slug: LegalDoc["slug"]): string {
-  if (slug === "privacy") return IUBENDA.privacy;
-  if (slug === "cookie-policy") return IUBENDA.cookie;
-  return IUBENDA.termini;
-}
-
 const TITOLARE = `
 <h2>Chi tratta i tuoi dati</h2>
 <p>Il titolare del trattamento è <strong>N'arte</strong>. Per qualunque richiesta
@@ -106,6 +94,64 @@ const TRACCIAMENTO_ATTIVO = Boolean(
   process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ||
     process.env.NEXT_PUBLIC_META_PIXEL_ID
 );
+
+/**
+ * Le cinque descrizioni su misura — il pezzo che iubenda non può contenere.
+ *
+ * Il piano Essentials non consente clausole personalizzate: il suo catalogo
+ * copre i trattamenti standard (hosting, email, pagamenti, statistiche) e si
+ * ferma lì. Questi cinque invece sono peculiari di N'arte, e sono proprio quelli
+ * che una persona ha interesse a conoscere — che il team può leggere le chat,
+ * che il nome di un turnista finisce su una pagina pubblica, che inviando una
+ * richiesta di booking le si crea un account.
+ *
+ * Vivono quindi qui, in un blocco a sé, e vengono resi in DUE posti:
+ *   - dentro la bozza locale dell'informativa, finché è quella mostrata;
+ *   - come sezione autonoma della pagina /privacy quando subentra iubenda,
+ *     sotto il documento generato.
+ *
+ * Il motivo di questa doppiezza: senza, il giorno in cui iubenda si accende
+ * queste cinque descrizioni spariscono dal sito senza che nessuno se ne
+ * accorga, e l'informativa smette di descrivere metà di ciò che accade.
+ */
+export const INTEGRAZIONI_NARTE = `
+<h2>Alcune cose che vale la pena spiegare per esteso</h2>
+<p>Sono i trattamenti particolari di questa piattaforma: non li si trova
+descritti in un'informativa generica, ma è giusto che tu sappia che avvengono.</p>
+
+<h3>La chat fra artisti e organizzatori</h3>
+<p>I messaggi, gli allegati e le note vocali scambiati in una trattativa sono
+conservati sui nostri sistemi. Il team N&rsquo;arte può accedervi per fornire
+assistenza, gestire una contestazione fra le parti o verificare una
+segnalazione. Non li leggiamo per altri scopi e non li usiamo a fini
+commerciali.</p>
+
+<h3>I nomi dei componenti della formazione</h3>
+<p>Un artista può indicare sul proprio profilo i nomi e i ruoli delle persone
+che suonano con lui. Sono <strong>dati di terzi, che riceviamo da lui e non
+dall&rsquo;interessato</strong>, e diventano pubblici insieme al profilo. Chiediamo
+all&rsquo;artista di averli informati e di avere il loro consenso prima di
+inserirli. Se il tuo nome compare su un profilo e non vuoi, scrivici: lo
+togliamo.</p>
+
+<h3>L&rsquo;account creato inviando una richiesta di booking</h3>
+<p>Chi invia una richiesta dal profilo di un artista senza essere registrato può
+creare l&rsquo;account nello stesso passaggio: in quel momento nasce un profilo di
+tipo &laquo;organizzatore&raquo;, con i dati indicati nel modulo e con la struttura
+eventualmente descritta. È un account a tutti gli effetti, con le stesse
+possibilità di accesso, modifica e cancellazione degli altri.</p>
+
+<h3>Le recensioni</h3>
+<p>Dopo una data confermata e passata, l&rsquo;organizzatore può lasciare una
+recensione all&rsquo;artista. La recensione è <strong>pubblica</strong> e resta sul
+profilo. Riguarda una persona identificata: per questo può essere contestata,
+e noi possiamo nasconderla se è offensiva, falsa o estranea all&rsquo;esperienza.</p>
+
+<h3>Il registro delle email inviate</h3>
+<p>Teniamo traccia delle comunicazioni che il sistema invia — destinatario,
+oggetto, esito — per accorgerci quando qualcosa non arriva a destinazione e
+poterlo correggere. È un registro tecnico, consultabile solo dal team.</p>
+`;
 
 // ───────────────────────────────────────────────────────────── PRIVACY ──────
 
@@ -186,42 +232,7 @@ remarketing. Si attiva solo con il tuo consenso, ed è un trattamento di cui Met
 archiviazione, garanzie per i trasferimenti fuori dall'Unione Europea e
 riferimenti agli accordi sottoscritti con ciascun fornitore.</em></p>
 
-<h2>Alcune cose che vale la pena spiegare per esteso</h2>
-<p>Sono i trattamenti particolari di questa piattaforma: non li si trova
-descritti in un'informativa generica, ma è giusto che tu sappia che avvengono.</p>
-
-<h3>La chat fra artisti e organizzatori</h3>
-<p>I messaggi, gli allegati e le note vocali scambiati in una trattativa sono
-conservati sui nostri sistemi. Il team N&rsquo;arte può accedervi per fornire
-assistenza, gestire una contestazione fra le parti o verificare una
-segnalazione. Non li leggiamo per altri scopi e non li usiamo a fini
-commerciali.</p>
-
-<h3>I nomi dei componenti della formazione</h3>
-<p>Un artista può indicare sul proprio profilo i nomi e i ruoli delle persone
-che suonano con lui. Sono <strong>dati di terzi, che riceviamo da lui e non
-dall&rsquo;interessato</strong>, e diventano pubblici insieme al profilo. Chiediamo
-all&rsquo;artista di averli informati e di avere il loro consenso prima di
-inserirli. Se il tuo nome compare su un profilo e non vuoi, scrivici: lo
-togliamo.</p>
-
-<h3>L&rsquo;account creato inviando una richiesta di booking</h3>
-<p>Chi invia una richiesta dal profilo di un artista senza essere registrato può
-creare l&rsquo;account nello stesso passaggio: in quel momento nasce un profilo di
-tipo &laquo;organizzatore&raquo;, con i dati indicati nel modulo e con la struttura
-eventualmente descritta. È un account a tutti gli effetti, con le stesse
-possibilità di accesso, modifica e cancellazione degli altri.</p>
-
-<h3>Le recensioni</h3>
-<p>Dopo una data confermata e passata, l&rsquo;organizzatore può lasciare una
-recensione all&rsquo;artista. La recensione è <strong>pubblica</strong> e resta sul
-profilo. Riguarda una persona identificata: per questo può essere contestata,
-e noi possiamo nasconderla se è offensiva, falsa o estranea all&rsquo;esperienza.</p>
-
-<h3>Il registro delle email inviate</h3>
-<p>Teniamo traccia delle comunicazioni che il sistema invia — destinatario,
-oggetto, esito — per accorgerci quando qualcosa non arriva a destinazione e
-poterlo correggere. È un registro tecnico, consultabile solo dal team.</p>
+${INTEGRAZIONI_NARTE}
 
 <h2>Il compenso degli artisti non passa da noi</h2>
 <p>N'arte mette in contatto artisti e organizzatori. Il compenso di

@@ -4,6 +4,10 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/guards";
 import { acceptLegalDocuments } from "@/lib/legal/consents";
+import {
+  registraProvaSuIubendaInBackground,
+  TESTO_CASELLA,
+} from "@/lib/legal/iubenda-consent";
 import { LEGAL_COOKIE, LEGAL_COOKIE_MAX_AGE } from "@/lib/legal/gate";
 import { LEGAL_CONSENT_VERSION } from "@/lib/legal/content";
 
@@ -38,11 +42,30 @@ export async function acceptCurrentLegal(input: AcceptLegalInput) {
   }
 
   // Non serve il ruolo, serve che ci sia una sessione: la funzione SQL scrive
-  // per `auth.uid()` e senza sessione solleva.
-  await requireUser();
+  // per `auth.uid()` e senza sessione solleva. I dati dell'utente servono poi
+  // per la copia della prova presso iubenda.
+  const utente = await requireUser();
 
   const esito = await acceptLegalDocuments(parsed.data.acceptedMarketing);
   if (!esito.ok) return esito;
+
+  // Qui l'interessato ha un account, quindi la prova presso iubenda porta anche
+  // l'identificativo: è il caso in cui la copia esterna serve di più, perché è
+  // un'accettazione contrattuale e non una semplice presa visione.
+  registraProvaSuIubendaInBackground({
+    soggettoId: utente.id,
+    email: utente.email ?? undefined,
+    nomeCompleto: utente.profile?.full_name ?? undefined,
+    documenti: ["privacy_policy", "terms"],
+    preferenze: {
+      privacy_policy: true,
+      terms: true,
+      maggiore_eta: true,
+      marketing: parsed.data.acceptedMarketing,
+    },
+    modulo: "Schermata di accettazione (utenti preesistenti)",
+    testoCasella: `${TESTO_CASELLA.termini} — ${TESTO_CASELLA.eta}`,
+  });
 
   // Il cookie evita che il middleware interroghi il database a ogni
   // navigazione successiva. Viene scritto qui, nella stessa risposta, così la

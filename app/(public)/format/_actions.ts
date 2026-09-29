@@ -3,6 +3,10 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import { publicFormConsent } from "@/lib/legal/consents";
+import {
+  registraProvaSuIubendaInBackground,
+  TESTO_CASELLA,
+} from "@/lib/legal/iubenda-consent";
 import { LIMITI } from "@/lib/security/rate-limit";
 import { formatInterestSchema, type FormatInterestInput } from "@/lib/validators/schemas";
 import { dispatchEmail } from "@/lib/emails/dispatch";
@@ -40,6 +44,15 @@ export async function submitFormatInterest(input: FormatInterestInput) {
   } catch {
     return { ok: false as const, error: "Errore server. Riprova più tardi." };
   }
+
+  registraProvaSuIubendaInBackground({
+    email: data.email,
+    nomeCompleto: data.name,
+    documenti: ["privacy_policy"],
+    preferenze: { privacy_policy: true },
+    modulo: "Interesse su un format",
+    testoCasella: TESTO_CASELLA.privacy,
+  });
 
   // Finora questo form non avvisava nessuno: il lead finiva in tabella e lì
   // restava, senza che nessuno sapesse di doverlo ricontattare.

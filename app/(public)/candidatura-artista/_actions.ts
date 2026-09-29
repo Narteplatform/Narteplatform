@@ -3,6 +3,10 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import { publicFormConsent } from "@/lib/legal/consents";
+import {
+  registraProvaSuIubendaInBackground,
+  TESTO_CASELLA,
+} from "@/lib/legal/iubenda-consent";
 import { LIMITI } from "@/lib/security/rate-limit";
 import {
   artistApplicationSchema,
@@ -56,6 +60,15 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
   } catch {
     return { ok: false as const, error: "Errore server" };
   }
+
+  registraProvaSuIubendaInBackground({
+    email: data.email,
+    nomeCompleto: data.name,
+    documenti: ["privacy_policy"],
+    preferenze: { privacy_policy: true, maggiore_eta: true },
+    modulo: "Candidatura artista",
+    testoCasella: `${TESTO_CASELLA.privacy} — ${TESTO_CASELLA.eta}`,
+  });
 
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
   // I parametri Brevo e il componente Resend convivono di proposito: finché

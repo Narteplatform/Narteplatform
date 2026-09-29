@@ -3,6 +3,10 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import { publicFormConsent } from "@/lib/legal/consents";
+import {
+  registraProvaSuIubendaInBackground,
+  TESTO_CASELLA,
+} from "@/lib/legal/iubenda-consent";
 import { LIMITI } from "@/lib/security/rate-limit";
 import { contactSchema, type ContactInput } from "@/lib/validators/schemas";
 import { dispatchEmail } from "@/lib/emails/dispatch";
@@ -58,9 +62,20 @@ export async function submitContact(input: ContactInput) {
       // invio e vanno cancellate con gli stessi criteri.
       ...consenso,
     });
-  } catch (e) {
+  } catch {
     return { ok: false as const, error: "Errore server" };
   }
+
+  // Copia della prova presso iubenda. Parte e non si aspetta: quella che conta
+  // è già nelle due righe scritte qui sopra.
+  registraProvaSuIubendaInBackground({
+    email: data.email,
+    nomeCompleto: data.name,
+    documenti: ["privacy_policy"],
+    preferenze: { privacy_policy: true },
+    modulo: "Modulo contatti",
+    testoCasella: TESTO_CASELLA.privacy,
+  });
 
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
   const params = {

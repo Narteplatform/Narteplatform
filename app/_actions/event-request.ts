@@ -8,6 +8,10 @@ import { LIMITI } from "@/lib/security/rate-limit";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import { honeypotShape } from "@/lib/validators/schemas";
 import { publicFormConsent } from "@/lib/legal/consents";
+import {
+  registraProvaSuIubendaInBackground,
+  TESTO_CASELLA,
+} from "@/lib/legal/iubenda-consent";
 
 export const eventRequestSchema = z.object({
   ...honeypotShape,
@@ -69,6 +73,15 @@ export async function submitEventRequest(input: EventRequestInput) {
   });
 
   if (error) return { ok: false as const, error: error.message };
+
+  registraProvaSuIubendaInBackground({
+    email: data.email,
+    nomeCompleto: data.name,
+    documenti: ["privacy_policy"],
+    preferenze: { privacy_policy: true },
+    modulo: "Richiesta evento (home)",
+    testoCasella: TESTO_CASELLA.privacy,
+  });
 
   // Come il form Format, finora questa richiesta non avvisava nessuno.
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;

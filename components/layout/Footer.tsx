@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Instagram, Facebook, Phone } from "lucide-react";
 import { NarteLogo } from "@/components/layout/NarteLogo";
+import { CookiePreferencesLink } from "@/components/legal/CookiePreferencesLink";
 
 export function Footer() {
   return (
@@ -99,6 +100,10 @@ export function Footer() {
                   Termini
                 </Link>
               </li>
+              {/* Compare da sé quando la gestione del consenso è attiva, e
+                  scompare — separatore incluso — quando non c'è nulla da
+                  gestire. */}
+              <CookiePreferencesLink className="transition-opacity hover:opacity-75" />
             </ul>
           </nav>
 

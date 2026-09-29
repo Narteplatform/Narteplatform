@@ -1,6 +1,6 @@
 import Script from "next/script";
 import { CONSENT_EVENT } from "@/lib/legal/consent-client";
-import { IUBENDA_COOKIE_POLICY_ID, IUBENDA_SITE_ID } from "@/lib/legal/iubenda";
+import { IUBENDA_POLICY_ID, IUBENDA_SITE_ID } from "@/lib/legal/iubenda";
 
 /**
  * Gestione del consenso ai cookie — iubenda Cookie Solution.
@@ -33,7 +33,7 @@ import { IUBENDA_COOKIE_POLICY_ID, IUBENDA_SITE_ID } from "@/lib/legal/iubenda";
  */
 
 const SITE_ID = IUBENDA_SITE_ID;
-const COOKIE_POLICY_ID = IUBENDA_COOKIE_POLICY_ID;
+const COOKIE_POLICY_ID = IUBENDA_POLICY_ID;
 
 export function IubendaCs() {
   if (!SITE_ID || !COOKIE_POLICY_ID) return null;

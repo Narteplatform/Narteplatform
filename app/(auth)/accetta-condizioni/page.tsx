@@ -5,7 +5,8 @@ import {
   hasAcceptedCurrentLegal,
   syncLegalVersionFromConsents,
 } from "@/lib/legal/consents";
-import { findLegalDoc, iubendaUrlFor } from "@/lib/legal/content";
+import { findLegalDoc } from "@/lib/legal/content";
+import { iubendaDocUrl } from "@/lib/legal/iubenda";
 import { AcceptLegalForm } from "@/components/legal/AcceptLegalForm";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 
@@ -54,8 +55,9 @@ export default async function AccettaCondizioniPage({
 
   const privacy = findLegalDoc("privacy");
   const termini = findLegalDoc("termini");
-  const urlPrivacy = iubendaUrlFor("privacy");
-  const urlTermini = iubendaUrlFor("termini");
+  const urlPrivacy = iubendaDocUrl("privacy");
+  // I termini non passano da iubenda: qui si mostra sempre il testo locale.
+  const urlTermini = "";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-12">

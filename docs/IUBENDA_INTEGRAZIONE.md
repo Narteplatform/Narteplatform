@@ -187,19 +187,39 @@ accendono i tag, quindi non può restare indietro rispetto alla realtà.
 Essentials costa **4,99 €/mese** con pagamento annuale: 1 sito, 25.000 pagine
 viste al mese, documenti «standard» fino a 20 servizi (ne servono 12).
 
-**Coperto:** informativa privacy e cookie policy generate e mantenute
-aggiornate, banner con consenso granulare, blocco preventivo, Google Consent
-Mode v2, archivio delle prove di consenso.
+| Coperto da Essentials | Note |
+|---|---|
+| Informativa privacy | Generata e mantenuta aggiornata automaticamente |
+| Cookie policy | Idem |
+| Banner con consenso per finalità | Rifiuto allo stesso livello dell'accettazione, revoca |
+| Blocco preventivo degli script | Presente, ma non ci si affida solo a quello |
+| Google Consent Mode v2 | Incluso anche nel piano gratuito |
+| **Consent Database** | **Incluso anche nel gratuito** — è già integrato nel codice |
+| Incorporamento del documento nella pagina | In riquadro sovrapposto, disponibile su tutti i piani |
 
 ---
 
 ## 4. Cosa NON copre, e come è stato risolto
 
+Tre cose, e tutte e tre sono già coperte diversamente. **Con Essentials più il
+lavoro fatto nel codice, la copertura è piena.**
+
 | Scoperto | Perché | Come è stato coperto |
 |---|---|---|
-| **Termini e condizioni** | Il generatore parte dal piano Advanced (19,99 €/mese) | Restano scritti in `lib/legal/content.ts`, completati con riparto degli adempimenti, licenza sui contenuti e poteri di moderazione. Da far validare all'avvocato. |
-| **Clausole personalizzate nell'informativa** | Essentials non le consente | Le cinque descrizioni su misura di N'arte — chat e accesso del team, nomi della formazione, account creato dalla richiesta di booking, recensioni pubbliche, registro email — sono nell'informativa locale. |
-| **Registro dei trattamenti (art. 30)** | Solo nel piano Ultimate (79,99 €/mese) | Da produrre come documento. **Non ancora fatto.** |
+| **Termini e condizioni** | Il generatore parte da Advanced (19,99 €/mese) | Restano in `lib/legal/content.ts`, completati con riparto degli adempimenti dell'evento, licenza sui contenuti dell'artista e poteri di moderazione. **È anche la scelta migliore**: quelle tre parti nessun generatore le produce, andrebbero inserite a mano come testo personalizzato comunque. |
+| **Clausole personalizzate nell'informativa** | Essentials non le consente | Le cinque descrizioni su misura — chat e accesso del team, nomi della formazione, account creato dalla richiesta di booking, recensioni pubbliche, registro email — sono rese sulla pagina `/privacy` **sotto** il documento di iubenda, in una sezione che dichiara di far parte dell'informativa. Vedi `INTEGRAZIONI_NARTE` in `lib/legal/content.ts`. |
+| **Registro dei trattamenti (art. 30)** | Solo in Ultimate (79,99 €/mese) | Scritto a mano: [`REGISTRO_TRATTAMENTI.md`](./REGISTRO_TRATTAMENTI.md), 15 trattamenti con finalità, base giuridica, destinatari, trasferimenti e conservazione. **Da validare dall'avvocato.** |
+
+### Due limiti che restano, e sono accettabili
+
+- **Il testo del documento non è reso in linea nella nostra pagina.** Servirebbe
+  l'API JSON di iubenda, che su Essentials risponde 403: parte da Advanced. Si
+  usa quindi l'incorporamento in riquadro, disponibile su tutti i piani, che
+  almeno non porta l'utente fuori dal sito. Il giorno in cui si passasse ad
+  Advanced, il pezzo da cambiare è solo `components/legal/IubendaPolicyEmbed.tsx`.
+- **Il marchio iubenda resta sul banner.** Si rimuove del tutto solo con
+  Ultimate. È cosmetico.
+- **25.000 pagine viste al mese.** Oltre, 0,05 € ogni 1.000. Da tenere d'occhio.
 
 ### Cosa resta all'avvocato, e nessun generatore può fare
 
@@ -226,14 +246,22 @@ In ordine di importanza:
    non esiste, ma l'informativa e il centro assistenza la promettono entrambi.
 2. **Conservazione dei dati** — nessuna retention è attiva. `email_log`
    conserva gli indirizzi in chiaro senza scadenza, `stripe_webhook_events` il
-   payload integrale, e `rate_limits_prune()` esiste ma non è chiamata da alcun
+   messaggio integrale, e `rate_limits_prune()` esiste ma non è chiamata da alcun
    cron. Vanno concentrate in una sola rotta, perché `vercel.json` dichiara un
    solo cron.
 3. **Pagine `/criteri-di-posizionamento` e `/segnalazioni`** — se P2B e DSA si
    applicano.
 4. **Dati societari nel footer**.
-5. **Incorporare i documenti iubenda** nelle nostre pagine invece di rimandare
-   fuori, affiancandoli alla sezione con le descrizioni su misura.
+
+### Già fatto, non serve rifarlo
+
+- Incorporamento dei documenti iubenda nelle nostre pagine, con la sezione delle
+  descrizioni su misura accanto.
+- Collegamento «Preferenze cookie» nel piè di pagina, che compare da sé quando
+  iubenda è attivo: la revoca deve costare quanto l'accettazione.
+- Consent Database collegata a tutti e sei i punti in cui si raccoglie un
+  consenso. Non blocca mai un modulo, non manda l'indirizzo IP e non manda il
+  contenuto dei messaggi — solo chi, quando, quale casella e quale versione.
 
 ### Due testi da correggere
 
