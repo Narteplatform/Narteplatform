@@ -93,7 +93,7 @@
   <li><strong>Accesso del Team alle chat:</strong> il cliente ha deciso di limitarlo e tracciarlo (doc. 01, art. 8.6). Il prodotto va adeguato (§5). Valutare se, con queste misure, serva comunque una DPIA.</li>
   <li><strong>DPO:</strong> riteniamo non necessario (nessun monitoraggio regolare e sistematico su larga scala, nessuna categoria particolare trattata per finalità dichiarate). Chiediamo conferma.</li>
   <li><strong>Trasferimenti extra-UE:</strong> Supabase (infrastruttura AWS), Vercel, Resend, Google e Meta, se attivati. Conferma dell'adeguatezza (Data Privacy Framework o clausole contrattuali tipo).</li>
-  <li><strong>Strutture di tipo «privato»:</strong> oggi indirizzo e recapiti di tutte le strutture sono leggibili pubblicamente. Può trattarsi del domicilio di una persona fisica.</li>
+  <li><strong>Strutture di tipo «privato»:</strong> possono coincidere con il domicilio di una persona fisica. Il profilo pubblico dell'artista mostra nome, città e copertina della struttura per ogni data confermata: proponiamo di mostrare al pubblico solo la città, o «evento privato» (doc. 04, art. 4).</li>
   <li><strong>Conservazione:</strong> la tabella dei periodi proposti è nel doc. 09. Oggi la cancellazione automatica è predisposta ma disattivata (solo conteggio).</li>
 </ul>
 
@@ -113,6 +113,32 @@
 <h3>3.6 Marchi</h3>
 <p><span class="art">3.6.1</span> Verificare se «N'arte», NaJam, NuLive, NaBand e NaCena sono registrati (doc. 01, art. 10).</p>
 
+<h3>3.7 Riferimenti normativi da verificare</h3>
+<p><span class="art">3.7.1</span> Nella redazione abbiamo segnato «da verificare», senza inventare riferimenti, i punti su cui chiediamo conferma:</p>
+<ul>
+  <li><strong>Agibilità INPS:</strong> soggetto obbligato, alla luce dell'art. 66 D.L. 73/2021, ed esoneri (art. 1, c. 188, L. 296/2006).</li>
+  <li><strong>Pubblico spettacolo:</strong> SCIA per gli eventi fino a 200 persone (D.L. 91/2013) e art. 141 Reg. TULPS; D.P.R. 151/2011; «decreto palchi».</li>
+  <li><strong>Acustica:</strong> L. 447/1995 e D.P.C.M. 215/1999.</li>
+  <li><strong>Minori:</strong> L. 977/1967 per i minori eventualmente presenti in una formazione.</li>
+  <li><strong>Diritto d'autore:</strong>
+    <ul>
+      <li>riserva contro l'estrazione di testo e dati (art. 70-quater L. 633/1941);</li>
+      <li>se N'arte rientri tra i prestatori di servizi di condivisione di contenuti online (art. 102-sexies L. 633/1941);</li>
+      <li>se convenga una licenza SIAE per le cover pubblicate sulla Piattaforma.</li>
+    </ul>
+  </li>
+  <li><strong>Intelligenza artificiale:</strong> eventuali obblighi della L. 132/2025.</li>
+  <li><strong>Recensioni:</strong> numerazione esatta dell'art. 22, cc. 4-bis e 4-ter, e delle lettere dell'art. 23 Cod. consumo che recepiscono i punti 23-ter e 23-quater dell'all. I della Dir. 2005/29/CE.</li>
+  <li><strong>DSA:</strong>
+    <ul>
+      <li>lingue del punto di contatto (art. 11, par. 3);</li>
+      <li>designazione di AGCOM come coordinatore dei servizi digitali;</li>
+      <li>regola dei 12 mesi dopo la perdita della qualifica di microimpresa (art. 19);</li>
+      <li>se N'arte sia davvero una microimpresa, contando anche le imprese collegate o associate.</li>
+    </ul>
+  </li>
+</ul>
+
 <h2>4. Contenuto del fascicolo e dove va ogni testo</h2>
 <table>
   <tr><th>Doc.</th><th>Titolo</th><th>Pubblicazione</th><th>Accettazione</th></tr>
@@ -129,6 +155,7 @@
 
 <h2>5. Scostamenti tra prodotto e testi da correggere prima della pubblicazione</h2>
 <p>I testi sono scritti per il prodotto come deve essere. Queste modifiche vanno fatte <strong>prima</strong> di pubblicarli, altrimenti i testi promettono cose che il software non fa.</p>
+<h3>5.1 Scostamenti principali</h3>
 <table>
   <tr><th>#</th><th>Scostamento</th><th>Rif.</th><th>Priorità</th></tr>
   <tr><td>1</td><td>La richiesta di booking con registrazione in linea crea l'account con email già confermata e senza la casella dei 18 anni.</td><td>01 art. 5; 08 C</td><td>Alta</td></tr>
@@ -143,10 +170,24 @@
   <tr><td>10</td><td>Nessuna prova inviata al Consent Database iubenda su registrazione e booking con registrazione; la tabella <code>user_consents</code> ammette solo tre voci.</td><td>08</td><td>Media</td></tr>
   <tr><td>11</td><td>Recapiti incoerenti (gmail nella pagina contatti, libero.it nei documenti); nessuna PEC.</td><td>01 art. 1</td><td>Media</td></tr>
   <tr><td>12</td><td>Le consulenze si disdicono solo scrivendo ai contatti.</td><td>03 art. 8</td><td>Bassa</td></tr>
-  <tr><td>13</td><td>Recapiti delle strutture pubblici anche quando la struttura è privata.</td><td>04; 09</td><td>Alta</td></tr>
+  <tr><td>13</td><td>Strutture: i recapiti completi sono stati chiusi al pubblico (migration 0058, data per applicata dalla documentazione di progetto — da ricontrollare), ma il profilo pubblico dell'artista mostra, per ogni data confermata, nome, città e copertina della struttura anche quando è di tipo «privato». Le foto delle strutture non passano dalla moderazione.</td><td>04 art. 4; 09</td><td>Alta</td></tr>
   <tr><td>14</td><td>Cancellazione automatica dei dati predisposta ma disattivata (<code>RETENTION_ENFORCE</code>); i file su bunny.net non si cancellano con l'account.</td><td>09</td><td>Media</td></tr>
   <tr><td>15</td><td>Casella dei moduli pubblici impostata come consenso anziché come presa visione; casella di registrazione che fa «accettare» l'informativa.</td><td>08 art. 1</td><td>Media</td></tr>
   <tr><td>16</td><td>La pagina prezzi promette «consulenze illimitate» e assistenza «prioritaria» senza precisarne i limiti.</td><td>02, All. A</td><td>Bassa</td></tr>
+</table>
+<h3>5.2 Ulteriori scostamenti emersi nella redazione dei documenti 03–06</h3>
+<table>
+  <tr><th>#</th><th>Scostamento</th><th>Rif.</th><th>Priorità</th></tr>
+  <tr><td>17</td><td><strong>Difetto lato server:</strong> l'azione di annullamento dell'Organizzatore blocca solo le richieste già rifiutate o annullate. Con una chiamata diretta si può annullare una <em>Data confermata</em> senza passare dal Team e senza motivazione. L'interfaccia nasconde il pulsante, ma il server non lo impedisce.</td><td>04 art. 9</td><td>Alta</td></tr>
+  <tr><td>18</td><td><strong>Difetto lato server:</strong> l'azione con cui l'Artista rifiuta una richiesta non verifica lo stato, e può portare a «rifiutata» anche una Data confermata.</td><td>03 art. 7; 04 art. 9</td><td>Alta</td></tr>
+  <tr><td>19</td><td>Il rifiuto di una candidatura non invia alcuna comunicazione. Il cambio di stato o la cancellazione di un profilo, e le modifiche fatte dal Team ai dati di un artista, avvengono senza avviso, motivazione né registro.</td><td>03 artt. 2, 10; 06 art. 9</td><td>Alta</td></tr>
+  <tr><td>20</td><td>La nota di rifiuto di un media è facoltativa e non parte nessuna email. I video inseriti come link esterno non passano dalla coda di moderazione. Se la tabella della coda non è raggiungibile, i media sono pubblicati senza controllo.</td><td>03 art. 6</td><td>Media</td></tr>
+  <tr><td>21</td><td>Mancano strumenti al Team: sospensione o chiusura di un account; rimozione di un singolo media già approvato, di un componente della band, di un messaggio o allegato di chat; richiamo formale; registro unico delle decisioni.</td><td>06 artt. 7, 17</td><td>Media</td></tr>
+  <tr><td>22</td><td>Recensioni: la media dei voti compare nel catalogo anche per gli Artisti Free, mentre il loro profilo non mostra le recensioni. L'Artista Free non può leggere le recensioni che lo riguardano. Oscuramento e rimozione non registrano motivazione né autore e non avvisano nessuno. La rimozione cancella la riga, quindi la stessa data può essere recensita di nuovo. Manca il diritto di replica.</td><td>05 artt. 7–11</td><td>Alta</td></tr>
+  <tr><td>23</td><td>Recensioni e account cancellati: il centro assistenza dice che le recensioni diventano anonime, il database invece le cancella a cascata. Se il Team annulla una data già recensita, la recensione resta.</td><td>05 art. 13</td><td>Media</td></tr>
+  <tr><td>24</td><td>Le tre «storie» di artisti nella pagina /candidatura-artista sono segnaposto inventati: vanno rimosse o sostituite con testimonianze reali e documentabili (Cod. consumo, all. I, punto 23-quater).</td><td>05 art. 6</td><td>Alta</td></tr>
+  <tr><td>25</td><td>L'Artista non può chiudere da solo un singolo profilo, e non esiste un canale dedicato con cui un componente della band possa chiedere la rimozione del proprio nome.</td><td>03 artt. 3, 5</td><td>Bassa</td></tr>
+  <tr><td>26</td><td>Il centro assistenza presenta l'accesso del Team alle chat come una funzione. Altri articoli parlano di «date reali svolte» (N'arte non lo verifica) e di recensioni «visibili a tutti» (dipende dal piano). Da riallineare ai documenti.</td><td>05; 06 art. 15</td><td>Media</td></tr>
 </table>
 <p id="scostamenti-agenti"></p>
 
@@ -172,7 +213,8 @@
   <tr><td>Valore e condizioni dello shooting; diritti del fotografo</td><td>02 artt. 7.5 e 9.6</td><td>Cliente</td></tr>
   <tr><td>[ORGANISMO ADR] (facoltativo)</td><td>01 art. 18.2</td><td>Legale</td></tr>
 </table>
-<p id="segnaposto-agenti"></p>
+<p><span class="art">7.1</span> I documenti 03–07 contengono inoltre segnaposto su <strong>tempi e soglie operative</strong>, per esempio <span class="seg">[7 GIORNI]</span>, <span class="seg">[2 GIORNI LAVORATIVI]</span>, <span class="seg">[12 MESI]</span>: tempi di moderazione e di risposta alle segnalazioni, durata delle sospensioni, conservazione, tolleranze sulle consulenze. Il valore tra parentesi è la nostra proposta. Va confermato dal cliente, che deve poterlo rispettare davvero, e dal legale. Un termine promesso e non rispettato è peggio di un termine non promesso.</p>
+<p><span class="art">7.2</span> Mancano ancora due recapiti: <span class="seg">[segnalazioni@narteofficial.it]</span>, cioè il punto di contatto DSA del doc. 06, e la PEC.</p>
 
 <h2>8. Cosa chiediamo e in che forma</h2>
 <ul>
