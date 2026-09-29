@@ -29,7 +29,7 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Titolare | Eduardo Castronuovo — ditta individuale |
 | Partita IVA | IT11071661216 |
 | Sede | Via Domenico Fontana 27, 80128 Napoli (Italia) |
-| Contatto per la privacy | Pagina contatti del sito. **Da sostituire** con una casella dedicata (es. `privacy@narteofficial.it`) quando la posta sul dominio sarà attiva: un indirizzo pubblicato e non presidiato è peggio di nessun indirizzo, perché fissa un canale per esercitare i diritti e poi non risponde, mentre il termine di un mese decorre comunque |
+| Contatto per la privacy | narteweb@libero.it — *da sostituire* con una casella dedicata (es. `privacy@narteofficial.it`) quando la posta sul dominio sarà attiva: un indirizzo pubblicato e non presidiato è peggio di nessun indirizzo, perché fissa un canale per esercitare i diritti e poi non risponde, mentre il termine di un mese decorre comunque |
 | Responsabile della protezione dei dati | Non nominato — *da confermare dall'avvocato: la piattaforma non svolge monitoraggio sistematico su larga scala ai sensi dell'art. 37* |
 
 ---

@@ -386,3 +386,34 @@ dell'attivazione che il banner non si carica più — lasciando il sito senza
 gestione del consenso e con il tracciamento acceso. Vanno navigate tutte e
 cinque le aree con la console aperta, e solo quando non segnala più nulla si
 rinomina la chiave in `Content-Security-Policy`.
+
+---
+
+## 7. Il giorno del passaggio a www.narteofficial.it
+
+Oggi la piattaforma vive su `narteplatform.vercel.app`; su `www.narteofficial.it`
+c'è ancora il sito precedente, ospitato su Aruba. Quando si farà il passaggio,
+il dominio non è una voce sola: compare in nove punti, e dimenticarne uno
+produce guasti silenziosi — non errori, comportamenti sbagliati.
+
+| # | Dove | Cosa cambiare | Se lo dimentichi |
+|---|---|---|---|
+| 1 | Vercel → Domains | Aggiungere `www.narteofficial.it` e puntare il DNS su Aruba | — |
+| 2 | Vercel → `NEXT_PUBLIC_SITE_URL` | `https://www.narteofficial.it` | Indirizzi canonici, anteprime social, sitemap e **tutti i collegamenti dentro le email** continuano a puntare a vercel.app. Lo usano 16 file |
+| 3 | iubenda → impostazioni del sito | Il dominio della licenza | I documenti nominano un sito dove la piattaforma non sta |
+| 4 | iubenda → Consent Database → legal notice `terms` | `https://www.narteofficial.it/termini` | La prova di consenso rimanda a una pagina inesistente: è come non averla |
+| 5 | `lib/legal/titolare.ts` → `emailPrivacy` | `privacy@narteofficial.it`, quando la casella esiste | Resta libero.it: funziona, ma è l'indirizzo sbagliato su un documento legale |
+| 6 | Brevo → verifica del dominio, e `BREVO_SENDER_EMAIL` | Mittente su `narteofficial.it` | **Nessuna email parte.** È la questione aperta da luglio |
+| 7 | Vercel → `BREVO_ASSET_BASE_URL` | `https://www.narteofficial.it` | Logo e immagini rotti dentro le email |
+| 8 | Supabase → Auth → Site URL e Redirect URLs | Il nuovo dominio | Conferma email e recupero password rimandano al dominio vecchio: i collegamenti si aprono altrove |
+| 9 | Stripe → webhook endpoint | Il nuovo indirizzo | Gli abbonamenti si pagano e la piattaforma non lo viene a sapere |
+
+> **Il numero 4 vale adesso, non al lancio.** Il consenso lo stiamo già
+> raccogliendo, e il «legal notice» `terms` deve puntare a una pagina che
+> esiste: finché il dominio non è migrato va indicato
+> `https://narteplatform.vercel.app/termini`. Un consenso la cui prova rimanda a
+> un 404 è una prova che non prova niente.
+
+Nessuno di questi punti è nel codice tranne il 5: sono configurazioni. Il codice
+legge già tutto da variabili d'ambiente, quindi il passaggio è un cambio di
+valori più un redeploy — non un intervento.

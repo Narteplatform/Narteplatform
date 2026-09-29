@@ -24,16 +24,17 @@ export const TITOLARE = {
   /**
    * Indirizzo per le questioni sui dati personali.
    *
-   * ⚠️ VUOTO DI PROPOSITO, finché non è una casella che funziona davvero. Un
-   * indirizzo pubblicato in un'informativa e non presidiato è peggio che
-   * assente: fissa un canale per esercitare i diritti e poi non risponde, e il
-   * termine di un mese decorre comunque. Finché è vuoto, informativa e termini
-   * rimandano alla pagina contatti, che è presidiata.
+   * Per RICEVERE va bene: quello che conta è che sia raggiungibile e presidiato,
+   * e questa casella lo è. Da non confondere con il problema del MITTENTE, che è
+   * un'altra cosa e resta aperto: da libero.it la piattaforma non può spedire —
+   * senza SPF, DKIM e DMARC sul dominio le notifiche finiscono in posta
+   * indesiderata o vengono rifiutate. Il mittente va su un dominio verificato.
    *
-   * Da valorizzare con qualcosa come `privacy@narteofficial.it` quando la posta
-   * sul dominio sarà attiva — la verifica del dominio email è ancora aperta.
+   * Quando la posta su narteofficial.it sarà attiva conviene passare a un
+   * indirizzo dedicato tipo `privacy@narteofficial.it`: cambiare qui basta,
+   * informativa, termini e registro lo prendono da questa costante.
    */
-  emailPrivacy: "",
+  emailPrivacy: "narteweb@libero.it",
 } as const;
 
 /** Una riga sola, per il piè di pagina. */
