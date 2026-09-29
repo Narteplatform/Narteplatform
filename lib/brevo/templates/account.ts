@@ -120,4 +120,62 @@ const welcomeUser = defineTemplate({
   }),
 });
 
-export const ACCOUNT_TEMPLATES = [passwordReset, passwordChanged, welcomeUser];
+/**
+ * Conferma della cancellazione dell'account.
+ *
+ * Il tono è deliberatamente asciutto e senza rimpianti: chi ha chiesto di
+ * andarsene non va trattenuto con un'email che insiste. Quello che serve dirgli
+ * è una cosa sola — che finora non è successo niente e che decide lui — più le
+ * due conseguenze che non sono ovvie: che la rimozione richiede trenta giorni, e
+ * che i messaggi già inviati restano a chi li ha ricevuti.
+ */
+const accountDeletionConfirm = defineTemplate({
+  key: "account_deletion_confirm",
+  name: "N'arte · Conferma cancellazione account [account_deletion_confirm]",
+  subject: "Conferma la cancellazione del tuo account — N'Arte",
+  sample: {
+    name: "Marco Esposito",
+    actionUrl: "https://narteofficial.it/account/cancellazione?token=esempio",
+    expiresLabel: "48 ore",
+  },
+  html: layout({
+    key: "account_deletion_confirm",
+    preheader: "Non abbiamo ancora fatto nulla: si procede solo se confermi.",
+    body: [
+      eyebrow("Cancellazione account"),
+      title(`Vuoi davvero ${em("cancellare")} il tuo account?`, { size: "xl" }),
+      paragraph(
+        `Ciao ${param("name")}, abbiamo ricevuto una richiesta di cancellazione<br />
+              del tuo account N'Arte. <strong>Non abbiamo ancora fatto nulla</strong>:<br />
+              si procede soltanto se confermi tu.`
+      ),
+      buttonPair({
+        href: param("actionUrl"),
+        label: "Confermo, cancella il mio account",
+      }),
+      callout({
+        tone: "warning",
+        heading: "Il link scade fra {{params.expiresLabel}}",
+        text: "Se non sei stato tu, ignora questa email: senza conferma il tuo account resta esattamente com'è.",
+      }),
+      paragraph(
+        `<strong>Quando confermi</strong>, il tuo accesso viene chiuso subito e il profilo<br />
+              pubblico sparisce dal sito. La rimozione definitiva dei dati e dei file<br />
+              avviene entro trenta giorni: fino ad allora si può tornare indietro.`
+      ),
+      paragraph(
+        `<strong>Cosa resta.</strong> I documenti contabili degli abbonamenti, che siamo<br />
+              tenuti a conservare per legge. E i messaggi che hai inviato in chat restano<br />
+              visibili a chi li ha ricevuti: una conversazione ha due lati, e non possiamo<br />
+              cancellare la copia altrui.`
+      ),
+    ].join("\n"),
+  }),
+});
+
+export const ACCOUNT_TEMPLATES = [
+  passwordReset,
+  passwordChanged,
+  welcomeUser,
+  accountDeletionConfirm,
+];

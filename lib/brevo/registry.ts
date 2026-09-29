@@ -67,6 +67,7 @@ export type EmailKey =
   | "password_reset"
   | "password_changed"
   | "welcome_user"
+  | "account_deletion_confirm"
   // --- ciclo di vita evento ---
   | "event_reminder"
   | "feedback_request";
@@ -307,6 +308,19 @@ export interface PasswordChangedParams {
   supportUrl: string;
 }
 
+/**
+ * Conferma della richiesta di cancellazione dell'account.
+ *
+ * Chi la riceve ha già chiesto la cancellazione dall'area riservata, quindi è
+ * autenticato: il collegamento non serve a stabilire chi sia, ma a mettere un
+ * passaggio fra il gesto e una conseguenza irreversibile.
+ */
+export interface AccountDeletionConfirmParams {
+  name: string;
+  actionUrl: string;
+  expiresLabel: string;
+}
+
 /** Benvenuto a chi si registra come utente. */
 export interface WelcomeUserParams {
   name: string;
@@ -388,6 +402,7 @@ export interface EmailParamsMap {
   password_reset: PasswordResetParams;
   password_changed: PasswordChangedParams;
   welcome_user: WelcomeUserParams;
+  account_deletion_confirm: AccountDeletionConfirmParams;
   event_reminder: EventReminderParams;
   feedback_request: FeedbackRequestParams;
 }
@@ -563,6 +578,10 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
   welcome_user: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_WELCOME_USER),
     label: "Benvenuto su N'arte",
+  },
+  account_deletion_confirm: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ACCOUNT_DELETION_CONFIRM),
+    label: "Conferma cancellazione account",
   },
   event_reminder: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_EVENT_REMINDER),

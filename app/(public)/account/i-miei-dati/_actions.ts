@@ -9,7 +9,6 @@ import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
 import { createElement } from "react";
-import { sendEmail } from "@/lib/emails/send";
 import AccountDeletionConfirmEmail from "@/lib/emails/templates/AccountDeletionConfirmEmail";
 import { creaRichiestaCancellazione, SCADENZA_ORE } from "@/lib/legal/cancellazione";
 
@@ -106,15 +105,27 @@ export async function richiediCancellazioneAccount(input: unknown) {
   // la richiesta vale lo stesso e la gestisce il team entro il termine di legge.
   // Il giorno in cui le email funzioneranno, il percorso breve si accende da
   // solo senza che nessuno debba ricordarsene.
-  const esitoEmail = await sendEmail({
+  // Passa da `dispatchEmail` e non da `sendEmail`: il primo prova Brevo — che è
+  // il provider verificato e funzionante — e ricade su Resend solo se la chiave
+  // non è instradata. Il secondo va dritto su Resend, che su questo progetto non
+  // ha ancora una chiave: l'email non sarebbe mai partita.
+  const esitoEmail = await dispatchEmail({
+    key: "account_deletion_confirm",
     to: destinatario,
-    subject: "Conferma la cancellazione del tuo account N'arte",
-    react: createElement(AccountDeletionConfirmEmail, {
-      nome,
-      url: urlConferma,
-      scadenzaOre: SCADENZA_ORE,
-    }),
-    template: "account_deletion_confirm",
+    params: {
+      name: nome,
+      actionUrl: urlConferma,
+      expiresLabel: `${SCADENZA_ORE} ore`,
+    },
+    fallback: {
+      subject: "Conferma la cancellazione del tuo account N'arte",
+      react: createElement(AccountDeletionConfirmEmail, {
+        nome,
+        url: urlConferma,
+        scadenzaOre: SCADENZA_ORE,
+      }),
+      template: "account_deletion_confirm",
+    },
   }).catch((e) => {
     logger.error("account/cancellazione", `invio conferma fallito: ${String(e)}`);
     return { ok: false as const };
