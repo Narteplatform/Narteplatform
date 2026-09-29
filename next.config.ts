@@ -72,7 +72,9 @@ const nextConfig: NextConfig = {
       // da /_next/static/media. Il browser non contatta mai Google, e tenere
       // aperti quei domini allargava la policy per una dipendenza inesistente —
       // che per giunta andrebbe poi dichiarata nell'informativa.
-      "style-src 'self' 'unsafe-inline'",
+      // cdn.iubenda.com: il riquadro che mostra i documenti porta il proprio
+      // foglio di stile. Senza, comparirebbe senza impaginazione.
+      "style-src 'self' 'unsafe-inline' https://cdn.iubenda.com",
       "font-src 'self' data:",
       // blob: serve alle anteprime locali degli upload prima dell'invio.
       // GA4 manda ancora parte dei colpi come immagine, e il pixel pure.
@@ -107,13 +109,41 @@ const nextConfig: NextConfig = {
       "base-uri 'self'",
       "form-action 'self'",
       "object-src 'none'",
+      // Le violazioni vanno raccolte, non guardate in console da qualcuno.
+      // Entrambe le forme, perché i browser non concordano: `report-uri` è
+      // deprecata ma è l'unica che Safari implementa, `report-to` è quella
+      // attuale e richiede l'intestazione `Reporting-Endpoints` qui sotto.
+      "report-uri /api/csp-report",
+      "report-to csp",
     ].join("; ");
+
+    // L'ATTIVAZIONE È UN INTERRUTTORE, NON UNA MODIFICA AL CODICE.
+    //
+    // `CSP_ENFORCE=1` fa diventare la policy vincolante; qualunque altro valore
+    // la lascia in sola segnalazione. È la stessa logica di
+    // BUNNY_UPLOADS_ENABLED, e per la stessa ragione: se l'attivazione rompe
+    // qualcosa, tornare indietro è svuotare una variabile e ridistribuire —
+    // niente revert, niente attesa di una revisione. Su una policy che può
+    // rompere pezzi di pagina in silenzio, la via di fuga vale più
+    // dell'eleganza.
+    const applicaCsp = process.env.CSP_ENFORCE === "1";
 
     return [
       {
         source: "/:path*",
         headers: [
-          { key: "Content-Security-Policy-Report-Only", value: csp },
+          {
+            key: applicaCsp
+              ? "Content-Security-Policy"
+              : "Content-Security-Policy-Report-Only",
+            value: csp,
+          },
+          // Destinazione delle segnalazioni per i browser che usano la
+          // Reporting API. `max_age` in secondi: una settimana.
+          {
+            key: "Reporting-Endpoints",
+            value: 'csp="/api/csp-report"',
+          },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

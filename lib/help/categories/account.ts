@@ -212,9 +212,10 @@ export const ACCOUNT: HelpCategory = {
   <li><strong>Quando usi la piattaforma</strong>: richieste di booking, messaggi in chat con allegati e note vocali, prenotazioni di consulenza, recensioni.</li>
 </ul>
 
-<h2>Non usiamo strumenti di tracciamento</h2>
-<p>È il punto su cui vale la pena essere espliciti: <strong>non usiamo Google Analytics, non usiamo il pixel di Meta, non usiamo strumenti pubblicitari o di profilazione.</strong> Nessuno segue la tua navigazione su questo sito, né noi né terze parti.</p>
-<p>I cookie che troverai sono quelli necessari a farlo funzionare: quello che tiene aperta la sessione dopo l'accesso e, per chi gestisce più profili artista, quello che ricorda il profilo attivo. Nella memoria del browser restano inoltre i <a href="/help/account/preferiti">preferiti</a> salvati senza account e la scelta fatta sul banner.</p>
+<h2>Cookie e strumenti di misurazione</h2>
+<p>I cookie necessari a far funzionare il sito non si possono disattivare: quello che tiene aperta la sessione dopo l'accesso e, per chi gestisce più profili artista, quello che ricorda il profilo attivo. Nella memoria del browser restano inoltre i <a href="/help/account/preferiti">preferiti</a> salvati senza account.</p>
+<p><strong>Tutto il resto non parte senza il tuo consenso.</strong> Statistiche di navigazione, strumenti pubblicitari e il riproduttore dei video di terze parti sono bloccati finché non li accetti: non vengono nemmeno caricati. Al primo accesso trovi un banner con le scelte separate per finalità, e il rifiuto costa esattamente quanto l'accettazione.</p>
+<p>Puoi cambiare idea in qualunque momento dal collegamento <strong>«Preferenze cookie»</strong> in fondo a ogni pagina. L'elenco aggiornato di cosa è in uso sta nella <a href="/cookie-policy">cookie policy</a>, che è il documento che fa fede.</p>
 
 <h2>Le statistiche del profilo</h2>
 <p>Le visite ai profili artista vengono conteggiate <strong>senza conservare il tuo indirizzo IP</strong>: viene trasformato in un codice non riconducibile a te, che serve solo a non contare due volte la stessa visita nella stessa giornata. Gli artisti sanno <em>quanti</em> hanno visitato il profilo, mai <em>chi</em>.</p>
@@ -235,8 +236,14 @@ export const ACCOUNT: HelpCategory = {
 <p>Poiché il pagamento dell'ingaggio avviene direttamente fra artista e organizzatore, <strong>non trattiamo coordinate bancarie né dati di fatturazione</strong> relativi alle serate.</p>
 
 <h2>I tuoi diritti</h2>
-<p>Puoi chiedere di <strong>accedere</strong> ai tuoi dati, <strong>correggerli</strong>, <strong>cancellarli</strong>, limitarne il trattamento, ottenerne una <strong>copia</strong> in formato leggibile od <strong>opporti</strong> al trattamento. Puoi revocare un consenso già dato, come quello facoltativo alle comunicazioni promozionali.</p>
-<p>Per esercitarli <a href="/contatti">scrivici</a>. Hai inoltre il diritto di rivolgerti al Garante per la protezione dei dati personali.</p>
+<p>Quattro cose le fai da solo, dalla pagina <a href="/account/i-miei-dati"><strong>I miei dati</strong></a>:</p>
+<ul>
+  <li><strong>vedere cosa hai accettato</strong>, con versione e data di ogni consenso;</li>
+  <li><strong>scaricare una copia</strong> dei tuoi dati in un file leggibile;</li>
+  <li><strong>revocare il consenso</strong> alle comunicazioni promozionali;</li>
+  <li><strong>chiedere la cancellazione</strong> dell'account.</li>
+</ul>
+<p>Per correggere un dato sbagliato usi il tuo profilo. Per limitare il trattamento od opporti, <a href="/contatti">scrivici</a>. Hai inoltre il diritto di rivolgerti al Garante per la protezione dei dati personali.</p>
 
 <h2>Per quanto teniamo i dati</h2>
 <p>Finché il tuo account resta attivo. Se lo elimini, i dati collegati vengono cancellati, salvo quanto siamo tenuti a conservare per obbligo di legge — per esempio i documenti contabili degli abbonamenti. Vedi <a href="/help/account/eliminare-account">eliminare il proprio account</a>.</p>
@@ -252,7 +259,9 @@ export const ACCOUNT: HelpCategory = {
       related: ["privacy-dati", "cambiare-email", "pagamenti/abbonamento-artista"],
       content: `
 <h2>Come si richiede</h2>
-<p>La cancellazione <strong>non si esegue dall'area riservata</strong>: va richiesta al team. <a href="/contatti">Scrivici dal modulo contatti</a> indicando che vuoi eliminare l'account, l'<strong>email di registrazione</strong> e, se sei un artista, il <strong>nome d'arte</strong>.</p>
+<p>Dalla pagina <a href="/account/i-miei-dati"><strong>I miei dati</strong></a>, in fondo: la richiesta parte già collegata al tuo account, quindi non serve che ci dici chi sei. È la strada più rapida.</p>
+<p>In alternativa <a href="/contatti">scrivici dal modulo contatti</a> indicando che vuoi eliminare l'account, l'<strong>email di registrazione</strong> e, se sei un artista, il <strong>nome d'arte</strong>.</p>
+<p><strong>Perché non è un pulsante che cancella subito.</strong> Su questa piattaforma la cancellazione non è un'operazione sola: tocca contenuti pubblicati, file archiviati, conversazioni che hanno due lati e documenti che la legge ci obbliga a tenere. Un pulsante che promettesse di cancellare tutto e ne cancellasse metà dichiarerebbe una cosa non vera. Quindi la richiesta la registriamo, la confermiamo con te e la completiamo entro un mese, come prevede la legge.</p>
 <p>Manda la richiesta dall'indirizzo con cui sei registrato: è il modo più rapido per confermare che sei tu. La cancellazione è irreversibile, quindi verifichiamo sempre l'identità prima di procedere.</p>
 
 <h2>Prima, tre cose da valutare</h2>

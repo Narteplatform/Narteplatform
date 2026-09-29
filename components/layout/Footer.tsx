@@ -111,6 +111,18 @@ export function Footer() {
                   Termini
                 </Link>
               </li>
+              <li aria-hidden="true">·</li>
+              <li>
+                {/* Il posto dove si esercitano i diritti va accanto ai documenti
+                    che li descrivono: è lì che una persona li cerca. Chi non ha
+                    una sessione viene mandato all'accesso e poi qui. */}
+                <Link
+                  href="/account/i-miei-dati"
+                  className="transition-opacity hover:opacity-75"
+                >
+                  I miei dati
+                </Link>
+              </li>
               {/* Compare da sé quando la gestione del consenso è attiva, e
                   scompare — separatore incluso — quando non c'è nulla da
                   gestire. */}

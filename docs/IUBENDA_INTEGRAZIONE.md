@@ -353,17 +353,14 @@ lavoro fatto nel codice, la copertura è piena.**
 
 In ordine di importanza:
 
-1. **Pagina «I miei dati»** — esportazione, storico dei consensi, revoca del
-   marketing, richiesta di cancellazione dell'account. Oggi la cancellazione
-   non esiste, ma l'informativa e il centro assistenza la promettono entrambi.
-2. **Conservazione dei dati** — nessuna retention è attiva. `email_log`
+1. **Conservazione dei dati** — nessuna retention è attiva. `email_log`
    conserva gli indirizzi in chiaro senza scadenza, `stripe_webhook_events` il
    messaggio integrale, e `rate_limits_prune()` esiste ma non è chiamata da alcun
    cron. Vanno concentrate in una sola rotta, perché `vercel.json` dichiara un
    solo cron.
-3. **Pagine `/criteri-di-posizionamento` e `/segnalazioni`** — se P2B e DSA si
+2. **Pagine `/criteri-di-posizionamento` e `/segnalazioni`** — se P2B e DSA si
    applicano.
-4. **Dati societari nel footer**.
+3. **Attivare la CSP**: `CSP_ENFORCE=1` su Vercel, dopo aver letto i log.
 
 ### Già fatto, non serve rifarlo
 
@@ -374,6 +371,15 @@ In ordine di importanza:
 - Consent Database collegata a tutti e sei i punti in cui si raccoglie un
   consenso. Non blocca mai un modulo, non manda l'indirizzo IP e non manda il
   contenuto dei messaggi — solo chi, quando, quale casella e quale versione.
+- **Dati del titolare** in un punto solo (`lib/legal/titolare.ts`), da cui li
+  prendono piè di pagina, informativa e registro dei trattamenti.
+- **Pagina `/account/i-miei-dati`**: storico dei consensi con versione e data,
+  esportazione in JSON, revoca del consenso al marketing, richiesta di
+  cancellazione dell'account. Collegata dal piè di pagina e dal centro
+  assistenza, i cui due articoli promettevano queste funzioni prima che
+  esistessero.
+- **Raccolta automatica delle violazioni CSP** su `/api/csp-report`, con
+  deduplica e taglio dei parametri degli indirizzi. Vedi §8.
 
 ### Due testi da correggere
 
@@ -432,3 +438,39 @@ produce guasti silenziosi — non errori, comportamenti sbagliati.
 Nessuno di questi punti è nel codice tranne il 5: sono configurazioni. Il codice
 legge già tutto da variabili d'ambiente, quindi il passaggio è un cambio di
 valori più un redeploy — non un intervento.
+
+
+---
+
+## 8. Attivare la Content Security Policy
+
+Oggi la policy è in **sola segnalazione**: il browser esegue tutto e riferisce
+soltanto cosa avrebbe bloccato. Quindi **non protegge**.
+
+Il piano iniziale era «navigare le cinque aree con la console aperta». È una
+verifica che si fa una volta e poi non si rifà: richiede una persona, un browser
+e la pazienza di attraversare pubblico, artista, organizzatore, admin e
+consulente toccando ogni funzione. Basta un percorso non provato — un caricamento
+audio, una chat con allegato, il portale Stripe — e la violazione si scopre dagli
+utenti il giorno dell'attivazione.
+
+Adesso la raccolta è automatica: i browser di chi usa il sito segnalano a
+`/api/csp-report`, e le violazioni finiscono nei log di Vercel con prefisso
+`[csp]`. Ogni violazione compare **una volta sola** per combinazione di direttiva
+e origine bloccata — la stessa risorsa su venti profili artista è una cosa da
+sistemare, non venti. Gli indirizzi vengono troncati al percorso, perché una
+segnalazione può contenere un token di reimpostazione password nei parametri.
+
+### Come si procede
+
+1. Lasciare passare **almeno una settimana** di uso normale.
+2. Cercare `[csp]` nei log di Vercel.
+3. Se non compare nulla: `CSP_ENFORCE=1` fra le variabili d'ambiente, e
+   ridistribuire. La policy diventa vincolante.
+4. Se compare qualcosa: si valuta riga per riga se è una risorsa legittima da
+   aggiungere alla policy, o qualcosa che è giusto bloccare.
+
+> **L'attivazione è un interruttore, non una modifica al codice.** Se rompe
+> qualcosa, tornare indietro è svuotare `CSP_ENFORCE` e ridistribuire — niente
+> revert, niente attesa. Su una policy che può rompere pezzi di pagina in
+> silenzio, la via di fuga vale più dell'eleganza.
