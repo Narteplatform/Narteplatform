@@ -134,7 +134,19 @@ In `.claude/agents/`:
 
 ## Migration in attesa di applicazione
 
-Da eseguire dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md):
+Da eseguire dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md).
+
+**Per sapere quali sono già passate** — non esiste un registro, vengono incollate
+a mano e non lasciano traccia:
+
+```bash
+npm run db:check-migrations   # sola lettura, cerca gli oggetti che ciascuna crea
+```
+
+Copre tabelle, colonne, funzioni, bucket e privilegi anonimi. Per indici,
+vincoli validati, pubblicazioni realtime e policy di Storage — che PostgREST non
+espone — le query sono in `docs/VERIFICA_MIGRATION.sql`.
+
 
 - `0048_rate_limits.sql` — limitatore di frequenza. Finché manca, i freni
   registrano un avviso nei log e **lasciano passare**: il sito funziona, ma è

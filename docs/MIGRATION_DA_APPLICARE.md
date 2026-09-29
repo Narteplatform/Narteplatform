@@ -94,6 +94,26 @@ in corso, sarebbe un'operazione ben più delicata.
 
 ---
 
+## Come sapere cosa è già stato applicato
+
+Non esiste un registro: le migration si incollano a mano nel SQL editor e non
+lasciano traccia, e la cronologia del SQL editor non è numerata.
+
+```bash
+npm run db:check-migrations
+```
+
+È in **sola lettura** e non chiama nessuna funzione: cerca gli oggetti che
+ciascuna migration crea — tabelle, colonne, funzioni, bucket, privilegi
+anonimi — e stampa un riepilogo con l'elenco di ciò che resta da fare.
+
+Quattro cose non si vedono da fuori, perché PostgREST non le espone: indici
+univoci, vincoli validati, pubblicazioni realtime e policy di Storage. Per
+quelle ci sono le query in [`VERIFICA_MIGRATION.sql`](./VERIFICA_MIGRATION.sql),
+da incollare nel SQL editor — anch'esse di sola lettura.
+
+---
+
 ## Prerequisito: il lotto già in attesa
 
 Queste erano già da applicare prima di questo lavoro e **vengono per prime**:
