@@ -12,14 +12,17 @@ Il sito è già pronto ad accogliere iubenda e il tracciamento. **Niente è acce
 tutto dipende da variabili d'ambiente oggi vuote, e finché lo sono il
 comportamento del sito è identico a prima.
 
-Mancano tre cose che solo tu puoi fare:
+Stato al 29 settembre 2026:
 
-1. **applicare due migration** dal SQL editor Supabase (`0049`, poi `0059`);
-2. **aprire iubenda** e incollare due identificativi nelle variabili su Vercel;
-3. **fornire i dati del titolare** — nome, P.IVA, sede, email istituzionale.
+- ✅ **Migration applicate.** `0048`, `0049` (revoke inclusi), `0050`, `0051`,
+  `0052`, `0055`, `0058`, `0059`. Verificabile con `npm run db:check-migrations`.
+- ✅ **Piano Essentials acquistato.**
+- ⬜ **Tre variabili da impostare su Vercel** — passo 3.4.
+- ⬜ **Due variabili del sale** — passo 2. Non è facoltativo.
+- ⬜ **Dati del titolare**: nome, P.IVA, sede, email istituzionale.
 
-Finché la prima non è fatta, **le caselle di consenso che il sito mostra non
-archiviano nulla**.
+Finché le variabili iubenda sono vuote il sito si comporta esattamente come
+prima: banner provvisorio, documenti locali, nessun tracciamento.
 
 ---
 
@@ -54,21 +57,25 @@ archiviano nulla**.
 
 ## 2. Cosa devi fare, nell'ordine
 
-### Passo 1 — Le migration *(blocca tutto il resto)*
+### Passo 1 — Le migration ✅ fatte
 
-Dal SQL editor di Supabase, nell'ordine:
+Applicate il 29 settembre 2026: `0048`, `0049` (con i `revoke`), `0050`, `0051`,
+`0052`, `0055`, `0058`, `0059`.
 
-1. `supabase/migrations/0048_rate_limits.sql`
-2. `supabase/migrations/0049_user_consents.sql` — **è stata modificata**: ora
-   contiene anche i `revoke` di tabella che le mancavano
-3. `supabase/migrations/0059_consents_write.sql`
+```bash
+npm run db:check-migrations   # sola lettura, per riverificare in qualunque momento
+```
 
-Le verifiche da eseguire subito dopo sono in
-[`MIGRATION_DA_APPLICARE.md`](./MIGRATION_DA_APPLICARE.md).
+Resta **un controllo da fare a mano**, perché nessuno script esterno può leggere
+il corpo di una funzione: la `0049` è stata riapplicata per intero, e siccome
+ridefinisce `record_signup_consents()` potrebbe aver sovrascritto la versione
+della `0059`. La query è la sezione 7 di
+[`VERIFICA_MIGRATION.sql`](./VERIFICA_MIGRATION.sql).
 
-> **Cosa cambia per gli utenti.** Dal momento in cui la `0059` è applicata, ogni
-> persona già registrata trova al primo accesso alle aree riservate la schermata
-> di accettazione. È il comportamento voluto.
+> **Cosa è già cambiato per gli utenti.** Il gate è vivo: tutte e 7 le persone
+> registrate — 1 superadmin, 3 artisti, 3 organizzatori — trovano la schermata
+> di accettazione al primo accesso alle aree riservate. Nessuna di loro aveva mai
+> accettato nulla.
 
 ### Passo 2 — Le due variabili del sale
 
@@ -85,67 +92,128 @@ da chiunque conosca un IP — mentre l'informativa dichiara che l'IP è
 pseudonimizzato. In più, senza `VISIT_HASH_SALT` le statistiche di profilo
 vendute col piano Max sono semplicemente spente.
 
-### Passo 3 — iubenda
+### Passo 3 — iubenda (piano Essentials attivo)
 
-**Sottoscrivi il piano gratuito adesso, non Essentials.** La licenza a pagamento
-si lega a un dominio, e oggi sei ancora su `*.vercel.app`: pagheresti per il
-dominio sbagliato. L'integrazione tecnica del piano gratuito è **identica** a
-quella di Essentials — cambiano il marchio sul banner e i limiti dei documenti,
-non una riga di codice. Passerai a Essentials il giorno di narteofficial.it.
+> ⚠️ **Prima di tutto: su quale dominio è registrata la licenza?**
+> Essentials si lega a **un** dominio. Se in fase di acquisto è stato indicato
+> `narteplatform.vercel.app`, va corretto in `narteofficial.it` dalle
+> impostazioni del sito nel pannello iubenda, **prima** di generare i documenti:
+> il dominio compare dentro l'informativa, e cambiarlo dopo significa
+> rigenerarla. Se il dominio definitivo non è ancora attivo su Vercel, si può
+> registrare comunque quello finale: il banner funziona anche se il sito
+> risponde altrove, è il documento che deve dire la verità.
 
-#### 3.1 Crea il progetto
+#### 3.1 I documenti — dichiarare i servizi
 
-Dichiara il sito. Per ora l'indirizzo Vercel.
+Nel generatore di privacy e cookie policy vanno dichiarati **dodici** servizi.
+Questa è la lista completa, con la categoria iubenda sotto cui cercarli:
 
-#### 3.2 Genera informativa e cookie policy
-
-Dichiara i servizi in uso. Sono dodici, e vanno cercati con questi nomi nel
-catalogo di iubenda:
-
-| Categoria iubenda | Servizi da dichiarare |
+| Categoria iubenda | Servizi |
 |---|---|
 | Hosting e infrastruttura backend | Vercel, Supabase, bunny.net |
 | Registrazione e autenticazione | «fornita direttamente da questa applicazione» |
-| Contattare l'utente | modulo di contatto (sono sei moduli, si dichiarano insieme) |
+| Contattare l'utente | modulo di contatto — sono sei moduli, si dichiarano insieme |
 | Gestione indirizzi e invio messaggi email | Brevo (Sendinblue), Resend |
 | Gestione dei pagamenti | Stripe |
+| Visualizzazione di contenuti da piattaforme esterne | riproduttore video bunny.net |
+| Backup e infrastruttura | Unsplash |
 | Statistica | Google Analytics 4 — **senza** funzioni pubblicitarie |
 | Remarketing e targeting comportamentale | Facebook Pixel (Meta) |
-| Visualizzazione di contenuti da piattaforme esterne | player video bunny.net |
-| Backup e infrastruttura | Unsplash (immagini remote) |
 
-#### 3.3 Configura la Cookie Solution
+Le ultime due si dichiarano **adesso**, anche se il tracciamento verrà accesso
+dopo: il documento deve essere pronto prima degli script, non viceversa. Sono
+dodici su un tetto di venti, quindi c'è margine.
 
-Da attivare esplicitamente:
+**Da NON fare:** cercare il generatore di termini e condizioni. Non è in
+Essentials, e i Termini di N'arte restano nel codice — vedi §4.
 
-- **consenso per singola finalità** (senza, misurazione e pubblicità sarebbero
-  un'unica scelta: il codice si aspetta le finalità 4 e 5 separate);
-- **pulsante di rifiuto sullo stesso livello dell'accettazione** — è il punto su
-  cui il Garante è stato più netto;
-- **blocco preventivo** degli script;
-- **Google Consent Mode v2**: attivo lato iubenda come *opzione del banner*, ma
-  **non** il template automatico. La modalità consenso la governa il nostro
-  codice; averne due significa due gestori che si sovrascrivono a vicenda, con
-  esiti che dipendono dall'ordine di caricamento — cioè funzionanti in prova e
-  imprevedibili in produzione;
-- riproposizione del banner a **12 mesi**.
+#### 3.2 Cookie Solution — i due identificativi
 
-#### 3.4 Copia gli identificativi su Vercel
+Servono due numeri, e si trovano entrambi nel **codice di installazione** della
+Cookie Solution:
 
-```
-NEXT_PUBLIC_IUBENDA_SITE_ID=<id del sito>
-NEXT_PUBLIC_IUBENDA_COOKIE_POLICY_ID=<id della cookie policy>
-NEXT_PUBLIC_IUBENDA_PRIVACY_URL=<indirizzo del documento>
-NEXT_PUBLIC_IUBENDA_COOKIE_URL=<indirizzo del documento>
+```js
+_iub.csConfiguration = {
+  siteId: 1234567,          // ← NEXT_PUBLIC_IUBENDA_SITE_ID
+  cookiePolicyId: 89012345, // ← NEXT_PUBLIC_IUBENDA_COOKIE_POLICY_ID
+  ...
+}
 ```
 
-`NEXT_PUBLIC_IUBENDA_TERMS_URL` **resta vuota**: vedi §4.
+**Il codice di installazione NON va incollato nel sito.** È già scritto, in
+`components/legal/IubendaCs.tsx`: da qui servono solo i due numeri.
 
-> ⚠️ Sono variabili `NEXT_PUBLIC_`: vengono inserite nel pacchetto al momento
-> del build. **Cambiarle su Vercel senza ridistribuire non ha alcun effetto.**
+> **Perché quasi nessuna impostazione del pannello ha effetto sul banner.**
+> La configurazione che conta è quella nel nostro codice, non quella generata dal
+> pannello: consenso per finalità, pulsante di rifiuto allo stesso livello,
+> ritiro esplicito, elenco delle finalità, posizione. Sono già impostate lì, con
+> i valori giusti e motivati. Cambiarle nel pannello non produce alcun effetto —
+> è normale, non è un guasto. Il pannello serve per i **documenti**, per i due
+> **identificativi** e per la **Consent Database**.
 
-Appena `NEXT_PUBLIC_IUBENDA_SITE_ID` è valorizzata, il banner provvisorio si
-spegne da solo e subentra quello di iubenda.
+> ⚠️ **Una cosa nel pannello va lasciata SPENTA: la modalità consenso di Google
+> automatica** (il «template» di Google Consent Mode). La governa il nostro
+> codice, che imposta tutto a negato prima che qualunque tag Google esista.
+> Attivandola anche lì ci sarebbero due gestori a sovrascriversi a vicenda, con
+> esiti che dipendono dall'ordine di caricamento: funzionanti in prova e
+> imprevedibili in produzione.
+
+#### 3.3 Consent Database — archivio delle prove
+
+Due cose da fare qui.
+
+**a) Dichiarare i documenti** sotto «Legal notices», con questi identificativi
+**esatti** — se non combaciano, l'API rifiuta la chiamata e le prove non
+arrivano:
+
+```
+privacy_policy
+terms
+```
+
+**b) Generare la chiave API privata.** Quella pubblica non serve: le prove le
+manda il nostro server, non il browser. Va in `IUBENDA_CONSENT_API_KEY`, **senza**
+prefisso `NEXT_PUBLIC_`.
+
+> La copia su iubenda non è la prova principale. Quella resta nel nostro
+> database — `user_consents` per chi ha un account, le colonne
+> `consent_version`/`consent_at` per i moduli pubblici. Questa è la copia presso
+> un terzo, che ha un peso diverso se qualcuno contesta che il consenso sia stato
+> manipolato a posteriori. Se iubenda non risponde, **il modulo dell'utente va a
+> buon fine comunque**.
+
+#### 3.4 Le variabili su Vercel
+
+Ambiente **Production** (e Preview, se vuoi provarlo prima):
+
+```
+NEXT_PUBLIC_IUBENDA_SITE_ID=<siteId>
+NEXT_PUBLIC_IUBENDA_COOKIE_POLICY_ID=<cookiePolicyId>
+IUBENDA_CONSENT_API_KEY=<chiave privata>
+```
+
+Le altre tre — `NEXT_PUBLIC_IUBENDA_PRIVACY_URL`, `..._COOKIE_URL`,
+`..._TERMS_URL` — **vanno lasciate vuote**. Gli indirizzi dei documenti si
+ricavano dall'identificativo, e i Termini non passano da iubenda.
+
+> ⚠️ **Serve un nuovo deploy.** Le due `NEXT_PUBLIC_` vengono sostituite col loro
+> valore al momento del build: impostarle su Vercel senza ridistribuire non
+> cambia nulla, e sembra che l'integrazione non funzioni.
+
+#### 3.5 Cosa accade appena il deploy è online
+
+Cinque cose, tutte da sé:
+
+1. Il banner provvisorio «Ho capito» **sparisce** e subentra quello di iubenda,
+   con rifiuto e scelta per finalità.
+2. Il banner comincia a comparire **anche nelle aree riservate**, dove prima non
+   appariva mai.
+3. `/privacy` e `/cookie-policy` mostrano il documento di iubenda in un riquadro
+   sovrapposto, e sotto l'informativa compare la sezione con le cinque
+   descrizioni su misura di N'arte.
+4. Nel piè di pagina appare **«Preferenze cookie»**.
+5. I video degli artisti **non partono più senza consenso**: al posto del play
+   compare un riquadro che spiega perché e offre di sbloccare quel singolo video.
 
 ### Passo 4 — I dati del titolare
 
