@@ -160,18 +160,46 @@ export async function registraProvaSuIubenda(prova: ProvaConsenso): Promise<void
     ...(USA_CHIAVE_PUBBLICA ? { autodetect_ip_address: false } : {}),
   };
 
-  try {
-    const r = await fetch(ENDPOINT, {
+  async function invia(corpo: unknown) {
+    return fetch(ENDPOINT, {
       method: "POST",
       headers: {
         ApiKey: API_KEY,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(corpo),
       signal: AbortSignal.timeout(TIMEOUT_MS),
       // Nessuna cache: è una scrittura.
       cache: "no-store",
     });
+  }
+
+  try {
+    let r = await invia(body);
+
+    // SECONDO TENTATIVO SENZA I DOCUMENTI, e non è una pezza.
+    //
+    // I «legal notices» su iubenda esistono come entità: quelli generati da lui
+    // — informativa e cookie policy — si sincronizzano da soli, i TERMINI no,
+    // perché li scriviamo noi e vanno registrati con `npm run iubenda:notices`.
+    // Finché quella registrazione non è stata fatta, riferirsi a `terms` può far
+    // rifiutare l'INTERA chiamata.
+    //
+    // Sarebbe il baratto peggiore possibile: perdere anche la prova del consenso
+    // privacy, che è valida, per colpa di un'etichetta non ancora creata. Quindi
+    // si riprova con i soli documenti che iubenda sicuramente conosce. Si
+    // conserva meno, ma si conserva.
+    if (!r.ok && body.legal_notices.length > 1) {
+      const soloNoti = body.legal_notices.filter((n) => n.identifier !== "terms");
+      if (soloNoti.length !== body.legal_notices.length) {
+        logger.warn(
+          "legal/iubenda",
+          `prova rifiutata (${r.status}): riprovo senza «terms». ` +
+            "Esegui `npm run iubenda:notices` per registrarlo una volta per tutte."
+        );
+        r = await invia({ ...body, legal_notices: soloNoti });
+      }
+    }
 
     if (!r.ok) {
       // Il corpo dell'errore di iubenda dice quale campo non gli piace: senza,
