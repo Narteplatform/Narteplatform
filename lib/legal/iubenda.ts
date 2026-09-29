@@ -11,7 +11,35 @@
  * del build. Cambiarle su Vercel senza ridistribuire non ha alcun effetto.
  */
 
-export const IUBENDA_SITE_ID = process.env.NEXT_PUBLIC_IUBENDA_SITE_ID ?? "";
+/**
+ * L'identificativo del widget della Cookie Solution.
+ *
+ * È l'UUID che compare nel codice di installazione generato dal pannello:
+ *   <script src="https://embeds.iubenda.com/widgets/<QUESTO>.js">
+ *
+ * PERCHÉ IL WIDGET E NON LA CONFIGURAZIONE SCRITTA A MANO.
+ * iubenda serve ormai la Cookie Solution in questa forma: un solo script che
+ * porta con sé la configurazione decisa nel pannello, il blocco automatico degli
+ * script di terze parti e la modalità consenso di Google. Scrivere a mano
+ * `_iub.csConfiguration` nel nostro codice — come faceva la prima versione di
+ * questo modulo — significherebbe avere due sorgenti per le stesse impostazioni,
+ * e per la modalità consenso due gestori che si sovrascrivono a vicenda con
+ * esiti dipendenti dall'ordine di caricamento.
+ *
+ * Il prezzo di questa scelta è che le impostazioni del banner non sono più nel
+ * codice: stanno nel pannello. Va tenuto presente in due casi — se il banner si
+ * comporta in modo diverso da come questo progetto assume, la causa è là; e se
+ * qualcuno cambia lì il pulsante di rifiuto o il consenso per finalità, il sito
+ * cambia comportamento senza che nessun commit lo registri. Lo stato atteso è
+ * documentato in docs/IUBENDA_INTEGRAZIONE.md.
+ */
+export const IUBENDA_WIDGET_ID =
+  process.env.NEXT_PUBLIC_IUBENDA_WIDGET_ID ?? "";
+
+/** Indirizzo dello script da caricare. Vuoto se il widget non è configurato. */
+export const IUBENDA_WIDGET_SRC = IUBENDA_WIDGET_ID
+  ? `https://embeds.iubenda.com/widgets/${IUBENDA_WIDGET_ID}.js`
+  : "";
 
 /**
  * L'identificativo pubblico del documento iubenda.
@@ -32,7 +60,7 @@ export const IUBENDA_POLICY_ID =
  * video comincia a chiedere il consenso, e — indirettamente — il tracciamento
  * diventa accendibile, perché passa dalle callback di iubenda.
  */
-export const iubendaAttivo = Boolean(IUBENDA_SITE_ID && IUBENDA_POLICY_ID);
+export const iubendaAttivo = Boolean(IUBENDA_WIDGET_ID && IUBENDA_POLICY_ID);
 
 /** I documenti che iubenda genera. I Termini restano nostri: vedi sotto. */
 export type DocumentoIubenda = "privacy" | "cookie-policy";

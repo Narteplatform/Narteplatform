@@ -58,12 +58,14 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       // 'unsafe-inline' e 'unsafe-eval' servono a Next in sviluppo e agli
       // script JSON-LD inline. Da stringere quando si passerà ai nonce.
-      // cdn.iubenda.com  → la Cookie Solution vera e propria
-      // cs.iubenda.com   → lo script di blocco automatico
-      // googletagmanager → gtag.js di GA4 (sta lì anche senza Tag Manager)
-      // connect.facebook → il pixel di Meta
+      // embeds.iubenda.com → il widget della Cookie Solution, che porta con sé
+      //   configurazione, blocco automatico e modalità consenso di Google
+      // cdn.iubenda.com    → il nucleo che il widget carica, e lo script che
+      //   mostra i documenti nelle pagine legali
+      // googletagmanager   → gtag.js di GA4 (sta lì anche senza Tag Manager)
+      // connect.facebook   → il pixel di Meta
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com " +
-        "https://cdn.iubenda.com https://cs.iubenda.com " +
+        "https://embeds.iubenda.com https://cdn.iubenda.com https://cs.iubenda.com " +
         "https://www.googletagmanager.com https://connect.facebook.net",
       // fonts.googleapis.com e fonts.gstatic.com RIMOSSI: `next/font/google` in
       // app/layout.tsx scarica i due caratteri al momento del build e li serve
@@ -84,10 +86,13 @@ const nextConfig: NextConfig = {
       //   passare dal server perché il body di una funzione Vercel si ferma a
       //   4,5 MB e una traccia arriva a 25 MB.
       // consent.iubenda.com → archiviazione delle prove di consenso.
+      // hits-i.iubenda.com  → conteggio delle pagine viste del piano iubenda:
+      //   senza, il widget non riesce a registrarle e il piano sembra inutilizzato.
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co " +
         "https://api.stripe.com https://video.bunnycdn.com " +
         "https://*.storage.bunnycdn.com https://*.b-cdn.net " +
-        "https://cdn.iubenda.com https://cs.iubenda.com https://consent.iubenda.com " +
+        "https://embeds.iubenda.com https://cdn.iubenda.com https://cs.iubenda.com " +
+        "https://consent.iubenda.com https://hits-i.iubenda.com " +
         "https://www.google-analytics.com https://*.google-analytics.com " +
         "https://*.analytics.google.com https://www.googletagmanager.com " +
         "https://www.facebook.com https://graph.facebook.com",

@@ -23,9 +23,17 @@ import { PageViewTracker } from "@/components/analytics/PageViewTracker";
  * ────────────────────────────────────────────────────────────────────────────
  *
  * GA4 È CONFIGURATO PER LE SOLE STATISTICHE. Nessuna funzione pubblicitaria:
- * `ad_storage` resta negato anche per chi accetta tutto, e il tag non viene
- * collegato a Google Ads. Se un domani si vorranno le conversioni pubblicitarie
- * andrà cambiata questa riga, aggiornata l'informativa e rifatto il consenso.
+ * `ad_storage` non viene mai concesso da qui e il tag non è collegato a Google
+ * Ads. Se un domani si vorranno le conversioni pubblicitarie andrà cambiata
+ * questa riga, aggiornata l'informativa e rifatto il consenso.
+ *
+ * DUE RETI, NON UNA. Il widget di iubenda blocca già da sé le richieste verso i
+ * domini di Google Analytics e di Meta finché la finalità non è concessa. Questo
+ * componente aggiunge lo strato che quel blocco non può dare: gli script non
+ * vengono nemmeno SCRITTI nella pagina. Non è ridondanza — il blocco automatico
+ * agisce sulle richieste che riesce a intercettare, e su App Router gli script
+ * sono iniettati in momenti che dipendono dall'idratazione. Qui invece la
+ * condizione è a monte e non dipende dai tempi di nessuno.
  */
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -61,8 +69,14 @@ window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 window.gtag = gtag;
 gtag('js', new Date());
-// L'aggiornamento del consenso PRIMA del config: invertendoli, il primo colpo
-// partirebbe con analytics_storage ancora negato e andrebbe perso.
+// I segnali della modalità consenso li emette iubenda — nel widget la Consent
+// Mode v2 è attiva — e stanno già nel dataLayer quando questo tag si inizializza.
+// Questa riga è una rete di sicurezza, non una seconda gestione: viene eseguita
+// solo dentro il ramo che richiede la finalità 4 già concessa, quindi non può
+// concedere più di quanto l'utente abbia scelto. Se iubenda ha già aggiornato,
+// ripete la stessa cosa; se per qualsiasi ragione non l'ha fatto, evita che
+// Analytics parta in modalità senza cookie contando la metà delle visite.
+// L'ordine conta: prima l'aggiornamento, poi il config.
 gtag('consent','update',{ analytics_storage:'granted' });
 // send_page_view a false: le navigazioni interne le conta PageViewTracker.
 // Lasciandolo attivo si conterebbe due volte la prima pagina e nessuna delle

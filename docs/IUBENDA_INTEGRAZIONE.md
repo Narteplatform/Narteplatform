@@ -127,49 +127,76 @@ dodici su un tetto di venti, quindi c'è margine.
 **Da NON fare:** cercare il generatore di termini e condizioni. Non è in
 Essentials, e i Termini di N'arte restano nel codice — vedi §4.
 
-#### 3.2 Cookie Solution — i due identificativi
+#### 3.2 Cookie Solution — il widget
 
-Servono due numeri, e si trovano entrambi nel **codice di installazione** della
-Cookie Solution:
+Il pannello genera un solo script:
 
-```js
-_iub.csConfiguration = {
-  siteId: 1234567,          // ← NEXT_PUBLIC_IUBENDA_SITE_ID
-  cookiePolicyId: 89012345, // ← NEXT_PUBLIC_IUBENDA_COOKIE_POLICY_ID
-  ...
-}
+```html
+<script src="https://embeds.iubenda.com/widgets/<UUID>.js"></script>
 ```
 
-**Il codice di installazione NON va incollato nel sito.** È già scritto, in
-`components/legal/IubendaCs.tsx`: da qui servono solo i due numeri.
+**Non va incollato nel sito**: serve solo l'UUID, che finisce in
+`NEXT_PUBLIC_IUBENDA_WIDGET_ID`. Lo carica `components/legal/IubendaCs.tsx`.
 
-> **Perché quasi nessuna impostazione del pannello ha effetto sul banner.**
-> La configurazione che conta è quella nel nostro codice, non quella generata dal
-> pannello: consenso per finalità, pulsante di rifiuto allo stesso livello,
-> ritiro esplicito, elenco delle finalità, posizione. Sono già impostate lì, con
-> i valori giusti e motivati. Cambiarle nel pannello non produce alcun effetto —
-> è normale, non è un guasto. Il pannello serve per i **documenti**, per i due
-> **identificativi** e per la **Consent Database**.
+Quel singolo script porta con sé **tre cose**, e questo cambia l'architettura:
 
-> ⚠️ **Una cosa nel pannello va lasciata SPENTA: la modalità consenso di Google
-> automatica** (il «template» di Google Consent Mode). La governa il nostro
-> codice, che imposta tutto a negato prima che qualunque tag Google esista.
-> Attivandola anche lì ci sarebbero due gestori a sovrascriversi a vicenda, con
-> esiti che dipendono dall'ordine di caricamento: funzionanti in prova e
-> imprevedibili in produzione.
+1. **la configurazione del banner** decisa nel pannello;
+2. il **blocco preventivo** degli script di terze parti — intercetta le richieste
+   verso i domini di Google Analytics e di Meta e le trattiene;
+3. la **modalità consenso di Google v2**, che emette da sé i segnali predefiniti
+   e gli aggiornamenti.
+
+Per questo il nostro codice **non scrive più `_iub.csConfiguration` a mano**:
+sarebbero due sorgenti per le stesse impostazioni, e due gestori del consenso
+Google che si sovrascrivono a vicenda.
+
+> ⚠️ **Conseguenza da tenere a mente.** Le impostazioni del banner non sono più
+> nel codice: stanno nel pannello. Se qualcuno le cambia là, il sito cambia
+> comportamento senza che nessun commit lo registri. Lo stato **atteso**,
+> verificato il 29/09/2026 leggendo il widget, è questo:
+>
+> | Impostazione | Valore atteso | Perché conta |
+> |---|---|---|
+> | `perPurposeConsent` | `true` | Misurazione e pubblicità devono essere due scelte separate: il codice legge le finalità 4 e 5 distintamente |
+> | `rejectButtonDisplay` | `true` | Il rifiuto deve costare quanto l'accettazione |
+> | `explicitWithdrawal` | `true` | Il ritiro deve essere un gesto esplicito |
+> | `listPurposes` | `true` | Le finalità vanno elencate, non riassunte |
+> | `askConsentAtCookiePolicyUpdate` | `true` | Se il documento cambia, si richiede il consenso |
+> | Consent Mode v2 | attiva | La gestisce iubenda; il codice non la duplica |
+>
+> Se una di queste cambia, va aggiornata questa tabella — o rimessa a posto.
+
+#### 3.2 bis I documenti — un solo numero
+
+Dagli indirizzi dei documenti serve **solo il numero**:
+
+```
+https://www.iubenda.com/privacy-policy/98989782            ← privacy
+https://www.iubenda.com/privacy-policy/98989782/cookie-policy ← cookie
+```
+
+Va in `NEXT_PUBLIC_IUBENDA_COOKIE_POLICY_ID`. Il secondo indirizzo si ricava dal
+primo: su iubenda la cookie policy non è un documento separato ma una sezione
+dello stesso.
 
 #### 3.3 Consent Database — archivio delle prove
 
 Due cose da fare qui.
 
-**a) Dichiarare i documenti** sotto «Legal notices», con questi identificativi
-**esatti** — se non combaciano, l'API rifiuta la chiamata e le prove non
-arrivano:
+**a) Dichiarare i documenti** sotto «Legal notices». Servono **due** voci, con
+questi identificativi **esatti** — se non combaciano, l'API rifiuta la chiamata e
+le prove non arrivano:
 
-```
-privacy_policy
-terms
-```
+| Identificativo | A cosa punta |
+|---|---|
+| `privacy_policy` | il documento iubenda: `https://www.iubenda.com/privacy-policy/<id>` |
+| `terms` | **la nostra pagina**: `https://narteofficial.it/termini` |
+
+Il secondo è il punto che confonde: un «legal notice» della Consent Database non
+deve essere un documento generato da iubenda. È un'etichetta con un indirizzo,
+e serve a dire *quale testo l'utente aveva davanti quando ha accettato*. I
+Termini di N'arte stanno nel nostro codice, quindi qui si indica il loro
+indirizzo. Nessun upgrade necessario.
 
 **b) Generare la chiave API privata.** Quella pubblica non serve: le prove le
 manda il nostro server, non il browser. Va in `IUBENDA_CONSENT_API_KEY`, **senza**
@@ -187,9 +214,9 @@ prefisso `NEXT_PUBLIC_`.
 Ambiente **Production** (e Preview, se vuoi provarlo prima):
 
 ```
-NEXT_PUBLIC_IUBENDA_SITE_ID=<siteId>
-NEXT_PUBLIC_IUBENDA_COOKIE_POLICY_ID=<cookiePolicyId>
-IUBENDA_CONSENT_API_KEY=<chiave privata>
+NEXT_PUBLIC_IUBENDA_WIDGET_ID=<UUID del widget>
+NEXT_PUBLIC_IUBENDA_COOKIE_POLICY_ID=<numero del documento>
+IUBENDA_CONSENT_API_KEY=<chiave PRIVATA della Consent Database>
 ```
 
 Le altre tre — `NEXT_PUBLIC_IUBENDA_PRIVACY_URL`, `..._COOKIE_URL`,
