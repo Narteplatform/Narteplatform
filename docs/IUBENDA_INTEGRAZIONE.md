@@ -353,11 +353,8 @@ lavoro fatto nel codice, la copertura è piena.**
 
 In ordine di importanza:
 
-1. **Conservazione dei dati** — nessuna retention è attiva. `email_log`
-   conserva gli indirizzi in chiaro senza scadenza, `stripe_webhook_events` il
-   messaggio integrale, e `rate_limits_prune()` esiste ma non è chiamata da alcun
-   cron. Vanno concentrate in una sola rotta, perché `vercel.json` dichiara un
-   solo cron.
+1. **Attivare la cancellazione periodica** — vedi §9. Il lavoro è costruito e
+   gira, ma in **sola conta**: non cancella niente finché non lo si decide.
 2. **Pagine `/criteri-di-posizionamento` e `/segnalazioni`** — se P2B e DSA si
    applicano.
 3. **Attivare la CSP**: `CSP_ENFORCE=1` su Vercel, dopo aver letto i log.
@@ -474,3 +471,49 @@ segnalazione può contenere un token di reimpostazione password nei parametri.
 > qualcosa, tornare indietro è svuotare `CSP_ENFORCE` e ridistribuire — niente
 > revert, niente attesa. Su una policy che può rompere pezzi di pagina in
 > silenzio, la via di fuga vale più dell'eleganza.
+
+
+---
+
+## 9. La conservazione dei dati
+
+Nessun dato veniva mai cancellato: `email_log` conservava gli indirizzi email in
+chiaro di chiunque avesse ricevuto una comunicazione, senza scadenza;
+`stripe_webhook_events` i messaggi integrali di Stripe; e `rate_limits_prune()`
+era una funzione scritta nella migration 0048 e da allora mai chiamata da
+nessuno. L'informativa prometteva periodi di conservazione che nella pratica non
+esistevano: tutto era «per sempre».
+
+Ora `/api/cron/retention` gira ogni notte alle 3:30. **In sola conta.**
+
+### Perché non cancella subito
+
+Perché nessuno può rispondere a priori alla domanda che conta — *quanto stiamo
+per cancellare?* — e una cancellazione su dati di produzione non si annulla. Il
+lavoro quindi legge, conta quante righe supererebbero ciascun periodo, e lo
+scrive nei log con prefisso `[retention]`. Nient'altro.
+
+Primo giro eseguito il 29/09/2026: **zero righe** in tutte le categorie, nessun
+errore. La piattaforma è giovane e niente ha ancora superato i periodi; la cosa
+utile è che tutti i nomi di colonna sono risultati corretti, quindi il conteggio
+misura davvero quello che dice.
+
+### Come si attiva
+
+1. Lasciarla contare per qualche giorno e leggere `[retention]` nei log.
+2. Confrontare i numeri con i periodi proposti in
+   [`REGISTRO_TRATTAMENTI.md`](./REGISTRO_TRATTAMENTI.md) — che sono **ancora una
+   proposta**, in attesa della revisione dell'avvocato.
+3. Solo allora `RETENTION_ENFORCE=1` fra le variabili d'ambiente.
+
+Serve anche `CRON_SECRET`: senza, la rotta risponde 401 a chiunque. A differenza
+del keep-alive — che senza segreto resta aperto di proposito, perché fa solo
+letture innocue — qui il segreto è obbligatorio, perché questa rotta può
+cancellare.
+
+### Cosa NON cancella, e va fatto a mano
+
+I file. Né su bunny.net né su Supabase Storage: il lavoro tocca solo righe di
+database. Quando si cancella una candidatura non approvata, il suo video resta
+dov'è. Per quelli c'è `scripts/bunny-orfani.mjs`, che è un'altra procedura e
+un'altra decisione.
