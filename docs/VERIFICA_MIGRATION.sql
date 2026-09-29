@@ -150,3 +150,48 @@ select policyname as policy, cmd as operazione
 from pg_policies
 where schemaname = 'storage' and tablename = 'objects'
 order by policyname;
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 7. LA TRIGGER DI REGISTRAZIONE È QUELLA GIUSTA?
+-- ═══════════════════════════════════════════════════════════════════════════
+-- ⚠️ È il controllo più importante dopo aver applicato la 0059, e l'unico che
+--    nessuno script esterno può fare: il corpo di una funzione sta in
+--    `pg_proc.prosrc` e PostgREST non lo espone.
+--
+-- IL PROBLEMA. `record_signup_consents()` è definita DUE volte in due file
+-- diversi: nella 0049 (versione originale) e nella 0059, che la ridefinisce
+-- aggiungendole l'aggiornamento di `profiles.legal_version_accepted`. Vince
+-- l'ultima eseguita. Se la 0049 è stata riapplicata DOPO la 0059 — cosa che
+-- capita, perché la 0049 è interamente rieseguibile — la versione della 0059 è
+-- stata sovrascritta in silenzio.
+--
+-- SINTOMO, se è andata così: chi si registra spuntando la casella viene
+-- comunque mandato alla schermata di accettazione al primo accesso, ad
+-- accettare quello che ha appena accettato. Nessun errore, nessun log: solo un
+-- passaggio in più che non dovrebbe esserci.
+--
+-- RIMEDIO: rieseguire dal file 0059 il solo blocco
+-- `create or replace function public.record_signup_consents()`.
+
+select
+  case
+    when prosrc like '%legal_version_accepted%'
+      then 'OK — è la versione della 0059'
+    else 'DA RIFARE — è la versione della 0049, la 0059 è stata sovrascritta'
+  end as stato
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname = 'record_signup_consents';
+
+
+-- Controprova: entrambe le trigger devono esistere su auth.users, e
+-- `on_auth_user_created` deve precedere alfabeticamente l'altra — è da quello
+-- che dipende il fatto che il profilo esista già quando la seconda lo aggiorna.
+
+select tgname as trigger_name
+from pg_trigger
+where tgrelid = 'auth.users'::regclass
+  and not tgisinternal
+order by tgname;
