@@ -265,6 +265,69 @@ const MIGRATION = [
       ],
     ],
   },
+  {
+    file: "0062_consent_kinds.sql",
+    cosa: "Nuovi tipi di consenso (organizzatori, abbonamento, recesso…)",
+    controlli: [
+      ["colonna user_consents.ref", () => colonna("user_consents", "ref")],
+    ],
+  },
+  {
+    file: "0063_content_reports.sql",
+    cosa: "Segnalazioni di contenuti e reclami (DSA)",
+    controlli: [
+      ["tabella content_reports", () => tabella("content_reports")],
+      ["colonna reference", () => colonna("content_reports", "reference")],
+      [
+        "revoke dei privilegi a anon",
+        () => privilegioAnonRevocato("content_reports"),
+      ],
+    ],
+  },
+  {
+    file: "0064_chat_access_log.sql",
+    cosa: "Registro degli accessi del Team alle chat",
+    controlli: [
+      ["tabella chat_access_log", () => tabella("chat_access_log")],
+      ["colonna reason_text", () => colonna("chat_access_log", "reason_text")],
+      [
+        "revoke dei privilegi a anon",
+        () => privilegioAnonRevocato("chat_access_log"),
+      ],
+    ],
+  },
+  {
+    file: "0065_moderation_log.sql",
+    cosa: "Registro delle decisioni di moderazione",
+    controlli: [
+      ["tabella moderation_actions", () => tabella("moderation_actions")],
+      ["colonna notified_at", () => colonna("moderation_actions", "notified_at")],
+      [
+        "revoke dei privilegi a anon",
+        () => privilegioAnonRevocato("moderation_actions"),
+      ],
+    ],
+  },
+  {
+    file: "0066_feedback_moderation.sql",
+    cosa: "Recensioni: moderazione motivata, risposta dell'artista",
+    controlli: [
+      ["colonna feedback.deleted_at", () => colonna("feedback", "deleted_at")],
+      ["colonna feedback.artist_reply", () => colonna("feedback", "artist_reply")],
+      ["colonna feedback.declared_at", () => colonna("feedback", "declared_at")],
+    ],
+  },
+  {
+    file: "0067_account_deletion_safety.sql",
+    cosa: "Cancellazione account senza danni alla controparte; date private",
+    controlli: [
+      ["colonna user_consents.subject_hash", () => colonna("user_consents", "subject_hash")],
+      [
+        "vista booking_requests_public chiusa ad anon",
+        () => privilegioAnonRevocato("booking_requests_public"),
+      ],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };
@@ -311,6 +374,9 @@ pubblicazioni realtime. Vanno controllate a mano nel SQL editor:
   • 0053_calendar_slots_unique.sql  indice univoco sugli slot
   • 0054_calendar_realtime.sql      pubblicazione realtime del calendario
   • 0056 / 0057                     privilegi e policy di Storage
+  • 0061_booking_integrity.sql      trigger sulle transizioni del booking e
+                                    nuova accept_offer_v2 (stesso nome della 0013)
+  • 0062 / 0064 / 0066 / 0067       vincoli, policy e chiavi esterne ricreate
 
 Le query per queste sono in docs/VERIFICA_MIGRATION.sql.
 `);

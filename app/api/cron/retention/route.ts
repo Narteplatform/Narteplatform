@@ -46,6 +46,13 @@ type Regola = {
   giorni: number;
   /** Perché questo periodo e non un altro. */
   motivo: string;
+  /**
+   * Righe da non toccare mai, qualunque sia la data: stato → valori esclusi.
+   * Lo stesso filtro vale per il conteggio e per la cancellazione, così il
+   * numero mostrato in modalità «solo conteggio» è esattamente quello che
+   * verrebbe cancellato.
+   */
+  escludi?: { colonna: string; valori: string[] };
 };
 
 const REGOLE: Regola[] = [
@@ -90,6 +97,10 @@ const REGOLE: Regola[] = [
     colonnaData: "created_at",
     giorni: 365,
     motivo: "candidature non approvate, video inclusi",
+    // Prima la regola non filtrava per esito: attivata, avrebbe cancellato
+    // anche le candidature APPROVATE, che documentano l'ammissione
+    // dell'artista e i consensi dati in quel momento.
+    escludi: { colonna: "status", valori: ["approved"] },
   },
 ];
 
@@ -129,10 +140,13 @@ export async function GET(req: Request) {
   for (const regola of REGOLE) {
     const soglia = new Date(Date.now() - regola.giorni * 86400_000).toISOString();
 
-    const { count, error } = await admin
+    const esclusi = regola.escludi ? `(${regola.escludi.valori.join(",")})` : null;
+    let conteggio = admin
       .from(regola.tabella)
       .select("*", { count: "exact", head: true })
       .lt(regola.colonnaData, soglia);
+    if (regola.escludi && esclusi) conteggio = conteggio.not(regola.escludi.colonna, "in", esclusi);
+    const { count, error } = await conteggio;
 
     if (error) {
       // Una tabella o una colonna che non esiste è un errore di questa rotta,
@@ -160,10 +174,14 @@ export async function GET(req: Request) {
       continue;
     }
 
-    const { error: erroreCancella } = await admin
+    let cancellazione = admin
       .from(regola.tabella)
       .delete()
       .lt(regola.colonnaData, soglia);
+    if (regola.escludi && esclusi) {
+      cancellazione = cancellazione.not(regola.escludi.colonna, "in", esclusi);
+    }
+    const { error: erroreCancella } = await cancellazione;
 
     if (erroreCancella) {
       logger.error(

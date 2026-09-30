@@ -108,7 +108,7 @@ const bookingRequestAdmin = defineTemplate({
             { icon: "chat", label: "Telefono", value: param("contactPhone"), onlyIf: "contactPhone" },
             { icon: "calendar", label: "Data evento", value: param("eventDate") },
             { icon: "pin", label: "Luogo", value: param("city"), onlyIf: "city" },
-            { icon: "euro", label: "Cachet proposto", value: param("budgetLabel"), onlyIf: "budgetLabel" },
+            { icon: "euro", label: "Budget indicato", value: param("budgetLabel"), onlyIf: "budgetLabel" },
             { icon: "gear", label: "Stato", value: param("statusLabel") },
             { icon: "chat", label: "Messaggio", value: param("message"), multiline: true },
           ]),
@@ -135,7 +135,7 @@ const bookingAccepted = defineTemplate({
         `L'artista ha risposto alla tua richiesta ed è interessato alla data.<br />
               La data non è ancora bloccata: si conferma quando trovate l'accordo in chat.`
       ),
-      card([sectionTitle("Dettagli della richiesta"), dataTable(statusRows("Cachet proposto"))].join("\n")),
+      card([sectionTitle("Dettagli della richiesta"), dataTable(statusRows("Budget indicato"))].join("\n")),
       ifParam(
         "message",
         callout({ heading: "Note dall'artista", text: param("message") })
@@ -167,7 +167,7 @@ const bookingDeclined = defineTemplate({
         `${param("artistName")} non è disponibile per la data che hai richiesto.<br />
               Puoi proporgli un'altra data, oppure cercare un altro artista fra quelli su N'Arte.`
       ),
-      card([sectionTitle("Richiesta"), dataTable(statusRows("Cachet proposto"))].join("\n")),
+      card([sectionTitle("Richiesta"), dataTable(statusRows("Budget indicato"))].join("\n")),
       ifParam(
         "message",
         callout({ tone: "warning", heading: "Note dall'artista", text: param("message") })
@@ -201,7 +201,7 @@ const bookingCancelledAdmin = defineTemplate({
               Ci dispiace per il disagio: qui sotto trovi il motivo e i dettagli.`
       ),
       callout({ tone: "danger", heading: "Motivo dell'annullamento", text: param("message") }),
-      card([sectionTitle("Data annullata"), dataTable(statusRows("Cachet concordato"))].join("\n")),
+      card([sectionTitle("Data annullata"), dataTable(statusRows("Compenso annotato dalle parti"))].join("\n")),
       buttonPair(
         { href: param("bookingUrl"), label: "Visualizza la richiesta" },
         { href: param("chatUrl"), label: "Parlane in chat" }
@@ -230,7 +230,7 @@ const bookingCancelledOrganizer = defineTemplate({
         `${param("organizerName")} ha annullato la richiesta per ${param("eventDate")}.<br />
               La data torna libera nel tuo calendario: puoi accettarne altre.`
       ),
-      card([sectionTitle("Richiesta annullata"), dataTable(statusRows("Cachet proposto"))].join("\n")),
+      card([sectionTitle("Richiesta annullata"), dataTable(statusRows("Budget indicato"))].join("\n")),
       ifParam("message", callout({ tone: "warning", heading: "Motivo", text: param("message") })),
       buttonPair({ href: param("bookingUrl"), label: "Vai alle tue richieste" }),
     ].join("\n"),

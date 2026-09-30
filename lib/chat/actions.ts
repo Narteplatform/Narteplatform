@@ -226,6 +226,27 @@ export async function sendOffer(input: ChatOfferInput): Promise<ActionResult> {
   if (gate) return gate;
 
   const admin = createAdminClient();
+
+  // L'offerta va collegata alla richiesta aperta fra le due parti. Senza questo
+  // collegamento accept_offer_v2 creava un SECONDO booking già confermato e
+  // lasciava orfana la trattativa da cui la chat era nata.
+  const { data: conv, error: convErr } = await admin
+    .from("conversations")
+    .select("artist_id, organizer_id")
+    .eq("id", parsed.data.conversation_id)
+    .maybeSingle();
+  if (convErr || !conv) return { ok: false, error: "Conversazione non trovata" };
+  const { data: aperta, error: apertaErr } = await admin
+    .from("booking_requests")
+    .select("id")
+    .eq("artist_id", conv.artist_id)
+    .eq("organizer_id", conv.organizer_id)
+    .in("status", ["pending", "in_trattativa"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (apertaErr) return { ok: false, error: apertaErr.message };
+
   await admin
     .from("messages")
     .update({ offer_status: "superseded" })
@@ -234,6 +255,7 @@ export async function sendOffer(input: ChatOfferInput): Promise<ActionResult> {
     .eq("offer_status", "pending");
 
   const { error } = await admin.from("messages").insert({
+    offer_booking_request_id: aperta?.id ?? null,
     conversation_id: parsed.data.conversation_id,
     sender_id: user.id,
     sender_role: role,

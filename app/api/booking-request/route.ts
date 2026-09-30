@@ -70,27 +70,11 @@ export async function POST(req: Request) {
     // database di produzione; e ogni richiesta fa partire una mail all'indirizzo
     // reale dell'artista, con testo scelto da chi invia — cioè un relay di
     // molestie dal nostro mittente verificato.
-    // Doppia soglia: per indirizzo IP e per email, perché cambiare l'una senza
-    // l'altra è banale.
+    // Soglia per indirizzo IP. Quella per email serviva al ramo che creava
+    // l'account, che non esiste più: ora serve una sessione.
     const freno = await allowByIp(LIMITI.booking);
     if (!freno) {
       return fail(rid, "rate-limit", "Troppe richieste. Riprova fra un'ora.", 429);
-    }
-    // L'email arriva solo da chi non è ancora registrato — ed è proprio il ramo
-    // che crea l'account, quindi quello da frenare più stretto.
-    if (data.email) {
-      const frenoEmail = await checkRateLimit(
-        { ...LIMITI.booking, scope: "booking-email" },
-        emailFingerprint(data.email)
-      );
-      if (!frenoEmail) {
-        return fail(
-          rid,
-          "rate-limit",
-          "Troppe richieste da questo indirizzo. Riprova fra un'ora.",
-          429
-        );
-      }
     }
 
     // --- Env check
@@ -123,108 +107,47 @@ export async function POST(req: Request) {
       data: { user: currentUser },
     } = await supabaseSrv.auth.getUser();
 
-    let userId: string | null = currentUser?.id ?? null;
-    let createdSession = false;
-
+    // Serve un account. La richiesta non crea più un account al volo: quel
+    // percorso lo nasceva con l'email già confermata e senza la dichiarazione
+    // di maggiore età. Chi non è registrato passa dalla registrazione.
     if (!currentUser) {
-      // --- Signup branch
-      if (!data.email || !data.password || !data.displayName) {
-        return fail(rid, "signup-fields", "Compila email, password e nome");
-      }
+      return fail(rid, "login-required", "Accedi o registrati per inviare una richiesta.", 401);
+    }
+    const userId: string = currentUser.id;
+    const createdSession = false;
 
-      const { data: created, error: createErr } = await admin.auth.admin.createUser({
-        email: data.email,
-        password: data.password,
-        email_confirm: true,
-        user_metadata: {
-          role: "organizer",
-          display_name: data.displayName,
-          full_name: data.displayName,
-          // Consenso. Lo schema esige `acceptedTerms: true` per arrivare fin
-          // qui, quindi a questo punto la spunta c'è stata. Questi tre campi
-          // finiscono in `raw_user_meta_data`, dove la trigger
-          // `record_signup_consents` (0049) li legge e scrive le righe di
-          // `user_consents` — le stesse che scriverebbe una registrazione dal
-          // modulo normale.
-          //
-          // Senza di essi l'account nascerebbe muto: creato, confermato e
-          // promosso a organizzatore senza una riga che dica che qualcuno ha
-          // accettato qualcosa. Era il buco più grosso del sito.
-          accepted_terms: true,
-          accepted_marketing: false,
-          legal_version: LEGAL_VERSION,
-        },
+    const { data: profile, error: profileErr } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", currentUser.id)
+      .maybeSingle();
+    if (profileErr) return fail(rid, "profile-lookup", profileErr.message, 500);
+    const role = profile?.role;
+    if (role === "artist") {
+      return fail(rid, "role-artist", "Il profilo artista non può inviare richieste", 403);
+    }
+    if (role === "user") {
+      // Diventare organizzatore significa assumere gli adempimenti dell'evento
+      // (doc. 04): serve un'accettazione esplicita, e va registrata.
+      if (data.acceptedOrganizerTerms !== true) {
+        return fail(rid, "organizer-terms", "Devi accettare le Condizioni per gli organizzatori.");
+      }
+      const { error: promErr } = await admin.rpc("promote_user_to_organizer", {
+        uid: currentUser.id,
       });
-
-      if (createErr || !created.user) {
-        const msg = createErr?.message ?? "Impossibile creare account";
-        // Email già registrata: prova a fare signin
-        if (/already (registered|been registered|exists)/i.test(msg)) {
-          return fail(
-            rid,
-            "signup-conflict",
-            "Email già registrata. Effettua il login e riprova.",
-            409
-          );
-        }
-        return fail(rid, "signup", msg);
+      if (promErr) {
+        logger.error("booking-request", rid, "promote-fail", promErr.message);
       }
-      userId = created.user.id;
-      logger.debug("booking-request", rid, "step=signup-ok", userId);
-
-      // --- Auto-signin via SSR cookies
-      try {
-        const cookieStore = await cookies();
-        const ssr = createServerClient<Database>(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          {
-            cookies: {
-              getAll() {
-                return cookieStore.getAll();
-              },
-              setAll(items) {
-                try {
-                  for (const it of items) {
-                    cookieStore.set(it.name, it.value, it.options);
-                  }
-                } catch (e) {
-                  console.warn("[booking-request]", rid, "cookie-set-fail", e);
-                }
-              },
-            },
-          }
-        );
-        const { error: signinErr } = await ssr.auth.signInWithPassword({
-          email: data.email,
-          password: data.password,
-        });
-        if (signinErr) {
-          console.error("[booking-request]", rid, "auto-signin-fail", signinErr);
-        } else {
-          createdSession = true;
-        }
-      } catch (e) {
-        console.warn("[booking-request]", rid, "auto-signin-exception", e);
-      }
-    } else {
-      // --- Logged-in branch
-      const { data: profile } = await admin
-        .from("profiles")
-        .select("role")
-        .eq("id", currentUser.id)
-        .maybeSingle();
-      const role = profile?.role;
-      if (role === "artist") {
-        return fail(rid, "role-artist", "Il profilo artista non può inviare richieste", 403);
-      }
-      if (role === "user") {
-        const { error: promErr } = await admin.rpc("promote_user_to_organizer", {
-          uid: currentUser.id,
-        });
-        if (promErr) {
-          console.error("[booking-request]", rid, "promote-fail", promErr);
-        }
+      // Con il client dell'utente: record_consent usa auth.uid().
+      const { error: consErr } = await supabaseSrv.rpc("record_consent", {
+        p_kind: "condizioni_organizzatori",
+        p_version: LEGAL_VERSION,
+        p_accepted: true,
+      });
+      if (consErr) {
+        // Tipicamente la migration 0062 non ancora applicata. L'accettazione
+        // resta nel log applicativo; non si blocca la richiesta.
+        logger.warn("booking-request", rid, "consenso organizzatore non registrato:", consErr.message);
       }
     }
 
@@ -240,7 +163,6 @@ export async function POST(req: Request) {
 
     if (!organizer) {
       const display =
-        data.displayName ||
         currentUser?.user_metadata?.full_name ||
         currentUser?.email?.split("@")[0] ||
         "Organizzatore";
@@ -325,7 +247,7 @@ export async function POST(req: Request) {
         artistEmail = u?.user?.email ?? null;
       }
       const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-      const requesterEmail = data.email ?? currentUser?.email ?? "";
+      const requesterEmail = currentUser?.email ?? "";
       await Promise.allSettled([
         artistEmail
           ? sendEmail({

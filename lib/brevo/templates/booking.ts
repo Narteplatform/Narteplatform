@@ -6,7 +6,7 @@
  *         "ARTISTA HA ACCETTATO RICHIESTA.png".
  *
  * Le tre schede dati sono quasi identiche: cambiano l'ordine delle prime
- * righe e l'etichetta del cachet. Le righe comuni stanno in `eventRows()`,
+ * righe e l'etichetta del budget/compenso. Le righe comuni stanno in `eventRows()`,
  * così una correzione non va replicata tre volte.
  *
  * Righe condizionali: soundcheck, tipologia evento, durata e richieste
@@ -96,7 +96,7 @@ const bookingRequestArtist = defineTemplate({
             ...organizerRows(),
             { icon: "star", label: "Artista richiesto", value: param("artistName") },
             ...eventRows(),
-            { icon: "euro", label: "Cachet proposto", value: param("budgetLabel"), onlyIf: "budgetLabel" },
+            { icon: "euro", label: "Budget indicato", value: param("budgetLabel"), onlyIf: "budgetLabel" },
             { icon: "timer", label: "Durata performance", value: param("durationLabel"), onlyIf: "durationLabel" },
             { icon: "gear", label: "Richieste tecniche", value: param("technicalNotes"), onlyIf: "technicalNotes" },
             { icon: "chat", label: "Messaggio", value: param("message"), multiline: true },
@@ -158,7 +158,7 @@ const bookingRequestReceipt = defineTemplate({
             { icon: "star", label: "Artista contattato", value: param("artistName") },
             ...organizerRows(),
             ...eventRows(),
-            { icon: "euro", label: "Cachet proposto", value: param("budgetLabel"), onlyIf: "budgetLabel" },
+            { icon: "euro", label: "Budget indicato", value: param("budgetLabel"), onlyIf: "budgetLabel" },
             { icon: "timer", label: "Durata performance", value: param("durationLabel"), onlyIf: "durationLabel" },
             { icon: "gear", label: "Stato richiesta", value: param("statusLabel") },
             { icon: "chat", label: "Messaggio", value: param("message"), multiline: true },
@@ -223,7 +223,7 @@ const bookingConfirmed = defineTemplate({
             { icon: "star", label: "Artista confermato", value: param("artistName") },
             ...organizerRows(),
             ...eventRows(),
-            { icon: "euro", label: "Cachet concordato", value: param("priceLabel"), onlyIf: "priceLabel" },
+            { icon: "euro", label: "Compenso annotato dalle parti", value: param("priceLabel"), onlyIf: "priceLabel" },
             { icon: "timer", label: "Durata performance", value: param("durationLabel"), onlyIf: "durationLabel" },
             { icon: "gear", label: "Stato richiesta", value: param("statusLabel") },
             { icon: "chat", label: "Messaggio finale", value: param("message"), multiline: true },

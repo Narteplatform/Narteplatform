@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireRole } from "@/lib/auth/guards";
+import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/server";
 import { conversationBlockReasonSchema } from "@/lib/validators/schemas";
+import { registraDecisione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
+import { logger } from "@/lib/logger";
 import type { Role } from "@/lib/supabase/types";
 
 type ActionErr = { ok: false; error: string };
@@ -69,7 +71,7 @@ export async function blockConversationUser(input: {
   target: "artist" | "organizer";
   reason: string;
 }): Promise<ActionResult<{ blockId: string }>> {
-  const admin_user = await requireRole(["superadmin"]);
+  const admin_user = await requireAdminPageAccess("chat");
 
   if (input.target !== "artist" && input.target !== "organizer") {
     return { ok: false, error: "Destinatario del blocco non valido" };
@@ -77,6 +79,11 @@ export async function blockConversationUser(input: {
   const parsedReason = conversationBlockReasonSchema.safeParse(input.reason);
   if (!parsedReason.success) {
     return { ok: false, error: parsedReason.error.issues[0]?.message ?? "Motivazione non valida" };
+  }
+  // La motivazione viene inviata all'interessato e registrata: stesso minimo
+  // di lib/moderation/decisioni.ts.
+  if (parsedReason.data.length < MOTIVAZIONE_MIN) {
+    return { ok: false, error: `La motivazione deve avere almeno ${MOTIVAZIONE_MIN} caratteri.` };
   }
 
   const parties = await getConversationParties(input.conversationId);
@@ -133,8 +140,27 @@ export async function blockConversationUser(input: {
     // Il blocco è comunque efficace (assertNotBlocked legge conversation_blocks,
     // non il messaggio): un problema sul messaggio di sistema non deve far
     // sembrare fallita l'operazione di moderazione.
-    console.error("[chat] messaggio system blocco:", msgErr);
+    logger.error("chat", "messaggio system blocco:", msgErr.message);
   }
+
+  // Registro e comunicazione (art. 17 DSA). Il blocco è già efficace: un
+  // problema qui si segnala nei log ma non lo annulla.
+  const esito = await registraDecisione({
+    actorId: admin_user.id,
+    targetType: "conversazione",
+    targetId: input.conversationId,
+    action: "blocco_chat",
+    reason: parsedReason.data,
+    affectedUserId: blockedUserId,
+    affectedName: target.name,
+    notify: {
+      decision: "Abbiamo limitato la tua possibilità di scrivere in una conversazione.",
+      target: `Conversazione tra ${artist.name} e ${organizer.name}`,
+      consequences:
+        "Non puoi inviare messaggi, offerte o allegati in questa conversazione finché il blocco non viene sollevato. Le altre conversazioni non sono toccate.",
+    },
+  });
+  if (!esito.ok) logger.warn("chat", "decisione di blocco non registrata:", esito.error);
 
   revalidateChatRoutes(input.conversationId);
   return { ok: true, blockId: inserted.id };
@@ -148,7 +174,7 @@ export async function unblockConversationUser(input: {
   blockId: string;
   note?: string;
 }): Promise<ActionResult> {
-  const admin_user = await requireRole(["superadmin"]);
+  const admin_user = await requireAdminPageAccess("chat");
 
   let note: string | null = null;
   if (input.note && input.note.trim()) {
@@ -200,7 +226,21 @@ export async function unblockConversationUser(input: {
       kind: "system",
       body: `Un amministratore ha sbloccato ${name} in questa conversazione.${suffix}`,
     });
-    if (msgErr) console.error("[chat] messaggio system sblocco:", msgErr);
+    if (msgErr) logger.error("chat", "messaggio system sblocco:", msgErr.message);
+
+    const esito = await registraDecisione({
+      actorId: admin_user.id,
+      targetType: "conversazione",
+      targetId: block.conversation_id,
+      action: "sblocco_chat",
+      reason: note ?? "Blocco sollevato dal Team senza ulteriori note",
+      affectedUserId: block.blocked_user_id,
+      affectedName: name,
+      // Un blocco sollevato è un ripristino, non una limitazione: si registra
+      // senza scrivere all'interessato, che lo vede dal messaggio in chat.
+      notify: false,
+    });
+    if (!esito.ok) logger.warn("chat", "sblocco non registrato:", esito.error);
   }
 
   revalidateChatRoutes(block.conversation_id);

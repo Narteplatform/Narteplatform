@@ -242,8 +242,8 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
           {...titleAnim(0.2)}
           className="mt-4 max-w-2xl text-pretty text-[1.1rem] text-palco/75 sm:mt-5 sm:text-base md:text-lg"
         >
-          Cerca tra centinaia di artisti per genere, tipologia e disponibilità e
-          contattali per la tua serata!
+          Sfoglia gli artisti per genere e tipologia e contattali per la tua
+          serata!
         </motion.p>
 
         {/* Search bar */}

@@ -6,7 +6,7 @@ export const ORGANIZZATORI: HelpCategory = {
   slug: "organizzatori",
   title: "Per organizzatori",
   description:
-    "Cercare artisti, inviare richieste, condurre la trattativa e gestire le date confermate. Per locali, festival, brand e privati.",
+    "Cercare artisti, inviare richieste, scrivere in chat con gli artisti e gestire le date confermate. Per locali, festival, brand e privati.",
   icon: "users",
   audience: "organizer",
   articles: [
@@ -39,7 +39,7 @@ export const ORGANIZZATORI: HelpCategory = {
   <li><strong>I requisiti tecnici</strong> — cosa serve come impianto, palco, alimentazione. Vedi <a href="/help/organizzatori/guida-rider-tecnico">la guida al rider tecnico</a>.</li>
   <li><strong>La fascia di prezzo</strong> — visibile agli organizzatori. È indicativa, non un listino.</li>
   <li><strong>Il calendario</strong> — le date già occupate, così eviti di chiedere l'impossibile.</li>
-  <li><strong>Le recensioni</strong> — lasciate da altri organizzatori dopo date reali svolte tramite N'arte.</li>
+  <li><strong>Le recensioni</strong> — lasciate da altri organizzatori dopo una data confermata su N'arte e passata. N'arte non verifica che l'evento si sia effettivamente svolto. Compaiono sul profilo solo se l'artista ha il piano Pro o Max.</li>
 </ol>
 
 <h2>Un consiglio pratico</h2>
@@ -88,7 +88,7 @@ export const ORGANIZZATORI: HelpCategory = {
   <li>L'artista riceve un'email con il riepilogo della richiesta.</li>
   <li>La richiesta compare in <strong>/organizzatore/richieste</strong>, scheda "In attesa".</li>
   <li>L'artista <strong>accetta</strong> la trattativa (anche con una controproposta) oppure <strong>rifiuta</strong>. In entrambi i casi ti arriva un'email.</li>
-  <li>Se accetta si apre la <strong>chat</strong>: lì si concordano i dettagli.</li>
+  <li>Se accetta e ha il piano Pro o Max si apre la <strong>chat</strong>, dove concordate i dettagli fra voi (N'arte non partecipa alla trattativa). Con un artista sul piano Free non c'è chat: ricevi comunque la risposta via email.</li>
   <li>Quando siete d'accordo, <strong>la conferma finale la dai tu</strong>.</li>
 </ol>
 
@@ -132,7 +132,7 @@ export const ORGANIZZATORI: HelpCategory = {
   <li>La data viene <strong>bloccata sul calendario</strong> dell'artista: nessun altro può prenotarlo in quel giorno.</li>
   <li>Entrambi ricevete un'email di conferma.</li>
   <li>L'evento compare nel tuo <a href="/help/organizzatori/calendario-organizzatore">calendario</a>.</li>
-  <li>Si sblocca il box del <a href="/help/organizzatori/prezzo-definitivo">prezzo definitivo</a>.</li>
+  <li>Si sblocca il box del <a href="/help/organizzatori/prezzo-definitivo">compenso concordato – promemoria</a>.</li>
   <li>Dopo la data potrai <a href="/help/organizzatori/lasciare-recensione">lasciare una recensione</a>.</li>
 </ul>
 
@@ -225,7 +225,7 @@ export const ORGANIZZATORI: HelpCategory = {
 <p>Un annullamento isolato e comunicato bene non ha alcuna conseguenza: capita, ed è normale. Diverso è un <strong>comportamento ripetuto</strong>: annullare sistematicamente date confermate danneggia gli artisti e la credibilità della piattaforma, e il team può intervenire fino a limitare l'account. Vedi il <a href="/help/policy/codice-condotta">codice di condotta</a>.</p>
 
 <h2>E se è l'artista ad annullare?</h2>
-<p>Vale lo stesso principio, a parti invertite. Se un artista si tira indietro su una data confermata e non trovate un accordo, <a href="/contatti">segnalacelo</a>: il team interviene sulla data e valuta il comportamento.</p>
+<p>Vale lo stesso principio, a parti invertite. Se un artista si tira indietro su una data confermata e non trovate un accordo, <a href="/segnalazioni">segnalacelo</a>: il team interviene sulla data e valuta il comportamento.</p>
 `,
     },
 
@@ -324,7 +324,7 @@ export const ORGANIZZATORI: HelpCategory = {
 <p>Un voto da <strong>1 a 5 stelle</strong> e un commento scritto obbligatorio.</p>
 
 <h2>Dove finisce</h2>
-<p>Sul <strong>profilo pubblico dell'artista</strong>, con il tuo nome, insieme alla media e al numero di recensioni. È visibile a tutti gli altri organizzatori.</p>
+<p>Sul <strong>profilo dell'artista</strong>, con il tuo nome, insieme alla media e al numero di recensioni. Compare sul profilo pubblico solo se l'artista ha il piano Pro o Max; tutti gli utenti registrati possono vederla.</p>
 
 <h2>Come scriverne una utile</h2>
 <p>Le recensioni generiche non aiutano nessuno. Quelle che servono davvero rispondono alle domande che si fa il prossimo organizzatore:</p>
@@ -355,9 +355,9 @@ export const ORGANIZZATORI: HelpCategory = {
 
     {
       slug: "prezzo-definitivo",
-      title: "Il prezzo definitivo di una data",
+      title: "Compenso concordato – promemoria",
       excerpt:
-        "A cosa serve registrare il compenso pattuito, come funziona la doppia conferma e perché non è un pagamento.",
+        "A cosa serve annotare il compenso concordato, come funziona la doppia conferma e perché N'arte non ne è parte e non è un pagamento.",
       updatedAt: UPDATED,
       related: [
         "gestire-trattativa",
@@ -366,24 +366,24 @@ export const ORGANIZZATORI: HelpCategory = {
       ],
       content: `
 <h2>Cos'è</h2>
-<p>Sulle date <strong>confermate</strong> compare un riquadro in cui registrare il <strong>compenso realmente pattuito</strong>. È visibile a entrambe le parti, artista e organizzatore.</p>
-<p>Serve perché il budget indicato nella richiesta iniziale è quasi sempre una fascia indicativa, e durante la trattativa cambia. Il prezzo definitivo mette per iscritto il numero su cui vi siete accordati.</p>
+<p>Sulle date <strong>confermate</strong> compare il riquadro <strong>«Compenso concordato – promemoria»</strong>, in cui annotare il compenso pattuito fra voi. È visibile a entrambe le parti, artista e organizzatore. È un'<strong>annotazione fra le parti</strong>: N'arte non è parte dell'accordo e non gestisce pagamenti.</p>
+<p>Serve perché il budget indicato nella richiesta iniziale è quasi sempre una fascia indicativa, e durante la trattativa cambia. Il promemoria mette per iscritto il numero su cui vi siete accordati.</p>
 
 <h2>Come funziona la doppia conferma</h2>
 <ol>
-  <li>Una delle due parti preme <strong>"Inserisci prezzo"</strong> e scrive la cifra concordata.</li>
+  <li>Una delle due parti preme <strong>"Inserisci prezzo"</strong> e scrive la cifra concordata (o la ritira, se non è ancora stata confermata).</li>
   <li>L'altra vede la proposta e preme <strong>"Conferma"</strong>.</li>
-  <li>Da quel momento il prezzo risulta <strong>confermato da entrambi</strong>.</li>
+  <li>Da quel momento l'importo risulta <strong>confermato da entrambi</strong>.</li>
 </ol>
 <p><strong>Non puoi confermare la tua stessa proposta</strong>: serve per forza l'assenso dell'altro. È tutto il senso della funzione.</p>
-<p>Il valore si può modificare o azzerare in seguito, se cambiano gli accordi.</p>
+<p>Una proposta non ancora confermata si può ritirare. Un importo confermato da entrambi <strong>non si cancella da soli</strong>: se cambiano gli accordi si può solo proporre un nuovo importo, che l'altra parte deve confermare.</p>
 
 <h2>Cosa NON è</h2>
-<p>Va detto chiaramente per evitare fraintendimenti: <strong>non è un pagamento</strong>. Registrare il prezzo non trasferisce denaro, non attiva un addebito e non costituisce una garanzia.</p>
+<p>Va detto chiaramente per evitare fraintendimenti: <strong>non è un pagamento</strong>. Annotare l'importo non trasferisce denaro, non attiva un addebito e non costituisce una garanzia.</p>
 <p>Il compenso viene pagato direttamente dall'organizzatore all'artista, fuori dalla piattaforma, nei modi che avete concordato. N'arte non incassa e non intermedia nulla: vedi <a href="/help/pagamenti/modalita-pagamento">come viene pagato il compenso</a>.</p>
 
 <h2>Perché usarlo comunque</h2>
-<p>Perché è una <strong>traccia condivisa e datata</strong> di quanto era stato pattuito, che nessuna delle due parti può modificare da sola. Se mesi dopo nasce un disaccordo sulla cifra, è lì. Costa dieci secondi e toglie di mezzo la discussione più sgradevole che ci sia.</p>
+<p>Perché è una <strong>traccia condivisa e datata</strong> di quanto era stato pattuito, che nessuna delle due parti può modificare da sola una volta confermata. Non è un contratto. Se mesi dopo nasce un disaccordo sulla cifra, è lì. Costa dieci secondi e toglie di mezzo la discussione più sgradevole che ci sia.</p>
 <p>Vale la pena compilarlo insieme al resto degli accordi: vedi <a href="/help/booking/contratto-modello">cosa mettere per iscritto prima di una data</a>.</p>
 `,
     },

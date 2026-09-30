@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { confermaCancellazione } from "@/lib/legal/cancellazione";
+import { statoRichiesta } from "@/lib/legal/cancellazione";
+import { confermaCancellazioneAction } from "./_actions";
 
 export const metadata = { title: "Cancellazione account — N'arte" };
 export const dynamic = "force-dynamic";
@@ -10,33 +11,50 @@ export const dynamic = "force-dynamic";
  * NON RICHIEDE UNA SESSIONE, ed è deliberato: chi possiede il token ha accesso
  * alla casella di posta dell'interessato, che è la prova che serviva. Obbligare
  * a rifare l'accesso significherebbe chiedere di autenticarsi per esercitare il
- * diritto di andarsene — e chi apre il messaggio dal telefono, con la sessione
- * aperta altrove, si troverebbe bloccato proprio nel momento in cui vuole
- * chiudere.
+ * diritto di andarsene.
  *
- * ⚠️ Questa pagina HA UN EFFETTO. È un caso raro in cui una richiesta GET
- * modifica qualcosa, e va detto: aprirla conferma. Il motivo è che deve
- * funzionare da un collegamento in un'email, dove non c'è un modulo da inviare.
- * La protezione è il token — lungo, casuale, a scadenza — e il fatto che
- * l'effetto sia reversibile per trenta giorni.
+ * APRIRE LA PAGINA NON HA EFFETTI. Mostra lo stato della richiesta e un
+ * pulsante; la disattivazione parte solo dall'invio del modulo (server action,
+ * POST). Prima bastava aprire il collegamento, e gli antivirus della posta o le
+ * anteprime che seguono i link potevano disattivare un account al posto del suo
+ * titolare.
  */
+type Motivo = "non-trovata" | "scaduta" | "annullata" | "errore";
+const MOTIVI: readonly Motivo[] = ["non-trovata", "scaduta", "annullata", "errore"];
+
 export default async function ConfermaCancellazionePage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string | string[] }>;
+  searchParams: Promise<{ token?: string | string[]; esito?: string | string[] }>;
 }) {
-  const grezzo = (await searchParams).token;
-  const token = Array.isArray(grezzo) ? grezzo[0] : grezzo;
+  const sp = await searchParams;
+  const primo = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  const token = primo(sp.token);
+  const esitoInvio = primo(sp.esito);
 
-  const esito = token
-    ? await confermaCancellazione(token)
-    : ({ ok: false, motivo: "non-trovata" } as const);
+  let contenuto: React.ReactNode;
+  if (esitoInvio === "confermata") {
+    contenuto = <Confermata />;
+  } else if (esitoInvio && (MOTIVI as readonly string[]).includes(esitoInvio)) {
+    contenuto = <NonConfermata motivo={esitoInvio as Motivo} />;
+  } else if (!token) {
+    contenuto = <NonConfermata motivo="non-trovata" />;
+  } else {
+    const stato = await statoRichiesta(token);
+    contenuto = !stato.valida ? (
+      <NonConfermata motivo={stato.motivo} />
+    ) : stato.giaConfermata ? (
+      <Confermata />
+    ) : (
+      <DaConfermare token={token} />
+    );
+  }
 
   return (
     <article className="pb-24 pt-28 md:pt-36">
       <div className="container-narte">
         <div className="mx-auto max-w-2xl">
-          {esito.ok ? <Confermata /> : <NonConfermata motivo={esito.motivo} />}
+          {contenuto}
 
           <p className="mt-10 border-t border-border pt-6 text-sm text-muted-foreground">
             Per qualunque cosa,{" "}
@@ -48,6 +66,41 @@ export default async function ConfermaCancellazionePage({
         </div>
       </div>
     </article>
+  );
+}
+
+function DaConfermare({ token }: { token: string }) {
+  return (
+    <>
+      <p className="accent-label mb-3">cancellazione account</p>
+      <h1 className="display-xl text-3xl md:text-4xl">Confermi la cancellazione?</h1>
+      <div className="mt-6 space-y-4 text-muted-foreground">
+        <p>
+          Premendo il pulsante il tuo accesso viene chiuso subito e il profilo pubblico, se ne
+          hai uno, non è più visibile. Se hai un abbonamento attivo non verrà rinnovato: resta
+          valido fino alla fine del periodo già pagato.
+        </p>
+        <p>
+          La rimozione definitiva dei dati avviene entro trenta giorni: fino ad allora puoi
+          ripensarci scrivendoci.
+        </p>
+      </div>
+      <form action={confermaCancellazioneAction} className="mt-8">
+        <input type="hidden" name="token" value={token} />
+        <button
+          type="submit"
+          className="rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background hover:opacity-90"
+        >
+          Sì, cancella il mio account
+        </button>
+      </form>
+      <Link
+        href="/account/i-miei-dati"
+        className="mt-4 inline-block text-sm underline underline-offset-4"
+      >
+        No, torna indietro
+      </Link>
+    </>
   );
 }
 

@@ -159,7 +159,7 @@ export default async function OrganizerRequestsPage({
                     <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</Badge>
                     {priceConfirmed && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-                        <CheckCircle2 className="size-3" /> Prezzo €{Number(r.final_price)}
+                        <CheckCircle2 className="size-3" /> Compenso annotato €{Number(r.final_price)}
                       </span>
                     )}
                   </div>

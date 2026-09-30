@@ -62,7 +62,7 @@ export async function StarsSection() {
           <div className="mb-4 flex flex-col items-center gap-6 md:flex-row md:items-end md:justify-between">
             <Reveal delay={0.1}>
               <h2 className="display-xl text-balance text-4xl text-notte md:text-6xl">
-                Sfoglia tra centinaia di artisti e scegli il più adatto a te
+                Sfoglia gli artisti e scegli il più adatto a te
               </h2>
             </Reveal>
             <Reveal delay={0.2}>
@@ -72,9 +72,21 @@ export async function StarsSection() {
             </Reveal>
           </div>
           <Reveal delay={0.25}>
-            <p className="mx-auto mb-10 max-w-xl text-pretty text-sm text-notte/70 md:mx-0 md:text-base">
+            <p className="mx-auto mb-4 max-w-xl text-pretty text-sm text-notte/70 md:mx-0 md:text-base">
               Iscriviti per sbloccare i dettagli degli artisti e la possibilità di
               fare una richiesta di booking.
+            </p>
+          </Reveal>
+          <Reveal delay={0.3}>
+            <p className="mx-auto mb-10 max-w-xl text-pretty text-xs text-notte/70 md:mx-0">
+              Selezione automatica: prima gli artisti con piano Max e Pro, a pagamento, poi i
+              più recenti.{" "}
+              <Link
+                href="/criteri-di-posizionamento"
+                className="font-medium text-notte underline underline-offset-4 hover:text-accent"
+              >
+                Come funziona
+              </Link>
             </p>
           </Reveal>
         </div>

@@ -6,7 +6,9 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe/client";
 import { priceIdFor } from "@/lib/stripe/prices";
-import type { BillingInterval, PaidTier } from "@/lib/billing/plans";
+import { formatPrice, PLAN_LABELS, type BillingInterval, type PaidTier } from "@/lib/billing/plans";
+import { LEGAL_VERSION } from "@/lib/legal/content";
+import { logger } from "@/lib/logger";
 
 /**
  * Checkout e fatturazione.
@@ -16,10 +18,41 @@ import type { BillingInterval, PaidTier } from "@/lib/billing/plans";
  *     ereditano il piano.
  */
 
-const checkoutSchema = z.object({
-  tier: z.enum(["pro", "max"]),
-  interval: z.enum(["month", "year"]),
-});
+/**
+ * Oltre a piano e periodicità, il checkout raccoglie le accettazioni del doc. 08
+ * del fascicolo legale (punto G):
+ *   G1  condizioni di abbonamento — sempre;
+ *   G2  richiesta di esecuzione immediata — il consumatore, perché in caso di
+ *       recesso paghi solo la parte di servizio fruita (art. 57, c. 3 Cod. consumo);
+ *   G3  approvazione specifica ex artt. 1341-1342 c.c. — chi ha partita IVA.
+ */
+const checkoutSchema = z
+  .object({
+    tier: z.enum(["pro", "max"]),
+    interval: z.enum(["month", "year"]),
+    acquirente: z.enum(["consumatore", "professionista"]),
+    accettaCondizioni: z.literal(true, {
+      errorMap: () => ({ message: "Devi accettare le Condizioni di abbonamento." }),
+    }),
+    esecuzioneImmediata: z.boolean().default(false),
+    clausoleSpecifiche: z.boolean().default(false),
+  })
+  .superRefine((v, ctx) => {
+    if (v.acquirente === "consumatore" && !v.esecuzioneImmediata) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Per iniziare subito serve la richiesta di esecuzione immediata.",
+        path: ["esecuzioneImmediata"],
+      });
+    }
+    if (v.acquirente === "professionista" && !v.clausoleSpecifiche) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Chi si abbona con partita IVA deve approvare le clausole indicate.",
+        path: ["clausoleSpecifiche"],
+      });
+    }
+  });
 
 async function requireArtistUser() {
   const supabase = await createClient();
@@ -73,12 +106,19 @@ async function liveSubscription(userId: string) {
 export async function createCheckoutSession(input: {
   tier: PaidTier;
   interval: BillingInterval;
+  acquirente: "consumatore" | "professionista";
+  accettaCondizioni: boolean;
+  esecuzioneImmediata?: boolean;
+  clausoleSpecifiche?: boolean;
 }) {
   const user = await requireArtistUser();
   if (!user) return { ok: false as const, error: "Non autorizzato" };
 
   const parsed = checkoutSchema.safeParse(input);
-  if (!parsed.success) return { ok: false as const, error: "Piano non valido" };
+  if (!parsed.success) {
+    return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+  }
+  const { acquirente } = parsed.data;
 
   // Doppio abbonamento prevenuto ALLA RADICE, non con un unique constraint sul
   // ledger: un vincolo farebbe fallire il webhook (500 in loop) invece di
@@ -99,6 +139,15 @@ export async function createCheckoutSession(input: {
     const price = priceIdFor(parsed.data.tier, parsed.data.interval);
     const site = getSiteUrl();
 
+    // Ciò che è stato accettato viaggia anche nei metadata della subscription:
+    // serve al recesso (solo il consumatore ne ha diritto, e il rimborso
+    // dipende dalla richiesta di esecuzione immediata) e all'email di conferma.
+    const accettazioni = {
+      user_id: user.id,
+      acquirente,
+      condizioni_versione: LEGAL_VERSION,
+      esecuzione_immediata: parsed.data.esecuzioneImmediata ? "1" : "0",
+    };
     const session = await getStripe().checkout.sessions.create({
       mode: "subscription",
       customer,
@@ -108,15 +157,45 @@ export async function createCheckoutSession(input: {
       // sulla subscription il webhook dovrebbe risalire per customer. Ridondanza
       // voluta.
       client_reference_id: user.id,
-      metadata: { user_id: user.id },
-      subscription_data: { metadata: { user_id: user.id } },
+      metadata: accettazioni,
+      subscription_data: { metadata: accettazioni },
       locale: "it",
       allow_promotion_codes: true,
+      // Dati necessari alla fattura elettronica (regime forfettario: nessuna
+      // IVA, ma la fattura va emessa verso chiunque, anche i privati).
+      billing_address_collection: "required",
+      customer_update: { name: "auto", address: "auto" },
+      tax_id_collection: { enabled: acquirente === "professionista" },
+      custom_text: {
+        submit: {
+          message:
+            "Abbonandoti accetti le Condizioni di abbonamento N'arte. Si rinnova automaticamente finché non disdici; puoi disdire quando vuoi dalla pagina Abbonamento.",
+        },
+      },
       success_url: `${site}/dashboard/abbonamento?checkout=success`,
       cancel_url: `${site}/dashboard/abbonamento?checkout=cancelled`,
     });
     if (!session.url) return { ok: false as const, error: "Stripe non ha restituito un URL" };
     url = session.url;
+
+    // Prova delle accettazioni, legata alla sessione di pagamento. Se il
+    // registro non accetta ancora questi tipi (migration 0062 non applicata)
+    // restano i metadata sulla subscription; il pagamento non si blocca.
+    const supabase = await createClient();
+    const daRegistrare: Array<"condizioni_abbonamento" | "esecuzione_immediata" | "clausole_specifiche"> = [
+      "condizioni_abbonamento",
+    ];
+    if (parsed.data.esecuzioneImmediata) daRegistrare.push("esecuzione_immediata");
+    if (parsed.data.clausoleSpecifiche) daRegistrare.push("clausole_specifiche");
+    for (const kind of daRegistrare) {
+      const { error: consErr } = await supabase.rpc("record_consent", {
+        p_kind: kind,
+        p_version: LEGAL_VERSION,
+        p_accepted: true,
+        p_ref: session.id,
+      });
+      if (consErr) logger.warn("abbonamento", `accettazione ${kind} non registrata:`, consErr.message);
+    }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error("[abbonamento] createCheckoutSession", message);
@@ -157,4 +236,179 @@ export async function createBillingPortalSession() {
   }
 
   redirect(url);
+}
+
+// =========================================
+// Diritto di recesso del consumatore (doc. 02, art. 7)
+// =========================================
+//
+// Quattordici giorni dalla conclusione del contratto, solo per chi si è
+// abbonato come consumatore. Se aveva chiesto l'esecuzione immediata paga la
+// parte di servizio fruita fino al recesso e riceve il resto (art. 57, c. 3
+// Cod. consumo); altrimenti riceve l'intero importo.
+
+const GIORNI_RECESSO = 14;
+const GIORNO_MS = 86_400_000;
+
+export type StatoRecesso =
+  | { disponibile: false }
+  | { disponibile: true; scade: string; piano: string };
+
+async function subscriptionDelConsumatore(userId: string) {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("subscriptions")
+    .select("stripe_subscription_id, tier, billing_interval, status")
+    .eq("user_id", userId)
+    .in("status", ["trialing", "active", "past_due"])
+    .limit(1);
+  if (error) {
+    logger.error("abbonamento", "lettura abbonamento per il recesso:", error.message);
+    return null;
+  }
+  const riga = (data ?? [])[0];
+  if (!riga) return null;
+  const sub = await getStripe().subscriptions.retrieve(riga.stripe_subscription_id);
+  if (sub.metadata?.acquirente !== "consumatore") return null;
+  if (sub.metadata?.recesso) return null;
+  const inizio = sub.start_date * 1000;
+  const scade = inizio + GIORNI_RECESSO * GIORNO_MS;
+  if (Date.now() > scade) return null;
+  return { sub, riga, scade };
+}
+
+/** Il recesso è ancora esercitabile? Sola lettura, per la pagina Abbonamento. */
+export async function statoRecesso(): Promise<StatoRecesso> {
+  const user = await requireArtistUser();
+  if (!user) return { disponibile: false };
+  try {
+    const trovata = await subscriptionDelConsumatore(user.id);
+    if (!trovata) return { disponibile: false };
+    return {
+      disponibile: true,
+      scade: new Date(trovata.scade).toISOString(),
+      piano: PLAN_LABELS[trovata.riga.tier as PaidTier] ?? "Abbonamento",
+    };
+  } catch (e) {
+    logger.error("abbonamento", "stato recesso:", e instanceof Error ? e.message : String(e));
+    return { disponibile: false };
+  }
+}
+
+export async function recediAbbonamento(): Promise<
+  { ok: true; rimborsoCent: number; rimborsoInCorso: boolean } | { ok: false; error: string }
+> {
+  const user = await requireArtistUser();
+  if (!user) return { ok: false, error: "Non autorizzato" };
+
+  const stripe = getStripe();
+  let trovata: Awaited<ReturnType<typeof subscriptionDelConsumatore>>;
+  try {
+    trovata = await subscriptionDelConsumatore(user.id);
+  } catch (e) {
+    logger.error("abbonamento", "recesso, lettura:", e instanceof Error ? e.message : String(e));
+    return { ok: false, error: "Non siamo riusciti a leggere l'abbonamento. Riprova o scrivici." };
+  }
+  if (!trovata) {
+    return { ok: false, error: "Il recesso non è più disponibile per questo abbonamento." };
+  }
+  const { sub, riga } = trovata;
+  const ricevutoIl = new Date();
+
+  // Importo pagato e pagamento da rimborsare: l'ultima fattura pagata.
+  const fatture = await stripe.invoices.list({ subscription: sub.id, status: "paid", limit: 1 });
+  const fattura = fatture.data[0];
+  const pagato = fattura?.amount_paid ?? 0;
+
+  let dovuto = 0;
+  if (sub.metadata?.esecuzione_immediata === "1" && fattura) {
+    const item = sub.items.data[0];
+    const inizio = (item?.current_period_start ?? sub.start_date) * 1000;
+    const fine = (item?.current_period_end ?? sub.start_date) * 1000;
+    const durata = Math.max(fine - inizio, GIORNO_MS);
+    const fruito = Math.min(Math.max(ricevutoIl.getTime() - inizio, 0), durata);
+    dovuto = Math.round((pagato * fruito) / durata);
+  }
+  const rimborso = Math.max(pagato - dovuto, 0);
+
+  // 1. Il recesso ha effetto quando è comunicato: si chiude subito.
+  try {
+    await stripe.subscriptions.update(sub.id, {
+      metadata: { ...sub.metadata, recesso: ricevutoIl.toISOString() },
+    });
+    await stripe.subscriptions.cancel(sub.id, { prorate: false, invoice_now: false });
+  } catch (e) {
+    logger.error("abbonamento", "RECESSO NON ESEGUITO:", sub.id, e instanceof Error ? e.message : String(e));
+    return { ok: false, error: "Non siamo riusciti a registrare il recesso. Scrivici: lo facciamo a mano." };
+  }
+
+  // 2. Rimborso sullo stesso metodo di pagamento. Se fallisce il recesso resta
+  //    valido e il rimborso va fatto a mano entro 14 giorni: lo si dice.
+  let rimborsoInCorso = true;
+  if (rimborso > 0 && fattura) {
+    try {
+      const pagamenti = await stripe.invoicePayments.list({ invoice: fattura.id, limit: 1 });
+      const pi = pagamenti.data[0]?.payment?.payment_intent;
+      const paymentIntent = typeof pi === "string" ? pi : pi?.id;
+      if (!paymentIntent) throw new Error("pagamento della fattura non trovato");
+      await stripe.refunds.create({
+        payment_intent: paymentIntent,
+        amount: rimborso,
+        reason: "requested_by_customer",
+        metadata: { tipo: "recesso_consumatore", user_id: user.id, subscription: sub.id },
+      });
+    } catch (e) {
+      rimborsoInCorso = false;
+      logger.error(
+        "abbonamento",
+        `RIMBORSO DA FARE A MANO — ${rimborso} cent, subscription ${sub.id}, utente ${user.id}:`,
+        e instanceof Error ? e.message : String(e),
+      );
+    }
+  }
+
+  // 3. Conferma di ricezione su supporto durevole (art. 54, c. 4 Cod. consumo).
+  const piano = PLAN_LABELS[riga.tier as PaidTier] ?? "Abbonamento N'arte";
+  const rimborsoLabel = formatPrice(rimborso);
+  const nota =
+    sub.metadata?.esecuzione_immediata === "1"
+      ? `Prezzo pagato (${formatPrice(pagato)}) meno la parte di servizio fruita fino al recesso (${formatPrice(dovuto)}).`
+      : "Intero importo pagato.";
+  if (user.email) {
+    const { dispatchEmail } = await import("@/lib/emails/dispatch");
+    const { createElement } = await import("react");
+    const { default: NoticeEmail } = await import("@/lib/emails/templates/NoticeEmail");
+    const quando = ricevutoIl.toLocaleString("it-IT", { timeZone: "Europe/Rome" });
+    await dispatchEmail({
+      key: "subscription_withdrawal",
+      to: user.email,
+      params: {
+        name: (user.user_metadata as { full_name?: string } | null)?.full_name ?? "ciao",
+        planLabel: piano,
+        receivedAt: quando,
+        refundLabel: rimborsoLabel,
+        refundNote: nota,
+      },
+      fallback: {
+        subject: "Abbiamo ricevuto il tuo recesso — N'arte",
+        template: "subscription_withdrawal",
+        react: createElement(NoticeEmail, {
+          preview: "Il recesso è registrato e il rimborso è in corso.",
+          heading: "Recesso ricevuto",
+          paragraphs: [
+            "Confermiamo di aver ricevuto la tua comunicazione di recesso. L'abbonamento è cessato e il tuo account è tornato al piano Free.",
+            "Il rimborso arriva sullo stesso metodo di pagamento entro 14 giorni. I tuoi contenuti non sono stati cancellati.",
+          ],
+          rows: [
+            { label: "Piano", value: piano },
+            { label: "Ricevuto il", value: quando },
+            { label: "Rimborso", value: rimborsoLabel },
+            { label: "Calcolo", value: nota },
+          ],
+        }),
+      },
+    }).catch((e) => logger.error("abbonamento", "email recesso:", e instanceof Error ? e.message : String(e)));
+  }
+
+  return { ok: true, rimborsoCent: rimborso, rimborsoInCorso };
 }

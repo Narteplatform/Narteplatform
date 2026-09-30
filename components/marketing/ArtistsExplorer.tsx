@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { Search, ChevronDown, RotateCcw, Check } from "lucide-react";
 import { ArtistCard } from "@/components/marketing/ArtistCard";
 import { TopArtistBadge } from "@/components/marketing/ArtistBadges";
@@ -337,11 +338,27 @@ export function ArtistsExplorer({
         {hasFilters ? " trovati" : ""}
       </p>
 
+      {/* Trasparenza sull'ordine (art. 22 c. 4-bis Cod. consumo): sempre
+          visibile, anche da telefono, sopra i risultati. */}
+      <p className="mt-3 text-xs text-muted-foreground">
+        Ordine: prima gli artisti con piano Max, poi Pro (abbonamenti a pagamento), poi gli
+        altri, in ordine alfabetico. I filtri restringono l&rsquo;elenco, non cambiano
+        l&rsquo;ordine.{" "}
+        <Link
+          href="/criteri-di-posizionamento"
+          className="font-medium text-foreground underline underline-offset-4 hover:text-accent"
+        >
+          Come funziona
+        </Link>
+      </p>
+
       {/* TOP ARTIST ROW — shown only when no filters are active */}
       {showTopSection && (
         <div className="mt-10">
           <div className="mb-4 flex items-center gap-3">
-            <p className="font-display text-sm text-notte">Top Artist</p>
+            <p className="font-display text-sm text-notte">
+              Top Artist &mdash; in evidenza con il piano Max, a pagamento
+            </p>
             <TopArtistBadge compact />
           </div>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">

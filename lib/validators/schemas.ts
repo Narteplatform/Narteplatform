@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Json } from "@/lib/supabase/types";
 import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from "@/lib/security/honeypot";
+import { ADMIN_PAGE_KEYS, type AdminPageKey } from "@/lib/admin/sections";
 
 /**
  * Valore JSON generico, per colonne jsonb "libere" come `formats.details`.
@@ -114,6 +115,86 @@ export const contactSchema = z.object({
   message: z.string().min(10).max(2000),
 });
 export type ContactInput = z.infer<typeof contactSchema>;
+
+/**
+ * Segnalazioni di contenuti e reclami (DSA artt. 16, 17, 20).
+ *
+ * Elenco chiuso di categorie: serve al Team per smistare, non a limitare chi
+ * segnala (per tutto il resto c'è «altro»). `reclamo_decisione` non compare nel
+ * menu del modulo: lo imposta il server quando il modulo è un reclamo.
+ */
+export const REPORT_CATEGORIES = {
+  contenuto_illecito: "Contenuto illecito",
+  diritto_autore: "Violazione del diritto d'autore",
+  dati_personali: "Immagine o dati personali di terzi",
+  recensione_falsa: "Recensione falsa o offensiva",
+  molestie: "Molestie o minacce",
+  spam_truffa: "Spam o truffa",
+  altro: "Altro",
+  reclamo_decisione: "Reclamo contro una decisione",
+} as const;
+export type ReportCategory = keyof typeof REPORT_CATEGORIES;
+const REPORT_CATEGORY_KEYS = Object.keys(REPORT_CATEGORIES) as [ReportCategory, ...ReportCategory[]];
+
+export const REPORT_TARGET_TYPES = {
+  profilo: "Profilo di un artista",
+  media: "Foto, video o audio",
+  recensione: "Recensione",
+  struttura: "Struttura o organizzatore",
+  messaggio: "Messaggio in chat",
+  decisione: "Una decisione di N'arte",
+  altro: "Altro",
+} as const;
+export type ReportTargetType = keyof typeof REPORT_TARGET_TYPES;
+const REPORT_TARGET_KEYS = Object.keys(REPORT_TARGET_TYPES) as [ReportTargetType, ...ReportTargetType[]];
+
+/** Formato dei riferimenti: D- decisione, S- segnalazione, R- reclamo, poi 8 esadecimali. */
+export const REPORT_REFERENCE_RE = /^[DSR]-[0-9A-F]{8}$/i;
+
+function isSiteUrlOrPath(v: string): boolean {
+  if (v.startsWith("/")) return !v.startsWith("//");
+  try {
+    const u = new URL(v);
+    return u.protocol === "https:" || u.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+export const contentReportSchema = z.object({
+  ...honeypotShape,
+  name: z.string().trim().min(2, "Inserisci il tuo nome").max(80),
+  email: z.string().trim().email("Inserisci un indirizzo email valido").max(200),
+  target_type: z.enum(REPORT_TARGET_KEYS),
+  target_url: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((v) => v === "" || isSiteUrlOrPath(v), "Inserisci un indirizzo web o un percorso del sito (es. /artisti/nome)")
+    .optional(),
+  category: z.enum(REPORT_CATEGORY_KEYS),
+  description: z
+    .string()
+    .trim()
+    .min(10, "Descrivi il problema in almeno 10 caratteri")
+    .max(5000, "Massimo 5000 caratteri"),
+  /** Dichiarazione di buona fede (art. 16, par. 2, lett. d DSA). */
+  good_faith: z.literal(true, {
+    errorMap: () => ({ message: "Devi dichiarare che le informazioni sono esatte e complete" }),
+  }),
+  contested_reference: z
+    .string()
+    .trim()
+    .regex(REPORT_REFERENCE_RE, "Riferimento non valido")
+    .optional()
+    .or(z.literal("")),
+});
+export type ContentReportInput = z.infer<typeof contentReportSchema>;
+
+/** Un reclamo è una segnalazione che contesta una decisione già presa. */
+export function reportKindFor(input: { contested_reference?: string | null }): "segnalazione" | "reclamo" {
+  return input.contested_reference ? "reclamo" : "segnalazione";
+}
 
 export const eventSchema = z.object({
   title: z.string().min(2).max(120),
@@ -392,24 +473,9 @@ export const conversationBlockReasonSchema = z
 // =========================================
 // Superadmin: invito + permessi pagine admin
 // =========================================
-export const ADMIN_PAGE_KEYS = [
-  "overview",
-  "eventi",
-  "format",
-  "artisti",
-  "generi",
-  "leads",
-  "richieste",
-  "chat",
-  "consulenza",
-  "blog",
-  "email",
-  "profilo",
-  "impostazioni",
-  "feedback",
-  "moderazione",
-] as const;
-export type AdminPageKey = (typeof ADMIN_PAGE_KEYS)[number];
+// Definite in lib/admin/sections.ts (senza dipendenze, perché le usa anche il
+// middleware). Riesportate qui per gli import esistenti.
+export { ADMIN_PAGE_KEYS, type AdminPageKey };
 
 export const inviteSuperadminSchema = z.object({
   email: z.string().email("Email non valida"),

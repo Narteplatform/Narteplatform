@@ -61,7 +61,7 @@ const eventReminder = defineTemplate({
             { icon: "clock", label: "Orario", value: param("eventTime"), onlyIf: "eventTime" },
             { icon: "pin", label: "Luogo", value: param("city"), onlyIf: "city" },
             { icon: "map", label: "Indirizzo", value: param("address"), onlyIf: "address" },
-            { icon: "euro", label: "Cachet concordato", value: param("priceLabel"), onlyIf: "priceLabel" },
+            { icon: "euro", label: "Compenso annotato dalle parti", value: param("priceLabel"), onlyIf: "priceLabel" },
           ]),
         ].join("\n")
       ),

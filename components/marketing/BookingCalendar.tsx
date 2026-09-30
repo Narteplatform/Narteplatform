@@ -10,7 +10,6 @@ import { Clock, X, CheckCircle2, ArrowRight, CalendarCheck2 } from "lucide-react
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { CityAutocomplete } from "@/components/forms/CityAutocomplete";
-import { TermsConsent } from "@/components/forms/PrivacyConsent";
 import { BUDGET_RANGES, rangeToMin, type BudgetRangeValue } from "@/lib/constants/budget-ranges";
 import { formatSlot, normalizeTime, resolveSlotsForDate, type Slot } from "@/lib/slots";
 import type { ArtistInterestInput } from "@/app/(user)/artisti/[slug]/_schema";
@@ -72,10 +71,6 @@ function formatHuman(iso: string): string {
 }
 
 type FormValues = {
-  // signup (solo non loggati)
-  email: string;
-  password: string;
-  displayName: string;
   phone: string;
   venueName: string;
   venueCity: string;
@@ -83,9 +78,10 @@ type FormValues = {
   message: string;
   budgetRange: BudgetRangeValue | "";
   venueId: string;
-  // Accettazione di termini e informativa. Obbligatoria: per chi non è ancora
-  // registrato questo invio CREA un account e lo promuove a organizzatore.
-  acceptedTerms: boolean;
+  // Condizioni per gli organizzatori (doc. 04). Obbligatoria solo per chi è
+  // ancora un utente semplice: con questo invio diventa organizzatore, e
+  // assume gli adempimenti dell'evento (SIAE, agibilità, permessi, sicurezza).
+  acceptedOrganizerTerms: boolean;
 };
 
 export function BookingCalendar({
@@ -151,16 +147,13 @@ export function BookingCalendar({
 
   const { register, handleSubmit, reset, control, formState: { isSubmitting, errors } } = useForm<FormValues>({
     defaultValues: {
-      email: viewerEmail ?? "",
-      password: "",
-      displayName: viewerName ?? "",
       phone: "",
       venueName: "",
       venueCity: "",
       message: "",
       budgetRange: "",
       venueId: organizerVenues[0]?.id ?? "",
-      acceptedTerms: false,
+      acceptedOrganizerTerms: false,
     },
   });
 
@@ -191,8 +184,8 @@ export function BookingCalendar({
   async function onSubmit(values: FormValues) {
     if (!selectedISO) return;
     setError(null);
-    if (!values.acceptedTerms) {
-      setError("Devi accettare i termini e l'informativa privacy per inviare la richiesta.");
+    if (isUserToPromote && !values.acceptedOrganizerTerms) {
+      setError("Per inviare la richiesta devi accettare le Condizioni per gli organizzatori.");
       return;
     }
     const budgetMin = rangeToMin(values.budgetRange);
@@ -203,23 +196,14 @@ export function BookingCalendar({
       message: values.message,
       budgetOffer: budgetMin ?? undefined,
       budgetRange: values.budgetRange || undefined,
-      acceptedTerms: true,
+      acceptedOrganizerTerms: isUserToPromote ? true : undefined,
     };
-    if (needsSignup) {
-      payload.email = values.email;
-      payload.password = values.password;
-      payload.displayName = values.displayName;
-      payload.phone = values.phone || undefined;
-      payload.venueName = values.venueName || undefined;
+    if (values.venueId) payload.venueId = values.venueId;
+    else if (values.venueName) {
+      payload.venueName = values.venueName;
       payload.venueCity = values.venueCity || undefined;
-    } else {
-      if (values.venueId) payload.venueId = values.venueId;
-      else if (values.venueName) {
-        payload.venueName = values.venueName;
-        payload.venueCity = values.venueCity || undefined;
-      }
-      if (values.phone) payload.phone = values.phone;
     }
+    if (values.phone) payload.phone = values.phone;
     try {
       const r = await fetch("/api/booking-request", {
         method: "POST",
@@ -317,7 +301,7 @@ export function BookingCalendar({
                   )}
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
-                      {info.venueName ?? info.organizerName}
+                      {info.venueName ?? info.organizerName ?? "Evento privato"}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {info.venueName ? info.organizerName : ""}
@@ -484,69 +468,11 @@ export function BookingCalendar({
                     : "Disponibile in qualunque orario — indica i dettagli sotto."}
                 </p>
 
+                {needsSignup ? (
+                  <AccessoRichiesto />
+                ) : (
                 <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5">
-                  {needsSignup && (
-                    <>
-                      <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 text-xs">
-                        <p className="font-medium text-accent">
-                          Crea il tuo profilo organizzatore
-                        </p>
-                        <p className="mt-1 text-muted-foreground">
-                          Per inviare la richiesta devi avere un profilo organizzatore.
-                          Registrati ora e accederai subito al pannello dedicato.
-                        </p>
-                      </div>
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <Field
-                          label="Email *"
-                          error={errors.email && "Email obbligatoria"}
-                        >
-                          <Input type="email" {...register("email", { required: true })} />
-                        </Field>
-                        <Field
-                          label="Password *"
-                          error={errors.password && "Min 8 caratteri"}
-                        >
-                          <Input
-                            type="password"
-                            {...register("password", { required: true, minLength: 8 })}
-                          />
-                        </Field>
-                        <Field
-                          label="Nome / brand *"
-                          error={errors.displayName && "Inserisci un nome"}
-                        >
-                          <Input
-                            placeholder="Es. Mario Rossi o Brand Eventi SRL"
-                            {...register("displayName", { required: true, minLength: 2 })}
-                          />
-                        </Field>
-                        <Field label="Telefono">
-                          <Input type="tel" {...register("phone")} />
-                        </Field>
-                        <Field label="Nome struttura">
-                          <Input
-                            placeholder="Es. Bar Centrale"
-                            {...register("venueName")}
-                          />
-                        </Field>
-                        <Field label="Città struttura">
-                          <Controller
-                            control={control}
-                            name="venueCity"
-                            render={({ field }) => (
-                              <CityAutocomplete
-                                value={field.value}
-                                onChange={field.onChange}
-                                placeholder="Cerca città italiana…"
-                              />
-                            )}
-                          />
-                        </Field>
-                      </div>
-                    </>
-                  )}
-                  {!needsSignup && organizerVenues.length > 0 && (
+                  {organizerVenues.length > 0 && (
                     <Field label="Struttura per cui prenoti">
                       <select
                         className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
@@ -561,7 +487,7 @@ export function BookingCalendar({
                       </select>
                     </Field>
                   )}
-                  {!needsSignup && organizerVenues.length === 0 && (
+                  {organizerVenues.length === 0 && (
                     <div className="grid gap-4 md:grid-cols-2">
                       <Field label="Nome struttura">
                         <Input
@@ -618,10 +544,29 @@ export function BookingCalendar({
                       Il profilo artista non può inviare richieste.
                     </p>
                   )}
-                  <TermsConsent
-                    register={register("acceptedTerms")}
-                    error={errors.acceptedTerms?.message}
-                  />
+                  {isUserToPromote && (
+                    <label className="flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-1 size-4 shrink-0"
+                        {...register("acceptedOrganizerTerms")}
+                      />
+                      <span>
+                        Inviando la richiesta diventi organizzatore su N&rsquo;arte. Ho letto e
+                        accetto le{" "}
+                        <a
+                          href="/condizioni-organizzatori"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline underline-offset-2"
+                        >
+                          Condizioni per gli organizzatori
+                        </a>
+                        , in particolare gli obblighi su SIAE, agibilità, permessi e sicurezza
+                        dell&rsquo;evento, che restano a mio carico.
+                      </span>
+                    </label>
+                  )}
                   {error && <p className="text-sm text-red-500">{error}</p>}
                   <div className="flex flex-wrap items-center gap-3">
                     <Button
@@ -631,22 +576,43 @@ export function BookingCalendar({
                       className="min-w-[200px]"
                       disabled={isSubmitting || !canSubmit}
                     >
-                      {isSubmitting
-                        ? "Invio…"
-                        : needsSignup
-                          ? "Registrati & invia richiesta"
-                          : "Invia richiesta"}
+                      {isSubmitting ? "Invio…" : "Invia richiesta"}
                     </Button>
                     <Button type="button" variant="ghost" onClick={closeForm}>
                       Annulla
                     </Button>
                   </div>
                 </form>
+                )}
               </>
             )}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Per chi non ha un account. La richiesta di booking non crea più un account
+ * al volo: quel percorso saltava la conferma dell'email e la dichiarazione di
+ * maggiore età. Si passa dalla registrazione, che le ha entrambe.
+ */
+function AccessoRichiesto() {
+  return (
+    <div className="mt-6 rounded-lg border border-accent/30 bg-accent/5 p-4 text-sm">
+      <p className="font-medium text-accent">Accedi per inviare la richiesta</p>
+      <p className="mt-1 text-muted-foreground">
+        Per contattare l&rsquo;artista serve un account organizzatore. La registrazione è gratuita.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-3">
+        <a href="/login" className="underline underline-offset-4">
+          Accedi
+        </a>
+        <a href="/register" className="underline underline-offset-4">
+          Registrati come organizzatore
+        </a>
+      </div>
     </div>
   );
 }

@@ -195,3 +195,92 @@ from pg_trigger
 where tgrelid = 'auth.users'::regclass
   and not tgisinternal
 order by tgname;
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 0061_booking_integrity.sql
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Due controlli in sola lettura: il trigger esiste, e accept_offer_v2 è la
+-- versione nuova (cerca la richiesta aperta invece di crearne sempre una).
+
+select tgname as trigger_name, tgenabled
+from pg_trigger
+where tgrelid = 'public.booking_requests'::regclass
+  and tgname = 'trg_booking_requests_transition_guard';
+-- Atteso: una riga, tgenabled = 'O'.
+
+select
+  case
+    when prosrc like '%non è più aperta%'
+      then 'OK — è la versione della 0061'
+    else 'DA RIFARE — è ancora la versione della 0013'
+  end as stato
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname = 'accept_offer_v2';
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 0062_consent_kinds.sql
+-- ═══════════════════════════════════════════════════════════════════════════
+select pg_get_constraintdef(oid) as vincolo
+from pg_constraint
+where conrelid = 'public.user_consents'::regclass and conname = 'user_consents_kind_check';
+-- Atteso: l'elenco contiene 'condizioni_organizzatori' e 'esecuzione_immediata'.
+
+select pg_get_function_identity_arguments(p.oid) as argomenti
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'record_consent';
+-- Atteso: UNA sola riga, con quattro argomenti (p_ref compreso).
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 0064_chat_access_log.sql
+-- ═══════════════════════════════════════════════════════════════════════════
+select tablename, policyname, cmd,
+       qual ilike '%is_superadmin%' as cita_superadmin
+from pg_policies
+where schemaname = 'public'
+  and tablename in ('messages', 'conversations')
+  and policyname in ('messages_select', 'conversations_select');
+-- Atteso: 2 righe, cita_superadmin = false.
+
+select grantee, privilege_type
+from information_schema.role_table_grants
+where table_schema = 'public' and table_name = 'chat_access_log'
+  and grantee in ('anon', 'authenticated');
+-- Atteso: solo (authenticated, SELECT).
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 0066_feedback_moderation.sql
+-- ═══════════════════════════════════════════════════════════════════════════
+select column_name
+from information_schema.columns
+where table_schema = 'public' and table_name = 'feedback'
+  and column_name in ('artist_reply','artist_reply_at','moderation_reason',
+                      'moderated_by','moderated_at','deleted_at','declared_at')
+order by column_name;
+-- Atteso: 7 righe.
+
+select policyname, qual
+from pg_policies
+where schemaname = 'public' and tablename = 'feedback';
+-- Atteso: la policy di lettura contiene "deleted_at IS NULL".
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 0067_account_deletion_safety.sql
+-- ═══════════════════════════════════════════════════════════════════════════
+select c.conrelid::regclass as tabella, a.attname as colonna,
+       case c.confdeltype when 'n' then 'set null' when 'c' then 'cascade'
+                          when 'a' then 'no action' else c.confdeltype::text end as on_delete
+from pg_constraint c
+join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any (c.conkey)
+where c.contype = 'f'
+  and ((c.conrelid = 'public.organizers'::regclass and a.attname = 'user_id')
+    or (c.conrelid = 'public.user_consents'::regclass and a.attname = 'user_id')
+    or (c.conrelid = 'public.booking_requests'::regclass
+        and a.attname in ('final_price_proposed_by', 'final_price_confirmed_by')));
+-- Atteso: 4 righe, tutte «set null».

@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database, Role } from "@/lib/supabase/types";
+import { ADMIN_PAGES_SEMPRE_VISIBILI, adminSectionForPath } from "@/lib/admin/sections";
 import {
   LEGAL_COOKIE,
   LEGAL_COOKIE_MAX_AGE,
@@ -188,32 +189,26 @@ export async function middleware(request: NextRequest) {
         }
         // Permessi pagina per superadmin non-root
         if (!isRoot) {
-          const PAGE_PREFIX: Record<string, string> = {
-            "/admin/eventi": "eventi",
-            "/admin/artisti": "artisti",
-            "/admin/generi": "generi",
-            "/admin/leads": "leads",
-            "/admin/chat": "chat",
-            "/admin/messaggi": "messaggi",
-            "/admin/consulenza": "consulenza",
-            "/admin/blog": "blog",
-            "/admin/email": "email",
-            "/admin/feedback": "feedback",
-            "/admin/moderazione": "moderazione",
-            "/admin/impostazioni": "impostazioni",
-            "/admin/profilo": "profilo",
-          };
-          const matchedKey = Object.entries(PAGE_PREFIX).find(([prefix]) =>
-            path.startsWith(prefix)
-          )?.[1];
-          if (matchedKey && matchedKey !== "overview" && matchedKey !== "profilo") {
+          // Stessa fonte delle pagine e delle Server Actions: lib/admin/sections.
+          const matchedKey = adminSectionForPath(path);
+          if (matchedKey && !ADMIN_PAGES_SEMPRE_VISIBILI.includes(matchedKey)) {
             const { data: perm } = await admin
               .from("admin_page_permissions")
               .select("can_view")
               .eq("user_id", user.id)
               .eq("page_key", matchedKey)
               .maybeSingle();
-            if (!perm || !perm.can_view) {
+            // Stessa rete di sicurezza di getAllowedAdminPages: se nel sistema
+            // non esiste nessuna delega, il controllo granulare non è in uso e
+            // il superadmin non viene chiuso fuori dal proprio pannello.
+            let deleghePresenti = true;
+            if (!perm) {
+              const { count } = await admin
+                .from("admin_page_permissions")
+                .select("user_id", { head: true, count: "exact" });
+              deleghePresenti = (count ?? 0) > 0;
+            }
+            if (deleghePresenti && (!perm || !perm.can_view)) {
               url.pathname = "/admin";
               url.search = "";
               return NextResponse.redirect(url);

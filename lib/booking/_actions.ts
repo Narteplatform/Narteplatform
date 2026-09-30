@@ -11,7 +11,11 @@ type Result =
 /**
  * Risolve il ruolo dell'utente corrente rispetto al booking:
  * 'artist' se è il proprietario artista, 'organizer' se è l'organizzatore.
- * superadmin può agire come artist (fallback).
+ *
+ * Il superadmin NON può agire sul compenso. Il riquadro «Compenso concordato –
+ * promemoria» è un'annotazione fra le due parti: se il Team potesse proporlo o
+ * confermarlo al posto di una di loro, N'arte entrerebbe nella parte economica
+ * dell'accordo, che è esattamente ciò che i termini escludono.
  */
 async function resolveBookingRole(bookingId: string) {
   const supabase = await createClient();
@@ -29,16 +33,14 @@ async function resolveBookingRole(bookingId: string) {
     .maybeSingle();
   if (!booking) return null;
 
-  const [{ data: organizer }, { data: artist }, { data: profile }] = await Promise.all([
+  const [{ data: organizer }, { data: artist }] = await Promise.all([
     admin.from("organizers").select("id, user_id").eq("id", booking.organizer_id).maybeSingle(),
     admin.from("artists").select("id, user_id").eq("id", booking.artist_id).maybeSingle(),
-    admin.from("profiles").select("role").eq("id", user.id).maybeSingle(),
   ]);
 
   let role: "organizer" | "artist" | null = null;
   if (organizer?.user_id === user.id) role = "organizer";
   else if (artist?.user_id === user.id) role = "artist";
-  else if (profile?.role === "superadmin") role = "artist";
 
   return role ? { user, booking, role } : null;
 }
@@ -109,6 +111,16 @@ export async function confirmFinalPrice(input: { booking_id: string }): Promise<
 export async function resetFinalPrice(input: { booking_id: string }): Promise<Result> {
   const ctx = await resolveBookingRole(input.booking_id);
   if (!ctx) return { ok: false, error: "Non autorizzato" };
+  // Una proposta non ancora confermata si può ritirare. Un importo confermato
+  // da entrambi no: una sola parte non può cancellare ciò che è stato annotato
+  // insieme. Per cambiarlo si fa una nuova proposta, che l'altra parte deve
+  // confermare di nuovo.
+  if (ctx.booking.final_price_confirmed_at) {
+    return {
+      ok: false,
+      error: "Il compenso è già stato confermato da entrambi: per cambiarlo proponi un nuovo importo.",
+    };
+  }
   const admin = createAdminClient();
   const { error } = await admin
     .from("booking_requests")

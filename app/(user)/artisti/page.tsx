@@ -70,7 +70,7 @@ export default async function ArtistiPage() {
     // `free` e non `"standard"`: quello è un valore di price_band_enum, copiato
     // per errore dalla riga sopra. Nel ramo di fallback qui sotto la select non
     // chiede `tier`, quindi il default arriva davvero a destinazione — e con
-    // "standard" nessun artista sarebbe più né TOP né Verificato.
+    // "standard" nessun artista sarebbe più né TOP né Artista Pro.
     tier: (a.tier ?? "free") as ArtistTier,
     rating: ratings.get(a.id) ?? null,
   }));

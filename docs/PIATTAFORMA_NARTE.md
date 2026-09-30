@@ -152,14 +152,13 @@ Per gli artisti sono previsti tre piani.
 | Richieste di booking | illimitate | illimitate | illimitate |
 | Chat con gli organizzatori | — | ✔ | ✔ |
 | Recensioni | — | ✔ | ✔ |
-| Badge "Verificato N'arte" | — | ✔ | ✔ |
+| Badge "Artista Pro" | — | ✔ | ✔ |
 | Etichetta "TOP Artist" | — | — | ✔ |
 | Profili artista creabili | 1 | 2 | 5 |
 | Posizione nei risultati | standard | priorità | top in evidenza |
-| Eventi N'arte | — | — | ti candidiamo a 2 al mese |
 | Statistiche del profilo | — | — | ultimo anno |
 | Consulenza professionale | — | 1 slot al mese | illimitata |
-| Proposta alle strutture | — | — | ✔ |
+| Segnalazione del profilo alle strutture | — | — | almeno 2 al mese (N'arte non tratta) |
 | Shooting fotografico | — | — | incluso nell'annuale |
 | Supporto | community | email | prioritario |
 

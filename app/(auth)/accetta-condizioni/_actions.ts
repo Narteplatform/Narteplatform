@@ -46,7 +46,10 @@ export async function acceptCurrentLegal(input: AcceptLegalInput) {
   // per la copia della prova presso iubenda.
   const utente = await requireUser();
 
-  const esito = await acceptLegalDocuments(parsed.data.acceptedMarketing);
+  // Casella del marketing non spuntata = «non si è espresso», non un rifiuto:
+  // prima ogni riaccettazione scriveva una riga «marketing = false», che fra
+  // l'altro sovrascriveva nel registro un consenso dato in precedenza.
+  const esito = await acceptLegalDocuments(parsed.data.acceptedMarketing ? true : undefined);
   if (!esito.ok) return esito;
 
   // Qui l'interessato ha un account, quindi la prova presso iubenda porta anche

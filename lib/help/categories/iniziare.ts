@@ -19,23 +19,23 @@ export const INIZIARE: HelpCategory = {
       related: ["cosa-fa-e-non-fa-narte", "differenze-ruoli", "come-creare-account"],
       content: `
 <h2>Una piattaforma per la musica dal vivo emergente</h2>
-<p>N'arte mette in contatto <strong>artisti emergenti</strong> e <strong>chi cerca musica dal vivo</strong>: locali, festival, brand, wedding planner, privati. Nasce nel 2018 come realtà che organizza serate a Napoli e nel 2026 diventa una piattaforma: otto anni di agenda, telefonate e passaparola trasformati in uno strumento che chiunque può usare.</p>
+<p>N'arte è una <strong>piattaforma promozionale</strong>: dà visibilità agli <strong>artisti emergenti</strong> e li mette in contatto con <strong>chi cerca musica dal vivo</strong>: locali, festival, brand, wedding planner, privati. Nasce nel 2018 come realtà che organizza serate a Napoli e nel 2026 diventa una piattaforma: otto anni di agenda, telefonate e passaparola trasformati in uno strumento che chiunque può usare.</p>
 
 <h2>Cosa puoi fare</h2>
 <ul>
-  <li><strong>Sfogliare il roster</strong> degli artisti approvati dal team, filtrando per tipologia, genere e città su <a href="/artisti">/artisti</a>.</li>
+  <li><strong>Sfogliare il roster</strong> degli artisti approvati dal team, cercando per nome o città e filtrando per categoria e genere su <a href="/artisti">/artisti</a>.</li>
   <li><strong>Inviare una richiesta di booking</strong> direttamente all'artista, indicando data, fascia oraria, budget e che tipo di serata hai in mente.</li>
-  <li><strong>Condurre la trattativa in chat</strong>, con offerte tracciate che si accettano o si rifiutano con un click.</li>
+  <li><strong>Scrivere in chat</strong> con l'artista e scambiarvi offerte tracciate. Per scrivere in chat l'artista deve avere il piano Pro o Max; con il piano Free ricevi comunque la richiesta e la email. La trattativa resta fra voi due: N'arte non vi partecipa.</li>
   <li><strong>Candidarti come artista</strong> da <a href="/candidatura-artista">/candidatura-artista</a> per entrare nel roster pubblico.</li>
   <li><strong>Scoprire gli eventi</strong> in programma e quelli passati su <a href="/eventi">/eventi</a>, e i <a href="/format">format N'arte</a> già pronti per il tuo locale.</li>
 </ul>
 
 <h2>Il punto che conviene chiarire subito</h2>
-<p><strong>N'arte non incassa il compenso dell'artista e non trattiene alcuna percentuale sull'ingaggio.</strong> Mette in contatto le due parti e si ferma lì: il cachet lo concordano e lo regolano direttamente artista e organizzatore, fuori dalla piattaforma. L'unica somma che N'arte incassa è l'abbonamento facoltativo degli artisti.</p>
+<p><strong>N'arte non incassa il compenso dell'artista e non trattiene alcuna percentuale sull'ingaggio.</strong> Mette in contatto le due parti e si ferma lì: il compenso lo concordano e lo regolano direttamente artista e organizzatore, fuori dalla piattaforma. L'unica somma che N'arte incassa è l'abbonamento facoltativo degli artisti.</p>
 <p>Ne parliamo per esteso in <a href="/help/iniziare/cosa-fa-e-non-fa-narte">cosa fa e cosa non fa N'arte</a>.</p>
 
 <h2>Quanto costa</h2>
-<p>La piattaforma è <strong>gratuita per il pubblico, per gli utenti registrati e per gli organizzatori</strong>. Nessun costo per cercare artisti, inviare richieste, negoziare in chat o confermare una data.</p>
+<p>La piattaforma è <strong>gratuita per il pubblico, per gli utenti registrati e per gli organizzatori</strong>. Nessun costo per cercare artisti, inviare richieste, scrivere in chat (con artisti Pro o Max) o confermare una data.</p>
 <p>Per gli artisti esiste un profilo gratuito che non scade, e due piani a pagamento facoltativi che sbloccano chat, recensioni e visibilità. Il listino è su <a href="/prezzi">/prezzi</a>.</p>
 
 <h2>Da dove cominciare</h2>
@@ -104,7 +104,7 @@ export const INIZIARE: HelpCategory = {
 <p>Sblocca i profili completi degli artisti e salva i preferiti sul proprio account, ritrovandoli su qualunque dispositivo. Può inviare una richiesta di booking: nel momento in cui lo fa, <strong>diventa automaticamente organizzatore</strong>.</p>
 
 <h3>Organizzatore</h3>
-<p>Locale, festival, brand, agenzia o privato che cerca artisti. Area: <strong>/organizzatore</strong>. Può registrare le proprie strutture, inviare richieste di booking, negoziare in chat con offerte tracciate, confermare la data finale, vedere il calendario delle date confermate e recensire l'artista dopo l'evento. <strong>È tutto gratuito</strong>, non esistono abbonamenti per gli organizzatori.</p>
+<p>Locale, festival, brand, agenzia o privato che cerca artisti. Area: <strong>/organizzatore</strong>. Può registrare le proprie strutture, inviare richieste di booking, scrivere in chat con offerte tracciate (con gli artisti che hanno Pro o Max), confermare la data finale, vedere il calendario delle date confermate e recensire l'artista dopo l'evento. <strong>È tutto gratuito</strong>, non esistono abbonamenti per gli organizzatori.</p>
 
 <h3>Artista</h3>
 <p>Musicista approvato dal team. Area: <strong>/dashboard</strong>. Gestisce profilo pubblico, galleria, video, audio, calendario delle disponibilità, richieste ricevute, chat, recensioni, consulenza e abbonamento. Con i piani superiori può gestire <a href="/help/artisti/profili-multipli">più profili artista</a> dallo stesso account.</p>
@@ -180,24 +180,24 @@ export const INIZIARE: HelpCategory = {
 
 <h2>Cosa fa N'arte</h2>
 <ul>
-  <li><strong>Seleziona</strong> gli artisti del roster: ogni candidatura viene letta e approvata a mano.</li>
-  <li><strong>Mette in contatto</strong> artisti e organizzatori, con un profilo pubblico e un canale di richiesta.</li>
-  <li><strong>Traccia la trattativa</strong>: offerte con data, fascia oraria e budget, che si accettano o si rifiutano lasciando una traccia consultabile.</li>
+  <li><strong>Cura il roster</strong>: ogni candidatura di ingresso viene letta e approvata a mano.</li>
+  <li><strong>Promuove gli artisti</strong> e li mette in contatto con gli organizzatori, con un profilo pubblico e un canale di richiesta. Col piano Max il team può anche segnalare il profilo a strutture in linea, senza garantire ingaggi.</li>
+  <li><strong>Offre lo strumento della chat</strong> (con artisti Pro o Max): offerte con data, fascia oraria e budget, che le parti si scambiano lasciando una traccia consultabile. N'arte non partecipa alla trattativa.</li>
   <li><strong>Sincronizza i calendari</strong>: quando una data è confermata, viene bloccata in automatico su quello dell'artista.</li>
   <li><strong>Notifica via email</strong> i passaggi che contano: nuova richiesta, risposta, conferma, annullamento.</li>
-  <li><strong>Raccoglie le recensioni</strong> post-evento e le pubblica sul profilo dell'artista.</li>
+  <li><strong>Raccoglie le recensioni</strong> lasciate dopo una data confermata e passata. Sul profilo pubblico sono visibili solo se l'artista ha il piano Pro o Max; gli utenti registrati le vedono.</li>
   <li><strong>Organizza eventi propri</strong> e format live, con la propria direzione artistica.</li>
 </ul>
 
 <h2>Cosa non fa N'arte</h2>
 <ul>
   <li><strong>Non incassa il compenso dell'ingaggio.</strong> Il denaro non passa mai dalla piattaforma: non lo riceviamo, non lo anticipiamo, non lo tratteniamo.</li>
-  <li><strong>Non trattiene percentuali</strong> sul cachet. Quello che concordi è quello che prendi.</li>
-  <li><strong>Non è parte del contratto</strong> fra artista e organizzatore. L'accordo è fra voi due; noi non lo firmiamo e non lo garantiamo.</li>
+  <li><strong>Non trattiene percentuali</strong> sul compenso. Quello che concordi è quello che prendi.</li>
+  <li><strong>Non è parte di trattative né contratti</strong> fra artista e organizzatore, non fa da agente e non promette ingaggi. L'accordo è fra voi due; noi non lo firmiamo e non lo garantiamo.</li>
   <li><strong>Non genera contratti</strong> né fatture per l'esibizione, e non fornisce un modello con valore legale.</li>
   <li><strong>Non si occupa degli adempimenti SIAE</strong> né dei permessi dell'evento. Vedi <a href="/help/pagamenti/siae">chi paga la SIAE</a>.</li>
   <li><strong>Non impone penali</strong> se una data salta. Vedi <a href="/help/organizzatori/annullare-data">annullare una data confermata</a>.</li>
-  <li><strong>Non decide il tuo cachet</strong>: la fascia di prezzo la scegli tu e la tratti tu.</li>
+  <li><strong>Non decide il tuo cachet</strong>: la fascia di prezzo sul profilo la scegli tu e il compenso lo concordi tu.</li>
   <li><strong>Non chiede l'esclusiva</strong>: continui a suonare dove vuoi, con chi vuoi.</li>
 </ul>
 
@@ -223,7 +223,7 @@ export const INIZIARE: HelpCategory = {
   <li><strong>Trattativa</strong> — la fase in cui l'artista ha accettato di discutere e si concordano i dettagli in chat. Non è ancora una conferma.</li>
   <li><strong>Offerta</strong> — una proposta strutturata inviata in chat con tre valori vincolanti: data, fascia oraria e budget. Si accetta o si rifiuta; una nuova offerta sostituisce quella ancora in sospeso.</li>
   <li><strong>Conferma</strong> — il passo finale, che spetta all'organizzatore. Blocca la data sul calendario dell'artista.</li>
-  <li><strong>Prezzo definitivo</strong> — il compenso realmente pattuito, che le parti registrano sulla richiesta confermata con una doppia conferma. Vedi <a href="/help/organizzatori/prezzo-definitivo">il prezzo definitivo</a>.</li>
+  <li><strong>Compenso concordato – promemoria</strong> — l'importo che le parti annotano sulla richiesta confermata con una doppia conferma. È un'annotazione fra loro: N'arte non ne è parte. Vedi <a href="/help/organizzatori/prezzo-definitivo">compenso concordato – promemoria</a>.</li>
   <li><strong>Lead</strong> — una richiesta di contatto che non nasce dal flusso strutturato: arriva dal modulo contatti, dalla pagina di un format o dal vecchio modulo del profilo artista. Vedi <a href="/help/booking/differenze-lead-booking">lead e richiesta a confronto</a>.</li>
 </ul>
 
@@ -247,7 +247,7 @@ export const INIZIARE: HelpCategory = {
 <ul>
   <li><strong>Piano</strong> — il livello di abbonamento dell'account artista: Free, Pro o Max.</li>
   <li><strong>Profilo sospeso</strong> — un profilo che eccede il limite del piano dopo un cambio: resta salvato ma non è visibile. Non viene mai cancellato.</li>
-  <li><strong>Verificato N'arte</strong> — il badge incluso nei piani a pagamento. Attesta un abbonamento attivo, non un controllo documentale.</li>
+  <li><strong>Artista Pro</strong> — il badge incluso nei piani Pro e Max. Indica un abbonamento attivo, non una verifica di identità né un giudizio artistico.</li>
 </ul>
 `,
     },

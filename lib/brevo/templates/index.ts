@@ -15,6 +15,7 @@ import { BILLING_TEMPLATES } from "./billing.ts";
 import { CONTACT_TEMPLATES } from "./contact.ts";
 import { ACCOUNT_TEMPLATES } from "./account.ts";
 import { LIFECYCLE_TEMPLATES } from "./lifecycle.ts";
+import { COMPLIANCE_TEMPLATES } from "./compliance.ts";
 
 export type { TemplateDef, AnyTemplateDef } from "./types.ts";
 export { defineTemplate } from "./types.ts";
@@ -30,6 +31,7 @@ export const TEMPLATES: readonly AnyTemplateDef[] = [
   ...CONTACT_TEMPLATES,
   ...ACCOUNT_TEMPLATES,
   ...LIFECYCLE_TEMPLATES,
+  ...COMPLIANCE_TEMPLATES,
 ];
 
 /** Cerca un template per chiave. */

@@ -2,6 +2,7 @@ import { Sparkles } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { MyConsultations, type MiaConsulenza } from "@/components/dashboard/MyConsultations";
 import {
   ArtistConsulenzaCalendar,
   type CalendarConsultant,
@@ -12,8 +13,21 @@ export const metadata = { title: "Consulente N'arte — Dashboard" };
 export const dynamic = "force-dynamic";
 
 export default async function ArtistConsulenzaPage() {
-  await requireRole(["artist", "superadmin"]);
+  const user = await requireRole(["artist", "superadmin"]);
   const admin = createAdminClient();
+
+  // Le consulenze già prenotate, con lo slot: servono all'elenco con disdetta.
+  const { data: mieRaw, error: mieErr } = await admin
+    .from("consultations")
+    .select("id, status, slot_id, consultant_slots(slot_at)")
+    .eq("user_id", user.id)
+    .in("status", ["requested", "confirmed"]);
+  const mie: MiaConsulenza[] = mieErr
+    ? []
+    : ((mieRaw ?? []) as unknown as { id: string; status: string; consultant_slots: { slot_at: string } | null }[])
+        .map((c) => ({ id: c.id, status: c.status, slotAt: c.consultant_slots?.slot_at ?? null }))
+        .filter((c) => !c.slotAt || new Date(c.slotAt).getTime() > Date.now())
+        .sort((a, b) => (a.slotAt ?? "").localeCompare(b.slotAt ?? ""));
 
   const nowIso = new Date().toISOString();
 
@@ -95,16 +109,30 @@ export default async function ArtistConsulenzaPage() {
     <div className="space-y-6">
       <div>
         <span className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent">
-          <Sparkles className="size-3.5" /> Gratuito · auto-conferma
+          <Sparkles className="size-3.5" /> Incluso nei piani Pro e Max · auto-conferma
         </span>
         <h1 className="mt-4 font-display text-3xl tracking-tight md:text-4xl">
           Consulente N&apos;arte
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground md:text-base">
           Scegli un giorno dal calendario, poi seleziona orario e consulente. La prenotazione è
-          gratuita e confermata automaticamente.
+          confermata automaticamente e si può disdire fino a 24 ore prima. Le consulenze sono
+          un orientamento sul percorso artistico, non una consulenza legale, fiscale o contributiva.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Le tue consulenze</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {mieErr ? (
+            <p className="text-sm text-destructive">Non è stato possibile leggere le tue consulenze.</p>
+          ) : (
+            <MyConsultations consulenze={mie} />
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

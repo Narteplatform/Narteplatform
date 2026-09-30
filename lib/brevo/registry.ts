@@ -68,6 +68,16 @@ export type EmailKey =
   | "password_changed"
   | "welcome_user"
   | "account_deletion_confirm"
+  // --- moderazione, segnalazioni, trasparenza (DSA) ---
+  | "moderation_decision"
+  | "report_receipt"
+  | "report_admin"
+  | "report_outcome"
+  // --- abbonamenti: tutela del consumatore ---
+  | "renewal_reminder"
+  | "subscription_withdrawal"
+  // --- piano Max: segnalazione del profilo alle strutture ---
+  | "profile_referral"
   // --- ciclo di vita evento ---
   | "event_reminder"
   | "feedback_request";
@@ -167,7 +177,7 @@ export interface BookingStatusParams {
   eventType: string;
   city: string;
   address: string;
-  /** Cachet concordato, se già definito. */
+  /** Compenso annotato dalle parti (promemoria), se già definito. */
   priceLabel: string;
   durationLabel: string;
   statusLabel: string;
@@ -194,7 +204,7 @@ export interface ChatNewOfferParams {
   chatUrl: string;
 }
 
-/** Prezzo finale proposto o confermato su una data già confermata. */
+/** Compenso (promemoria fra le parti) proposto o annotato su una data già confermata. */
 export interface PriceParams {
   artistName: string;
   organizerName: string;
@@ -315,6 +325,87 @@ export interface PasswordChangedParams {
  * autenticato: il collegamento non serve a stabilire chi sia, ma a mettere un
  * passaggio fra il gesto e una conseguenza irreversibile.
  */
+/**
+ * Decisione di moderazione comunicata all'interessato (art. 17 DSA).
+ * `contestUrl` è il collegamento per presentare reclamo; stringa vuota quando
+ * la decisione non è contestabile dalla piattaforma (ordine di un'autorità).
+ */
+export interface ModerationDecisionParams {
+  name: string;
+  /** Cosa è stato deciso, in una frase: «Abbiamo nascosto una recensione…». */
+  decision: string;
+  /** Il contenuto o l'elemento interessato, in chiaro. */
+  target: string;
+  /** Il motivo, con il riferimento alla regola violata. */
+  reason: string;
+  /** Effetti e durata, se previsti. Stringa vuota se non ce ne sono. */
+  consequences: string;
+  contestUrl: string;
+  reference: string;
+}
+
+/** Ricevuta di una segnalazione o di un reclamo (art. 16, par. 4 DSA). */
+export interface ReportReceiptParams {
+  name: string;
+  reference: string;
+  receivedAt: string;
+  /** «segnalazione» o «reclamo». */
+  kindLabel: string;
+  targetLabel: string;
+}
+
+/** Avviso al Team di una nuova segnalazione. */
+export interface ReportAdminParams {
+  reference: string;
+  kindLabel: string;
+  category: string;
+  targetLabel: string;
+  targetUrl: string;
+  description: string;
+  reporterLabel: string;
+  adminUrl: string;
+}
+
+/** Esito comunicato a chi ha segnalato (art. 16, par. 5 DSA). */
+export interface ReportOutcomeParams {
+  name: string;
+  reference: string;
+  outcome: string;
+  reason: string;
+  contestUrl: string;
+}
+
+/** Promemoria prima del rinnovo di un abbonamento annuale. */
+export interface RenewalReminderParams {
+  name: string;
+  planLabel: string;
+  renewalDate: string;
+  amountLabel: string;
+  manageUrl: string;
+}
+
+/** Conferma di ricezione del recesso dall'abbonamento (art. 54, c. 4 Cod. consumo). */
+export interface SubscriptionWithdrawalParams {
+  name: string;
+  planLabel: string;
+  receivedAt: string;
+  refundLabel: string;
+  refundNote: string;
+}
+
+/**
+ * Segnalazione del profilo di un artista Max a una struttura. È una
+ * comunicazione promozionale: N'arte non partecipa alla trattativa.
+ */
+export interface ProfileReferralParams {
+  recipientName: string;
+  artistName: string;
+  artistSummary: string;
+  profileUrl: string;
+  note: string;
+  unsubscribeUrl: string;
+}
+
 export interface AccountDeletionConfirmParams {
   name: string;
   actionUrl: string;
@@ -403,6 +494,13 @@ export interface EmailParamsMap {
   password_changed: PasswordChangedParams;
   welcome_user: WelcomeUserParams;
   account_deletion_confirm: AccountDeletionConfirmParams;
+  moderation_decision: ModerationDecisionParams;
+  report_receipt: ReportReceiptParams;
+  report_admin: ReportAdminParams;
+  report_outcome: ReportOutcomeParams;
+  renewal_reminder: RenewalReminderParams;
+  subscription_withdrawal: SubscriptionWithdrawalParams;
+  profile_referral: ProfileReferralParams;
   event_reminder: EventReminderParams;
   feedback_request: FeedbackRequestParams;
 }
@@ -582,6 +680,34 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
   account_deletion_confirm: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ACCOUNT_DELETION_CONFIRM),
     label: "Conferma cancellazione account",
+  },
+  moderation_decision: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_MODERATION_DECISION),
+    label: "Decisione di moderazione",
+  },
+  report_receipt: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_REPORT_RECEIPT),
+    label: "Ricevuta segnalazione",
+  },
+  report_admin: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_REPORT_ADMIN),
+    label: "Nuova segnalazione (team)",
+  },
+  report_outcome: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_REPORT_OUTCOME),
+    label: "Esito segnalazione",
+  },
+  renewal_reminder: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_RENEWAL_REMINDER),
+    label: "Promemoria rinnovo annuale",
+  },
+  subscription_withdrawal: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_WITHDRAWAL),
+    label: "Conferma recesso abbonamento",
+  },
+  profile_referral: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILE_REFERRAL),
+    label: "Segnalazione profilo a una struttura",
   },
   event_reminder: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_EVENT_REMINDER),

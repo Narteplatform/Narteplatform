@@ -125,6 +125,18 @@ export function SearchBar({ autoFocus = false, onNavigate }: SearchBarProps = {}
               ))}
             </Group>
           )}
+          {hits.some((h) => h.type === "artist") && (
+            <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+              Risultati per pertinenza; a parità, prima i piani a pagamento.{" "}
+              <Link
+                href="/criteri-di-posizionamento"
+                onClick={() => setOpen(false)}
+                className="font-medium text-foreground underline underline-offset-2"
+              >
+                Come funziona
+              </Link>
+            </p>
+          )}
           {hits.length > 0 && (
             <div className="border-t border-border px-4 py-2 text-right text-[11px] uppercase tracking-wide text-muted-foreground">
               <Link

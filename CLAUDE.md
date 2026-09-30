@@ -170,6 +170,34 @@ espone — le query sono in `docs/VERIFICA_MIGRATION.sql`.
   Dal momento in cui la 0059 è applicata, ogni utente già registrato trova la
   schermata `/accetta-condizioni` al primo accesso alle aree riservate: è voluto,
   nessuno ha mai accettato nulla. Guida completa in `docs/IUBENDA_INTEGRAZIONE.md`.
+- `0061_booking_integrity.sql` — trigger che rifiuta le transizioni di stato
+  non ammesse sul booking (es. `confermata → rifiutata`) e nuova
+  `accept_offer_v2`: l'offerta accettata in chat conferma la trattativa
+  esistente invece di creare un secondo booking. Additiva, nessun dato toccato.
+  Le server action sono già corrette anche senza questa migration.
+- `0062_consent_kinds.sql` — nuovi tipi nel registro consensi
+  (`condizioni_organizzatori`, `condizioni_abbonamento`, `esecuzione_immediata`,
+  `clausole_specifiche`, …) e colonna `ref`; `record_consent` accetta `p_ref`.
+  Finché manca, l'accettazione delle condizioni organizzatori e del checkout non
+  viene archiviata (avviso nei log, il flusso non si blocca).
+- `0063_content_reports.sql` — segnalazioni di contenuti e reclami (DSA artt. 16,
+  17, 20), tabella `content_reports`, solo SELECT superadmin. Finché manca,
+  `/segnalazioni` invita a scrivere da `/contatti` e `/admin/segnalazioni` lo dice.
+- `0064_chat_access_log.sql` — registro degli accessi del Team alle chat e
+  rimozione della lettura superadmin dalle policy `messages_select` /
+  `conversations_select`. ⚠️ Finché manca, `/admin/chat` NON mostra alcun
+  messaggio (senza registro non si legge). Artisti e organizzatori non toccati.
+- `0065_moderation_log.sql` — registro unico delle decisioni di moderazione
+  (`moderation_actions`). Finché manca, le decisioni proseguono e l'email parte,
+  ma nel registro non resta traccia (avviso nei log). **Da applicare prima della 0066.**
+- `0066_feedback_moderation.sql` — recensioni: risposta dell'artista,
+  cancellazione logica, motivo/autore/data della moderazione, dichiarazione I1.
+  Finché manca, nascondere/eliminare agisce solo su `hidden` (mai DELETE fisica).
+- `0067_account_deletion_safety.sql` — `organizers.user_id`, `user_consents.user_id`
+  e le chiavi del compenso diventano `on delete set null` (cancellare un utente
+  non cancella più chat e date della controparte, né la prova dei consensi);
+  la vista `booking_requests_public` nasconde organizzatori privati e strutture
+  «privato» ed è chiusa ad anon.
 - `0060_account_deletion.sql` — tabella delle richieste di cancellazione account,
   con token di conferma. Additiva. Finché manca, la richiesta dalla pagina
   `/account/i-miei-dati` non parte e invita a scrivere dalla pagina contatti.

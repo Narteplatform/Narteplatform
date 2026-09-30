@@ -217,7 +217,9 @@ async function rowsToConversations(
       counterpartAvatarUrl,
       lastMessage: last
         ? {
-            body: last.body,
+            // Al Team non arriva mai il testo: l'elenco mostra solo metadati.
+            // Il contenuto si legge dopo un accesso motivato (lib/chat/access.ts).
+            body: viewer === "superadmin" ? null : last.body,
             kind: last.kind,
             createdAt: last.created_at,
             senderRole: last.sender_role,

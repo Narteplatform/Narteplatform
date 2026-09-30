@@ -83,25 +83,16 @@ export type Entitlements = {
   // --- Visibilità ---
   searchRank: SearchRank;
   /**
-   * Badge "Verificato N'arte" sul profilo pubblico, incluso nel piano.
+   * Badge "Artista Pro" sul profilo pubblico, incluso nel piano.
    *
-   * È automatico e senza richiesta: qui "verificato" non attesta un controllo
-   * documentale, attesta che dietro il profilo c'è un abbonamento attivo — cioè
-   * un artista che sta lavorando sul serio, che è l'informazione che interessa
-   * all'organizzatore quando sceglie fra venti schede. Non esiste nessuna
-   * colonna `is_verified`: la fonte è solo il piano, e cambiarne la regola
-   * significa cambiare questa riga e basta.
+   * È automatico e senza richiesta: indica solo che l'abbonamento Pro o Max è
+   * attivo. Non è una verifica di identità né un giudizio artistico. Non esiste
+   * nessuna colonna `is_verified`: la fonte è solo il piano, e cambiarne la
+   * regola significa cambiare questa riga e basta.
    */
-  verifiedBadge: boolean;
-  /** Etichetta "TOP Artist" oltre al Verificato. Esclusiva del piano Max. */
+  proBadge: boolean;
+  /** Etichetta "TOP Artist" oltre al badge Pro. Esclusiva del piano Max. */
   topArtistBadge: boolean;
-  /**
-   * L'artista entra nella coda delle proposte che il team N'arte invia a mano
-   * alle strutture dall'area admin. Non è un invio automatico: mail non
-   * richieste ai locali brucerebbero la reputazione del dominio.
-   */
-  venueProposalEmails: boolean;
-
   // --- Account ---
   /** Quanti profili artista può creare l'account. L'abbonamento è dell'account. */
   artistProfilesMax: number;
@@ -109,18 +100,19 @@ export type Entitlements = {
   // --- Strumenti ---
   canSetPercorso: boolean;
   /**
-   * A quanti eventi N'arte il team candida l'artista ogni mese.
+   * Quante volte al mese il team N'arte SEGNALA il profilo dell'artista a
+   * strutture in linea con lui (almeno 2 sul piano Max).
    *
-   * È una PROMESSA OPERATIVA, non una funzione software: candida il team a
-   * mano, non esiste (e non deve esistere) un bottone "candidati" da qualche
-   * parte. Sostituisce il vecchio `eventApplicationsPerMonth`, che prometteva
-   * un self-service mai costruito — niente tabella, niente UI, nessun
-   * chiamante — e che quindi il listino vendeva a vuoto.
+   * È una PROMESSA OPERATIVA di mezzi, non una funzione software e non una
+   * garanzia di ingaggi: la segnalazione la fa il team a mano. N'arte è solo
+   * una piattaforma promozionale: non tratta per conto dell'artista, non
+   * candida nessuno a eventi e non partecipa alle trattative; se la struttura
+   * è interessata contatta l'artista sulla piattaforma.
    *
    * Nessun enforcement lato codice: non c'è nulla da bloccare, semmai da
    * onorare. Il numero vive qui perché il listino lo mostri da una fonte sola.
    */
-  narteEventPitchesPerMonth: number;
+  profileReferralsPerMonth: number;
   consultationsPerMonth: number;
   stats: StatsLevel;
   /** Giorni di storico visibili nelle statistiche. 0 se `stats === "none"`. */
@@ -138,12 +130,11 @@ export const ENTITLEMENTS: Record<ArtistTier, Entitlements> = {
     canReceiveReviews: false,
     bookingsPerMonth: UNLIMITED,
     searchRank: 0,
-    verifiedBadge: false,
+    proBadge: false,
     topArtistBadge: false,
-    venueProposalEmails: false,
     artistProfilesMax: 1,
     canSetPercorso: false,
-    narteEventPitchesPerMonth: 0,
+    profileReferralsPerMonth: 0,
     consultationsPerMonth: 0,
     stats: "none",
     statsWindowDays: 0,
@@ -158,12 +149,11 @@ export const ENTITLEMENTS: Record<ArtistTier, Entitlements> = {
     canReceiveReviews: true,
     bookingsPerMonth: UNLIMITED,
     searchRank: 1,
-    verifiedBadge: true,
+    proBadge: true,
     topArtistBadge: false,
-    venueProposalEmails: false,
     artistProfilesMax: 2,
     canSetPercorso: true,
-    narteEventPitchesPerMonth: 0,
+    profileReferralsPerMonth: 0,
     consultationsPerMonth: 1,
     // Le statistiche del profilo sono un'esclusiva Max: è la leva che giustifica
     // il salto da 9,99€ a 49,99€ insieme a TOP Artist e ai 5 profili.
@@ -180,12 +170,11 @@ export const ENTITLEMENTS: Record<ArtistTier, Entitlements> = {
     canReceiveReviews: true,
     bookingsPerMonth: UNLIMITED,
     searchRank: 2,
-    verifiedBadge: true,
+    proBadge: true,
     topArtistBadge: true,
-    venueProposalEmails: true,
     artistProfilesMax: 5,
     canSetPercorso: true,
-    narteEventPitchesPerMonth: 2,
+    profileReferralsPerMonth: 2,
     consultationsPerMonth: UNLIMITED,
     stats: "advanced",
     statsWindowDays: 365,
@@ -213,9 +202,9 @@ export function formatLimit(n: number, unlimitedLabel = "illimitate"): string {
 // Client Component (ArtistsExplorer, SearchBar, ProfileDialog). Questo file è
 // dati puri e si importa da entrambe le parti.
 
-/** "Verificato N'arte": incluso in Pro e Max, senza richiesta né approvazione. */
-export function hasVerifiedBadge(tier: ArtistTier | null | undefined): boolean {
-  return ENTITLEMENTS[tier as ArtistTier]?.verifiedBadge === true;
+/** "Artista Pro": incluso in Pro e Max, senza richiesta né approvazione. */
+export function hasProBadge(tier: ArtistTier | null | undefined): boolean {
+  return ENTITLEMENTS[tier as ArtistTier]?.proBadge === true;
 }
 
 /** "TOP Artist": esclusiva Max. */
@@ -320,14 +309,14 @@ export const PLAN_CARD_HIGHLIGHTS: Record<ArtistTier, string[]> = {
   pro: [
     "Tutto del piano Free",
     "Chat privata con locali e organizzatori",
-    "Recensioni e badge Verificato N'arte",
+    "Recensioni e badge Artista Pro",
     "Fino a 10 foto e 3 video, 2 profili",
     "Priorità nei risultati di ricerca",
     "1 consulenza professionale al mese",
   ],
   max: [
     "Tutto del piano Pro",
-    "Ti candidiamo a 2 eventi N'arte al mese",
+    "Segnaliamo il tuo profilo ad almeno 2 strutture al mese",
     "Statistiche del profilo sull'ultimo anno",
     "Fino a 30 foto e 5 profili artista",
     "Shooting fotografico incluso (annuale)",
@@ -407,9 +396,9 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
     primary: true,
   },
   {
-    label: "Verificato N'arte",
+    label: "Badge Artista Pro",
     values: { free: false, pro: true, max: true },
-    hint: "Incluso nei piani Pro e Max: il badge compare sul profilo pubblico senza doverlo richiedere.",
+    hint: "Compare sul profilo con i piani Pro e Max. Indica l'abbonamento attivo: non è una verifica di identità né un giudizio artistico.",
     primary: true,
   },
   {
@@ -427,6 +416,7 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
   {
     label: "Posizione nei risultati",
     values: { free: "Standard", pro: "Priorità", max: "Top artist in evidenza" },
+    hint: "La posizione migliore è un beneficio a pagamento ed è dichiarata agli utenti nel catalogo.",
     primary: true,
   },
   {
@@ -435,9 +425,9 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
     hint: "Cover artist, tribute band o progetto inedito sul profilo pubblico.",
   },
   {
-    label: "Eventi N'arte",
-    values: { free: false, pro: false, max: "Ti candidiamo a 2 eventi al mese" },
-    hint: "Ci pensiamo noi: il team ti candida agli eventi in linea con il tuo profilo, non devi cercarli tu.",
+    label: "Segnalazione alle strutture",
+    values: { free: false, pro: false, max: "Almeno 2 al mese" },
+    hint: "Il team segnala il tuo profilo a strutture in linea con te. N'arte non tratta per te: se la struttura è interessata ti contatta sulla piattaforma.",
     primary: true,
   },
   {
@@ -449,12 +439,6 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
   {
     label: "Consulenza professionale",
     values: { free: false, pro: "1 slot al mese", max: "Illimitata" },
-    primary: true,
-  },
-  {
-    label: "Proposta alle strutture",
-    values: { free: false, pro: false, max: true },
-    hint: "Il team N'arte propone l'artista ai locali in target.",
     primary: true,
   },
   {

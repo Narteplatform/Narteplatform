@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Flag, ShieldAlert } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MessageList } from "./MessageList";
 import { MessageComposer } from "./MessageComposer";
@@ -41,7 +42,11 @@ export function ChatPanel({
   block?: ActiveBlock | null;
 }) {
   const router = useRouter();
-  const { messages } = useChatChannel(meta.conversationId, initialMessages);
+  const { messages } = useChatChannel(
+    meta.conversationId,
+    initialMessages,
+    viewerRole !== "superadmin",
+  );
   const { blocks } = useConversationBlock(meta.conversationId, meta.activeBlocks);
   const [profileOpen, setProfileOpen] = useState<"artist" | "organizer" | null>(null);
 
@@ -122,6 +127,19 @@ export function ChatPanel({
               </div>
             </div>
           </button>
+        )}
+        {viewerRole !== "superadmin" && (
+          <Link
+            href={`/segnalazioni?tipo=messaggio&url=${encodeURIComponent(
+              `${viewerRole === "artist" ? "/dashboard/chat" : "/organizzatore/chat"}/${meta.conversationId}`,
+            )}`}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+            title="Segnala questa conversazione al team"
+          >
+            <Flag className="size-3.5" aria-hidden />
+            <span className="hidden sm:inline">Segnala questa conversazione</span>
+            <span className="sm:hidden">Segnala</span>
+          </Link>
         )}
       </header>
       <ProfileDialog

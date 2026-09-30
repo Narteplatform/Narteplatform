@@ -4,6 +4,11 @@ import Link from "next/link";
 import { Checkbox } from "@/components/ui/Checkbox";
 
 /**
+ * TESTI (fascicolo legale, doc. 08): l'informativa si LEGGE, non si «accetta» e
+ * non si «acconsente» quando il trattamento serve a rispondere alla richiesta
+ * (art. 6, par. 1, lett. b GDPR). Un consenso chiesto senza bisogno sarebbe
+ * revocabile e ambiguo. I termini invece si accettano, con una frase propria.
+ *
  * La casella di presa visione dell'informativa privacy, per i moduli pubblici
  * che raccolgono dati di persone non registrate: contatti, candidatura artista,
  * interesse su un format.
@@ -51,8 +56,8 @@ export function PrivacyConsent({
             className="underline underline-offset-2"
           >
             informativa privacy
-          </Link>{" "}
-          e acconsento al trattamento dei miei dati per essere ricontattato.
+          </Link>
+          : i miei dati servono solo a rispondere a questa richiesta.
         </>
       }
     />
@@ -88,16 +93,7 @@ export function TermsConsent({
       className={className}
       label={
         <>
-          Ho letto e accetto la{" "}
-          <Link
-            href="/privacy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-2"
-          >
-            informativa privacy
-          </Link>{" "}
-          e i{" "}
+          Ho letto e accetto i{" "}
           <Link
             href="/termini"
             target="_blank"
@@ -105,6 +101,15 @@ export function TermsConsent({
             className="underline underline-offset-2"
           >
             termini d&rsquo;uso
+          </Link>
+          . Ho preso visione dell&rsquo;
+          <Link
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2"
+          >
+            informativa privacy
           </Link>
           .
         </>

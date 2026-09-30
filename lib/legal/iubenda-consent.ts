@@ -255,9 +255,9 @@ export function registraProvaSuIubendaInBackground(prova: ProvaConsenso): void {
 /** Il testo delle caselle, in un posto solo, per ritrovarlo nelle prove. */
 export const TESTO_CASELLA = {
   privacy:
-    "Ho letto l'informativa privacy e acconsento al trattamento dei miei dati per essere ricontattato.",
+    "Ho letto l'informativa privacy: i miei dati servono solo a rispondere a questa richiesta.",
   termini:
-    "Ho letto e accetto la informativa privacy e i termini d'uso.",
+    "Ho letto e accetto i termini d'uso. Ho preso visione dell'informativa privacy.",
   eta: "Dichiaro di avere almeno 18 anni.",
   marketing:
     "Voglio ricevere novità sugli eventi e sulle opportunità N'arte.",

@@ -35,6 +35,7 @@ export function ArtistEditForm({ artistId, genreOptions, defaults }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+  const [reason, setReason] = useState("");
   const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<Values>({
     defaultValues: {
       stage_name: defaults.stage_name ?? "",
@@ -71,12 +72,13 @@ export function ArtistEditForm({ artistId, genreOptions, defaults }: Props) {
       youtube: values.youtube || undefined,
       spotify: values.spotify || undefined,
       website: values.website || undefined,
-    });
+    }, reason);
     if (!res.ok) {
       setError(res.error ?? "Errore aggiornamento");
       return;
     }
     setOk(true);
+    setReason("");
     router.refresh();
   }
 
@@ -143,6 +145,19 @@ export function ArtistEditForm({ artistId, genreOptions, defaults }: Props) {
       </fieldset>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <Field label="Motivo della modifica (facoltativo)">
+        <Textarea
+          rows={2}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          maxLength={1000}
+          placeholder="Es: rimosso un link non funzionante su richiesta dell'artista."
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Se lo compili (almeno 10 caratteri) e il profilo appartiene a un altro utente, gli inviamo
+          un&apos;email con l&apos;elenco dei campi cambiati e questo motivo.
+        </p>
+      </Field>
       {ok && <p className="text-sm text-green-700">Profilo aggiornato.</p>}
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Salvataggio..." : "Salva modifiche"}

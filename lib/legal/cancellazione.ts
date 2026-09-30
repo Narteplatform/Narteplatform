@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
 import { logger } from "@/lib/logger";
+import { getStripe, isStripeConfigured } from "@/lib/stripe/client";
 
 /**
  * Cancellazione dell'account: richiesta, conferma, disattivazione.
@@ -83,6 +84,40 @@ export async function creaRichiestaCancellazione(
   return { ok: true, token };
 }
 
+export type StatoRichiesta =
+  | { valida: true; giaConfermata: boolean }
+  | { valida: false; motivo: "non-trovata" | "scaduta" | "annullata" | "errore" };
+
+/**
+ * Legge lo stato di una richiesta SENZA modificarla.
+ *
+ * Serve alla pagina raggiunta dal collegamento nell'email: aprirla deve solo
+ * mostrare un pulsante. Prima la semplice apertura confermava la
+ * cancellazione, e i programmi che aprono i collegamenti per controllarli —
+ * antivirus della posta, anteprime, scanner aziendali — potevano disattivare
+ * un account al posto del suo titolare. Ora la conferma è un invio esplicito
+ * (POST) dalla pagina.
+ */
+export async function statoRichiesta(token: string): Promise<StatoRichiesta> {
+  const admin = createAdminClient();
+  const { data: richiesta, error } = await admin
+    .from("account_deletion_requests")
+    .select("expires_at, confirmed_at, cancelled_at")
+    .eq("token_hash", impronta(token))
+    .maybeSingle();
+  if (error) {
+    logger.error("cancellazione", `lettura richiesta fallita: ${error.message}`);
+    return { valida: false, motivo: "errore" };
+  }
+  if (!richiesta) return { valida: false, motivo: "non-trovata" };
+  if (richiesta.cancelled_at) return { valida: false, motivo: "annullata" };
+  if (richiesta.confirmed_at) return { valida: true, giaConfermata: true };
+  if (new Date(richiesta.expires_at).getTime() < Date.now()) {
+    return { valida: false, motivo: "scaduta" };
+  }
+  return { valida: true, giaConfermata: false };
+}
+
 /**
  * Conferma la richiesta e disattiva l'account.
  *
@@ -118,11 +153,17 @@ export async function confermaCancellazione(token: string): Promise<EsitoConferm
   const statoPrecedente = await disattivaAccount(richiesta.user_id);
   if (!statoPrecedente.ok) return { ok: false, motivo: "errore" };
 
+  // Un account chiuso non deve continuare a rinnovare l'abbonamento. Si imposta
+  // la disdetta a fine periodo (nessun nuovo addebito, nessun rimborso
+  // automatico del periodo in corso: doc. 02, art. 6.3). Se Stripe non risponde
+  // la disattivazione resta valida e l'errore finisce nei log, da gestire a mano.
+  const disdetta = await disdiciAbbonamentoAFinePeriodo(richiesta.user_id);
+
   const { error: erroreConferma } = await admin
     .from("account_deletion_requests")
     .update({
       confirmed_at: new Date().toISOString(),
-      restore_state: statoPrecedente.stato,
+      restore_state: { ...(statoPrecedente.stato as Record<string, Json>), abbonamento: disdetta },
     })
     .eq("id", richiesta.id);
 
@@ -202,4 +243,42 @@ async function disattivaAccount(
       disattivato_il: new Date().toISOString(),
     },
   };
+}
+
+/**
+ * Imposta `cancel_at_period_end` sull'abbonamento attivo, se c'è.
+ * Restituisce cosa è stato fatto, da conservare nello stato di ripristino.
+ */
+async function disdiciAbbonamentoAFinePeriodo(userId: string): Promise<Json> {
+  const admin = createAdminClient();
+  const { data: subs, error } = await admin
+    .from("subscriptions")
+    .select("stripe_subscription_id, status, cancel_at_period_end")
+    .eq("user_id", userId)
+    .in("status", ["trialing", "active", "past_due"]);
+  if (error) {
+    logger.error("cancellazione", `lettura abbonamenti fallita: ${error.message}`);
+    return { esito: "errore_lettura" };
+  }
+  const attivi = (subs ?? []).filter((s) => !s.cancel_at_period_end);
+  if (attivi.length === 0) return { esito: "nessun_abbonamento_da_disdire" };
+  if (!isStripeConfigured()) {
+    logger.error("cancellazione", `abbonamento da disdire a mano per l'utente ${userId}: Stripe non configurato`);
+    return { esito: "da_disdire_a_mano" };
+  }
+  const stripe = getStripe();
+  const disdetti: string[] = [];
+  for (const sub of attivi) {
+    try {
+      await stripe.subscriptions.update(sub.stripe_subscription_id, { cancel_at_period_end: true });
+      disdetti.push(sub.stripe_subscription_id);
+    } catch (e) {
+      logger.error(
+        "cancellazione",
+        `ABBONAMENTO NON DISDETTO — ${sub.stripe_subscription_id} utente=${userId}:`,
+        e instanceof Error ? e.message : e,
+      );
+    }
+  }
+  return { esito: disdetti.length === attivi.length ? "disdetto" : "parziale", disdetti };
 }

@@ -55,19 +55,29 @@ function fromRaw(r: Raw): ChatMessage {
   };
 }
 
-export function useChatChannel(conversationId: string | null, initial: ChatMessage[]) {
+/**
+ * `realtime = false` per il Team: le sue letture passano dal server dopo un
+ * accesso registrato (migration 0064 toglie il permesso di lettura dal
+ * browser), quindi non ha senso sottoscrivere nulla. In quel caso i messaggi
+ * seguono sempre l'ultimo valore letto dal server (pulsante «Aggiorna»).
+ */
+export function useChatChannel(
+  conversationId: string | null,
+  initial: ChatMessage[],
+  realtime = true,
+) {
   const [messages, setMessages] = useState<ChatMessage[]>(initial);
   const initialKey = useRef<string>("");
 
   useEffect(() => {
-    if (initialKey.current !== conversationId) {
+    if (!realtime || initialKey.current !== conversationId) {
       setMessages(initial);
       initialKey.current = conversationId ?? "";
     }
-  }, [conversationId, initial]);
+  }, [conversationId, initial, realtime]);
 
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId || !realtime) return;
     const supabase = createClient();
     const suffix =
       typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -111,7 +121,7 @@ export function useChatChannel(conversationId: string | null, initial: ChatMessa
         }
       }
     };
-  }, [conversationId]);
+  }, [conversationId, realtime]);
 
   return { messages, setMessages };
 }

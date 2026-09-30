@@ -164,7 +164,7 @@ export const BOOKING: HelpCategory = {
       slug: "dopo-la-conferma",
       title: "Cosa succede dopo la conferma di una data",
       excerpt:
-        "Calendari, email, prezzo definitivo, recensione: la sequenza di ciò che accade quando una data diventa confermata.",
+        "Calendari, email, compenso concordato – promemoria, recensione: la sequenza di ciò che accade quando una data diventa confermata.",
       updatedAt: UPDATED,
       related: [
         "stati-richiesta",
@@ -178,13 +178,13 @@ export const BOOKING: HelpCategory = {
   <li>La data è <strong>bloccata sul calendario dell'artista</strong>. Nessun altro può prenotarlo quel giorno.</li>
   <li>Compare nel <strong>calendario dell'organizzatore</strong>, fra le date confermate.</li>
   <li>Parte un'<strong>email di conferma a entrambi</strong>, con artista, data e riepilogo.</li>
-  <li>Si sblocca il riquadro del <strong>prezzo definitivo</strong> sulla richiesta.</li>
+  <li>Si sblocca il riquadro <strong>«Compenso concordato – promemoria»</strong> sulla richiesta.</li>
 </ol>
 
 <h2>Subito dopo: le cose da fare</h2>
 <p>La conferma dice <em>quando</em> e <em>chi</em>. Tutto il resto va concordato, ed è il momento giusto per farlo, non la settimana prima.</p>
 <ul>
-  <li><strong>Registrate il prezzo definitivo</strong> con la doppia conferma: vedi <a href="/help/organizzatori/prezzo-definitivo">il prezzo definitivo</a>.</li>
+  <li><strong>Annotate il compenso concordato</strong> con la doppia conferma: vedi <a href="/help/organizzatori/prezzo-definitivo">compenso concordato – promemoria</a>.</li>
   <li><strong>Scambiatevi il rider tecnico</strong>: vedi <a href="/help/organizzatori/guida-rider-tecnico">cos'è il rider tecnico</a>.</li>
   <li><strong>Mettete per iscritto il resto</strong> — orari di arrivo, durata, chi porta cosa, come si paga: vedi <a href="/help/booking/contratto-modello">cosa mettere per iscritto</a>.</li>
 </ul>

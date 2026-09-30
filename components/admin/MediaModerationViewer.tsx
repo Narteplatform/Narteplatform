@@ -94,7 +94,7 @@ export function MediaModerationViewer({
                 rows={2}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Motivazione del rifiuto (facoltativa, la vede l'artista)"
+                placeholder="Motivazione del rifiuto (obbligatoria, almeno 10 caratteri: viene inviata all'artista)"
                 disabled={busy}
                 className="bg-white/90 text-sm"
               />
@@ -121,7 +121,7 @@ export function MediaModerationViewer({
                 <Button
                   type="button"
                   size="sm"
-                  disabled={busy}
+                  disabled={busy || note.trim().length < 10}
                   onClick={() => onReject(originale, note)}
                   className="bg-red-600 text-white hover:bg-red-700"
                 >

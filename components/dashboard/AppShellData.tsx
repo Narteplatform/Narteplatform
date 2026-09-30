@@ -2,6 +2,9 @@ import {
   BarChart3,
   Building2,
   CalendarDays,
+  Flag,
+  MessageSquareQuote,
+  Send,
   ClipboardList,
   FileText,
   Inbox,
@@ -252,6 +255,26 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
           ? { label: String(pendingModerationCount), variant: "accent" }
           : undefined,
     },
+    segnalazioni: {
+      href: "/admin/segnalazioni",
+      label: "Segnalazioni",
+      icon: <Flag className="size-4" />,
+    },
+    recensioni: {
+      href: "/admin/recensioni",
+      label: "Recensioni",
+      icon: <MessageSquareQuote className="size-4" />,
+    },
+    abbonamenti: {
+      href: "/admin/abbonamenti",
+      label: "Abbonamenti",
+      icon: <CreditCard className="size-4" />,
+    },
+    proposte: {
+      href: "/admin/proposte",
+      label: "Proposte Max",
+      icon: <Send className="size-4" />,
+    },
     impostazioni: opts?.isRoot
       ? {
           href: "/admin/impostazioni",
@@ -280,6 +303,10 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     "email",
     "feedback",
     "moderazione",
+    "segnalazioni",
+    "recensioni",
+    "abbonamenti",
+    "proposte",
     "impostazioni",
     "profilo",
   ];

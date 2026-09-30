@@ -17,6 +17,7 @@ import { arePricesConfigured } from "@/lib/stripe/prices";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SubscriptionPanel } from "@/components/billing/SubscriptionPanel";
+import { statoRecesso } from "./_actions";
 import type { ArtistTier } from "@/lib/supabase/types";
 
 export const metadata = { title: "Abbonamento — N'arte" };
@@ -199,7 +200,7 @@ export default async function AbbonamentoPage({
           ) : (
             <p className="text-sm text-muted-foreground">
               Stai usando il piano gratuito. Passa a Pro per la chat con gli organizzatori, le
-              recensioni e il badge Verificato N&rsquo;arte.
+              recensioni e il badge Artista Pro.
             </p>
           )}
 
@@ -228,7 +229,11 @@ export default async function AbbonamentoPage({
           </CardContent>
         </Card>
       ) : (
-        <SubscriptionPanel currentTier={ent.tier} hasSubscription={Boolean(sub)} />
+        <SubscriptionPanel
+          currentTier={ent.tier}
+          hasSubscription={Boolean(sub)}
+          recesso={sub ? await statoRecesso() : { disponibile: false }}
+        />
       )}
 
       <p className="text-center text-xs text-muted-foreground">

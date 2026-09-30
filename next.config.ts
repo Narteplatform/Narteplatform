@@ -50,6 +50,12 @@ const nextConfig: NextConfig = {
       { source: "/privacy", destination: "/legale/privacy" },
       { source: "/cookie-policy", destination: "/legale/cookie-policy" },
       { source: "/termini", destination: "/legale/termini" },
+      // Documenti v2: rispondono 404 finché NEXT_PUBLIC_LEGAL_V2_PUBBLICATO non è "1".
+      { source: "/condizioni-abbonamento", destination: "/legale-v2/condizioni-abbonamento" },
+      { source: "/condizioni-artisti", destination: "/legale-v2/condizioni-artisti" },
+      { source: "/condizioni-organizzatori", destination: "/legale-v2/condizioni-organizzatori" },
+      { source: "/regolamento-recensioni", destination: "/legale-v2/regolamento-recensioni" },
+      { source: "/criteri-di-posizionamento", destination: "/legale-v2/criteri-di-posizionamento" },
     ];
   },
 

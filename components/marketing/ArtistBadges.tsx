@@ -1,11 +1,11 @@
 import { BadgeCheck } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
-import { hasTopArtistBadge, hasVerifiedBadge } from "@/lib/billing/plans";
+import { hasTopArtistBadge, hasProBadge } from "@/lib/billing/plans";
 import type { ArtistTier } from "@/lib/supabase/types";
 
 /**
- * Le etichette di piano sul profilo pubblico: "Verificato N'arte" (Pro e Max) e
+ * Le etichette di piano sul profilo pubblico: "Artista Pro" (Pro e Max) e
  * "TOP Artist" (solo Max).
  *
  * NON è un Client Component di proposito: è presentazionale puro e deve poter
@@ -22,7 +22,12 @@ import type { ArtistTier } from "@/lib/supabase/types";
 /** Fondo semi-opaco per i badge appoggiati su una foto: senza, il testo sparisce. */
 const ON_IMAGE = "bg-palco/90 backdrop-blur-sm";
 
-export function VerifiedBadge({
+/** Testi dell'Allegato A del doc. 07 (criteri di posizionamento). */
+const PRO_TIP =
+  "L'artista ha un abbonamento Pro o Max attivo. Non è una verifica d'identità né un giudizio artistico.";
+const TOP_TIP = "In evidenza con il piano Max, a pagamento. Non è una classifica di merito.";
+
+export function ProBadge({
   compact = false,
   onImage = false,
   className,
@@ -34,14 +39,15 @@ export function VerifiedBadge({
   return (
     <Badge
       variant="default"
-      className={cn(onImage && ON_IMAGE, compact && "px-1.5", className)}
-      // Nella forma compatta resta solo l'icona: senza questi due attributi il
-      // badge non avrebbe alcun nome accessibile e in hover non direbbe nulla.
-      title="Verificato N'arte"
-      aria-label={compact ? "Verificato N'arte" : undefined}
+      className={cn(onImage && ON_IMAGE, className)}
+      // Indica l'abbonamento attivo: non è una verifica di identità né un
+      // giudizio artistico. Nella forma compatta il testo è abbreviato in "Pro",
+      // quindi l'aria-label esteso dà il nome completo.
+      title={PRO_TIP}
+      aria-label={compact ? `Artista Pro. ${PRO_TIP}` : undefined}
     >
       <BadgeCheck aria-hidden="true" className="size-3.5" />
-      {!compact && "Verificato"}
+      {compact ? "Pro" : "Artista Pro"}
     </Badge>
   );
 }
@@ -59,7 +65,8 @@ export function TopArtistBadge({
     <Badge
       variant="accent"
       className={cn(onImage && ON_IMAGE, className)}
-      title="TOP Artist N'arte"
+      title={TOP_TIP}
+      aria-label={compact ? `TOP Artist. ${TOP_TIP}` : undefined}
     >
       {compact ? "TOP" : "Top artist"}
     </Badge>
@@ -74,22 +81,22 @@ export function ArtistTierBadges({
 }: {
   /** `null`/`undefined` è trattato come Free: nessun badge. */
   tier: ArtistTier | null | undefined;
-  /** Solo icona per il Verificato e "TOP" abbreviato: per le righe strette. */
+  /** "Pro" abbreviato per il badge Artista Pro e "TOP" abbreviato: per le righe strette. */
   compact?: boolean;
   /** Il badge sta sopra una foto e serve un fondo opaco. */
   onImage?: boolean;
   className?: string;
 }) {
-  const verified = hasVerifiedBadge(tier);
+  const pro = hasProBadge(tier);
   const top = hasTopArtistBadge(tier);
-  if (!verified && !top) return null;
+  if (!pro && !top) return null;
 
   return (
     <span className={cn("inline-flex flex-wrap items-center gap-1.5", className)}>
-      {/* TOP prima del Verificato: è il segnale più forte e a capo riga stretto
+      {/* TOP prima di Artista Pro: è il segnale più forte e a capo riga stretto
           è quello che deve restare visibile. */}
       {top && <TopArtistBadge compact={compact} onImage={onImage} />}
-      {verified && <VerifiedBadge compact={compact} onImage={onImage} />}
+      {pro && <ProBadge compact={compact} onImage={onImage} />}
     </span>
   );
 }

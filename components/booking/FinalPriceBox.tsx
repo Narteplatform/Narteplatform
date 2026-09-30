@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, Euro, Pencil, RefreshCw } from "lucide-react";
+import { CheckCircle2, Euro, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
 import {
@@ -22,6 +22,21 @@ type Props = {
   confirmedBy: string | null;
   confirmedAt: string | null;
 };
+
+/**
+ * La natura del riquadro, detta sempre. È un'annotazione fra le parti: se il
+ * testo restasse implicito, un importo «confermato» dentro la piattaforma
+ * sembrerebbe un contratto concluso tramite N'arte, che è il contrario del
+ * modello dichiarato nei termini d'uso.
+ */
+function NotaPromemoria() {
+  return (
+    <p className="mt-2 text-[11px] leading-snug opacity-80">
+      Annotazione fra voi due, a solo scopo di promemoria. N&rsquo;arte non è parte
+      dell&rsquo;accordo, non lo garantisce e non gestisce pagamenti.
+    </p>
+  );
+}
 
 function formatEur(n: number) {
   return new Intl.NumberFormat("it-IT", {
@@ -75,7 +90,7 @@ export function FinalPriceBox({
   }
 
   function reset() {
-    if (!window.confirm("Azzerare prezzo definitivo e ricominciare?")) return;
+    if (!window.confirm("Ritirare la proposta di compenso?")) return;
     setError(null);
     startTransition(async () => {
       const res = await resetFinalPrice({ booking_id: bookingId });
@@ -90,7 +105,7 @@ export function FinalPriceBox({
   if (editing) {
     return (
       <div className="rounded-md border border-azzurro/40 bg-azzurro/5 p-3 space-y-3">
-        <Label>Prezzo definitivo pattuito in chat (€)</Label>
+        <Label>Compenso concordato – promemoria (€)</Label>
         <div className="flex items-center gap-2">
           <Input
             type="number"
@@ -114,6 +129,7 @@ export function FinalPriceBox({
             Annulla
           </Button>
         </div>
+        <NotaPromemoria />
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
     );
@@ -124,12 +140,13 @@ export function FinalPriceBox({
       <div className="rounded-md border border-dashed border-border bg-muted/40 p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="text-sm text-muted-foreground">
-            Nessun prezzo definitivo. Inserisci il valore pattuito in chat.
+            Nessun compenso annotato. Se vi siete accordati, potete annotarlo qui come promemoria.
           </div>
           <Button type="button" size="sm" variant="outline" onClick={() => setEditing(true)}>
-            <Euro className="size-4" /> Inserisci prezzo
+            <Euro className="size-4" /> Annota compenso
           </Button>
         </div>
+        <NotaPromemoria />
       </div>
     );
   }
@@ -141,7 +158,7 @@ export function FinalPriceBox({
           <div className="flex items-center gap-2">
             <CheckCircle2 className="size-4" />
             <div>
-              <p className="text-sm font-semibold">Prezzo confermato: {formatEur(finalPrice)}</p>
+              <p className="text-sm font-semibold">Compenso annotato da entrambi: {formatEur(finalPrice)}</p>
               <p className="text-[11px] opacity-80">
                 Confermato il {confirmedAt ? new Date(confirmedAt).toLocaleString("it-IT") : "—"}
               </p>
@@ -157,17 +174,9 @@ export function FinalPriceBox({
             >
               <Pencil className="size-3.5" /> Modifica
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={reset}
-              disabled={pending}
-            >
-              <RefreshCw className="size-3.5" /> Reset
-            </Button>
           </div>
         </div>
+        <NotaPromemoria />
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </div>
     );
@@ -179,7 +188,7 @@ export function FinalPriceBox({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold">
-            Proposta: {formatEur(finalPrice)}
+            Compenso proposto: {formatEur(finalPrice)}
           </p>
           <p className="text-[11px] opacity-80">
             {myProposal
@@ -210,10 +219,11 @@ export function FinalPriceBox({
             onClick={reset}
             disabled={pending}
           >
-            Reset
+            Ritira
           </Button>
         </div>
       </div>
+      <NotaPromemoria />
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
     </div>
   );

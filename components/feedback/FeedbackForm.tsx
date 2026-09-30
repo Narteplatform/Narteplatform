@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { Star, CheckCircle2 } from "lucide-react";
 import { feedbackSchema, type FeedbackInput } from "@/lib/validators/schemas";
 import { Label, Textarea } from "@/components/ui/Input";
@@ -14,6 +15,7 @@ export function FeedbackForm({ bookingId, artistName }: { bookingId: string; art
   const [hover, setHover] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [declared, setDeclared] = useState(false);
   const [pending, startTransition] = useTransition();
   const {
     register,
@@ -30,11 +32,16 @@ export function FeedbackForm({ bookingId, artistName }: { bookingId: string; art
       setError("Seleziona un voto");
       return;
     }
+    if (!declared) {
+      setError("Conferma la dichiarazione per inviare la recensione");
+      return;
+    }
     startTransition(async () => {
       const res = await submitFeedback({
         booking_request_id: values.booking_request_id,
         rating,
         body: values.body,
+        declared: true,
       });
       if (!res.ok) {
         setError(res.error);
@@ -94,8 +101,29 @@ export function FeedbackForm({ bookingId, artistName }: { bookingId: string; art
         />
         {errors.body && <p className="mt-1 text-xs text-red-600">{errors.body.message}</p>}
       </div>
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={declared}
+          onChange={(e) => setDeclared(e.target.checked)}
+          className="mt-0.5 size-4 shrink-0"
+          required
+        />
+        <span>
+          Confermo che la recensione riguarda un evento reale con questo artista, che è la mia
+          opinione sincera e che non ho ricevuto nulla in cambio. Rispetta il{" "}
+          <Link
+            href="/regolamento-recensioni"
+            target="_blank"
+            className="underline underline-offset-2"
+          >
+            Regolamento delle recensioni
+          </Link>
+          .
+        </span>
+      </label>
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending || !declared}>
         {pending ? "Invio…" : "Invia feedback"}
       </Button>
     </form>

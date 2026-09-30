@@ -37,8 +37,8 @@ export const PAGAMENTI: HelpCategory = {
 <h2>Cosa fa comunque la piattaforma</h2>
 <p>Non gestisce il denaro, ma lascia una traccia di ciò che avete deciso:</p>
 <ul>
-  <li>La <strong>chat</strong> conserva tutta la trattativa, consultabile da entrambi.</li>
-  <li>Il <a href="/help/organizzatori/prezzo-definitivo"><strong>prezzo definitivo</strong></a> registra il compenso pattuito con la conferma di entrambe le parti. Non è un pagamento: è una traccia condivisa che nessuno può modificare da solo.</li>
+  <li>La <strong>chat</strong> (disponibile con gli artisti Pro o Max) conserva ciò che vi siete scritti, consultabile da entrambi.</li>
+  <li>Il <a href="/help/organizzatori/prezzo-definitivo"><strong>compenso concordato – promemoria</strong></a> annota il compenso pattuito con la conferma di entrambe le parti. Non è un pagamento e N'arte non ne è parte. Una proposta non confermata si può ritirare; un importo confermato da entrambi non si cancella da soli: si può solo proporre un nuovo importo, che l'altra parte deve confermare.</li>
 </ul>
 
 <h2>Cosa concordare prima</h2>
@@ -164,7 +164,7 @@ export const PAGAMENTI: HelpCategory = {
 <p>È il terzo punto quello che evita le discussioni peggiori, ed è anche quello che quasi nessuno scrive.</p>
 
 <h2>Il modo più semplice di tutelarsi</h2>
-<p>Non è l'acconto: è <strong>scrivere tutto in chat</strong>. La conversazione resta tracciata, consultabile da entrambi e non modificabile a posteriori. Registrate anche il <a href="/help/organizzatori/prezzo-definitivo">prezzo definitivo</a>, che richiede la conferma di entrambe le parti.</p>
+<p>Non è l'acconto: è <strong>scrivere tutto in chat</strong>. La conversazione resta tracciata, consultabile da entrambi e non modificabile a posteriori. Annotate anche il <a href="/help/organizzatori/prezzo-definitivo">compenso concordato – promemoria</a>, che richiede la conferma di entrambe le parti.</p>
 <p>Un messaggio riepilogativo dopo la conferma vale più di qualunque accordo verbale.</p>
 
 <h2>Se la data salta</h2>

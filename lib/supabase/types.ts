@@ -9,7 +9,18 @@ export type LeadStatus = "new" | "contacted" | "closed";
 export type AvailabilityStatus = "available" | "busy";
 export type PriceBand = "budget" | "standard" | "premium" | "luxury";
 export type ArtistTier = "free" | "pro" | "max";
-export type ConsentKind = "privacy" | "termini" | "marketing";
+export type ConsentKind =
+  | "privacy"
+  | "termini"
+  | "marketing"
+  // Aggiunti dalla 0062 (fascicolo legale, doc. 08).
+  | "condizioni_organizzatori"
+  | "condizioni_artisti"
+  | "condizioni_abbonamento"
+  | "esecuzione_immediata"
+  | "clausole_specifiche"
+  | "maggiore_eta"
+  | "diritti_contenuti";
 export type ArtistPath = "cover_artist" | "tribute_band" | "progetto_inedito";
 export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "privato" | "altro";
 export type BookingStatus = "pending" | "in_trattativa" | "confermata" | "rifiutata" | "annullata";
@@ -510,6 +521,218 @@ export interface Database {
         };
         Relationships: [];
       };
+      /** Registro unico delle decisioni di moderazione (0065). */
+      moderation_actions: {
+        Row: {
+          id: string;
+          created_at: string;
+          actor_id: string | null;
+          target_type: string;
+          target_id: string | null;
+          affected_user_id: string | null;
+          affected_email: string | null;
+          action: string;
+          reason: string;
+          report_id: string | null;
+          notified_at: string | null;
+          notify_error: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          actor_id?: string | null;
+          target_type: string;
+          target_id?: string | null;
+          affected_user_id?: string | null;
+          affected_email?: string | null;
+          action: string;
+          reason: string;
+          report_id?: string | null;
+          notified_at?: string | null;
+          notify_error?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          actor_id?: string | null;
+          target_type?: string;
+          target_id?: string | null;
+          affected_user_id?: string | null;
+          affected_email?: string | null;
+          action?: string;
+          reason?: string;
+          report_id?: string | null;
+          notified_at?: string | null;
+          notify_error?: string | null;
+        };
+        Relationships: [];
+      };
+      /** Segnalazioni di contenuti illeciti e reclami (0063, art. 16 e 20 DSA). */
+      content_reports: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          reference: string;
+          kind: "segnalazione" | "reclamo";
+          reporter_user_id: string | null;
+          reporter_name: string;
+          reporter_email: string;
+          target_type: "profilo" | "media" | "recensione" | "struttura" | "messaggio" | "decisione" | "altro";
+          target_url: string | null;
+          target_id: string | null;
+          category: string;
+          description: string;
+          contested_reference: string | null;
+          good_faith_at: string;
+          consent_version: string | null;
+          status: "ricevuta" | "in_esame" | "accolta" | "respinta" | "archiviata";
+          decision_note: string | null;
+          decided_by: string | null;
+          decided_at: string | null;
+          reporter_notified_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          reference: string;
+          kind?: "segnalazione" | "reclamo";
+          reporter_user_id?: string | null;
+          reporter_name: string;
+          reporter_email: string;
+          target_type: "profilo" | "media" | "recensione" | "struttura" | "messaggio" | "decisione" | "altro";
+          target_url?: string | null;
+          target_id?: string | null;
+          category: string;
+          description: string;
+          contested_reference?: string | null;
+          good_faith_at: string;
+          consent_version?: string | null;
+          status?: "ricevuta" | "in_esame" | "accolta" | "respinta" | "archiviata";
+          decision_note?: string | null;
+          decided_by?: string | null;
+          decided_at?: string | null;
+          reporter_notified_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          reference?: string;
+          kind?: "segnalazione" | "reclamo";
+          reporter_user_id?: string | null;
+          reporter_name?: string;
+          reporter_email?: string;
+          target_type?: "profilo" | "media" | "recensione" | "struttura" | "messaggio" | "decisione" | "altro";
+          target_url?: string | null;
+          target_id?: string | null;
+          category?: string;
+          description?: string;
+          contested_reference?: string | null;
+          good_faith_at?: string;
+          consent_version?: string | null;
+          status?: "ricevuta" | "in_esame" | "accolta" | "respinta" | "archiviata";
+          decision_note?: string | null;
+          decided_by?: string | null;
+          decided_at?: string | null;
+          reporter_notified_at?: string | null;
+        };
+        Relationships: [];
+      };
+      /** Accessi motivati del Team alle conversazioni (0064). */
+      chat_access_log: {
+        Row: {
+          id: string;
+          created_at: string;
+          admin_user_id: string;
+          conversation_id: string;
+          reason_category: "assistenza" | "contestazione" | "segnalazione" | "obbligo_di_legge";
+          reason_text: string;
+          report_reference: string | null;
+          expires_at: string;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          admin_user_id: string;
+          conversation_id: string;
+          reason_category: "assistenza" | "contestazione" | "segnalazione" | "obbligo_di_legge";
+          reason_text: string;
+          report_reference?: string | null;
+          expires_at: string;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          admin_user_id?: string;
+          conversation_id?: string;
+          reason_category?: "assistenza" | "contestazione" | "segnalazione" | "obbligo_di_legge";
+          reason_text?: string;
+          report_reference?: string | null;
+          expires_at?: string;
+        };
+        Relationships: [];
+      };
+      /** Segnalazioni del profilo di un artista Max a una struttura (0068). */
+      profile_referrals: {
+        Row: {
+          id: string;
+          created_at: string;
+          artist_id: string;
+          sent_by: string | null;
+          recipient_name: string;
+          recipient_email: string;
+          organizer_id: string | null;
+          venue_id: string | null;
+          note: string | null;
+          email_status: "inviata" | "non_inviata";
+          period_month: string;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          artist_id: string;
+          sent_by?: string | null;
+          recipient_name: string;
+          recipient_email: string;
+          organizer_id?: string | null;
+          venue_id?: string | null;
+          note?: string | null;
+          email_status?: "inviata" | "non_inviata";
+          period_month: string;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          artist_id?: string;
+          sent_by?: string | null;
+          recipient_name?: string;
+          recipient_email?: string;
+          organizer_id?: string | null;
+          venue_id?: string | null;
+          note?: string | null;
+          email_status?: "inviata" | "non_inviata";
+          period_month?: string;
+        };
+        Relationships: [];
+      };
+      /** Strutture che non vogliono più ricevere segnalazioni (0068). */
+      referral_optouts: {
+        Row: {
+          email_hash: string;
+          created_at: string;
+        };
+        Insert: {
+          email_hash: string;
+          created_at?: string;
+        };
+        Update: {
+          email_hash?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       account_deletion_requests: {
         Row: {
           id: string;
@@ -557,6 +780,8 @@ export interface Database {
           version: string;
           accepted: boolean;
           accepted_at: string;
+          ref: string | null;
+          subject_hash: string | null;
         };
         Insert: {
           id?: string;
@@ -565,6 +790,8 @@ export interface Database {
           version: string;
           accepted?: boolean;
           accepted_at?: string;
+          ref?: string | null;
+          subject_hash?: string | null;
         };
         Update: {
           id?: string;
@@ -573,6 +800,8 @@ export interface Database {
           version?: string;
           accepted?: boolean;
           accepted_at?: string;
+          ref?: string | null;
+          subject_hash?: string | null;
         };
         Relationships: [];
       };
@@ -969,6 +1198,13 @@ export interface Database {
           body: string;
           hidden: boolean;
           created_at: string;
+          artist_reply: string | null;
+          artist_reply_at: string | null;
+          moderation_reason: string | null;
+          moderated_by: string | null;
+          moderated_at: string | null;
+          deleted_at: string | null;
+          declared_at: string | null;
         };
         Insert: {
           id?: string;
@@ -979,6 +1215,13 @@ export interface Database {
           body: string;
           hidden?: boolean;
           created_at?: string;
+          artist_reply?: string | null;
+          artist_reply_at?: string | null;
+          moderation_reason?: string | null;
+          moderated_by?: string | null;
+          moderated_at?: string | null;
+          deleted_at?: string | null;
+          declared_at?: string | null;
         };
         Update: {
           id?: string;
@@ -989,6 +1232,13 @@ export interface Database {
           body?: string;
           hidden?: boolean;
           created_at?: string;
+          artist_reply?: string | null;
+          artist_reply_at?: string | null;
+          moderation_reason?: string | null;
+          moderated_by?: string | null;
+          moderated_at?: string | null;
+          deleted_at?: string | null;
+          declared_at?: string | null;
         };
         Relationships: [];
       };
@@ -1656,7 +1906,7 @@ export interface Database {
       // Scrivono sempre e solo per l'utente in sessione: il chiamante non
       // sceglie per chi si sta registrando il consenso.
       record_consent: {
-        Args: { p_kind: ConsentKind; p_version: string; p_accepted?: boolean };
+        Args: { p_kind: ConsentKind; p_version: string; p_accepted?: boolean; p_ref?: string | null };
         Returns: undefined;
       };
       accept_legal_documents: {

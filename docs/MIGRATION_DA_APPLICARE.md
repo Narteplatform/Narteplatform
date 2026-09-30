@@ -329,3 +329,45 @@ parte.
 > colonna `restore_state` registra cosa è stato cambiato — quali profili sono
 > stati riportati a `pending`, e che l'accesso è stato bloccato — proprio perché
 > si possa tornare indietro finché la cancellazione non è stata eseguita.
+
+## Integrità del booking — `0061_booking_integrity.sql`
+
+**Cosa fa.** Aggiunge un trigger che rifiuta le transizioni di stato non ammesse
+sulle richieste di booking e ridefinisce `accept_offer_v2`.
+
+| Da | A |
+|---|---|
+| `pending` | `in_trattativa`, `rifiutata`, `annullata`, `confermata` |
+| `in_trattativa` | `confermata`, `annullata` |
+| `confermata` | `annullata` (solo il Team, con motivazione) |
+| `rifiutata`, `annullata` | nessuna |
+
+Con la nuova `accept_offer_v2`, accettare un'Offerta in chat **conferma la
+trattativa già aperta** fra le due parti invece di creare un secondo booking. Se
+la data è già occupata restituisce un messaggio leggibile.
+
+**Rischio.** Basso: nessun dato viene modificato, il trigger guarda solo i
+cambi di stato futuri. Le server action sono già state corrette nel codice e
+funzionano anche prima che questa migration sia applicata.
+
+**Verifica.** Le due query in fondo a `docs/VERIFICA_MIGRATION.sql`.
+
+## Allineamento legale — `0062` → `0067` (30/09/2026)
+
+Nate dal fascicolo legale v0.95 e dalla decisione del cliente che N'arte sia
+solo una piattaforma promozionale. **Ordine consigliato:** 0061, 0062, 0063,
+0064, 0065, 0066, 0067. Tutte additive o limitate a vincoli e policy: nessuna
+riga esistente viene modificata o cancellata. Il codice funziona anche prima
+che siano applicate, con i limiti descritti in CLAUDE.md per ciascuna.
+
+| File | In breve | Attenzione |
+|---|---|---|
+| 0062 | nuovi tipi di consenso, colonna `ref` | ricrea `record_consent` con 4 argomenti |
+| 0063 | segnalazioni DSA | — |
+| 0064 | registro accessi chat, policy chat senza superadmin | dopo l'esecuzione l'admin legge le chat solo con accesso motivato |
+| 0065 | registro decisioni di moderazione | prima della 0066 |
+| 0066 | recensioni: risposta, cancellazione logica, moderazione motivata | — |
+| 0067 | cancellazione senza danni alla controparte, vista date privata | `organizers.user_id` diventa facoltativa |
+
+Verifica dopo l'esecuzione: `npm run db:check-migrations` e le query in fondo a
+`docs/VERIFICA_MIGRATION.sql`.

@@ -91,7 +91,7 @@ export const CONSULENZA: HelpCategory = {
 
 <h2>Cosa la consulenza non è</h2>
 <p>È utile saperlo per non restare delusi. Il consulente <strong>non può garantirti date</strong>, non fa da agente e non contatta i locali al posto tuo. Il lavoro è sul posizionamento, sul profilo e sul modo in cui ti proponi.</p>
-<p>La candidatura agli eventi N'arte è una cosa diversa, inclusa nel piano ${PLAN_LABELS.max} e curata dal team.</p>
+<p>La segnalazione del profilo alle strutture è una cosa diversa, inclusa nel piano ${PLAN_LABELS.max} e curata dal team: almeno due segnalazioni al mese, senza garanzia di ingaggi.</p>
 
 <h2>Dopo</h2>
 <p>Prendi appunti e <strong>applica una cosa sola</strong>, subito. Un video rifatto vale più di dieci consigli annotati e mai messi in pratica. Se hai il piano ${PLAN_LABELS.max} puoi riprenotare senza limiti e verificare i risultati nella sessione successiva.</p>

@@ -3,6 +3,7 @@ import { Instagram, Facebook, Phone } from "lucide-react";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { CookiePreferencesLink } from "@/components/legal/CookiePreferencesLink";
 import { titolareInLinea } from "@/lib/legal/titolare";
+import { LEGAL_V2_ROTTE, legalV2Pubblicato } from "@/lib/legal/v2";
 
 export function Footer() {
   return (
@@ -111,6 +112,15 @@ export function Footer() {
                   Termini
                 </Link>
               </li>
+              {legalV2Pubblicato() &&
+                LEGAL_V2_ROTTE.map((r) => (
+                  <li key={r.slug} className="contents">
+                    <span aria-hidden="true">·</span>
+                    <Link href={r.href} className="transition-opacity hover:opacity-75">
+                      {r.etichetta}
+                    </Link>
+                  </li>
+                ))}
               <li aria-hidden="true">·</li>
               <li>
                 {/* Il posto dove si esercitano i diritti va accanto ai documenti

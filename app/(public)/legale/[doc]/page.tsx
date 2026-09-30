@@ -9,6 +9,7 @@ import {
 } from "@/lib/legal/content";
 import { iubendaDocUrl } from "@/lib/legal/iubenda";
 import { IubendaPolicyEmbed } from "@/components/legal/IubendaPolicyEmbed";
+import { legalV2Pubblicato, testoV2 } from "@/lib/legal/v2";
 
 /**
  * Le tre pagine legali — privacy, cookie policy e termini — servite da una sola
@@ -73,8 +74,15 @@ export default async function LegalPage({
   params: Promise<{ doc: string }>;
 }) {
   const { doc } = await params;
-  const documento = findLegalDoc(doc);
-  if (!documento) notFound();
+  const v1 = findLegalDoc(doc);
+  if (!v1) notFound();
+
+  // Con il flag v2 attivo /termini mostra il doc. 01 v2 al posto di TERMINI
+  // (che resta in content.ts). Flag spento: nulla cambia.
+  const v2 = v1.slug === "termini" && legalV2Pubblicato() ? testoV2("termini") : null;
+  const documento = v2
+    ? { ...v1, title: v2.titolo, standfirst: v2.sottotitolo, body: v2.body }
+    : v1;
 
   // I termini non passano da iubenda: la stringa resta vuota e si mostra sempre
   // il documento locale.
@@ -101,7 +109,9 @@ export default async function LegalPage({
 
           <Reveal delay={0.15}>
             <p className="mt-6 border-t border-border pt-4 text-xs text-muted-foreground">
-              Ultimo aggiornamento: {dataEstesa(documento.updatedAt)}
+              {v2
+                ? `${v2.inVigoreDal ? `Testo in vigore dal ${v2.inVigoreDal} · ` : ""}Versione: ${v2.versione}`
+                : `Ultimo aggiornamento: ${dataEstesa(documento.updatedAt)}`}
             </p>
           </Reveal>
 
@@ -139,6 +149,7 @@ export default async function LegalPage({
               {/* Avviso onesto: finché l'avvocato non ha revisionato, chi legge
                   deve sapere che sta guardando una bozza. Sparisce da solo nel
                   momento in cui i documenti passano a iubenda. */}
+              {!v2 && (
               <div className="mt-10 rounded-2xl border border-warning/40 bg-warning/10 p-5">
                 <p className="text-sm">
                   <strong>Documento in fase di revisione legale.</strong> Il
@@ -151,6 +162,7 @@ export default async function LegalPage({
                   .
                 </p>
               </div>
+              )}
 
               <div
                 className="blog-prose mt-10"

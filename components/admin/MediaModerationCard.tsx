@@ -181,10 +181,13 @@ function MediaItemCard({
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Motivazione del rifiuto (facoltativa)"
+            placeholder="Motivazione del rifiuto (obbligatoria, almeno 10 caratteri)"
             disabled={pending}
             className="text-xs"
           />
+          <p className="text-[11px] text-muted-foreground">
+            La motivazione viene inviata all&rsquo;artista per email, con il modo per contestare la decisione.
+          </p>
           {item.kind === "video" && (
             <p className="text-[11px] text-muted-foreground">
               Il file verrà rimosso da bunny.net: l&rsquo;artista dovrà ricaricarlo.
@@ -206,7 +209,7 @@ function MediaItemCard({
             <Button
               type="button"
               size="sm"
-              disabled={pending}
+              disabled={pending || note.trim().length < 10}
               onClick={reject}
               className="bg-red-600 text-white hover:bg-red-700"
             >

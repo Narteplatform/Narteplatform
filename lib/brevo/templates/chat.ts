@@ -101,24 +101,25 @@ const priceSample = {
   chatUrl: "https://narteofficial.it/organizzatore/chat",
 };
 
-/** Prezzo finale proposto su una data già confermata: serve l'ok dell'altra parte. */
+/** Compenso proposto su una data già confermata: serve l'ok dell'altra parte. Promemoria fra le parti. */
 const priceProposed = defineTemplate({
   key: "price_proposed",
   name: "N'arte · Prezzo finale proposto [price_proposed]",
-  subject: "Proposta di cachet finale: {{params.priceLabel}}",
+  subject: "Compenso proposto da annotare: {{params.priceLabel}}",
   sample: priceSample,
   html: layout({
     key: "price_proposed",
-    preheader: "C'è una proposta di cachet finale da confermare.",
+    preheader: "C'è un compenso proposto da confermare come promemoria.",
     body: [
-      eyebrow("Cachet finale"),
-      title(`Proposta di cachet ${em("finale.")}`),
+      eyebrow("Compenso – promemoria"),
+      title(`Compenso ${em("proposto.")}`),
       paragraph(
-        `${param("proposedBy")} ha proposto il cachet finale<br />
+        `${param("proposedBy")} ha proposto il compenso<br />
               per la data del ${param("eventDate")}.<br />
-              Diventa definitivo quando lo confermi anche tu.`
+              Viene annotato come concordato quando lo confermi anche tu.<br />
+              Annotazione fra le parti: N'arte non è parte dell'accordo e non gestisce pagamenti.`
       ),
-      highlight("Cachet proposto", param("priceLabel")),
+      highlight("Budget indicato", param("priceLabel")),
       card(
         [
           sectionTitle("Data interessata"),
@@ -130,39 +131,40 @@ const priceProposed = defineTemplate({
         ].join("\n")
       ),
       buttonPair(
-        { href: param("bookingUrl"), label: "Conferma il cachet" },
+        { href: param("bookingUrl"), label: "Conferma il compenso" },
         { href: param("chatUrl"), label: "Discutine in chat" }
       ),
     ].join("\n"),
   }),
 });
 
-/** Prezzo finale confermato da entrambi: è il documento dell'accordo. */
+/** Compenso confermato da entrambi: promemoria fra le parti, N'arte non ne è parte. */
 const priceConfirmed = defineTemplate({
   key: "price_confirmed",
   name: "N'arte · Prezzo finale confermato [price_confirmed]",
-  subject: "Cachet finale confermato: {{params.priceLabel}}",
+  subject: "Compenso annotato dalle parti: {{params.priceLabel}}",
   sample: priceSample,
   html: layout({
     key: "price_confirmed",
-    preheader: "Il cachet finale è confermato da entrambe le parti.",
+    preheader: "Il compenso è stato annotato da entrambe le parti.",
     body: [
-      eyebrow("Accordo chiuso"),
-      title(`Cachet ${em("confermato.")}`),
+      eyebrow("Compenso – promemoria"),
+      title(`Compenso ${em("annotato.")}`),
       paragraph(
-        `Il cachet finale per la data del ${param("eventDate")}<br />
-              è stato confermato da entrambe le parti.<br />
-              Conserva questa email: è il riepilogo dell'accordo.`
+        `Il compenso per la data del ${param("eventDate")}<br />
+              è stato annotato da entrambe le parti.<br />
+              Conserva questa email come promemoria.<br />
+              Annotazione fra le parti: N'arte non è parte dell'accordo e non gestisce pagamenti.`
       ),
-      highlight("Cachet concordato", param("priceLabel"), { tone: "success" }),
+      highlight("Compenso annotato dalle parti", param("priceLabel"), { tone: "success" }),
       card(
         [
-          sectionTitle("Accordo"),
+          sectionTitle("Promemoria"),
           dataTable([
             { icon: "star", label: "Artista", value: param("artistName") },
             { icon: "building", label: "Locale / Organizzatore", value: param("organizerName") },
             { icon: "calendar", label: "Data evento", value: param("eventDate") },
-            { icon: "euro", label: "Cachet concordato", value: param("priceLabel") },
+            { icon: "euro", label: "Compenso annotato dalle parti", value: param("priceLabel") },
             { icon: "badge", label: "Stato", value: "Confermato da entrambe le parti" },
           ]),
         ].join("\n")

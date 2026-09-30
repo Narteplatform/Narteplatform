@@ -65,6 +65,9 @@ export function OfferCard({
 }) {
   const [busy, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // Accettare un'offerta blocca la data nel calendario di entrambi: prima di
+  // farlo la persona legge che l'accordo è solo fra le parti.
+  const [confirming, setConfirming] = useState(false);
   const status = msg.offerStatus ?? "pending";
   const badge = statusBadge[status];
 
@@ -73,6 +76,7 @@ export function OfferCard({
     startTransition(async () => {
       const res = await respondToOffer(msg.id, action);
       if (!res.ok) setError(res.error);
+      setConfirming(false);
     });
   }
 
@@ -125,16 +129,53 @@ export function OfferCard({
             {msg.offerDescription}
           </p>
         )}
-        {canRespond && !readOnly && status === "pending" && (
+        {canRespond && !readOnly && status === "pending" && confirming && (
+          <div
+            className={cn(
+              "mt-3 rounded-xl p-3 text-xs leading-relaxed",
+              isOwn ? "bg-white/10 text-white" : "bg-white text-foreground border border-azzurro/30",
+            )}
+          >
+            <p>
+              Accettando confermi di aver raggiunto un accordo <strong>direttamente</strong> con
+              l&rsquo;altra parte: la data viene bloccata nel calendario di entrambi.
+            </p>
+            <p className="mt-1.5">
+              L&rsquo;accordo è solo fra voi. N&rsquo;arte non è parte del contratto e non
+              gestisce il pagamento.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Button
+                size="sm"
+                variant="default"
+                disabled={busy}
+                onClick={() => respond("accept")}
+                className="flex-1 min-h-10"
+              >
+                {busy ? <Loader2 className="size-4 animate-spin" /> : (<><Check className="size-4" /> Confermo l&rsquo;accordo</>)}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={() => setConfirming(false)}
+                className={cn("flex-1 min-h-10", isOwn && "bg-white/10 text-white border-white/30 hover:bg-white/20")}
+              >
+                Indietro
+              </Button>
+            </div>
+          </div>
+        )}
+        {canRespond && !readOnly && status === "pending" && !confirming && (
           <div className="mt-3 flex gap-2">
             <Button
               size="sm"
               variant="default"
               disabled={busy}
-              onClick={() => respond("accept")}
+              onClick={() => setConfirming(true)}
               className="flex-1 min-h-10"
             >
-              {busy ? <Loader2 className="size-4 animate-spin" /> : (<><Check className="size-4" /> Accetta</>)}
+              <Check className="size-4" /> Accetta
             </Button>
             <Button
               size="sm"

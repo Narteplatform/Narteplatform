@@ -117,7 +117,7 @@ export const POLICY: HelpCategory = {
 </ol>
 
 <h2>Come segnalare</h2>
-<p><a href="/contatti">Scrivici</a> indicando <strong>chi</strong>, <strong>quando</strong> e <strong>cosa</strong> è successo. Se la vicenda è passata dalla chat, diccelo: possiamo leggerla. Vedi <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
+<p>Usa la <a href="/segnalazioni">pagina di segnalazione</a> indicando <strong>chi</strong>, <strong>quando</strong> e <strong>cosa</strong> è successo. Se la vicenda è passata dalla chat, diccelo: possiamo leggerla. Vedi <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
 `,
     },
 
@@ -143,7 +143,7 @@ export const POLICY: HelpCategory = {
 <h2>Cosa possiamo fare</h2>
 <ul>
   <li><strong>Leggere la conversazione.</strong> Le chat sono tracciate: possiamo ricostruire cosa era stato concordato e quando.</li>
-  <li><strong>Verificare il prezzo definitivo</strong>, se registrato con la doppia conferma.</li>
+  <li><strong>Consultare il compenso annotato</strong> come promemoria, se confermato da entrambe le parti.</li>
   <li><strong>Ascoltare entrambe le versioni</strong> e provare a far ripartire il dialogo. Nella maggior parte dei casi finisce qui.</li>
   <li><strong>Annullare una data confermata</strong>, con una motivazione registrata.</li>
   <li><strong>Nascondere una recensione</strong> falsa, offensiva o estranea alla serata. Una recensione nascosta non compare più e non pesa sulla media.</li>
@@ -151,7 +151,7 @@ export const POLICY: HelpCategory = {
 </ul>
 
 <h2>Come segnalare</h2>
-<p><a href="/contatti">Scrivi dal modulo contatti</a> indicando:</p>
+<p><a href="/segnalazioni">Scrivi dal modulo di segnalazione</a> indicando:</p>
 <ul>
   <li><strong>Chi</strong> — nome dell'artista o dell'organizzatore.</li>
   <li><strong>Quando</strong> — la data dell'evento o della trattativa.</li>
@@ -218,7 +218,7 @@ export const POLICY: HelpCategory = {
 </ol>
 
 <h2>Segnalare un comportamento sospetto</h2>
-<p>Se un utente ti chiede denaro in modo anomalo, ti manda link strani o si comporta in modo scorretto, <a href="/contatti">segnalacelo</a> con nome e data della conversazione. Vedi <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
+<p>Se un utente ti chiede denaro in modo anomalo, ti manda link strani o si comporta in modo scorretto, <a href="/segnalazioni">segnalacelo</a> con nome e data della conversazione. Vedi <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
 `,
     },
 
@@ -251,7 +251,7 @@ export const POLICY: HelpCategory = {
 <p>Se inserisci i nomi dei componenti nel profilo, assicurati che siano d'accordo: quei nomi diventano pubblici. Vale anche per le loro foto.</p>
 
 <h2>Cosa succede in caso di segnalazione</h2>
-<p>Se qualcuno segnala che un contenuto viola i suoi diritti, verifichiamo e possiamo <strong>rimuoverlo</strong>. Nei casi ripetuti interveniamo sull'account. Se ritieni che un tuo contenuto sia stato caricato da altri, <a href="/contatti">scrivicelo</a> indicando il profilo e il contenuto.</p>
+<p>Se qualcuno segnala che un contenuto viola i suoi diritti, verifichiamo e possiamo <strong>rimuoverlo</strong>. Nei casi ripetuti interveniamo sull'account. Se ritieni che un tuo contenuto sia stato caricato da altri, <a href="/segnalazioni">segnalacelo</a> indicando il profilo e il contenuto.</p>
 
 <h2>I contenuti di N'arte</h2>
 <p>Logo, nome, format, testi e materiali della piattaforma appartengono a N'arte. Per usarli ci sono regole precise: vedi <a href="/help/brand/usare-nome-e-logo">usare il nome e il logo</a>.</p>

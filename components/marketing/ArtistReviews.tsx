@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Reveal } from "@/components/animations/Reveal";
 import { StarRating } from "@/components/feedback/StarRating";
 import type { PublicReviews } from "@/lib/feedback/queries";
@@ -26,9 +27,11 @@ function dataBreve(iso: string): string {
 export function ArtistReviews({
   data,
   artistName,
+  artistSlug,
 }: {
   data: PublicReviews;
   artistName: string;
+  artistSlug: string;
 }) {
   if (data.count === 0) return null;
 
@@ -60,6 +63,29 @@ export function ArtistReviews({
           </Reveal>
         </div>
 
+        {/* Allegato A del Regolamento delle recensioni: informazione dovuta
+            accanto alle recensioni (art. 3.5). */}
+        <Reveal delay={0.18}>
+          <div className="mt-8 rounded-2xl border border-border bg-muted/40 p-5 text-sm leading-relaxed text-muted-foreground">
+            <p className="font-medium text-foreground">Come funzionano queste recensioni</p>
+            <p className="mt-2">
+              Le scrivono solo gli organizzatori che hanno avuto una data confermata con questo
+              artista su N&rsquo;arte, dopo la data dell&rsquo;evento: una recensione per ogni
+              data. N&rsquo;arte controlla che la data sia stata confermata da entrambe le parti
+              sulla piattaforma, ma non può verificare che l&rsquo;evento si sia svolto né che
+              quanto scritto sia vero.
+            </p>
+            <p className="mt-2">
+              Le recensioni sono in ordine dalla più recente. La media comprende tutte le
+              recensioni visibili. Nessuna recensione è a pagamento e l&rsquo;artista non può
+              scegliere quali mostrare: sono visibili tutte, sui profili con piano Pro o Max.{" "}
+              <Link href="/regolamento-recensioni" className="underline underline-offset-2">
+                Leggi il regolamento
+              </Link>
+            </p>
+          </div>
+        </Reveal>
+
         <Reveal delay={0.2}>
           <ul className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {data.reviews.map((r) => (
@@ -81,6 +107,26 @@ export function ArtistReviews({
 
                 <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
                   {r.body}
+                </p>
+
+                {r.artist_reply && (
+                  <div className="mt-4 rounded-xl bg-muted/60 p-3 text-sm">
+                    <p className="text-xs font-medium text-foreground">
+                      Risposta di {artistName}
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap leading-relaxed text-muted-foreground">
+                      {r.artist_reply}
+                    </p>
+                  </div>
+                )}
+
+                <p className="mt-4 text-xs">
+                  <Link
+                    href={`/segnalazioni?tipo=recensione&url=/artisti/${artistSlug}`}
+                    className="text-muted-foreground underline-offset-2 hover:underline"
+                  >
+                    Segnala
+                  </Link>
                 </p>
               </li>
             ))}

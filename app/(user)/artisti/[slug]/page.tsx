@@ -740,7 +740,7 @@ export default async function ArtistDetailPage({
       {/* RECENSIONI — subito dopo le informazioni di booking: è lì che chi
           valuta un ingaggio si sta facendo un'idea, e la prova sociale conta
           più della gallery. */}
-      <ArtistReviews data={reviews} artistName={artist.stage_name} />
+      <ArtistReviews data={reviews} artistName={artist.stage_name} artistSlug={artist.slug} />
 
       {/* AUDIO */}
       {audioTracks.length > 0 && (
@@ -862,12 +862,18 @@ export default async function ArtistDetailPage({
         </section>
       )}
 
-      <div className="container-narte py-10">
+      <div className="container-narte flex flex-wrap items-center justify-between gap-4 py-10">
         <Link
           href="/artisti"
           className="text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
         >
           ← Torna a tutti gli artisti
+        </Link>
+        <Link
+          href={`/segnalazioni?tipo=profilo&url=${encodeURIComponent(`/artisti/${slug}`)}`}
+          className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+          Segnala questo profilo
         </Link>
       </div>
     </article>

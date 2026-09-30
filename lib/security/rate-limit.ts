@@ -123,6 +123,8 @@ export const LIMITI = {
   candidatura: { scope: "candidatura", windowSeconds: 86400, max: 5 },
   /** Richieste di booking, che possono anche creare un account. */
   booking: { scope: "booking", windowSeconds: 3600, max: 10 },
+  /** Segnalazioni e reclami (DSA): pubblici, ma chi ne ha bisogno non va frenato troppo. */
+  segnalazione: { scope: "segnalazione", windowSeconds: 3600, max: 5 },
   /** Caricamento video di candidatura: pubblico, quindi il più esposto. */
   uploadPubblico: { scope: "upload-pubblico", windowSeconds: 3600, max: 3 },
   /** Caricamenti da utente autenticato. */

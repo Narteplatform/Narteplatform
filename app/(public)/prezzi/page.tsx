@@ -36,6 +36,10 @@ export default function PrezziPage() {
         <div className="container-narte">
           <Reveal>
             <PlanComparison />
+            <p className="mt-6 text-center text-xs text-muted-foreground">
+              Prezzi finali. Operazione senza IVA ai sensi dell&rsquo;art. 1, cc. 54-89, L.
+              190/2014 (regime forfettario).
+            </p>
           </Reveal>
         </div>
       </section>
@@ -75,21 +79,41 @@ export default function PrezziPage() {
                 </div>
 
                 <div>
-                  <p className="font-medium">Come funziona il badge Verificato N&rsquo;arte?</p>
+                  <p className="font-medium">Il piano cambia la posizione nel catalogo?</p>
+                  <p className="mt-1 text-muted-foreground">
+                    Sì. Nel catalogo gli artisti con piano Max compaiono per primi (e nella fascia
+                    Top Artist), poi quelli con piano Pro, poi gli altri in ordine alfabetico.
+                    È un beneficio a pagamento e lo dichiariamo a chi cerca artisti, sopra i
+                    risultati. Recensioni, visite e preferiti non influiscono sull&rsquo;ordine.{" "}
+                    <Link
+                      href="/criteri-di-posizionamento"
+                      className="font-medium text-foreground underline underline-offset-4"
+                    >
+                      Leggi i criteri di posizionamento
+                    </Link>
+                    .
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-medium">Cosa indica il badge Artista Pro?</p>
                   <p className="mt-1 text-muted-foreground">
                     È incluso in Pro e Max e compare sul profilo appena attivi il piano: non devi
-                    richiederlo né aspettare un&rsquo;approvazione. Dice agli organizzatori che
-                    dietro il profilo c&rsquo;è un artista che sta lavorando sul serio. Con Max hai
+                    richiederlo né aspettare un&rsquo;approvazione. Indica che l&rsquo;abbonamento
+                    è attivo: non è una verifica di identità né un giudizio artistico. Con Max hai
                     anche l&rsquo;etichetta <strong>TOP Artist</strong> e la fascia in evidenza in
                     cima alla pagina Artisti.
                   </p>
                 </div>
 
                 <div>
-                  <p className="font-medium">Cosa vuol dire &ldquo;ti candidiamo a 2 eventi al mese&rdquo;?</p>
+                  <p className="font-medium">Cosa vuol dire &ldquo;segnalazione alle strutture&rdquo;?</p>
                   <p className="mt-1 text-muted-foreground">
-                    Sul piano Max ci pensiamo noi: ogni mese il team ti propone ad almeno due eventi
-                    N&rsquo;arte in linea con il tuo profilo. Non devi cercarli né candidarti tu.
+                    Sul piano Max il team segnala il tuo profilo ad almeno due strutture al mese
+                    in linea con il tuo genere e la tua zona. È un impegno di mezzi: N&rsquo;arte
+                    è una piattaforma promozionale, non partecipa alle trattative, non tratta per
+                    te e non garantisce ingaggi. Se la struttura è interessata ti contatta sulla
+                    piattaforma.
                   </p>
                 </div>
 

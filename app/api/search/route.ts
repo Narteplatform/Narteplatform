@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import type { ArtistTier } from "@/lib/supabase/types";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ export type SearchHit = {
   title: string;
   subtitle: string | null;
   image: string | null;
-  /** Solo sugli artisti: alimenta i badge Verificato / TOP nella tendina. */
+  /** Solo sugli artisti: alimenta i badge Artista Pro / TOP nella tendina. */
   tier?: ArtistTier | null;
   /**
    * Artista mostrato a chi non ha una sessione. Il nome non è nella risposta —
@@ -21,18 +22,18 @@ export type SearchHit = {
 };
 
 /**
- * Tetto di righe lette per la ricerca artisti.
+ * Nessun tetto sui profili esaminati: il filtro sta nel database e il solo
+ * limite è sul NUMERO DI RISULTATI restituiti. Le quattro classi di pertinenza
+ * (nome che inizia, nome che contiene, genere, città) sono interrogate
+ * separatamente, ciascuna già ordinata per piano e limitata a MAX_HITS: l'unione
+ * contiene sempre i primi MAX_HITS per (pertinenza, piano), qualunque sia la
+ * dimensione del roster.
  *
- * Il filtro su genere gira in JS e non nel database: `genre` è un `text[]` e
- * PostgREST, sugli array, offre solo confronti esatti elemento per elemento
- * (`cs`, `ov`). A database i generi sono scritti come capita — "pop" e "Pop",
- * "R&B" e "r&b" convivono già — quindi un confronto esatto e sensibile alle
- * maiuscole restituirebbe metà dei risultati. Il prezzo è leggere il roster
- * pubblico a ogni ricerca: con qualche centinaio di artisti va bene, oltre
- * questa soglia va spostato in una funzione SQL
- * (`exists (select 1 from unnest(genre) g where g ilike '%…%')`).
+ * `genre` è un `text[]` e PostgREST sugli array offre solo confronti esatti
+ * (`ov`). Per avere comunque una ricerca senza distinzione di maiuscole si
+ * cercano prima, con `ilike`, i nomi nella tabella `genres`, poi si confrontano
+ * gli artisti con quei nomi (e le varianti di maiuscola più comuni).
  */
-const MAX_SCAN = 300;
 const MAX_HITS = 5;
 
 /** `artist_tier_enum` è dichiarato ('free','pro','max'): qui l'ordine è quello che serve a schermo. */
@@ -51,9 +52,13 @@ export async function GET(request: Request) {
   const q = qRaw.trim();
   if (q.length < 2) return NextResponse.json({ hits: [] });
 
-  const needle = q.toLowerCase();
-  const escaped = q.replace(/[%,()]/g, "");
-  const like = `%${escaped}%`;
+  const needle = q.slice(0, 60).toLowerCase();
+  // Per `.or()` degli eventi: fuori i caratteri che ne rompono la sintassi.
+  const like = `%${needle.replace(/[%,()*]/g, "")}%`;
+  // Per `.ilike()` degli artisti: `%`, `_` e `\` dell'input sono letterali.
+  const lit = needle.replace(/[\\%_]/g, (c) => `\\${c}`).replace(/\*/g, "");
+  const patStarts = `${lit}%`;
+  const patContains = `%${lit}%`;
 
   const supabase = createAdminClient();
 
@@ -71,14 +76,43 @@ export async function GET(request: Request) {
     isGuest = true;
   }
 
-  const [{ data: artistRows }, { data: events }] = await Promise.all([
+  const ARTIST_COLS = "slug, stage_name, city, cover_image, genre, tier";
+  const artistBase = () =>
     supabase
       .from("artists")
-      .select("slug, stage_name, city, cover_image, genre, tier")
+      .select(ARTIST_COLS)
       .eq("is_public", true)
       .order("tier", { ascending: false })
       .order("created_at", { ascending: false })
-      .limit(MAX_SCAN),
+      .limit(MAX_HITS);
+
+  // Nomi di genere che contengono il testo cercato, poi le varianti di
+  // maiuscola con cui possono essere stati scritti sugli artisti.
+  const genreNames = await supabase
+    .from("genres")
+    .select("name")
+    .ilike("name", patContains)
+    .limit(20);
+  if (genreNames.error) {
+    logger.error("search", "lettura generi fallita, ricerca per genere saltata", genreNames.error);
+  }
+  const genreVariants = Array.from(
+    new Set(
+      (genreNames.data ?? []).flatMap((g) => {
+        const n = g.name;
+        const cap = n.charAt(0).toUpperCase() + n.slice(1).toLowerCase();
+        return [n, n.toLowerCase(), n.toUpperCase(), cap];
+      })
+    )
+  ).filter((v) => !/[,{}"\\]/.test(v));
+
+  const [starts, contains, byGenre, byCity, { data: events }] = await Promise.all([
+    artistBase().ilike("stage_name", patStarts),
+    artistBase().ilike("stage_name", patContains),
+    genreVariants.length > 0
+      ? artistBase().overlaps("genre", genreVariants)
+      : Promise.resolve(null),
+    artistBase().ilike("city", patContains),
     supabase
       .from("events")
       .select("slug, title, city, date, cover_image")
@@ -87,7 +121,21 @@ export async function GET(request: Request) {
       .limit(MAX_HITS),
   ]);
 
-  const matched = (artistRows ?? []).flatMap((a) => {
+  const seenSlugs = new Set<string>();
+  const artistRows = [starts, contains, byGenre, byCity].flatMap((r) => {
+    if (!r) return [];
+    if (r.error) {
+      logger.error("search", "ricerca artisti fallita", r.error);
+      return [];
+    }
+    return (r.data ?? []).filter((a) => {
+      if (seenSlugs.has(a.slug)) return false;
+      seenSlugs.add(a.slug);
+      return true;
+    });
+  });
+
+  const matched = artistRows.flatMap((a) => {
     const name = (a.stage_name ?? "").toLowerCase();
     const city = (a.city ?? "").toLowerCase();
     const genres = a.genre ?? [];

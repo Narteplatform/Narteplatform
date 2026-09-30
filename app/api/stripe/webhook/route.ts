@@ -5,6 +5,7 @@ import { getStripe } from "@/lib/stripe/client";
 import { resolvePriceId } from "@/lib/stripe/prices";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
+import { notificaEventoAbbonamento } from "@/lib/billing/notify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +26,10 @@ const HANDLED = new Set<Stripe.Event.Type>([
   "customer.subscription.deleted",
   "invoice.paid",
   "invoice.payment_failed",
+  // Promemoria del rinnovo annuale (doc. 02, art. 5.2). ⚠️ L'endpoint va
+  // abbonato a questo evento nel pannello Stripe, e l'anticipo portato a 30
+  // giorni in Impostazioni › Fatturazione › Abbonamenti (azione manuale).
+  "invoice.upcoming",
 ]);
 
 type SubRow = {
@@ -56,6 +61,12 @@ function subscriptionIdOf(event: Stripe.Event): string | null {
   const sub = "subscription" in o ? o.subscription : undefined;
   if (typeof sub === "string") return sub;
   if (sub && typeof sub === "object" && "id" in sub) return sub.id;
+  // Nelle versioni recenti dell'API la fattura porta l'abbonamento in
+  // `parent.subscription_details.subscription`.
+  const parent = "parent" in o ? (o.parent as { subscription_details?: { subscription?: string | { id: string } | null } | null } | null) : null;
+  const fromParent = parent?.subscription_details?.subscription;
+  if (typeof fromParent === "string") return fromParent;
+  if (fromParent && typeof fromParent === "object" && "id" in fromParent) return fromParent.id;
   return null;
 }
 
@@ -241,6 +252,10 @@ export async function POST(request: Request) {
     }
 
     const result = await upsertSubscription(sub, event);
+
+    // Email all'artista. Non solleva: il ledger è già scritto, e un errore di
+    // posta non deve far ritentare Stripe.
+    await notificaEventoAbbonamento(event, sub, ("tier" in result ? result.tier : null) ?? null);
 
     await admin
       .from("stripe_webhook_events")

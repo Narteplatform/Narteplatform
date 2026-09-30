@@ -66,6 +66,23 @@ const ESENTI_ESATTI = new Set([
   "/privacy",
   "/cookie-policy",
   "/termini",
+  // Segnalare un contenuto o contestare una decisione non può dipendere
+  // dall'aver accettato i termini (DSA artt. 16 e 20).
+  "/segnalazioni",
+  // Disattivare le segnalazioni del profilo arriva da un link email: chi lo
+  // apre può non avere un account, o non aver ancora accettato i termini.
+  "/segnalazioni/stop",
+  // I diritti sui propri dati (accesso, portabilità, cancellazione) non si
+  // condizionano all'accettazione di nuovi termini: chi non vuole accettarli
+  // deve poter scaricare i dati e andarsene (artt. 12, 15, 17, 20 GDPR).
+  "/account/i-miei-dati",
+  "/account/cancellazione",
+  // Le nuove pagine legali (pubblicate con il flag LEGAL_V2_PUBBLICATO).
+  "/condizioni-abbonamento",
+  "/condizioni-artisti",
+  "/condizioni-organizzatori",
+  "/regolamento-recensioni",
+  "/criteri-di-posizionamento",
   "/sitemap.xml",
   "/robots.txt",
   "/favicon.ico",

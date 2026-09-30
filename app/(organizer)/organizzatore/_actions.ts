@@ -183,11 +183,23 @@ export async function confirmBookingRequest(requestId: string) {
   if (req.status !== "in_trattativa") {
     return { ok: false as const, error: "Richiesta non in trattativa" };
   }
-  const { error } = await admin
+  const { data: aggiornate, error } = await admin
     .from("booking_requests")
     .update({ status: "confermata", organizer_confirmed_at: new Date().toISOString() })
-    .eq("id", requestId);
-  if (error) return { ok: false as const, error: error.message };
+    .eq("id", requestId)
+    .eq("status", "in_trattativa")
+    .select("id");
+  if (error) {
+    // L'indice unico sulle date confermate (artista, giorno) scatta qui se la
+    // stessa data è già stata confermata con qualcun altro.
+    if (error.code === "23505") {
+      return { ok: false as const, error: "L'artista ha già una data confermata in quel giorno." };
+    }
+    return { ok: false as const, error: error.message };
+  }
+  if (!aggiornate || aggiornate.length === 0) {
+    return { ok: false as const, error: "La richiesta è cambiata nel frattempo: ricarica la pagina." };
+  }
 
   await sendBookingConfirmedEmail(requestId).catch((e) => console.error("email confirmed:", e));
 
@@ -199,7 +211,7 @@ export async function confirmBookingRequest(requestId: string) {
 }
 
 export async function cancelBookingRequest(requestId: string) {
-  const { organizer } = await requireOrganizer();
+  const { user, organizer } = await requireOrganizer();
   const admin = createAdminClient();
   const { data: req } = await admin
     .from("booking_requests")
@@ -209,14 +221,37 @@ export async function cancelBookingRequest(requestId: string) {
   if (!req || req.organizer_id !== organizer.id) {
     return { ok: false as const, error: "Non autorizzato" };
   }
-  if (req.status === "rifiutata" || req.status === "annullata") {
-    return { ok: false as const, error: "Richiesta già chiusa" };
+  // Solo una richiesta ancora aperta si annulla da qui. Una data CONFERMATA la
+  // può annullare esclusivamente il Team, con motivazione, tramite
+  // `superadmin_cancel_booking`: prima questo controllo lasciava passare
+  // `confermata`, e bastava una chiamata diretta all'azione (il pulsante era
+  // nascosto solo nell'interfaccia) per liberare una data già concordata.
+  const ANNULLABILI = ["pending", "in_trattativa"] as const;
+  if (!(ANNULLABILI as readonly string[]).includes(req.status)) {
+    return {
+      ok: false as const,
+      error:
+        req.status === "confermata"
+          ? "Una data confermata non si annulla da qui: scrivi al team N'arte."
+          : "Richiesta già chiusa",
+    };
   }
-  const { error } = await admin
+  // Il filtro sullo stato va anche nell'UPDATE: se nel frattempo la richiesta
+  // è stata confermata, l'aggiornamento non tocca nulla invece di annullarla.
+  const { data: aggiornate, error } = await admin
     .from("booking_requests")
-    .update({ status: "annullata" })
-    .eq("id", requestId);
+    .update({
+      status: "annullata",
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: user.id,
+    })
+    .eq("id", requestId)
+    .in("status", ANNULLABILI)
+    .select("id");
   if (error) return { ok: false as const, error: error.message };
+  if (!aggiornate || aggiornate.length === 0) {
+    return { ok: false as const, error: "La richiesta è cambiata nel frattempo: ricarica la pagina." };
+  }
 
   // Finora l'artista non veniva avvisato: si ritrovava la data libera senza
   // sapere perché, oppure la teneva bloccata credendola ancora valida.
@@ -340,12 +375,23 @@ export async function artistDeclineRequest(requestId: string) {
   const isOwner = artist?.user_id === user.id;
   const isSuper = profile?.role === "superadmin";
   if (!isOwner && !isSuper) return { ok: false as const, error: "Non autorizzato" };
+  // Si rifiuta solo una richiesta in attesa di risposta. Prima lo stato non era
+  // controllato affatto: una chiamata diretta portava a «rifiutata» anche una
+  // data confermata, liberandola dal calendario.
+  if (req.status !== "pending") {
+    return { ok: false as const, error: "Si può rifiutare solo una richiesta in attesa." };
+  }
 
-  const { error } = await admin
+  const { data: aggiornate, error } = await admin
     .from("booking_requests")
     .update({ status: "rifiutata" })
-    .eq("id", requestId);
+    .eq("id", requestId)
+    .eq("status", "pending")
+    .select("id");
   if (error) return { ok: false as const, error: error.message };
+  if (!aggiornate || aggiornate.length === 0) {
+    return { ok: false as const, error: "La richiesta è cambiata nel frattempo: ricarica la pagina." };
+  }
 
   await sendBookingDeclinedEmail(requestId).catch((e) => console.error("email declined:", e));
 

@@ -38,23 +38,14 @@ export const artistInterestSchema = z.object({
 
 export type ArtistInterestInput = z.infer<typeof artistInterestSchema>;
 
-// Nuovo flow: richiesta da organizzatore (loggato o signup inline).
+// Richiesta di booking da un utente registrato (organizzatore o utente da promuovere).
 export const bookingRequestPublicSchema = z.object({
   /**
-   * Accettazione di termini e informativa.
-   *
-   * Qui non è una formalità: questo è il flusso che, per chi non ha ancora un
-   * account, ne CREA uno già confermato e promuove la persona a organizzatore.
-   * Fino a ieri si diventava utenti della piattaforma senza aver accettato
-   * nulla — era il punto di maggiore esposizione di tutto il sito.
-   *
-   * Per chi è già loggato la spunta resta comunque richiesta dal modulo, ma il
-   * suo consenso è già nel registro: qui serve a coprire il caso della
-   * registrazione contestuale.
+   * Condizioni per gli organizzatori (doc. 04). Obbligatoria per l'utente
+   * semplice che con questa richiesta diventa organizzatore: il server la
+   * verifica e la registra. Chi è già organizzatore l'ha accettata prima.
    */
-  acceptedTerms: z.literal(true, {
-    errorMap: () => ({ message: "Devi accettare i termini e l'informativa privacy" }),
-  }),
+  acceptedOrganizerTerms: z.boolean().optional(),
 
   artistId: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
@@ -72,15 +63,6 @@ export const bookingRequestPublicSchema = z.object({
     .enum(["0-100", "100-300", "300-500", "500-1000", "1000+"])
     .optional()
     .or(z.literal("").transform(() => undefined)),
-  // Signup (richiesti solo se non loggato — validati lato server)
-  email: z.string().email().optional().or(z.literal("").transform(() => undefined)),
-  password: z
-    .string()
-    .min(8, "Password min 8")
-    .max(72)
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
-  displayName: z.string().min(2).max(120).optional().or(z.literal("").transform(() => undefined)),
   phone: z.string().max(40).optional().or(z.literal("").transform(() => undefined)),
   venueName: z.string().max(120).optional().or(z.literal("").transform(() => undefined)),
   venueCity: z.string().max(80).optional().or(z.literal("").transform(() => undefined)),

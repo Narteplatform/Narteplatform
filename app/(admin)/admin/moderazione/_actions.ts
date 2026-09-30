@@ -5,6 +5,7 @@ import { deleteStreamVideo } from "@/lib/storage/bunny/stream";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { logger } from "@/lib/logger";
+import { registraDecisione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 
 type Result = { ok: true } | { ok: false; error: string };
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -53,6 +54,64 @@ async function revalidateArtist(admin: AdminClient, artistId: string | null | un
   }
 }
 
+/**
+ * Registra il rifiuto di un contenuto e lo comunica al proprietario del
+ * profilo, con il motivo. Il rifiuto è già scritto: un problema qui si segnala
+ * nei log ma non lo annulla.
+ */
+async function comunicaRifiuto(
+  admin: AdminClient,
+  args: {
+    actorId: string;
+    artistId: string | null;
+    targetType: "media" | "video";
+    targetId: string;
+    note: string;
+    etichetta: string;
+  },
+) {
+  let userId: string | null = null;
+  let nome: string | null = null;
+  if (args.artistId) {
+    const { data, error } = await admin
+      .from("artists")
+      .select("user_id, stage_name")
+      .eq("id", args.artistId)
+      .maybeSingle();
+    if (error) {
+      logger.warn("admin/moderazione", "proprietario del profilo non leggibile:", error.message);
+    } else {
+      userId = data?.user_id ?? null;
+      nome = data?.stage_name ?? null;
+    }
+  }
+  const esito = await registraDecisione({
+    actorId: args.actorId,
+    targetType: args.targetType,
+    targetId: args.targetId,
+    action: "rifiuto_contenuto",
+    reason: args.note,
+    affectedUserId: userId,
+    affectedName: nome,
+    notify: userId
+      ? {
+          decision: `Non abbiamo approvato ${args.etichetta} che hai caricato.`,
+          target: nome ? `${args.etichetta} sul profilo "${nome}"` : args.etichetta,
+          consequences: "Il contenuto non è visibile sul tuo profilo pubblico. Puoi caricarne un altro.",
+        }
+      : false,
+  });
+  if (!esito.ok) logger.warn("admin/moderazione", "rifiuto non registrato:", esito.error);
+}
+
+function notaValida(note: string): { ok: true; note: string } | { ok: false; error: string } {
+  const n = (note ?? "").trim();
+  if (n.length < MOTIVAZIONE_MIN) {
+    return { ok: false, error: `Indica il motivo del rifiuto (almeno ${MOTIVAZIONE_MIN} caratteri): viene inviato all'artista.` };
+  }
+  return { ok: true, note: n };
+}
+
 export async function approveMediaSubmission(id: string): Promise<Result> {
   const user = await requireAdminPageAccess("moderazione");
   const admin = createAdminClient();
@@ -80,6 +139,8 @@ export async function approveMediaSubmission(id: string): Promise<Result> {
 
 export async function rejectMediaSubmission(id: string, note: string): Promise<Result> {
   const user = await requireAdminPageAccess("moderazione");
+  const nota = notaValida(note);
+  if (!nota.ok) return nota;
   const admin = createAdminClient();
 
   const { data: submission, error: fetchError } = await admin
@@ -96,9 +157,18 @@ export async function rejectMediaSubmission(id: string, note: string): Promise<R
   const { error } = await moderationRpc(admin).rpc("reject_artist_media_submission", {
     p_submission_id: id,
     p_reviewer: user.id,
-    p_note: note ?? "",
+    p_note: nota.note,
   });
   if (error) return { ok: false, error: error.message };
+
+  await comunicaRifiuto(admin, {
+    actorId: user.id,
+    artistId: submission.artist_id,
+    targetType: "media",
+    targetId: id,
+    note: nota.note,
+    etichetta: "una foto o un contenuto",
+  });
 
   await revalidateArtist(admin, submission.artist_id);
   return { ok: true };
@@ -136,6 +206,8 @@ export async function approveArtistVideo(id: string): Promise<Result> {
 
 export async function rejectArtistVideo(id: string, note: string): Promise<Result> {
   const user = await requireAdminPageAccess("moderazione");
+  const nota = notaValida(note);
+  if (!nota.ok) return nota;
   const admin = createAdminClient();
 
   const { data: video, error: fetchError } = await admin
@@ -153,12 +225,21 @@ export async function rejectArtistVideo(id: string, note: string): Promise<Resul
     .from("artist_videos")
     .update({
       moderation_state: "rejected",
-      moderation_note: note?.trim() || null,
+      moderation_note: nota.note,
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString(),
     })
     .eq("id", id);
   if (error) return { ok: false, error: error.message };
+
+  await comunicaRifiuto(admin, {
+    actorId: user.id,
+    artistId: video.artist_id,
+    targetType: "video",
+    targetId: id,
+    note: nota.note,
+    etichetta: "un video",
+  });
 
   // Il file esce da Bunny, la riga resta.
   //

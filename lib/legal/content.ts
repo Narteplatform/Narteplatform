@@ -499,9 +499,12 @@ e la motivazione arrivare subito dopo.</p>
 
 <h3>Segnalare un contenuto</h3>
 <p>Se trovi sulla piattaforma un contenuto che ritieni illecito o contrario a
-queste regole puoi segnalarcelo dalla <a href="/contatti">pagina contatti</a>,
-indicando dove si trova, perché lo ritieni tale e come ricontattarti.
-Confermiamo la ricezione, esaminiamo la segnalazione e ti comunichiamo l'esito.
+queste regole puoi segnalarcelo dalla <a href="/segnalazioni">pagina di segnalazione</a>,
+indicando dove si trova e perché lo ritieni tale. Ti inviamo subito un
+riferimento, prendiamo in carico la segnalazione entro 2 giorni lavorativi e,
+di norma, ti comunichiamo l'esito con la motivazione entro 7 giorni lavorativi.
+Se non condividi una decisione puoi presentare reclamo entro sei mesi, sempre
+dalla stessa pagina: lo riesamina una persona del team.
 Chi ha pubblicato il contenuto viene informato della decisione e può
 contestarla.</p>
 

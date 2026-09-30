@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { blockConversationUser, unblockConversationUser } from "@/lib/chat/moderation";
 import type { ActiveConversationBlock } from "@/lib/chat/queries";
 
-const REASON_MIN = 3;
+const REASON_MIN = 10;
 const REASON_MAX = 500;
 
 function formatDate(iso: string): string {
@@ -198,6 +198,10 @@ function BlockSlot({
             >
               Motivazione (obbligatoria, {REASON_MIN}-{REASON_MAX} caratteri) *
             </label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              La motivazione viene inviata per email a {name}, con il modo per contestare la decisione,
+              e resta nel registro delle decisioni.
+            </p>
             <textarea
               id="block-reason"
               value={reason}
@@ -206,7 +210,7 @@ function BlockSlot({
               maxLength={REASON_MAX}
               disabled={pending}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azzurro"
-              placeholder="Es: linguaggio offensivo, tentativo di aggirare la piattaforma, ecc."
+              placeholder="Es: linguaggio offensivo verso l'altra parte (art. 5 dei termini d'uso)."
             />
             <p className="mt-1 text-right text-[11px] text-muted-foreground">
               {reason.trim().length}/{REASON_MAX}

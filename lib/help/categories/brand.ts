@@ -104,7 +104,7 @@ export const BRAND: HelpCategory = {
   <li><strong>"In collaborazione con N'arte"</strong> — se non c'è una collaborazione concordata. Trovarsi su una piattaforma non è una collaborazione.</li>
   <li><strong>"Sponsorizzato da N'arte"</strong> — non sponsorizziamo eventi di terzi.</li>
   <li><strong>"Agenzia N'arte" o "il mio agente"</strong> — N'arte non è un'agenzia e non fa da agente per nessuno.</li>
-  <li><strong>"Certificato N'arte"</strong> — non esiste alcuna certificazione. Il badge <em>Verificato N'arte</em> attesta un abbonamento attivo, non un titolo: vedi <a href="/help/artisti/badge-e-visibilita">badge e visibilità</a>.</li>
+  <li><strong>"Certificato N'arte"</strong> — non esiste alcuna certificazione. Il badge <em>Artista Pro</em> indica un abbonamento attivo, non un titolo: vedi <a href="/help/artisti/badge-e-visibilita">badge e visibilità</a>.</li>
 </ul>
 
 <h2>Il link al tuo profilo</h2>
@@ -112,7 +112,7 @@ export const BRAND: HelpCategory = {
 <p>È il link più utile da condividere: chi lo apre trova biografia, foto, video, audio e il modo di inviarti una richiesta, senza dover scrivere a nessuno. Un solo indirizzo al posto di dieci messaggi.</p>
 
 <h2>Parlare del badge</h2>
-<p>Se hai il badge puoi dire di essere un <strong>artista verificato su N'arte</strong>. Evita formule che lascino intendere una selezione o un riconoscimento artistico: il badge indica un abbonamento attivo, ed essere onesti su questo punto ti fa più credito che il contrario.</p>
+<p>Se hai il badge puoi dire di essere un <strong>Artista Pro su N'arte</strong>. Evita di parlare di «artista verificato» o formule che lascino intendere una selezione o un riconoscimento artistico: il badge indica solo un abbonamento attivo, ed essere onesti su questo punto ti fa più credito che il contrario.</p>
 
 <h2>Se scrivi un articolo o un post che ci riguarda</h2>
 <p>Non serve alcuna autorizzazione per parlare di N'arte. Se vuoi materiali o una dichiarazione, vedi <a href="/help/brand/materiali-e-stampa">materiali e richieste stampa</a>.</p>

@@ -150,9 +150,10 @@ export function currentMonthStartRome(now = new Date()): string {
  * Tipi di quota a rinnovo mensile.
  *
  * Al momento esiste solo la consulenza. Esisteva anche `"event_application"`,
- * ma la funzionalità "candidature agli eventi" non è mai stata realizzata:
- * niente tabella, niente migrazione, nessuna UI e nessun chiamante. Il ramo
- * relativo interrogava una tabella inesistente ed è stato rimosso.
+ * ma la funzionalità "candidature agli eventi" non è mai stata realizzata (e non
+ * deve esserlo: N'arte è solo una piattaforma promozionale e non candida nessuno
+ * a eventi). Sul piano Max esiste solo la SEGNALAZIONE del profilo alle strutture
+ * (`profileReferralsPerMonth`), promessa operativa del team senza enforcement.
  */
 export type MonthlyQuotaKind = "consultation";
 
@@ -217,6 +218,6 @@ export async function checkMonthlyQuota(
   };
 }
 
-// La regola dei badge "Verificato N'arte" / "TOP Artist" NON vive qui: sta in
-// lib/billing/plans.ts (`hasVerifiedBadge`, `hasTopArtistBadge`). Questo modulo
+// La regola dei badge "Artista Pro" / "TOP Artist" NON vive qui: sta in
+// lib/billing/plans.ts (`hasProBadge`, `hasTopArtistBadge`). Questo modulo
 // è `server-only`, mentre i badge vanno renderizzati anche da Client Component.

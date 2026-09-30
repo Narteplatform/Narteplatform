@@ -63,7 +63,7 @@ export function ConversationList({
         />
         {mode === "superadmin" && (
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Vista globale (sola lettura)
+            Solo metadati: il contenuto si apre con una motivazione
           </p>
         )}
       </div>
@@ -103,7 +103,13 @@ export function ConversationList({
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <p className="flex-1 truncate text-xs text-muted-foreground">{previewText(it)}</p>
+                    <p className="flex-1 truncate text-xs text-muted-foreground">
+                      {mode === "superadmin"
+                        ? it.hasActiveBlock
+                          ? "Blocco attivo"
+                          : "Contenuto riservato"
+                        : previewText(it)}
+                    </p>
                     {it.unreadCount > 0 && (
                       <span className="shrink-0 inline-flex items-center justify-center rounded-full bg-corallo text-white text-[10px] font-bold size-5">
                         {it.unreadCount > 9 ? "9+" : it.unreadCount}

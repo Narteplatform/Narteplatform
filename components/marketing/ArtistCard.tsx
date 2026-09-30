@@ -38,7 +38,7 @@ export type ArtistCardProps = {
   isGuest?: boolean;
   category?: string | null;
   /**
-   * Piano dell'artista: decide i badge "Verificato N'arte" e "TOP Artist".
+   * Piano dell'artista: decide i badge "Artista Pro" e "TOP Artist".
    * Chi non lo passa non mostra badge — è il caso delle superfici che non
    * selezionano `tier` dal DB.
    */

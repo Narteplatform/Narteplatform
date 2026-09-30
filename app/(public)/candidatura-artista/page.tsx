@@ -10,7 +10,6 @@ import { ArtistBenefits } from "@/components/marketing/ArtistBenefits";
 import { ArtistProfilePreview } from "@/components/marketing/ArtistProfilePreview";
 import { ArtistHowItWorks } from "@/components/marketing/ArtistHowItWorks";
 import { ArtistComparison } from "@/components/marketing/ArtistComparison";
-import { ArtistTestimonials } from "@/components/marketing/ArtistTestimonials";
 import { PricingSection } from "@/components/marketing/PricingSection";
 import { FaqAccordion } from "@/components/marketing/FaqAccordion";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -123,8 +122,10 @@ export default async function CandidaturaPage() {
       {/* 5 — CONFRONTO */}
       <ArtistComparison />
 
-      {/* 6 — STORIE */}
-      <ArtistTestimonials />
+      {/* 6 — STORIE: sezione RIMOSSA di proposito. Le testimonianze erano
+          segnaposto inventati: pubblicarle è pratica commerciale scorretta
+          (Cod. consumo, all. I, punto 23-quater). Reinserire <ArtistTestimonials>
+          solo con testimonianze reali e documentabili. */}
 
       {/* 7 — PIANI. ctaHref punta al form: senza, i tre bottoni linkerebbero
           questa stessa pagina e ricaricherebbero senza portare da nessuna parte. */}

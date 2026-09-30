@@ -300,7 +300,7 @@ export const ARTISTI: HelpCategory = {
 
 <h2>Una recensione ingiusta</h2>
 <p>Non puoi cancellarla da solo, e non è un difetto: recensioni modificabili dal recensito non varrebbero nulla, per te per primo.</p>
-<p>Se una recensione è offensiva, falsa o riguarda fatti estranei alla serata, <a href="/contatti">scrivi al team</a> spiegando cosa contesti. Il team può <strong>nasconderla</strong>: una recensione nascosta non compare più e <strong>non pesa sulla media</strong>. Vedi <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
+<p>Se una recensione è offensiva, falsa o riguarda fatti estranei alla serata, <a href="/segnalazioni?tipo=recensione">segnalala</a> spiegando cosa contesti. Il team può <strong>nasconderla</strong>: una recensione nascosta non compare più e <strong>non pesa sulla media</strong>. Vedi <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
 
 <h2>Come farne arrivare di buone</h2>
 <p>Le recensioni non partono da sole: è l'organizzatore che decide di scriverle. Un messaggio di ringraziamento in chat il giorno dopo la serata, con un invito a lasciare una valutazione, funziona meglio di qualunque automatismo.</p>
@@ -350,13 +350,13 @@ export const ARTISTI: HelpCategory = {
       slug: "badge-e-visibilita",
       title: "Badge e posizione nei risultati",
       excerpt:
-        "Cosa significano Verificato N'arte e TOP Artist, come si ottengono e cosa determina l'ordine in cui compari nel roster.",
+        "Cosa significano Artista Pro e TOP Artist, come si ottengono e cosa determina l'ordine in cui compari nel roster.",
       updatedAt: UPDATED,
       related: ["tier-pro-max", "ottimizza-profilo", "statistiche-profilo"],
       content: `
-<h2>Verificato N'arte</h2>
+<h2>Artista Pro</h2>
 <p>È il badge incluso nei piani <strong>${PLAN_LABELS.pro}</strong> e <strong>${PLAN_LABELS.max}</strong>. Compare sul profilo pubblico <strong>in automatico</strong>: non va richiesto, non c'è una pratica da avviare e non c'è un'approvazione da attendere.</p>
-<p>Diciamo con chiarezza cosa attesta, per non lasciare intendere altro: <strong>attesta che dietro il profilo c'è un abbonamento attivo</strong>, quindi qualcuno che sta investendo sul proprio progetto. Non è la verifica di un documento d'identità né un giudizio artistico.</p>
+<p>Diciamo con chiarezza cosa attesta, per non lasciare intendere altro: <strong>indica che l'abbonamento Pro o Max è attivo</strong>. Non è la verifica di un documento d'identità né un giudizio artistico.</p>
 
 <h2>TOP Artist</h2>
 <p>Esclusiva del piano <strong>${PLAN_LABELS.max}</strong>. Oltre all'etichetta sul profilo, dà accesso alla fascia in evidenza in cima alla pagina <a href="/artisti">/artisti</a>.</p>
@@ -371,10 +371,10 @@ export const ARTISTI: HelpCategory = {
 <p>Preferiamo dirlo apertamente: <strong>il piano influisce sulla visibilità</strong>. Non è un algoritmo misterioso, è il modo in cui la piattaforma si sostiene.</p>
 
 <h2>Cosa conta comunque, su ogni piano</h2>
-<p>L'ordine non è tutto. Un organizzatore che filtra per "sassofonista" e "jazz" a Napoli vede prima di tutto <strong>chi corrisponde a quei filtri</strong>. Ed è lì che il profilo fa la differenza:</p>
+<p>L'ordine non è tutto. Un organizzatore che filtra per categoria e genere (per esempio "jazz") o cerca per testo un nome o una città vede prima di tutto <strong>chi corrisponde a quella ricerca</strong>. Non esiste un filtro dedicato alla città: la città si trova cercando il testo. Ed è lì che il profilo fa la differenza:</p>
 <ul>
   <li><strong>Generi e strumenti precisi</strong> ti fanno comparire nelle ricerche giuste.</li>
-  <li><strong>La città</strong> pesa: molti cercano vicino per contenere i costi di trasferta.</li>
+  <li><strong>La città</strong> scritta nel profilo conta: molti la cercano per testo, per contenere i costi di trasferta.</li>
   <li><strong>Una copertina forte</strong> decide se la scheda viene aperta o scorsa.</li>
   <li><strong>Un video</strong> decide se dalla scheda nasce una richiesta.</li>
 </ul>
@@ -418,19 +418,20 @@ export const ARTISTI: HelpCategory = {
     <tr><td>Tracce audio</td><td>—</td><td>${ENTITLEMENTS.pro.audioMax}</td><td>${ENTITLEMENTS.max.audioMax}</td></tr>
     <tr><td>Chat con gli organizzatori</td><td>—</td><td>sì</td><td>sì</td></tr>
     <tr><td>Recensioni visibili</td><td>—</td><td>sì</td><td>sì</td></tr>
-    <tr><td>Verificato N'arte</td><td>—</td><td>sì</td><td>sì</td></tr>
+    <tr><td>Badge Artista Pro</td><td>—</td><td>sì</td><td>sì</td></tr>
     <tr><td>TOP Artist in evidenza</td><td>—</td><td>—</td><td>sì</td></tr>
     <tr><td>Profili artista</td><td>${ENTITLEMENTS.free.artistProfilesMax}</td><td>${ENTITLEMENTS.pro.artistProfilesMax}</td><td>${ENTITLEMENTS.max.artistProfilesMax}</td></tr>
     <tr><td>Statistiche</td><td>—</td><td>—</td><td>ultimo anno</td></tr>
     <tr><td>Consulenza professionale</td><td>—</td><td>1 al mese</td><td>illimitata</td></tr>
+    <tr><td>Segnalazione del profilo alle strutture</td><td>—</td><td>—</td><td>almeno 2 al mese</td></tr>
   </tbody>
 </table>
 
 <h2>Le richieste non sono mai limitate</h2>
-<p>Su nessun piano, nemmeno quello gratuito. Bloccare una richiesta significherebbe punire l'organizzatore che ti sta cercando, e non ha senso per nessuno. <strong>Il limite scatta sulla chat</strong>: con ${PLAN_LABELS.free} ricevi la richiesta e l'email, per negoziare serve ${PLAN_LABELS.pro}.</p>
+<p>Su nessun piano, nemmeno quello gratuito. Bloccare una richiesta significherebbe punire l'organizzatore che ti sta cercando, e non ha senso per nessuno. <strong>Il limite scatta sulla chat</strong>: con ${PLAN_LABELS.free} ricevi la richiesta e l'email, per scrivere in chat serve ${PLAN_LABELS.pro} o ${PLAN_LABELS.max}.</p>
 
 <h2>Cosa giustifica il salto a ${PLAN_LABELS.max}</h2>
-<p>Tre cose: le <strong>statistiche</strong>, l'etichetta <strong>TOP Artist</strong> con la fascia in evidenza, e i <strong>${ENTITLEMENTS.max.artistProfilesMax} profili</strong>. Si aggiungono la consulenza illimitata, la candidatura a due eventi N'arte al mese curata dal team e — sull'abbonamento annuale — uno <strong>shooting fotografico</strong> incluso una tantum.</p>
+<p>Tre cose: le <strong>statistiche</strong>, l'etichetta <strong>TOP Artist</strong> con la fascia in evidenza, e i <strong>${ENTITLEMENTS.max.artistProfilesMax} profili</strong>. Si aggiungono la consulenza illimitata, la segnalazione del tuo profilo ad almeno due strutture al mese, curata dal team (impegno di mezzi: N'arte non tratta per te e non garantisce ingaggi), e — sull'abbonamento annuale — uno <strong>shooting fotografico</strong> incluso una tantum.</p>
 
 <h2>Domande frequenti</h2>
 <h3>C'è un periodo di prova?</h3>
@@ -539,8 +540,8 @@ export const ARTISTI: HelpCategory = {
 <h2>Fatture e adempimenti fiscali</h2>
 <p>Riguardano te e l'organizzatore: N'arte non è parte del contratto e non emette documenti per l'esibizione. Per la tua posizione fiscale <strong>rivolgiti al tuo commercialista</strong> — vedi <a href="/help/pagamenti/fattura-artista">chi emette la fattura</a>.</p>
 
-<h2>Il prezzo definitivo in piattaforma</h2>
-<p>Sulle date confermate puoi registrare il <strong>compenso realmente pattuito</strong>, con la conferma di entrambe le parti. Non serve a farti pagare — quello avviene fuori — ma lascia una traccia condivisa di quanto era stato concordato. Vedi <a href="/help/organizzatori/prezzo-definitivo">il prezzo definitivo</a>.</p>
+<h2>Compenso concordato – promemoria</h2>
+<p>Sulle date confermate puoi annotare il <strong>compenso pattuito</strong>, con la conferma di entrambe le parti. È un'annotazione fra voi: N'arte non è parte dell'accordo e non gestisce pagamenti — quello avviene fuori. Lascia però una traccia condivisa di quanto era stato concordato. Vedi <a href="/help/organizzatori/prezzo-definitivo">compenso concordato – promemoria</a>.</p>
 `,
     },
   ],

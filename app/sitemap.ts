@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
 import { HELP_CATEGORIES, allArticles } from "@/lib/help/content";
 import { logger } from "@/lib/logger";
+import { LEGAL_V2_ROTTE, legalV2Pubblicato } from "@/lib/legal/v2";
 
 /**
  * Sitemap del sito pubblico.
@@ -60,7 +61,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/chi-siamo`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${base}/collaborazioni`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/contatti`, changeFrequency: "yearly", priority: 0.5 },
+    { url: `${base}/segnalazioni`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${base}/help`, changeFrequency: "weekly", priority: 0.6 },
+    // Documenti legali v2: solo con il flag attivo.
+    ...(legalV2Pubblicato()
+      ? LEGAL_V2_ROTTE.map((r) => ({
+          url: `${base}${r.href}`,
+          changeFrequency: "yearly" as const,
+          priority: 0.3,
+        }))
+      : []),
 
     // Centro assistenza: categorie e articoli. Sono contenuti statici di un
     // file TypeScript, non righe di database — per questo stanno fra le

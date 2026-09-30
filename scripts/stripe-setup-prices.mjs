@@ -43,7 +43,7 @@ const PLANS = [
     tier: "pro",
     name: "N'arte Pro",
     description:
-      "Chat con locali e organizzatori, recensioni, badge Verificato su richiesta, 10 foto, 3 video, 1 file audio, 2 profili artista, priorità nei risultati.",
+      "Chat con locali e organizzatori, recensioni, badge Artista Pro, 10 foto, 3 video, 1 file audio, 2 profili artista, priorità nei risultati.",
     prices: [
       { interval: "month", amount: 999, lookup: "narte_pro_month", env: "STRIPE_PRICE_PRO_MONTH" },
       { interval: "year", amount: 4999, lookup: "narte_pro_year", env: "STRIPE_PRICE_PRO_YEAR" },
@@ -53,7 +53,7 @@ const PLANS = [
     tier: "max",
     name: "N'arte Max",
     description:
-      "Tutto di Pro, più: top artist in evidenza, proposta alle strutture, 30 foto, 5 profili artista, consulenza illimitata. Shooting fotografico incluso nell'abbonamento annuale.",
+      "Tutto di Pro, più: top artist in evidenza, segnalazione del profilo alle strutture, 30 foto, 5 profili artista, consulenza illimitata. Shooting fotografico incluso nell'abbonamento annuale.",
     prices: [
       { interval: "month", amount: 9999, lookup: "narte_max_month", env: "STRIPE_PRICE_MAX_MONTH" },
       { interval: "year", amount: 49999, lookup: "narte_max_year", env: "STRIPE_PRICE_MAX_YEAR" },

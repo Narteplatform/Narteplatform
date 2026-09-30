@@ -44,8 +44,15 @@ export function ArtistTierQuickAssign({
   function assign(next: ArtistTier) {
     if (pending) return;
     setError(null);
+    // Un omaggio Pro o Max va motivato (doc. 07, art. 8.4). Qui un prompt
+    // basta: la scheda dell'artista ha il modulo completo con scadenza.
+    let reason: string | null = null;
+    if (next === "pro" || next === "max") {
+      reason = window.prompt("Motivo dell'omaggio (resta nel registro):")?.trim() ?? null;
+      if (!reason) return;
+    }
     start(async () => {
-      const res = await updateArtistTier(artistId, { tier: next });
+      const res = await updateArtistTier(artistId, { tier: next, reason });
       if (!res.ok) setError(res.error ?? "Errore");
       else router.refresh();
     });

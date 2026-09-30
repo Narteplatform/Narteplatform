@@ -67,6 +67,30 @@ export async function esportaDatiUtente(userId: string) {
   const organizerId = rispostaOrg.error ? null : (rispostaOrg.data?.id ?? null);
   const recensioniIllegibili = Boolean(rispostaOrg.error);
 
+  // Gli id dei profili artista servono come chiave per richieste e recensioni
+  // ricevute. Stessa regola dell'organizzatore: se la lettura fallisce, le
+  // sezioni che ne dipendono lo dicono invece di risultare vuote.
+  const rispostaArt = await admin.from("artists").select("id").eq("user_id", userId);
+  if (rispostaArt.error) {
+    logger.error("legal/export", `id profili artista: ${rispostaArt.error.message}`);
+  }
+  const artistIds = rispostaArt.error ? null : (rispostaArt.data ?? []).map((a) => a.id);
+  const dipendeDaArtisti = (etichetta: string): Esito<unknown> => ({
+    errore: `Non è stato possibile leggere questa sezione (${etichetta}): dipende dai profili artista, che non si sono potuti leggere.`,
+  });
+
+  const { data: utenteAuth, error: erroreAuth } = await admin.auth.admin.getUserById(userId);
+  if (erroreAuth) logger.error("legal/export", `account: ${erroreAuth.message}`);
+  const account: Esito<unknown> = erroreAuth
+    ? { errore: "Non è stato possibile leggere questa sezione (account)." }
+    : {
+        dati: {
+          email: utenteAuth.user?.email ?? null,
+          creato: utenteAuth.user?.created_at ?? null,
+          ultimoAccesso: utenteAuth.user?.last_sign_in_at ?? null,
+        },
+      };
+
   const [
     profilo,
     consensi,
@@ -74,6 +98,13 @@ export async function esportaDatiUtente(userId: string) {
     preferiti,
     recensioniScritte,
     abbonamento,
+    messaggiScritti,
+    richiesteComeOrganizzatore,
+    richiesteComeArtista,
+    recensioniRicevute,
+    strutture,
+    consulenze,
+    richiesteCancellazione,
   ] = await Promise.all([
     leggi(
       "profilo",
@@ -122,13 +153,86 @@ export async function esportaDatiUtente(userId: string) {
               }
             : { dati: [] }
         ),
+    // Tutte le righe e non una sola: dopo una disdetta e una nuova
+    // sottoscrizione l'utente ne ha più d'una, e `maybeSingle` in quel caso
+    // falliva con un errore.
     leggi(
-      "abbonamento",
+      "abbonamenti",
       admin
         .from("subscriptions")
-        .select("tier, status, current_period_end, cancel_at_period_end")
+        .select("tier, billing_interval, status, current_period_start, current_period_end, cancel_at_period_end, canceled_at")
         .eq("user_id", userId)
-        .maybeSingle()
+        .order("current_period_start", { ascending: false })
+    ),
+    // Dei messaggi solo quelli scritti da chi esporta (vedi intestazione).
+    leggi(
+      "messaggi scritti",
+      admin
+        .from("messages")
+        .select(
+          "conversation_id, kind, body, offer_event_date, offer_time_slot, offer_budget_cents, " +
+            "offer_description, attachment_name, attachment_type, created_at"
+        )
+        .eq("sender_id", userId)
+        .order("created_at", { ascending: true })
+    ),
+    organizerId
+      ? leggi(
+          "richieste di booking inviate",
+          admin
+            .from("booking_requests")
+            .select("id, artist_id, event_date, time_slot, budget_offer, message, status, final_price, created_at")
+            .eq("organizer_id", organizerId)
+        )
+      : Promise.resolve<Esito<unknown>>(
+          recensioniIllegibili
+            ? { errore: "Non è stato possibile leggere questa sezione (richieste inviate): dipende dal profilo organizzatore." }
+            : { dati: [] }
+        ),
+    artistIds === null
+      ? Promise.resolve(dipendeDaArtisti("richieste ricevute"))
+      : artistIds.length === 0
+        ? Promise.resolve<Esito<unknown>>({ dati: [] })
+        : leggi(
+            "richieste di booking ricevute",
+            admin
+              .from("booking_requests")
+              .select("id, artist_id, event_date, time_slot, budget_offer, message, status, final_price, created_at")
+              .in("artist_id", artistIds)
+          ),
+    artistIds === null
+      ? Promise.resolve(dipendeDaArtisti("recensioni ricevute"))
+      : artistIds.length === 0
+        ? Promise.resolve<Esito<unknown>>({ dati: [] })
+        : leggi(
+            "recensioni ricevute",
+            admin
+              .from("feedback")
+              .select("artist_id, rating, body, created_at, hidden")
+              .in("artist_id", artistIds)
+          ),
+    organizerId
+      ? leggi(
+          "strutture",
+          admin
+            .from("venues")
+            .select("name, venue_type, address, city, region, postal_code, capacity, description, cover_image, gallery, website, instagram, phone, email, created_at")
+            .eq("organizer_id", organizerId)
+        )
+      : Promise.resolve<Esito<unknown>>({ dati: [] }),
+    leggi(
+      "consulenze",
+      admin
+        .from("consultations")
+        .select("name, email, phone, needs, status, created_at")
+        .eq("user_id", userId)
+    ),
+    leggi(
+      "richieste di cancellazione",
+      admin
+        .from("account_deletion_requests")
+        .select("requested_at, expires_at, confirmed_at, cancelled_at, completed_at")
+        .eq("user_id", userId)
     ),
   ]);
 
@@ -146,12 +250,20 @@ export async function esportaDatiUtente(userId: string) {
         "diritto di accesso non si estende a ciò che ha scritto l'altro.",
       dovePuoiChiedereAltro: "/contatti",
     },
+    account,
     profilo,
     consensi,
     profiliArtista: artisti,
     profiloOrganizzatore: organizzatore,
+    strutture,
     preferiti,
+    richiesteDiBookingInviate: richiesteComeOrganizzatore,
+    richiesteDiBookingRicevute: richiesteComeArtista,
+    messaggiScritti,
     recensioniScritte,
-    abbonamento,
+    recensioniRicevute,
+    consulenze,
+    abbonamenti: abbonamento,
+    richiesteDiCancellazione: richiesteCancellazione,
   };
 }
