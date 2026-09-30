@@ -35,8 +35,10 @@ export function CloseProfileButton({ artistId, stageName }: { artistId: string; 
   return (
     <div className="w-full basis-full space-y-2 rounded-md border border-border p-3 text-sm" role="alert">
       <p>
-        Chiudere il profilo &laquo;{stageName}&raquo; lo toglie dal catalogo pubblico. I contenuti non
-        vengono cancellati. Vuoi continuare?
+        Chiudere il profilo &laquo;{stageName}&raquo; è <strong>definitivo</strong>: esce dal catalogo,
+        foto, audio, testi e componenti vengono rimossi e il profilo non è più collegato al tuo
+        account, così libera un posto nel tuo piano. Le conversazioni restano agli organizzatori.
+        Vuoi continuare?
       </p>
       {error && <p className="text-destructive">{error}</p>}
       <div className="flex gap-2">

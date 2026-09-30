@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 
 import { logger } from "@/lib/logger";
 import { LEGAL_VERSION } from "@/lib/legal/content";
@@ -249,7 +250,15 @@ export async function registraProvaSuIubenda(prova: ProvaConsenso): Promise<void
  * un rifiuto non gestito, che su Vercel fa terminare l'invocazione.
  */
 export function registraProvaSuIubendaInBackground(prova: ProvaConsenso): void {
-  void registraProvaSuIubenda(prova).catch(() => {});
+  // `after()` tiene viva la funzione su Vercel finché l'invio non è concluso:
+  // con un semplice `void`, dopo la risposta l'invocazione poteva essere
+  // sospesa e la prova non partire mai, senza lasciare traccia. Fuori da una
+  // richiesta (script, test) `after` solleva: lì si ricade sull'invio diretto.
+  try {
+    after(() => registraProvaSuIubenda(prova).catch(() => {}));
+  } catch {
+    void registraProvaSuIubenda(prova).catch(() => {});
+  }
 }
 
 /** Il testo delle caselle, in un posto solo, per ritrovarlo nelle prove. */

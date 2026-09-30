@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ExternalLink, Pencil, Plus, UserPlus } from "lucide-react";
 import { isUrlAssoluto, resolveMediaUrls } from "@/lib/storage/signed";
 import { createAdminClient } from "@/lib/supabase/server";
+import { leggiSospensione } from "@/lib/auth/sospeso";
+import { logger } from "@/lib/logger";
 import { isBunnyEmbedUrl } from "@/lib/storage/bunny/urls";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
@@ -65,7 +67,7 @@ export default async function AdminArtistsPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("artists")
-      .select("id, slug, stage_name, status, city, cover_image, genre, tier, tier_override")
+      .select("id, user_id, slug, stage_name, status, city, cover_image, genre, tier, tier_override")
       .order("stage_name"),
   ]);
 
@@ -83,6 +85,30 @@ export default async function AdminArtistsPage({
     const url = firmatiPerPath.get(salvato) ?? (isUrlAssoluto(salvato) ? salvato : null);
     if (url) videoCandidature.set(a.id as string, url);
   }
+
+  // Profili in attesa il cui proprietario è sospeso: tornano `pending` con la
+  // sospensione e non vanno riapprovati a mano. Lettura best-effort: se fallisce
+  // il badge manca, ma approvazione e cambio di stato controllano comunque.
+  const proprietariPending = Array.from(
+    new Set(
+      (artists ?? [])
+        .filter((a) => a.status === "pending" && a.user_id)
+        .map((a) => a.user_id as string)
+    )
+  );
+  const proprietariSospesi = new Set<string>();
+  await Promise.all(
+    proprietariPending.map(async (uid) => {
+      const { data, error } = await supabase.auth.admin.getUserById(uid);
+      if (error) {
+        logger.warn("admin/artisti", `proprietario ${uid} non leggibile: ${error.message}`);
+        return;
+      }
+      if (leggiSospensione(data?.user?.app_metadata)) proprietariSospesi.add(uid);
+    })
+  );
+  const sospesoDi = (a: { status: string; user_id: string | null }) =>
+    a.status === "pending" && !!a.user_id && proprietariSospesi.has(a.user_id);
 
   const filteredArtists = (artists ?? [])
     .filter((a) => (filter === "all" ? true : a.status === filter))
@@ -241,6 +267,7 @@ export default async function AdminArtistsPage({
                       <Badge variant={STATUS_VARIANT[a.status] ?? "muted"} dot>
                         {STATUS_LABEL[a.status] ?? a.status}
                       </Badge>
+                      {sospesoDi(a) && <Badge variant="danger">Account sospeso</Badge>}
                       <ArtistTierQuickAssign
                         artistId={a.id}
                         tier={a.tier}
@@ -314,6 +341,7 @@ export default async function AdminArtistsPage({
                       <Badge variant={STATUS_VARIANT[a.status] ?? "muted"} dot>
                         {STATUS_LABEL[a.status] ?? a.status}
                       </Badge>
+                      {sospesoDi(a) && <Badge variant="danger">Account sospeso</Badge>}
                     </TableCell>
                     <TableCell>
                       <ArtistTierQuickAssign

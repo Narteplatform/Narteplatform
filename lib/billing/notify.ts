@@ -66,7 +66,19 @@ export async function notificaEventoAbbonamento(
     const condizioniUrl = `${getSiteUrl()}/condizioni-abbonamento`;
 
     switch (event.type) {
-      case "customer.subscription.created": {
+      case "customer.subscription.created":
+      case "customer.subscription.updated": {
+        // Approccio semplice, senza tabelle di dedup: l'attivazione parte
+        // (a) alla creazione, solo se lo stato è già active/trialing; (b) su
+        // `updated` SOLO nel passaggio incomplete -> active/trialing (il
+        // pagamento è andato a buon fine dopo la creazione). Ogni altro
+        // `updated` (rinnovi, cambi piano, retry) non invia nulla, quindi i
+        // retry del webhook non producono doppioni.
+        if (sub.status !== "active" && sub.status !== "trialing") return;
+        if (event.type === "customer.subscription.updated") {
+          const prima = (event.data.previous_attributes as { status?: string } | undefined)?.status;
+          if (prima !== "incomplete") return;
+        }
         const consumatore = sub.metadata?.acquirente === "consumatore";
         const scadenzaRecesso = dataIt(sub.start_date + 14 * 86_400);
         await dispatchEmail({

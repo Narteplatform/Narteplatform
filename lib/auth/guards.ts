@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import type { Role } from "@/lib/supabase/types";
-import { isUtenteSospeso } from "@/lib/auth/sospeso";
+import { isUtenteSospeso, queryLoginBloccato } from "@/lib/auth/sospeso";
 
 export async function getCurrentUser() {
   const supabase = await createClient();
@@ -16,7 +16,7 @@ export async function getCurrentUser() {
   // intercetta la richiesta successiva e li toglie.
   if (isUtenteSospeso(user)) {
     await supabase.auth.signOut();
-    redirect("/login?sospeso=1");
+    redirect(`/login?${queryLoginBloccato(user)}`);
   }
 
   // Admin client per la lettura del profilo: bypassa RLS in modo sicuro

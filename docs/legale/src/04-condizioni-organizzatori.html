@@ -26,20 +26,15 @@
 <p><span class="art">2.1</span> Si diventa Organizzatore in uno dei modi seguenti:</p>
 <ul>
   <li>registrandosi come Organizzatore dalla pagina di registrazione;</li>
-  <li>inviando la prima Richiesta di booking da Utente registrato: il ruolo cambia automaticamente;</li>
-  <li>inviando una Richiesta di booking dal Profilo di un Artista senza essere registrati: in questo caso, nello stesso passaggio, viene creato un account da Organizzatore con i dati inseriti nel modulo.</li>
+  <li>inviando la prima Richiesta di booking da Utente registrato: il ruolo cambia automaticamente, previa accettazione espressa delle presenti Condizioni.</li>
 </ul>
+<p>Per inviare una Richiesta di booking serve un account: chi non è registrato deve prima registrarsi, confermando il proprio indirizzo email.</p>
 <p><span class="art">2.2</span> <strong>Accettazione.</strong> In tutti i casi dell'art. 2.1, l'Organizzatore accetta le presenti Condizioni, insieme ai Termini, selezionando la casella di accettazione prima dell'invio, e dichiara di aver compiuto 18 anni (doc. 01, art. 5.1). <strong>L'invio della prima Richiesta di booking vale accettazione delle presenti Condizioni</strong> anche per chi era già Utente registrato. Il rifiuto delle presenti Condizioni impedisce l'invio di Richieste, non l'uso della Piattaforma come Utente.</p>
-<p><span class="art">2.3</span> L'account creato con la Richiesta di booking è un account a tutti gli effetti, con gli stessi diritti di accesso, modifica, esportazione e cancellazione degli altri (doc. 01, art. 16.1). L'indirizzo email è considerato verificato perché l'Organizzatore lo ha fornito in un modulo che lo invita a usarlo per ricevere le risposte dell'Artista; resta responsabile della sua esattezza.</p>
+<p><span class="art">2.3</span> L'accettazione delle presenti Condizioni al momento della prima Richiesta è registrata con la versione del documento e l'istante (doc. 08).</p>
 
 <div class="nota-legale">
-  <strong class="etichetta">Nota per il legale — scostamenti nell'acquisizione del ruolo</strong>
-  <ul>
-    <li><strong>Maggiore età.</strong> Il modulo di Richiesta che crea l'account non contiene la dichiarazione di maggiore età presente in registrazione e in candidatura. Va aggiunta: l'art. 2.2 la presuppone.</li>
-    <li><strong>Casella di accettazione.</strong> Oggi la casella del modulo di Richiesta rinvia genericamente a «termini e informativa». Deve richiamare espressamente il presente documento, perché l'art. 2.2 lo rende accettato con l'invio.</li>
-    <li><strong>Email non verificata.</strong> L'account nasce con l'email già confermata, senza che il titolare abbia mai cliccato un collegamento. Chiunque può quindi creare un account Organizzatore a nome di un indirizzo altrui e inviare Richieste che l'Artista riceve come provenienti da quella persona. Si raccomanda la verifica dell'email prima che la Richiesta sia inoltrata all'Artista, o almeno prima che l'account possa essere riusato. L'art. 2.3 è scritto sullo stato attuale e andrebbe semplificato dopo la correzione.</li>
-    <li>Il passaggio automatico da Utente a Organizzatore non registra oggi un'accettazione distinta: la registrazione del consenso (tabella <em>user_consents</em>) andrebbe estesa a questo evento, indicando la versione del presente documento.</li>
-  </ul>
+  <strong class="etichetta">Nota per il legale — acquisizione del ruolo (aggiornata v0.96)</strong>
+  <p>Gli scostamenti segnalati nella v0.95 sono stati corretti: la Richiesta di booking non crea più un account al volo (serve la registrazione, con conferma email e dichiarazione dei 18 anni); il passaggio da Utente a Organizzatore richiede una casella che richiama espressamente il presente documento, registrata nel registro dei consensi e inviata al Consent Database di iubenda.</p>
 </div>
 
 <h2>3. Chi agisce per un ente, un locale o un'impresa</h2>
@@ -54,7 +49,7 @@
 <p><span class="art">4.3</span> <strong>Chi vede i dati della Struttura.</strong></p>
 <table>
   <tr><th>Chi</th><th>Che cosa vede</th></tr>
-  <tr><td>Chiunque, sul Profilo pubblico dell'Artista, per ogni Data confermata</td><td>Data, nome e immagine dell'Organizzatore; nome, città e immagine di copertina della Struttura. Per le Strutture di tipo «privato»: solo la città e la dicitura «evento privato».</td></tr>
+  <tr><td>Gli Utenti registrati, sul Profilo dell'Artista, per ogni Data confermata</td><td>Data, nome e immagine dell'Organizzatore; nome, città e immagine di copertina della Struttura. Se l'Organizzatore è un privato, nome e immagine non sono mostrati; per le Strutture di tipo «privato» solo la città, con la dicitura «evento privato». I Visitatori non registrati non vedono le Date confermate.</td></tr>
   <tr><td>L'Artista destinatario di una Richiesta di booking</td><td>Tutti i dati della Struttura, compresi indirizzo e recapiti, e i dati dell'Organizzatore indicati nella Richiesta (nome, telefono, presentazione, sito, profilo Instagram).</td></tr>
   <tr><td>Il Team N'arte</td><td>Tutti i dati, per la gestione del servizio.</td></tr>
 </table>
@@ -152,9 +147,9 @@
 <h2>9. Data confermata, annullamenti e mancata esecuzione</h2>
 <p><span class="art">9.1</span> <strong>Data confermata.</strong> Con la conferma, la data è bloccata nel calendario dell'Artista e compare sul suo Profilo pubblico con le informazioni dell'art. 4.3. Le parti ricevono una comunicazione di conferma. La Data confermata registra quanto dichiarato dalle parti e non attesta che il contratto sia valido o completo (doc. 01, art. 8.2).</p>
 <p><span class="art">9.2</span> <strong>Annullamenti tra le parti.</strong> Se l'Organizzatore non può più realizzare l'evento, o deve modificarne data, luogo o condizioni essenziali, lo comunica all'Artista <strong>appena ne ha conoscenza</strong>. Le conseguenze degli annullamenti e delle mancate presentazioni, di una parte o dell'altra, sono regolate dal Contratto di esibizione e dalla legge. <strong>N'arte non risponde degli annullamenti, delle mancate presentazioni, dei ritardi o dei mancati pagamenti</strong> e non interviene come arbitro tra le parti (doc. 01, art. 14.1).</p>
-<p><span class="art">9.3</span> <strong>Annullamento di una Data confermata sulla Piattaforma.</strong> Una Data confermata non può essere annullata dalle parti in autonomia. La parte che intende annullarla lo comunica all'altra e ne informa il Team N'arte con il modulo /contatti. Il Team N'arte annulla la Data confermata sulla Piattaforma, liberando il calendario dell'Artista:</p>
+<p><span class="art">9.3</span> <strong>Annullamento di una Data confermata sulla Piattaforma.</strong> Una Data confermata non può essere annullata dalle parti in autonomia. La parte che intende annullarla lo comunica all'altra e ne informa il Team N'arte scrivendo a info@narteofficial.it. Il Team N'arte annulla la Data confermata sulla Piattaforma, liberando il calendario dell'Artista:</p>
 <ul>
-  <li>su richiesta concorde delle parti, o su richiesta di una parte quando l'altra non si oppone entro <span class="seg">[3 giorni]</span>;</li>
+  <li>su richiesta concorde delle parti, o su richiesta di una parte quando l'altra non si oppone entro 3 giorni lavorativi;</li>
   <li>di propria iniziativa, <strong>solo per ragioni gravi</strong>: fondati elementi che l'evento sia inesistente o illecito, che una parte abbia fornito un'identità falsa, che la data sia stata confermata senza un accordo (art. 8.5), oppure in esecuzione di un provvedimento dell'autorità.</li>
 </ul>
 <p>L'annullamento è sempre accompagnato da una motivazione scritta, comunicata a entrambe le parti via email e nella chat della Trattativa. La parte che non condivide la decisione può contestarla secondo il doc. 06. L'annullamento sulla Piattaforma non incide sui diritti e sugli obblighi delle parti derivanti dal Contratto di esibizione.</p>

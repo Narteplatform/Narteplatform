@@ -11,6 +11,7 @@ import { sendEmail, sendBookingCancelledByAdminEmail } from "@/lib/emails/send";
 import ArtistApprovedEmail from "@/lib/emails/templates/ArtistApprovedEmail";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { registraDecisione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
+import { verificaProprietarioNonSospeso } from "@/lib/admin/sospensione";
 import { nascondiRecensioniDiBookingAnnullato } from "@/lib/feedback/moderation";
 import { logger } from "@/lib/logger";
 
@@ -131,6 +132,11 @@ export async function approveApplication(applicationId: string) {
     const { data: list } = await admin.auth.admin.listUsers();
     userId = list.users.find((u) => u.email?.toLowerCase() === app.email.toLowerCase())?.id ?? null;
   }
+
+  // Un account sospeso non può avere profili approvati: si ferma prima di
+  // scrivere qualsiasi cosa (profilo, ruolo, stato della candidatura).
+  const proprietario = await verificaProprietarioNonSospeso(userId);
+  if (!proprietario.ok) return { ok: false as const, error: proprietario.error };
 
   if (userId) {
     await admin.from("profiles").update({ role: "artist" }).eq("id", userId);
@@ -254,6 +260,11 @@ export async function updateArtistStatus(
   if (readErr) return { ok: false as const, error: readErr.message };
   if (!current) return { ok: false as const, error: "Profilo non trovato" };
   if (current.status === status) return { ok: true as const };
+
+  if (status === "approved") {
+    const proprietario = await verificaProprietarioNonSospeso(current.user_id);
+    if (!proprietario.ok) return { ok: false as const, error: proprietario.error };
+  }
 
   // Serve una motivazione quando il profilo esce dal catalogo (da approvato a
   // in attesa o rifiutato) e quando un profilo in attesa viene rifiutato.

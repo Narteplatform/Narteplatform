@@ -2,7 +2,8 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
-import { nascondiProfiliEBloccaAccesso } from "@/lib/legal/cancellazione";
+import { haCancellazioneConfermata, nascondiProfiliEBloccaAccesso } from "@/lib/legal/cancellazione";
+import { isUtenteSospeso, leggiSospensione, type DatiSospensione } from "@/lib/auth/sospeso";
 import { registraDecisione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 import { TITOLARE } from "@/lib/legal/titolare";
 import type { Json } from "@/lib/supabase/types";
@@ -29,27 +30,58 @@ export type EsitoSospensione =
 
 type Input = { userId: string; motivo: string; attoreId: string };
 
-type DatiSospensione = {
-  sospeso_il: string;
-  motivo: string;
-  profili_nascosti: string[];
-  attore: string;
-};
+const MSG_CANCELLAZIONE =
+  "L'utente ha una richiesta di cancellazione confermata: sospensione e riattivazione sono bloccate. " +
+  "Gestisci la richiesta da Impostazioni > Cancellazioni account.";
 
-function leggiSospensione(appMetadata: unknown): DatiSospensione | null {
-  if (!appMetadata || typeof appMetadata !== "object") return null;
-  const s = (appMetadata as Record<string, unknown>).sospensione;
-  if (!s || typeof s !== "object") return null;
-  const o = s as Record<string, unknown>;
-  const nascosti = Array.isArray(o.profili_nascosti)
-    ? o.profili_nascosti.filter((x): x is string => typeof x === "string")
-    : [];
-  return {
-    sospeso_il: typeof o.sospeso_il === "string" ? o.sospeso_il : "",
-    motivo: typeof o.motivo === "string" ? o.motivo : "",
-    profili_nascosti: nascosti,
-    attore: typeof o.attore === "string" ? o.attore : "",
+/**
+ * Aggiorna `profili_nascosti` facendo l'UNIONE con quelli già presenti
+ * (riletti ora), mai una sostituzione. Con `completa` chiude `in_corso`.
+ */
+async function unisciProfiliNascosti(
+  userId: string,
+  nuovi: string[],
+  completa: boolean
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const admin = createAdminClient();
+  const { data: letto, error } = await admin.auth.admin.getUserById(userId);
+  if (error || !letto?.user) return { ok: false, error: error?.message ?? "utente assente" };
+  const attuale = leggiSospensione(letto.user.app_metadata);
+  if (!attuale) return { ok: false, error: "registro di sospensione assente" };
+  const dati: DatiSospensione = {
+    ...attuale,
+    profili_nascosti: Array.from(new Set([...attuale.profili_nascosti, ...nuovi])),
+    in_corso: completa ? false : attuale.in_corso,
   };
+  const { error: errore } = await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { ...(letto.user.app_metadata ?? {}), sospensione: dati as unknown as Json },
+  });
+  return errore ? { ok: false, error: errore.message } : { ok: true };
+}
+
+/**
+ * Per approvare un profilo: il proprietario non deve essere sospeso né
+ * bloccato. Lettura con errore controllato.
+ */
+export async function verificaProprietarioNonSospeso(
+  userId: string | null
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!userId) return { ok: true };
+  const { data, error } = await createAdminClient().auth.admin.getUserById(userId);
+  if (error || !data?.user) {
+    logger.error(AREA, `proprietario non leggibile: ${error?.message ?? "assente"}`);
+    return { ok: false, error: "Non riesco a verificare lo stato dell'account del proprietario. Nessuna modifica fatta." };
+  }
+  if (leggiSospensione(data.user.app_metadata)) {
+    return {
+      ok: false,
+      error: "L'account del proprietario è sospeso: il profilo non può essere approvato. Riattiva prima l'account da Utenti.",
+    };
+  }
+  if (isUtenteSospeso(data.user)) {
+    return { ok: false, error: "L'account del proprietario è bloccato (es. chiuso su richiesta): il profilo non può essere approvato." };
+  }
+  return { ok: true };
 }
 
 /** Frase sull'abbonamento per l'email di sospensione. */
@@ -99,41 +131,73 @@ export async function sospendiAccount({ userId, motivo, attoreId }: Input): Prom
   }
   const utente = letto.user;
   if (leggiSospensione(utente.app_metadata)) {
-    return { ok: false, error: "L'account risulta già sospeso." };
+    return {
+      ok: false,
+      error: "L'account risulta già sospeso (o con una sospensione rimasta a metà): riattivalo prima di sospenderlo di nuovo.",
+    };
+  }
+  if (isUtenteSospeso(utente)) {
+    return {
+      ok: false,
+      error: "L'account è già bloccato per un altro motivo (es. cancellazione richiesta dall'utente): non si sospende da qui.",
+    };
   }
 
+  const cancellazione = await haCancellazioneConfermata(userId);
+  if (!cancellazione.ok) {
+    return { ok: false, error: "Non riesco a verificare le richieste di cancellazione. Nessuna modifica fatta." };
+  }
+  if (cancellazione.attiva) return { ok: false, error: MSG_CANCELLAZIONE };
+
+  // 1. Prima l'intenzione: se il processo si ferma a metà, il registro esiste
+  //    e la riattivazione sa che c'è qualcosa da rimettere a posto.
+  const intenzione: DatiSospensione = {
+    in_corso: true,
+    motivo: motivoPulito,
+    sospeso_il: new Date().toISOString(),
+    attore: attoreId,
+    profili_nascosti: [],
+  };
+  const { error: erroreIntenzione } = await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { ...(utente.app_metadata ?? {}), sospensione: intenzione as unknown as Json },
+  });
+  if (erroreIntenzione) {
+    logger.error(AREA, `registro di sospensione non scritto: ${erroreIntenzione.message}`);
+    return { ok: false, error: "Non riesco a registrare la sospensione. Nessuna modifica fatta." };
+  }
+
+  // 2. Nascondi i profili e banna.
   const esito = await nascondiProfiliEBloccaAccesso(userId, AREA);
   if (!esito.ok) {
+    // Stato a metà: si tenta di salvare comunque i profili già nascosti nel
+    // registro (unione), così la riattivazione li ritrova.
     if (esito.nascosti.length > 0) {
-      // Stato a metà: alcuni profili già nascosti. Va detto forte, con gli id,
-      // perché senza registro nessuno saprebbe cosa ripristinare.
       logger.error(
         AREA,
         `SOSPENSIONE INCOMPLETA — utente=${userId} profili già nascosti: ${esito.nascosti.join(", ")}`
       );
+      const salvati = await unisciProfiliNascosti(userId, esito.nascosti, false);
+      if (!salvati.ok) logger.error(AREA, `profili nascosti non salvati nel registro: ${salvati.error}`);
     }
-    return { ok: false, error: "Sospensione non riuscita. Controlla i log del server prima di riprovare." };
+    return {
+      ok: false,
+      error:
+        "Sospensione non riuscita e rimasta a metà: l'account risulta con una sospensione in corso. " +
+        "Usa «Riattiva» per ripristinare, poi riprova. Controlla i log del server.",
+    };
   }
 
-  const dati: DatiSospensione = {
-    sospeso_il: new Date().toISOString(),
-    motivo: motivoPulito,
-    profili_nascosti: esito.nascosti,
-    attore: attoreId,
-  };
-  const appMetadata = { ...(utente.app_metadata ?? {}), sospensione: dati as unknown as Json };
-  const { error: erroreMeta } = await admin.auth.admin.updateUserById(userId, {
-    app_metadata: appMetadata,
-  });
-  if (erroreMeta) {
+  // 3. Profili nascosti nel registro (unione) e chiusura di `in_corso`.
+  const chiuso = await unisciProfiliNascosti(userId, esito.nascosti, true);
+  if (!chiuso.ok) {
     logger.error(
       AREA,
-      `ACCOUNT BLOCCATO MA STATO NON SALVATO — utente=${userId} profili nascosti: ` +
-        `${esito.nascosti.join(", ") || "nessuno"}: ${erroreMeta.message}`
+      `ACCOUNT BLOCCATO MA PROFILI NON REGISTRATI — utente=${userId} profili nascosti: ` +
+        `${esito.nascosti.join(", ") || "nessuno"}: ${chiuso.error}`
     );
     return {
       ok: false,
-      error: "Account bloccato ma stato precedente non salvato: segnalalo a chi gestisce il sito prima di riattivare.",
+      error: "Account bloccato ma elenco dei profili nascosti non salvato: segnalalo a chi gestisce il sito prima di riattivare.",
     };
   }
 
@@ -180,6 +244,12 @@ export async function riattivaAccount({ userId, motivo, attoreId }: Input): Prom
     // altro motivo (es. cancellazione confermata) non va sbloccato da qui.
     return { ok: false, error: "Nessuna sospensione registrata su questo account: niente da riattivare." };
   }
+
+  const cancellazione = await haCancellazioneConfermata(userId);
+  if (!cancellazione.ok) {
+    return { ok: false, error: "Non riesco a verificare le richieste di cancellazione. Nessuna modifica fatta." };
+  }
+  if (cancellazione.attiva) return { ok: false, error: MSG_CANCELLAZIONE };
 
   // Ripristino dei soli profili elencati e ancora `pending`: quelli cambiati
   // nel frattempo (rifiutati, già riapprovati) non si toccano.

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireRootSuperadmin } from "@/lib/admin/permissions";
 import { logger } from "@/lib/logger";
+import { annullaCancellazioneConfermata } from "@/lib/legal/cancellazione";
+import { MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 import {
   anteprimaCompletamento,
   eseguiCompletamento,
@@ -92,5 +94,47 @@ export async function completaCancellazioneAction(
       esito: "errore",
       messaggio: "Errore imprevisto. Controlla i log: l'operazione potrebbe essere a metà.",
     };
+  }
+}
+
+export type AnnullaResult =
+  | { ok: true; messaggio: string }
+  | { ok: false; error: string };
+
+const annullaSchema = z.object({
+  richiestaId: z.string().uuid("Richiesta non valida."),
+  motivo: z
+    .string()
+    .trim()
+    .min(MOTIVAZIONE_MIN, `La motivazione deve avere almeno ${MOTIVAZIONE_MIN} caratteri.`)
+    .max(2000, "La motivazione è troppo lunga (massimo 2000 caratteri)."),
+});
+
+/** Ripensamento dell'interessato dopo la conferma: solo root, motivazione obbligatoria. */
+export async function annullaCancellazioneAction(richiestaId: string, motivo: string): Promise<AnnullaResult> {
+  const attore = await requireRootSuperadmin();
+  const parsed = annullaSchema.safeParse({ richiestaId, motivo });
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dati non validi." };
+  try {
+    const esito = await annullaCancellazioneConfermata({
+      richiestaId: parsed.data.richiestaId,
+      attoreId: attore.id,
+      motivo: parsed.data.motivo,
+    });
+    revalidatePath("/admin/impostazioni/cancellazioni");
+    revalidatePath("/admin/utenti");
+    revalidatePath("/artisti");
+    if (!esito.ok) return { ok: false, error: esito.error };
+    return {
+      ok: true,
+      messaggio:
+        (esito.accessoRipristinato
+          ? "Cancellazione annullata, accesso ripristinato."
+          : "Cancellazione annullata. L'account resta sospeso: l'accesso non è stato riaperto.") +
+        (esito.notified ? " L'utente è stato avvisato via email." : " L'email all'utente non è partita: scrivigli a mano."),
+    };
+  } catch (e) {
+    logger.error("admin/cancellazioni", "annullamento, eccezione:", e instanceof Error ? e.message : e);
+    return { ok: false, error: "Errore imprevisto. Controlla i log: l'operazione è ripetibile." };
   }
 }

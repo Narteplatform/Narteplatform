@@ -93,6 +93,8 @@ const ESENTI_PREFISSO = [
   // Le riscritture di next.config.ts puntano qui: senza questa riga i
   // documenti sarebbero irraggiungibili proprio da chi deve leggerli.
   "/legale/",
+  // Pagine legali v2 (riscritture da /condizioni-*, /regolamento-recensioni…).
+  "/legale-v2/",
   "/api/",
   "/auth/",
   "/_next/",

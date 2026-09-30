@@ -195,9 +195,31 @@ export async function chiudiProfilo(artistId: string) {
     };
   }
 
+  // Chiudere = rinunciare al profilo. Il profilo viene nascosto, svuotato dei
+  // contenuti e dei dati personali e STACCATO dall'account (user_id a null):
+  // così libera il posto nel piano (la quota conta i profili dell'account) e
+  // non resta un profilo «fantasma» con i dati dell'artista. La riga non si
+  // elimina, perché con lei cadrebbero a cascata conversazioni e date degli
+  // organizzatori. Svuotare le colonne qui è voluto e confermato dall'artista.
   const { error: updErr } = await admin
     .from("artists")
-    .update({ status: "rejected" })
+    .update({
+      status: "rejected",
+      user_id: null,
+      stage_name: "Profilo chiuso",
+      slug: `chiuso-${artistId.slice(0, 8)}`,
+      bio: null,
+      city: null,
+      cover_image: null,
+      gallery: [],
+      audio_files: [],
+      social_links: {},
+      personnel: [],
+      about_extended: null,
+      what_to_expect: null,
+      set_list: null,
+      setup_requirements: null,
+    })
     .eq("id", artistId)
     .eq("user_id", user.id);
   if (updErr) {

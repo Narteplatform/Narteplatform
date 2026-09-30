@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database, Role } from "@/lib/supabase/types";
-import { isUtenteSospeso } from "@/lib/auth/sospeso";
+import { isUtenteSospeso, queryLoginBloccato } from "@/lib/auth/sospeso";
 import { ADMIN_PAGES_SEMPRE_VISIBILI, adminSectionForPath } from "@/lib/admin/sections";
 import {
   LEGAL_COOKIE,
@@ -57,7 +57,7 @@ export async function middleware(request: NextRequest) {
     if (path === "/login") return response;
     const login = request.nextUrl.clone();
     login.pathname = "/login";
-    login.search = "?sospeso=1";
+    login.search = `?${queryLoginBloccato(user)}`;
     const redirect = NextResponse.redirect(login);
     response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
     return redirect;

@@ -5,6 +5,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
 import { logger } from "@/lib/logger";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/client";
+import { leggiSospensione } from "@/lib/auth/sospeso";
+import { registraDecisione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 
 /**
  * Cancellazione dell'account: richiesta, conferma, disattivazione.
@@ -197,12 +199,24 @@ export async function confermaCancellazione(token: string): Promise<EsitoConferm
 async function disattivaAccount(
   userId: string
 ): Promise<{ ok: true; stato: Json } | { ok: false }> {
+  // Se l'account è già sospeso, i suoi profili sono già `pending` e l'elenco
+  // di quelli nascosti sta in `app_metadata.sospensione`: vanno inclusi, così
+  // un futuro annullamento li ritrova. Lettura con errore controllato: se
+  // fallisce non si tocca nulla.
+  const { data: letto, error: erroreUtente } = await createAdminClient().auth.admin.getUserById(userId);
+  if (erroreUtente || !letto?.user) {
+    logger.error("cancellazione", `utente non leggibile: ${erroreUtente?.message ?? "assente"}`);
+    return { ok: false };
+  }
+  const giaNascosti = leggiSospensione(letto.user.app_metadata)?.profili_nascosti ?? [];
+
   const esito = await nascondiProfiliEBloccaAccesso(userId, "cancellazione");
   if (!esito.ok) return { ok: false };
+  const daRipristinare = Array.from(new Set([...esito.nascosti, ...giaNascosti]));
   return {
     ok: true,
     stato: {
-      artisti_riportati_a_pending: esito.nascosti,
+      artisti_riportati_a_pending: daRipristinare,
       accesso_bloccato: true,
       disattivato_il: new Date().toISOString(),
     },
@@ -300,4 +314,173 @@ async function disdiciAbbonamentoAFinePeriodo(userId: string): Promise<Json> {
     }
   }
   return { esito: disdetti.length === attivi.length ? "disdetto" : "parziale", disdetti };
+}
+
+/**
+ * `attiva: true` se l'utente ha una richiesta di cancellazione confermata e
+ * né annullata né completata. Lettura con errore controllato: chi chiama deve
+ * fermarsi su `ok: false`, non trattarlo come «nessuna richiesta».
+ */
+export async function haCancellazioneConfermata(
+  userId: string
+): Promise<{ ok: true; attiva: boolean } | { ok: false }> {
+  const { data, error } = await createAdminClient()
+    .from("account_deletion_requests")
+    .select("id")
+    .eq("user_id", userId)
+    .not("confirmed_at", "is", null)
+    .is("cancelled_at", null)
+    .is("completed_at", null)
+    .limit(1);
+  if (error) {
+    logger.error("cancellazione", `lettura richieste confermate fallita: ${error.message}`);
+    return { ok: false };
+  }
+  return { ok: true, attiva: (data ?? []).length > 0 };
+}
+
+export type EsitoAnnullamento =
+  | { ok: true; reference: string; notified: boolean; accessoRipristinato: boolean }
+  | { ok: false; error: string };
+
+/**
+ * Ripensamento dopo la conferma (promesso entro 30 giorni).
+ *
+ * Ripristina ad `approved` SOLO i profili registrati in
+ * `restore_state.artisti_riportati_a_pending` che sono ancora `pending`, e
+ * toglie il ban SOLO se l'account non è anche sospeso dal Team: in quel caso
+ * profili e ban restano com'erano, li gestisce la riattivazione.
+ * L'abbonamento NON viene riattivato (era `cancel_at_period_end`).
+ *
+ * Ordine: prima il ripristino (ripetibile), poi `cancelled_at`. Se una fase
+ * fallisce si può rilanciare; il contrario lascerebbe una richiesta annullata
+ * su un account ancora chiuso, non più ritentabile da qui.
+ */
+export async function annullaCancellazioneConfermata({
+  richiestaId,
+  attoreId,
+  motivo,
+}: {
+  richiestaId: string;
+  attoreId: string;
+  motivo: string;
+}): Promise<EsitoAnnullamento> {
+  const motivoPulito = motivo.trim();
+  if (motivoPulito.length < MOTIVAZIONE_MIN) {
+    return { ok: false, error: `La motivazione deve avere almeno ${MOTIVAZIONE_MIN} caratteri.` };
+  }
+  const admin = createAdminClient();
+
+  const { data: richiesta, error } = await admin
+    .from("account_deletion_requests")
+    .select("id, user_id, confirmed_at, cancelled_at, completed_at, restore_state")
+    .eq("id", richiestaId)
+    .maybeSingle();
+  if (error) {
+    logger.error("cancellazione", `lettura richiesta fallita: ${error.message}`);
+    return { ok: false, error: "Non riesco a leggere la richiesta. Nessuna modifica fatta." };
+  }
+  if (!richiesta) return { ok: false, error: "Richiesta non trovata." };
+  if (!richiesta.confirmed_at) return { ok: false, error: "La richiesta non è stata confermata: niente da annullare qui." };
+  if (richiesta.completed_at) return { ok: false, error: "La cancellazione è già stata completata: non si può annullare." };
+  if (richiesta.cancelled_at) return { ok: false, error: "La richiesta è già stata annullata." };
+
+  const stato = richiesta.restore_state;
+  if (!stato || typeof stato !== "object" || Array.isArray(stato)) {
+    return { ok: false, error: "Stato di ripristino assente sulla richiesta: non so cosa ripristinare. Nessuna modifica fatta." };
+  }
+  const grezzo = (stato as Record<string, Json | undefined>).artisti_riportati_a_pending;
+  if (!Array.isArray(grezzo)) {
+    return { ok: false, error: "Stato di ripristino incompleto sulla richiesta. Nessuna modifica fatta." };
+  }
+  const profiliDaRipristinare = grezzo.filter((x): x is string => typeof x === "string");
+  const esitoAbbonamento = (stato as Record<string, Json | undefined>).abbonamento;
+
+  const { data: letto, error: erroreUtente } = await admin.auth.admin.getUserById(richiesta.user_id);
+  if (erroreUtente || !letto?.user) {
+    logger.error("cancellazione", `utente non leggibile: ${erroreUtente?.message ?? "assente"}`);
+    return { ok: false, error: "Utente non trovato o non leggibile. Nessuna modifica fatta." };
+  }
+  const sospeso = leggiSospensione(letto.user.app_metadata) !== null;
+
+  if (!sospeso && profiliDaRipristinare.length > 0) {
+    const { data: profili, error: erroreProfili } = await admin
+      .from("artists")
+      .select("id, status")
+      .in("id", profiliDaRipristinare);
+    if (erroreProfili) {
+      logger.error("cancellazione", `lettura profili fallita: ${erroreProfili.message}`);
+      return { ok: false, error: "Non riesco a leggere i profili da ripristinare. Nessuna modifica fatta." };
+    }
+    for (const p of (profili ?? []).filter((x) => x.status === "pending")) {
+      const { error: erroreUpdate } = await admin
+        .from("artists")
+        .update({ status: "approved" })
+        .eq("id", p.id)
+        .eq("status", "pending");
+      if (erroreUpdate) {
+        logger.error("cancellazione", `profilo ${p.id} non ripristinato: ${erroreUpdate.message}`);
+        return { ok: false, error: "Ripristino dei profili non riuscito. Puoi riprovare: l'operazione è ripetibile." };
+      }
+    }
+  }
+
+  if (!sospeso) {
+    const { error: erroreSblocco } = await admin.auth.admin.updateUserById(richiesta.user_id, {
+      ban_duration: "none",
+    });
+    if (erroreSblocco) {
+      logger.error("cancellazione", `sblocco fallito: ${erroreSblocco.message}`);
+      return { ok: false, error: "Sblocco dell'accesso non riuscito. Puoi riprovare: l'operazione è ripetibile." };
+    }
+  }
+
+  const { data: chiusa, error: erroreChiusura } = await admin
+    .from("account_deletion_requests")
+    .update({ cancelled_at: new Date().toISOString() })
+    .eq("id", richiesta.id)
+    .is("cancelled_at", null)
+    .is("completed_at", null)
+    .select("id");
+  if (erroreChiusura || !chiusa || chiusa.length === 0) {
+    logger.error(
+      "cancellazione",
+      `ACCOUNT RIPRISTINATO MA RICHIESTA NON ANNULLATA — id=${richiesta.id}: ${erroreChiusura?.message ?? "nessuna riga aggiornata"}`
+    );
+    return { ok: false, error: "Account ripristinato ma richiesta non segnata come annullata. Puoi riprovare: l'operazione è ripetibile." };
+  }
+
+  const esitoTesto =
+    esitoAbbonamento && typeof esitoAbbonamento === "object" && !Array.isArray(esitoAbbonamento)
+      ? esitoAbbonamento.esito
+      : null;
+  const abbonamentoDisdetto = esitoTesto === "disdetto" || esitoTesto === "parziale" || esitoTesto === "da_disdire_a_mano";
+  const fraseAbbonamento = abbonamentoDisdetto
+    ? " Il tuo abbonamento era stato impostato per non rinnovarsi alla fine del periodo in corso e non è stato riattivato: se vuoi continuare con un piano a pagamento puoi abbonarti di nuovo dalla tua area."
+    : "";
+  const consequences = sospeso
+    ? "Il tuo account resta comunque sospeso per una decisione separata, di cui hai già ricevuto comunicazione." + fraseAbbonamento
+    : "I tuoi profili tornano visibili sul sito." + fraseAbbonamento;
+
+  const decisione = await registraDecisione({
+    actorId: attoreId,
+    targetType: "account",
+    targetId: richiesta.user_id,
+    affectedUserId: richiesta.user_id,
+    action: "cancellazione_annullata",
+    reason: motivoPulito,
+    notify: {
+      decision: sospeso
+        ? "Abbiamo annullato la cancellazione del tuo account come richiesto."
+        : "Abbiamo annullato la cancellazione del tuo account come richiesto: puoi accedere di nuovo.",
+      target: "Account N'arte",
+      consequences,
+      contestable: false,
+    },
+  });
+  if (!decisione.ok) {
+    logger.error("cancellazione", `annullamento eseguito ma decisione non registrata: ${decisione.error}`);
+    return { ok: false, error: `Cancellazione annullata, ma la decisione non è stata registrata: ${decisione.error}` };
+  }
+  return { ok: true, reference: decisione.reference, notified: decisione.notified, accessoRipristinato: !sospeso };
 }

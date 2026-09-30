@@ -5,6 +5,7 @@ import { GIORNI_MINIMI } from "@/lib/legal/completa-cancellazione";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { AccountDeletionRunner } from "@/components/admin/AccountDeletionRunner";
+import { AnnullaCancellazione } from "./AnnullaCancellazione";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Cancellazioni account — N'arte Admin" };
@@ -100,6 +101,7 @@ export default async function CancellazioniPage() {
                   </Badge>
                   <span className="text-muted-foreground">confermata il {data(r.confirmed_at)}</span>
                 </div>
+                <AnnullaCancellazione richiestaId={r.id} />
                 {u?.email ? (
                   <AccountDeletionRunner richiestaId={r.id} email={u.email} />
                 ) : (

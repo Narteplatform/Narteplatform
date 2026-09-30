@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { LoginForm } from "@/components/forms/LoginForm";
 import { AuthSplit } from "@/components/layout/AuthSplit";
-import { MESSAGGIO_ACCOUNT_SOSPESO } from "@/lib/auth/sospeso";
+import { MESSAGGIO_ACCOUNT_CHIUSO, MESSAGGIO_ACCOUNT_SOSPESO } from "@/lib/auth/sospeso";
 
 export const metadata = { title: "Accedi — N'arte" };
 
@@ -20,11 +20,12 @@ function safeNext(value?: string | string[]) {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string | string[]; sospeso?: string | string[] }>;
+  searchParams: Promise<{ next?: string | string[]; sospeso?: string | string[]; chiuso?: string | string[] }>;
 }) {
   const params = await searchParams;
   const next = safeNext(params.next);
   const sospeso = params.sospeso === "1";
+  const chiuso = params.chiuso === "1" && !sospeso;
 
   return (
     <AuthSplit
@@ -46,12 +47,12 @@ export default async function LoginPage({
         </p>
       }
     >
-      {sospeso && (
+      {(sospeso || chiuso) && (
         <p
           role="alert"
           className="mb-5 rounded-xl border border-corallo/30 bg-corallo/10 px-4 py-3 text-sm"
         >
-          {MESSAGGIO_ACCOUNT_SOSPESO}
+          {chiuso ? MESSAGGIO_ACCOUNT_CHIUSO : MESSAGGIO_ACCOUNT_SOSPESO}
         </p>
       )}
       {/* useSearchParams dentro al form richiede un confine di Suspense. */}

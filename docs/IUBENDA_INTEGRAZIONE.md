@@ -422,7 +422,7 @@ produce guasti silenziosi — non errori, comportamenti sbagliati.
 | 2 | Vercel → `NEXT_PUBLIC_SITE_URL` | `https://www.narteofficial.it` | Indirizzi canonici, anteprime social, sitemap e **tutti i collegamenti dentro le email** continuano a puntare a vercel.app. Lo usano 16 file |
 | 3 | iubenda → impostazioni del sito | Il dominio della licenza | I documenti nominano un sito dove la piattaforma non sta |
 | 4 | `npm run iubenda:notices` | Rieseguirlo, così il testo registrato è quello servito dal nuovo dominio | Il testo resta quello vecchio: non è grave, ma la prova cita una pagina che non è più quella |
-| 5 | `lib/legal/titolare.ts` → `emailPrivacy` | `privacy@narteofficial.it`, quando la casella esiste | Resta libero.it: funziona, ma è l'indirizzo sbagliato su un documento legale |
+| 5 | `lib/legal/titolare.ts` → `emailContatti` / `emailPrivacy` | ✅ fatto il 30/09/2026: recapito unico `info@narteofficial.it` | La casella va attivata e presidiata sul dominio |
 | 6 | Brevo → verifica del dominio, e `BREVO_SENDER_EMAIL` | Mittente su `narteofficial.it` | **Nessuna email parte.** È la questione aperta da luglio |
 | 7 | Vercel → `BREVO_ASSET_BASE_URL` | `https://www.narteofficial.it` | Logo e immagini rotti dentro le email |
 | 8 | Supabase → Auth → Site URL e Redirect URLs | Il nuovo dominio | Conferma email e recupero password rimandano al dominio vecchio: i collegamenti si aprono altrove |

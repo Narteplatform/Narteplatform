@@ -135,9 +135,12 @@ async function rimuoviFileSubmissionRifiutata(
   if (!key) return;
 
   try {
+    // Il file è «in uso» se compare in QUALSIASI profilo dello stesso account
+    // (una foto può essere stata copiata su più profili) o in un'altra
+    // richiesta di moderazione non respinta con lo stesso indirizzo.
     const { data: profilo, error } = await admin
       .from("artists")
-      .select("gallery, cover_image, audio_files")
+      .select("user_id")
       .eq("id", submission.artist_id)
       .maybeSingle();
     if (error || !profilo) {
@@ -147,10 +150,35 @@ async function rimuoviFileSubmissionRifiutata(
       });
       return;
     }
+    const profili = profilo.user_id
+      ? await admin.from("artists").select("gallery, cover_image, audio_files").eq("user_id", profilo.user_id)
+      : await admin.from("artists").select("gallery, cover_image, audio_files").eq("id", submission.artist_id);
+    if (profili.error || !profili.data) {
+      logger.warn("admin/moderazione", "profili dell'account non leggibili: file NON cancellato", {
+        submissionId: submission.id,
+        error: profili.error?.message,
+      });
+      return;
+    }
+    const altre = await admin
+      .from("artist_media_submissions")
+      .select("id", { count: "exact", head: true })
+      .eq("url", submission.url)
+      .neq("id", submission.id)
+      .neq("status", "rejected");
+    if (altre.error) {
+      logger.warn("admin/moderazione", "altre richieste non leggibili: file NON cancellato", {
+        submissionId: submission.id,
+        error: altre.error.message,
+      });
+      return;
+    }
+    if ((altre.count ?? 0) > 0) return;
 
-    const inUso = JSON.stringify([profilo.gallery, profilo.cover_image, profilo.audio_files]);
-    if (inUso.includes(submission.url) || inUso.includes(key)) {
-      logger.debug("admin/moderazione", "file rifiutato ancora usato dal profilo: non cancellato", {
+    const inUso = JSON.stringify(profili.data.map((p) => [p.gallery, p.cover_image, p.audio_files]));
+    const varianti = [submission.url, key, encodeURI(key)];
+    if (varianti.some((v) => inUso.includes(v))) {
+      logger.debug("admin/moderazione", "file rifiutato ancora usato: non cancellato", {
         submissionId: submission.id,
       });
       return;
@@ -288,7 +316,7 @@ export async function rejectArtistVideo(id: string, note: string): Promise<Resul
     return { ok: false, error: "Questo video è già stato valutato" };
   }
 
-  const { error } = await admin
+  const { data: aggiornati, error } = await admin
     .from("artist_videos")
     .update({
       moderation_state: "rejected",
@@ -296,8 +324,15 @@ export async function rejectArtistVideo(id: string, note: string): Promise<Resul
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    // Solo un video ancora in attesa: un doppio rifiuto (due schede, doppio
+    // clic) non deve ripetere la cancellazione del file.
+    .eq("moderation_state", "pending")
+    .select("id");
   if (error) return { ok: false, error: error.message };
+  if (!aggiornati || aggiornati.length === 0) {
+    return { ok: false, error: "Il video non è più in attesa di revisione: ricarica la pagina." };
+  }
 
   await comunicaRifiuto(admin, {
     actorId: user.id,
