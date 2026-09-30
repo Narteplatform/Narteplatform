@@ -466,7 +466,7 @@ async function costruisci(richiestaId: string, attoreId: string | null): Promise
     chiave: "artists",
     etichetta: "Profili artista e dati collegati",
     azione:
-      "Eliminati PRIMA dell'account (altrimenti resterebbero orfani). A cascata cadono: recensioni, date e disponibilità, richieste di booking, conversazioni e messaggi con gli organizzatori, richieste ricevute (lead), video, preferiti, statistiche",
+      "Anonimizzati prima dell'account: nome «Artista cancellato», contenuti e dati personali svuotati, profilo nascosto e staccato dall'account. La riga resta perché conversazioni, messaggi e date dell'organizzatore non vanno persi",
     conteggio: 0,
   };
   let artistiIds: string[] = [];
@@ -588,7 +588,7 @@ async function costruisci(richiestaId: string, attoreId: string | null): Promise
   }
 
   avvisi.push(
-    "Le conversazioni con un organizzatore si conservano solo se l'utente era l'organizzatore; se era l'artista, cadono con il profilo artista."
+    "Le conversazioni restano alla controparte in entrambi i casi: i profili (artista e organizzatore) sono anonimizzati, non eliminati."
   );
 
   bloccanti.push(...errori.map((e) => `Lettura fallita — ${e}`));
@@ -660,7 +660,7 @@ export async function anteprimaCompletamento(richiestaId: string): Promise<Antep
  *   3. file bunny storage, poi stream, poi supabase (+ righe media_assets)
  *   4. righe per email    leads, contact_messages, artist_applications,
  *                         consultations eliminate; content_reports anonimizzate
- *   5. profili artista    eliminati (cascata su recensioni, date, ecc.)
+ *   5. profili artista    anonimizzati (conversazioni e date della controparte restano)
  *   6. chiusura richiesta completed_at = now()
  *   7. account            auth.admin.deleteUser
  *   8. registro           moderation_actions + comunicazione finale
@@ -853,12 +853,42 @@ export async function eseguiCompletamento(input: {
     );
   }
 
-  // ── 5. Profili artista ──
-  if (piano.artistiIds.length > 0) {
-    const { error } = await admin.from("artists").delete().in("id", piano.artistiIds);
-    if (error) return fallito("profili-artista", error.message);
+  // ── 5. Profili artista: anonimizzati, NON eliminati ──
+  // Eliminare la riga farebbe cadere a cascata conversazioni, messaggi e date
+  // dell'ORGANIZZATORE, che ha diritto a conservarli (termini, doc. 01 art.
+  // 16.1; informativa). Il profilo quindi esce dal pubblico, perde ogni dato
+  // personale e contenuto, e si stacca dall'account. I file sono già stati
+  // rimossi ai passi precedenti. Svuotare le colonne qui è voluto: è la
+  // cancellazione richiesta dall'interessato.
+  for (const artistId of piano.artistiIds) {
+    const { error } = await admin
+      .from("artists")
+      .update({
+        stage_name: "Artista cancellato",
+        slug: `cancellato-${artistId.slice(0, 8)}`,
+        status: "rejected",
+        user_id: null,
+        bio: null,
+        city: null,
+        cover_image: null,
+        gallery: [],
+        videos: [],
+        audio_files: [],
+        social_links: {},
+        personnel: [],
+        influences: [],
+        languages: [],
+        about_extended: null,
+        what_to_expect: null,
+        set_list: null,
+        setup_requirements: null,
+      })
+      .eq("id", artistId);
+    if (error) return fallito("profili-artista", `${artistId}: ${error.message}`);
+    const { error: erroreVideo } = await admin.from("artist_videos").delete().eq("artist_id", artistId);
+    if (erroreVideo) return fallito("profili-artista", `video ${artistId}: ${erroreVideo.message}`);
   }
-  ok("profili-artista", `${piano.artistiIds.length} profili`);
+  ok("profili-artista", `${piano.artistiIds.length} profili anonimizzati`);
 
   // ── 6. Chiusura della richiesta (prima di deleteUser: vedi commento sopra) ──
   const completataIl = new Date().toISOString();

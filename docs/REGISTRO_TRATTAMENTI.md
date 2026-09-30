@@ -338,7 +338,7 @@ dettagliato; si può riprovare):
 2. `organizers`: anonimizzati (nome «Utente cancellato», foto, bio, telefono, sito, Instagram a null). La riga resta.
 3. File: bunny.net Storage (chiavi in `media_assets`, poi la riga), bunny.net Stream (video dei profili e delle candidature), Supabase Storage (`<userId>/` in `artist-images`, `artist-audio`, `artist-videos`, `venue-images`; video in `application-videos`). Vengono tolti prima delle righe che ne conservano il riferimento, così un errore si può riprovare.
 4. `leads`, `contact_messages`, `artist_applications`, `consultations`: righe eliminate (per email e per utente). `content_reports`: nome, email e utente anonimizzati.
-5. `artists` dell'utente: eliminati prima dell'account (altrimenti resterebbero orfani, `user_id` è `on delete set null`). A cascata cadono recensioni, date e disponibilità, richieste di booking, conversazioni con gli organizzatori, lead ricevuti, video, preferiti, statistiche.
+5. `artists` dell'utente: **anonimizzati**, non eliminati — nome «Artista cancellato», contenuti e dati personali svuotati, `status = rejected`, `user_id` a null; eliminate le righe `artist_videos` (i file sono già rimossi). La riga resta perché cancellarla farebbe cadere a cascata conversazioni, messaggi e date dell'organizzatore, che ha diritto a conservarli.
 6. `account_deletion_requests.completed_at`: scritto **prima** dell'eliminazione dell'utente, perché la riga cade a cascata con l'utente. Se l'eliminazione fallisce il campo torna a null.
 7. `auth.admin.deleteUser`: porta via profilo e preferiti.
 8. `moderation_actions`: decisione «cancellazione_completata» (motivo, data di conferma, attore) e comunicazione finale all'interessato, non contestabile. È la traccia durevole dell'avvenuta cancellazione.

@@ -22,7 +22,7 @@ const TMP = join(QUI, ".tmp");
 const CHROME =
   process.env.CHROME_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
-const VERSIONE = "0.95 — bozza per revisione legale";
+const VERSIONE = "0.96 — bozza per revisione legale";
 const DATA = "30 settembre 2026";
 
 if (!existsSync(CHROME)) {
