@@ -4,6 +4,7 @@ import { ArtistCard, type ArtistCardProps } from "./ArtistCard";
 import { StaggerList, Reveal } from "@/components/animations/Reveal";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
+import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
 
 async function getStars(limit = 8): Promise<ArtistCardProps[]> {
   try {
@@ -82,7 +83,7 @@ export async function StarsSection() {
               Selezione automatica: prima gli artisti con piano Max e Pro, a pagamento, poi i
               più recenti.{" "}
               <Link
-                href="/criteri-di-posizionamento"
+                href={urlCriteriPosizionamento()}
                 className="font-medium text-notte underline underline-offset-4 hover:text-accent"
               >
                 Come funziona

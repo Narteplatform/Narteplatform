@@ -198,6 +198,11 @@ espone — le query sono in `docs/VERIFICA_MIGRATION.sql`.
   non cancella più chat e date della controparte, né la prova dei consensi);
   la vista `booking_requests_public` nasconde organizzatori privati e strutture
   «privato» ed è chiusa ad anon.
+- `0068_profile_referrals.sql` — registro delle segnalazioni del profilo alle
+  strutture (piano Max, doc. 02 art. 9) e registro di chi le ha disattivate.
+  Finché manca, `/admin/proposte` avvisa e l'invio è bloccato; la sezione nella
+  dashboard artista non compare. Impostare `REFERRAL_OPTOUT_SECRET` una volta
+  sola (firma i link «disattiva segnalazioni»; cambiarlo invalida i link spediti).
 - `0060_account_deletion.sql` — tabella delle richieste di cancellazione account,
   con token di conferma. Additiva. Finché manca, la richiesta dalla pagina
   `/account/i-miei-dati` non parte e invita a scrivere dalla pagina contatti.

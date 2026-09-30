@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/Badge";
 import { PlanBadge } from "@/components/billing/PlanBadge";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
+import { ProfileReferralsCard } from "@/components/dashboard/ProfileReferralsCard";
 
 export const metadata = { title: "Dashboard — N'arte" };
 export const dynamic = "force-dynamic";
@@ -253,6 +254,8 @@ export default async function ArtistOverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ProfileReferralsCard artistId={artist.id} tier={artist.tier} />
 
       <Card>
         <CardHeader className="flex-row items-center justify-between gap-3">

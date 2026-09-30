@@ -12,6 +12,7 @@ export function legalV2Pubblicato(): boolean {
   return process.env.NEXT_PUBLIC_LEGAL_V2_PUBBLICATO === "1";
 }
 
+
 /** Documenti v2 con una pagina propria (il doc. 01 vive su /termini). */
 export const LEGAL_V2_ROTTE: { slug: string; href: string; etichetta: string }[] = [
   { slug: "condizioni-abbonamento", href: "/condizioni-abbonamento", etichetta: "Condizioni di abbonamento" },

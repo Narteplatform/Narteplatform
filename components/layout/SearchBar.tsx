@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Lock, Search } from "lucide-react";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import type { SearchHit } from "@/app/api/search/route";
+import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
 
 type SearchBarProps = {
   /** Focus automatico all'apertura, usato dal pannello a lente della top bar. */
@@ -129,7 +130,7 @@ export function SearchBar({ autoFocus = false, onNavigate }: SearchBarProps = {}
             <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
               Risultati per pertinenza; a parità, prima i piani a pagamento.{" "}
               <Link
-                href="/criteri-di-posizionamento"
+                href={urlCriteriPosizionamento()}
                 onClick={() => setOpen(false)}
                 className="font-medium text-foreground underline underline-offset-2"
               >

@@ -6,6 +6,7 @@ import { Search, ChevronDown, RotateCcw, Check } from "lucide-react";
 import { ArtistCard } from "@/components/marketing/ArtistCard";
 import { TopArtistBadge } from "@/components/marketing/ArtistBadges";
 import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
+import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
 
 export type ExplorerArtist = {
   id: string;
@@ -345,7 +346,7 @@ export function ArtistsExplorer({
         altri, in ordine alfabetico. I filtri restringono l&rsquo;elenco, non cambiano
         l&rsquo;ordine.{" "}
         <Link
-          href="/criteri-di-posizionamento"
+          href={urlCriteriPosizionamento()}
           className="font-medium text-foreground underline underline-offset-4 hover:text-accent"
         >
           Come funziona

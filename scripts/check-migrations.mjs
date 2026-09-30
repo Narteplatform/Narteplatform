@@ -328,6 +328,16 @@ const MIGRATION = [
       ],
     ],
   },
+  {
+    file: "0068_profile_referrals.sql",
+    cosa: "Segnalazioni del profilo alle strutture (piano Max) e opt-out",
+    controlli: [
+      ["tabella profile_referrals", () => tabella("profile_referrals")],
+      ["tabella referral_optouts", () => tabella("referral_optouts")],
+      ["profile_referrals: anon senza privilegi", () => privilegioAnonRevocato("profile_referrals")],
+      ["referral_optouts: anon senza privilegi", () => privilegioAnonRevocato("referral_optouts")],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };

@@ -356,7 +356,7 @@ funzionano anche prima che questa migration sia applicata.
 
 Nate dal fascicolo legale v0.95 e dalla decisione del cliente che N'arte sia
 solo una piattaforma promozionale. **Ordine consigliato:** 0061, 0062, 0063,
-0064, 0065, 0066, 0067. Tutte additive o limitate a vincoli e policy: nessuna
+0064, 0065, 0066, 0067, 0068. Tutte additive o limitate a vincoli e policy: nessuna
 riga esistente viene modificata o cancellata. Il codice funziona anche prima
 che siano applicate, con i limiti descritti in CLAUDE.md per ciascuna.
 
@@ -368,6 +368,7 @@ che siano applicate, con i limiti descritti in CLAUDE.md per ciascuna.
 | 0065 | registro decisioni di moderazione | prima della 0066 |
 | 0066 | recensioni: risposta, cancellazione logica, moderazione motivata | — |
 | 0067 | cancellazione senza danni alla controparte, vista date privata | `organizers.user_id` diventa facoltativa |
+| 0068 | segnalazioni del profilo Max alle strutture | impostare `REFERRAL_OPTOUT_SECRET` |
 
 Verifica dopo l'esecuzione: `npm run db:check-migrations` e le query in fondo a
 `docs/VERIFICA_MIGRATION.sql`.

@@ -284,3 +284,19 @@ where c.contype = 'f'
     or (c.conrelid = 'public.booking_requests'::regclass
         and a.attname in ('final_price_proposed_by', 'final_price_confirmed_by')));
 -- Atteso: 4 righe, tutte «set null».
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 0068_profile_referrals.sql
+-- ═══════════════════════════════════════════════════════════════════════════
+select c.relname, c.relrowsecurity,
+       (select count(*) from pg_policies p where p.schemaname='public' and p.tablename=c.relname) as policy
+from pg_class c join pg_namespace n on n.oid=c.relnamespace
+where n.nspname='public' and c.relname in ('profile_referrals','referral_optouts');
+-- Atteso: RLS attiva su entrambe; 2 policy su profile_referrals, 0 su referral_optouts.
+
+select table_name, grantee, privilege_type
+from information_schema.role_table_grants
+where table_schema='public' and table_name in ('profile_referrals','referral_optouts')
+  and grantee in ('anon','authenticated');
+-- Atteso: solo (profile_referrals, authenticated, SELECT).

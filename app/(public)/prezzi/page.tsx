@@ -4,6 +4,7 @@ import { PageHero } from "@/components/marketing/PageHero";
 import { heroImageFor } from "@/lib/content/hero-images";
 import { PlanComparison } from "@/components/billing/PlanComparison";
 import { Button } from "@/components/ui/Button";
+import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
 
 export const metadata = {
   title: "Piani e prezzi — N'arte",
@@ -86,7 +87,7 @@ export default function PrezziPage() {
                     È un beneficio a pagamento e lo dichiariamo a chi cerca artisti, sopra i
                     risultati. Recensioni, visite e preferiti non influiscono sull&rsquo;ordine.{" "}
                     <Link
-                      href="/criteri-di-posizionamento"
+                      href={urlCriteriPosizionamento()}
                       className="font-medium text-foreground underline underline-offset-4"
                     >
                       Leggi i criteri di posizionamento
