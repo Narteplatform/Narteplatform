@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { LoginForm } from "@/components/forms/LoginForm";
 import { AuthSplit } from "@/components/layout/AuthSplit";
+import { MESSAGGIO_ACCOUNT_SOSPESO } from "@/lib/auth/sospeso";
 
 export const metadata = { title: "Accedi — N'arte" };
 
@@ -19,9 +20,11 @@ function safeNext(value?: string | string[]) {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string | string[] }>;
+  searchParams: Promise<{ next?: string | string[]; sospeso?: string | string[] }>;
 }) {
-  const next = safeNext((await searchParams).next);
+  const params = await searchParams;
+  const next = safeNext(params.next);
+  const sospeso = params.sospeso === "1";
 
   return (
     <AuthSplit
@@ -43,6 +46,14 @@ export default async function LoginPage({
         </p>
       }
     >
+      {sospeso && (
+        <p
+          role="alert"
+          className="mb-5 rounded-xl border border-corallo/30 bg-corallo/10 px-4 py-3 text-sm"
+        >
+          {MESSAGGIO_ACCOUNT_SOSPESO}
+        </p>
+      )}
       {/* useSearchParams dentro al form richiede un confine di Suspense. */}
       <Suspense fallback={<div className="h-64" />}>
         <LoginForm />

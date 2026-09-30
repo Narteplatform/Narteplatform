@@ -21,6 +21,7 @@ import {
   Tags,
   User,
   UserCog,
+  UserX,
   Users,
 } from "lucide-react";
 import {
@@ -275,6 +276,11 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       label: "Proposte Max",
       icon: <Send className="size-4" />,
     },
+    utenti: {
+      href: "/admin/utenti",
+      label: "Utenti",
+      icon: <UserX className="size-4" />,
+    },
     impostazioni: opts?.isRoot
       ? {
           href: "/admin/impostazioni",
@@ -307,6 +313,7 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     "recensioni",
     "abbonamenti",
     "proposte",
+    "utenti",
     "impostazioni",
     "profilo",
   ];

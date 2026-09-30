@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRootSuperadmin, isRootSuperadminEmail } from "@/lib/admin/permissions";
 import { ADMIN_PAGE_KEYS, type AdminPageKey } from "@/lib/validators/schemas";
@@ -111,6 +112,23 @@ export default async function ImpostazioniPage() {
         </CardHeader>
         <CardContent>
           <GenerateConsultantCredentials consultants={consultants} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Cancellazioni account</CardTitle>
+          <CardDescription>
+            Rimozione definitiva degli account che hanno chiesto e confermato la cancellazione.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link
+            href="/admin/impostazioni/cancellazioni"
+            className="text-sm font-medium text-azzurro underline-offset-4 hover:underline"
+          >
+            Apri le richieste di cancellazione →
+          </Link>
         </CardContent>
       </Card>
     </div>

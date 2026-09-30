@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { requestConsultation } from "@/app/(user)/artisti/_actions";
 import { PrivacyConsent } from "@/components/forms/PrivacyConsent";
 import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from "@/lib/security/honeypot";
+import { TITOLARE } from "@/lib/legal/titolare";
 
 export type ConsultantSlot = {
   id: string;
@@ -242,8 +243,8 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
             {slotsByDate.length === 0 ? (
               <p className="mt-6 text-sm text-muted-foreground">
                 Al momento non ci sono slot disponibili. Riprova tra qualche giorno o scrivici a{" "}
-                <a href="mailto:hello@narte.it" className="text-accent underline">
-                  hello@narte.it
+                <a href={`mailto:${TITOLARE.emailContatti}`} className="text-accent underline">
+                  {TITOLARE.emailContatti}
                 </a>
                 .
               </p>

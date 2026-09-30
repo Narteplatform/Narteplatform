@@ -8,6 +8,7 @@ import { ContentReportActions } from "@/components/admin/ContentReportActions";
 import { REPORT_CATEGORIES, REPORT_TARGET_TYPES } from "@/lib/validators/schemas";
 import type { Database } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 export const metadata = { title: "Segnalazioni — N'arte Admin" };
 export const dynamic = "force-dynamic";
@@ -45,6 +46,18 @@ const SEZIONE_MISURA: Record<Report["target_type"], { href: string; label: strin
   altro: { href: "/admin/moderazione", label: "Moderazione" },
 };
 
+/** Slug del profilo contenuto in un URL /artisti/<slug>, se c'è. */
+function slugDaUrl(url: string | null): string | null {
+  if (!url) return null;
+  const m = /\/artisti\/([^/?#]+)/.exec(url);
+  if (!m) return null;
+  try {
+    return decodeURIComponent(m[1]);
+  } catch {
+    return null;
+  }
+}
+
 function fmt(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("it-IT", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Rome" });
@@ -67,6 +80,32 @@ export default async function AdminSegnalazioniPage({
   const { data, error } = await q;
 
   const tabellaMancante = error?.code === "42P01" || error?.code === "PGRST205";
+
+  // Segnalazioni per dati personali su un profilo: link diretto alla modifica
+  // del profilo. Sola lettura; se la lettura fallisce o lo slug non si trova,
+  // semplicemente nessun link.
+  const profiloPerReport = new Map<string, string>();
+  const slugPerReport = new Map<string, string>();
+  for (const r of data ?? []) {
+    if (r.category !== "dati_personali" || r.target_type !== "profilo") continue;
+    const slug = slugDaUrl(r.target_url);
+    if (slug) slugPerReport.set(r.id, slug);
+  }
+  if (slugPerReport.size > 0) {
+    const { data: artisti, error: artistiErr } = await admin
+      .from("artists")
+      .select("id, slug")
+      .in("slug", [...new Set(slugPerReport.values())]);
+    if (artistiErr) {
+      logger.warn("admin/segnalazioni", "ricerca profili per slug fallita", artistiErr.message);
+    } else {
+      const idPerSlug = new Map((artisti ?? []).map((a) => [a.slug, a.id]));
+      for (const [reportId, slug] of slugPerReport) {
+        const id = idPerSlug.get(slug);
+        if (id) profiloPerReport.set(reportId, id);
+      }
+    }
+  }
 
   const href = (over: { stato?: string | null; tipo?: string | null }) => {
     const p = new URLSearchParams();
@@ -132,7 +171,7 @@ export default async function AdminSegnalazioniPage({
             <ul className="space-y-4">
               {(data ?? []).map((r) => (
                 <li key={r.id}>
-                  <ReportCard r={r} />
+                  <ReportCard r={r} profiloId={profiloPerReport.get(r.id) ?? null} />
                 </li>
               ))}
             </ul>
@@ -157,7 +196,7 @@ function FilterLink({ href, active, children }: { href: string; active: boolean;
   );
 }
 
-function ReportCard({ r }: { r: Report }) {
+function ReportCard({ r, profiloId }: { r: Report; profiloId: string | null }) {
   const categoria = (REPORT_CATEGORIES as Record<string, string>)[r.category] ?? r.category;
   const misura = SEZIONE_MISURA[r.target_type];
   const interno = r.target_url?.startsWith("/");
@@ -188,6 +227,13 @@ function ReportCard({ r }: { r: Report }) {
                   {r.target_url}
                 </a>
               )}
+            </Row>
+          )}
+          {profiloId && (
+            <Row label="Profilo">
+              <Link href={`/admin/artisti/${profiloId}`} className="underline underline-offset-2">
+                Modifica il profilo segnalato
+              </Link>
             </Row>
           )}
           {r.contested_reference && <Row label="Contesta">{r.contested_reference}</Row>}

@@ -20,8 +20,9 @@ import type { ArtistProfileData } from "@/components/dashboard/profile/types";
  * `videos: []` e cancellato i link già presenti in colonna. Su questo schema
  * scrivere un array vuoto CANCELLA (vedi la regola 3 di CLAUDE.md), quindi
  * l'unico modo sicuro di smettere di offrire quel campo è smettere del tutto di
- * scrivere quella colonna. I link già salvati restano nel database e continuano
- * a comparire sul profilo pubblico.
+ * scrivere quella colonna. I link già salvati restano nel database (nulla è
+ * stato cancellato) ma NON compaiono più sul profilo pubblico: non passavano
+ * dalla moderazione, quindi non vengono mostrati.
  */
 export function VideoBlock({
   artist,

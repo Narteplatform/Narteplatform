@@ -17,6 +17,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { SospensioneAccount } from "@/components/admin/SospensioneAccount";
+import { leggiSospensione } from "@/lib/admin/sospensione";
+import { isUtenteSospeso } from "@/lib/auth/sospeso";
 
 type SocialLinks = {
   instagram?: string | null;
@@ -78,6 +81,11 @@ export default async function AdminArtistDetailPage({
       .order("created_at", { ascending: false }),
   ]);
   if (!artist) notFound();
+
+  // Utente proprietario del profilo, per il modulo di sospensione account.
+  const ownerId = (artist as unknown as { user_id: string | null }).user_id;
+  const owner = ownerId ? await supabase.auth.admin.getUserById(ownerId) : null;
+  const ownerUser = owner && !owner.error ? owner.data.user : null;
 
   const social = (artist.social_links ?? {}) as SocialLinks;
   // Cast come il resto del file: `artist` risolve a `never` per la deriva nota
@@ -216,6 +224,36 @@ export default async function AdminArtistDetailPage({
           <ArtistStatusToggle artistId={artist.id} status={artist.status} />
         </CardContent>
       </Card>
+
+      {ownerId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Account dell&apos;artista</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2 space-y-2">
+            {ownerUser ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  {ownerUser.email} ·{" "}
+                  {isUtenteSospeso(ownerUser) ? "accesso bloccato" : "account attivo"}
+                </p>
+                {isUtenteSospeso(ownerUser) && !leggiSospensione(ownerUser.app_metadata) ? (
+                  <p className="text-xs text-muted-foreground">
+                    Bloccato per un motivo diverso dalla sospensione (es. cancellazione richiesta).
+                  </p>
+                ) : (
+                  <SospensioneAccount
+                    userId={ownerId}
+                    sospeso={!!leggiSospensione(ownerUser.app_metadata)}
+                  />
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Account non leggibile.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

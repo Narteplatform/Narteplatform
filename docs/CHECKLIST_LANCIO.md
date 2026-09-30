@@ -190,7 +190,7 @@ motivo *"RESEND_API_KEY mancante"*. L'ultima è del 18 luglio 2026.
 |---|---|---|
 | `BREVO_ENABLED_KEYS` non è impostata | assente | I 37 template Brevo pubblicati non vengono **mai** usati: tutto ricade su Resend |
 | `RESEND_FROM_EMAIL` | `onboarding@resend.dev` | Dominio di prova di Resend: consegna **solo al tuo indirizzo**, a nessun altro |
-| `BREVO_SENDER_EMAIL` | `narteweb@libero.it` | Casella Libero gratuita: niente SPF/DKIM/DMARC, finisce in spam o viene rifiutata |
+| `BREVO_SENDER_EMAIL` | `info@narteofficial.it` | Casella Libero gratuita: niente SPF/DKIM/DMARC, finisce in spam o viene rifiutata |
 | `BREVO_ASSET_BASE_URL` non è impostata | assente | Logo e immagini rotti dentro le email |
 
 - [ ] 🔴 **B** — **Sbloccare la verifica del dominio su Brevo.** È il punto fermo reale: la verifica spettava al partner che detiene il dominio e **non è stata completata correttamente**. Luigi sta sollecitando formalmente. Finché non è chiusa, nessuna email può partire da un indirizzo N'arte — qualunque cosa faccia il codice.

@@ -14,6 +14,7 @@ import {
 } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
 import { LEGAL_VERSION } from "@/lib/legal/content";
+import { registraProvaSuIubendaInBackground } from "@/lib/legal/iubenda-consent";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -149,6 +150,15 @@ export async function POST(req: Request) {
         // resta nel log applicativo; non si blocca la richiesta.
         logger.warn("booking-request", rid, "consenso organizzatore non registrato:", consErr.message);
       }
+      registraProvaSuIubendaInBackground({
+        soggettoId: currentUser.id,
+        email: currentUser.email ?? undefined,
+        documenti: ["terms"],
+        preferenze: { terms: true, condizioni_organizzatori: true },
+        modulo: "Prima richiesta di booking — condizioni organizzatori",
+        testoCasella:
+          "Inviando la richiesta diventi organizzatore su N'arte. Ho letto e accetto le Condizioni per gli organizzatori, in particolare gli obblighi su SIAE, agibilità, permessi e sicurezza dell'evento, che restano a mio carico.",
+      });
     }
 
     if (!userId) return fail(rid, "no-user", "Sessione non valida", 401);

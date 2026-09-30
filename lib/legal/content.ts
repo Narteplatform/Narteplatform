@@ -46,7 +46,7 @@ export type LegalDoc = {
 /** Versione dei documenti. È la data dell'ultima modifica, anche minima, ed è
  *  quella che si mostra in pagina e si registra insieme al consenso: serve a
  *  sapere esattamente quale testo l'utente aveva davanti. */
-export const LEGAL_VERSION = "2026-09-14";
+export const LEGAL_VERSION = "2026-09-30";
 
 /**
  * Versione del CONSENSO — deliberatamente separata dalla precedente.
@@ -121,40 +121,73 @@ const TRACCIAMENTO_ATTIVO = Boolean(
 export const INTEGRAZIONI_NARTE = `
 <h2>Alcune cose che vale la pena spiegare per esteso</h2>
 <p>Sono i trattamenti particolari di questa piattaforma: non li si trova
-descritti in un'informativa generica, ma è giusto che tu sappia che avvengono.</p>
+descritti in un&rsquo;informativa generica, ma è giusto che tu sappia che avvengono.
+Per tutte le domande sui tuoi dati scrivi a
+<a href="mailto:info@narteofficial.it">info@narteofficial.it</a>.</p>
 
 <h3>La chat fra artisti e organizzatori</h3>
 <p>I messaggi, gli allegati e le note vocali scambiati in una trattativa sono
-conservati sui nostri sistemi. Il team N&rsquo;arte può accedervi per fornire
-assistenza, gestire una contestazione fra le parti o verificare una
-segnalazione. Non li leggiamo per altri scopi e non li usiamo a fini
-commerciali.</p>
+conservati sui nostri sistemi, in archivi non pubblici. Il team N&rsquo;arte
+<strong>non li legge in via ordinaria</strong>: può aprire una conversazione solo per
+fornire l&rsquo;assistenza richiesta da una delle parti, gestire una contestazione,
+verificare una segnalazione o adempiere un obbligo di legge. Ogni accesso richiede
+una motivazione scritta, dura al massimo due ore ed è <strong>registrato</strong> (chi,
+quando, perché). Non usiamo i messaggi per fini commerciali o pubblicitari. Le email
+di notifica di un nuovo messaggio non ne contengono il testo.</p>
 
 <h3>I nomi dei componenti della formazione</h3>
 <p>Un artista può indicare sul proprio profilo i nomi e i ruoli delle persone
 che suonano con lui. Sono <strong>dati di terzi, che riceviamo da lui e non
-dall&rsquo;interessato</strong>, e diventano pubblici insieme al profilo. Chiediamo
-all&rsquo;artista di averli informati e di avere il loro consenso prima di
-inserirli. Se il tuo nome compare su un profilo e non vuoi, scrivici: lo
-togliamo.</p>
+dall&rsquo;interessato</strong>, visibili agli utenti registrati insieme al profilo.
+Prima di inserirli l&rsquo;artista dichiara di averli informati e di avere il loro
+consenso. Se il tuo nome compare su un profilo e non vuoi, segnalalo dalla pagina
+<a href="/segnalazioni">Segnalazioni</a> (categoria «Immagine o dati personali di
+terzi»): lo togliamo.</p>
 
-<h3>L&rsquo;account creato inviando una richiesta di booking</h3>
-<p>Chi invia una richiesta dal profilo di un artista senza essere registrato può
-creare l&rsquo;account nello stesso passaggio: in quel momento nasce un profilo di
-tipo &laquo;organizzatore&raquo;, con i dati indicati nel modulo e con la struttura
-eventualmente descritta. È un account a tutti gli effetti, con le stesse
-possibilità di accesso, modifica e cancellazione degli altri.</p>
+<h3>Quando un utente diventa organizzatore</h3>
+<p>Per inviare una richiesta di booking serve un account. Chi è registrato come
+utente e invia la prima richiesta diventa organizzatore: in quel momento accetta
+le condizioni per gli organizzatori, e all&rsquo;artista arrivano il nome, il
+messaggio, il telefono eventualmente indicato e la struttura scelta.</p>
 
 <h3>Le recensioni</h3>
 <p>Dopo una data confermata e passata, l&rsquo;organizzatore può lasciare una
-recensione all&rsquo;artista. La recensione è <strong>pubblica</strong> e resta sul
-profilo. Riguarda una persona identificata: per questo può essere contestata,
-e noi possiamo nasconderla se è offensiva, falsa o estranea all&rsquo;esperienza.</p>
+recensione all&rsquo;artista, con il proprio nome visualizzato. Le recensioni sono
+visibili agli utenti registrati sui profili degli artisti con piano Pro o Max;
+l&rsquo;artista le legge sempre nella propria area e può rispondere pubblicamente.
+Possono essere contestate: il team può nasconderle o rimuoverle solo per i motivi
+del regolamento delle recensioni, con una motivazione comunicata ad autore e
+artista.</p>
+
+<h3>Le statistiche di visita dei profili</h3>
+<p>Per gli artisti con piano Max contiamo le visite al profilo senza cookie: da
+indirizzo IP, data e profilo calcoliamo un codice che cambia ogni giorno, e l&rsquo;IP
+non viene conservato. Il codice è un dato <strong>pseudonimo</strong>, non anonimo: lo
+conserviamo al massimo 425 giorni, solo per produrre statistiche aggregate.</p>
+
+<h3>Segnalazioni e decisioni di moderazione</h3>
+<p>Chi segnala un contenuto dalla pagina <a href="/segnalazioni">Segnalazioni</a>
+ci lascia nome, email e la descrizione del problema: li usiamo per esaminare la
+segnalazione e comunicare l&rsquo;esito. Le decisioni del team su contenuti e
+account (rifiuti, oscuramenti, sospensioni) sono registrate con il motivo e
+comunicate all&rsquo;interessato, che può contestarle.</p>
+
+<h3>La segnalazione dei profili alle strutture</h3>
+<p>Con il piano Max il team segnala il profilo di un artista a strutture e
+organizzatori in linea con lui, inviando un&rsquo;email con il link al profilo.
+Registriamo destinatario e data della segnalazione, che l&rsquo;artista vede nella
+propria area. Chi riceve le segnalazioni può disattivarle con il link in fondo
+all&rsquo;email.</p>
 
 <h3>Il registro delle email inviate</h3>
 <p>Teniamo traccia delle comunicazioni che il sistema invia — destinatario,
 oggetto, esito — per accorgerci quando qualcosa non arriva a destinazione e
 poterlo correggere. È un registro tecnico, consultabile solo dal team.</p>
+
+<h3>I tuoi dati, in autonomia</h3>
+<p>Dalla pagina <a href="/account/i-miei-dati">I miei dati</a> puoi scaricare una
+copia dei tuoi dati, gestire il consenso al marketing e chiedere la cancellazione
+dell&rsquo;account, anche senza aver accettato nuove condizioni.</p>
 `;
 
 // ───────────────────────────────────────────────────────────── PRIVACY ──────
@@ -193,7 +226,7 @@ recensioni che lasci.</p>
 <h3>Visite ai profili degli artisti</h3>
 <p>Contiamo quante volte un profilo viene aperto, per mostrare all'artista una
 statistica. <strong>Non conserviamo il tuo indirizzo IP</strong>: viene
-trasformato in un codice non riconducibile a te, che serve solo a non contare
+trasformato in un codice pseudonimo (cambia ogni giorno e non contiene l&rsquo;IP), che serve solo a non contare
 due volte la stessa visita nella stessa giornata.</p>
 
 <h2>Perché li trattiamo</h2>
@@ -355,9 +388,13 @@ const TERMINI: LegalDoc = {
 <p><strong>N'arte è una piattaforma che mette in contatto.</strong> Consente ad
 artisti e organizzatori di trovarsi, presentarsi e accordarsi.</p>
 <p>N'arte <strong>non è parte del contratto</strong> che nasce fra un artista e
-un organizzatore, non lo negozia e non lo garantisce. In particolare:</p>
+un organizzatore, <strong>non partecipa alle trattative</strong>, non lo negozia e non lo
+garantisce. In particolare:</p>
 <ul>
 <li>il compenso viene concordato direttamente fra le due parti;</li>
+<li>non candidiamo gli artisti a eventi: con il piano Max ci limitiamo a
+<strong>segnalarne il profilo</strong> a strutture in linea con loro, a scopo
+promozionale; l'eventuale contatto avviene poi direttamente fra le parti;</li>
 <li><strong>il pagamento non passa da N'arte</strong>: non lo incassiamo, non lo
 anticipiamo, non tratteniamo commissioni sull'ingaggio;</li>
 <li>gli obblighi fiscali, contributivi e di eventuale fatturazione restano in
@@ -417,7 +454,11 @@ account appartiene a un minore lo chiudiamo e cancelliamo i dati collegati.</p>
 essere veri e aggiornati, e le credenziali vanno custodite: sei responsabile di
 quanto avviene attraverso il tuo accesso.</p>
 <p>L'account come artista si ottiene tramite candidatura, che il team N'arte
-valuta. L'approvazione non è automatica e può essere negata.</p>
+valuta. L'approvazione non è automatica e può essere negata. I profili aggiuntivi
+creati da un artista già ammesso sono pubblicati dopo la verifica del team; un
+singolo profilo si può chiudere dalla propria area.</p>
+<p>Per inviare una richiesta di booking serve un account: con la prima richiesta
+l'utente diventa organizzatore e accetta le condizioni per gli organizzatori.</p>
 
 <h2>Contenuti caricati</h2>
 <p>Fotografie, audio, video e testi che carichi <strong>restano tuoi</strong>.
@@ -464,7 +505,11 @@ servizio.</p>
 <h2>Recensioni</h2>
 <p>Le recensioni possono essere lasciate da un organizzatore a un artista dopo
 una data confermata e già passata, una sola volta per evento. Devono riferirsi
-all'esperienza reale. Rimuoviamo quelle offensive, false o estranee al servizio.</p>
+all'esperienza reale. Sono visibili agli utenti registrati sui profili degli
+artisti con piano Pro o Max; l'artista le legge sempre nella propria area e può
+rispondere pubblicamente. Non le rimuoviamo perché negative: le nascondiamo o
+rimuoviamo solo se offensive, false o estranee all'esperienza, motivando la
+decisione ad autore e artista.</p>
 
 <h2>Abbonamenti degli artisti</h2>
 <p>La piattaforma è gratuita per il pubblico, per gli utenti registrati e per gli
@@ -473,10 +518,19 @@ prezzi sono indicati nella pagina <a href="/prezzi">Piani e prezzi</a>.</p>
 <p>L'abbonamento si rinnova automaticamente alla scadenza e si può disdire in
 qualunque momento dalla propria area: la disdetta ha effetto alla fine del
 periodo già pagato.</p>
-<p><strong>Diritto di recesso.</strong> Se sei un consumatore hai quattordici
-giorni per ripensarci dalla sottoscrizione, secondo il Codice del consumo.</p>
-<p class="da-completare"><em>Da completare con l'avvocato: modalità di esercizio
-del recesso, effetti sul servizio già fruito e modulo da rendere disponibile.</em></p>
+<p><strong>Diritto di recesso.</strong> Se ti abboni come consumatore hai
+quattordici giorni dalla sottoscrizione per recedere senza motivazione: dalla
+pagina Abbonamento (pulsante «Recedi dal contratto qui»), oppure scrivendo a
+<a href="mailto:info@narteofficial.it">info@narteofficial.it</a>. Se hai chiesto di
+iniziare subito, paghi solo la parte di servizio fruita fino al recesso e ti
+rimborsiamo il resto, sullo stesso metodo di pagamento, entro quattordici giorni.</p>
+<p><strong>Badge e posizione.</strong> Con i piani Pro e Max il profilo mostra il
+badge «Artista Pro», che indica soltanto un abbonamento attivo: non è una verifica
+di identità né un giudizio artistico. Il piano influisce sull'ordine del catalogo,
+e lo dichiariamo a chi lo consulta.</p>
+<p><strong>Segnalazione del profilo (piano Max).</strong> Il team segnala il
+profilo ad almeno due strutture al mese. È un impegno di mezzi: non garantiamo
+risposte, richieste o ingaggi.</p>
 
 <h2>Moderazione, sospensione e segnalazioni</h2>
 
@@ -490,11 +544,14 @@ una recensione);</li>
 all'esperienza dell'evento;</li>
 <li><strong>limitare una conversazione</strong> in caso di molestie;</li>
 <li><strong>sospendere un profilo</strong> dal catalogo pubblico;</li>
-<li><strong>chiudere l'account</strong> nei casi gravi o ripetuti.</li>
+<li><strong>sospendere l'account</strong>, bloccando l'accesso, nei casi gravi o
+ripetuti.</li>
 </ul>
+<p>Foto, tracce audio e video degli artisti sono pubblicati dopo una verifica del
+team.</p>
 <p>Salvo i casi in cui la legge lo impedisca, <strong>ti diciamo cosa abbiamo
-fatto e perché</strong>, e puoi contestare la decisione scrivendoci: la
-riesaminiamo e ti rispondiamo. Nei casi gravi l'intervento può essere immediato
+fatto e perché</strong>, con un riferimento: puoi contestare la decisione dalla
+pagina <a href="/segnalazioni">Segnalazioni</a>, e la riesaminiamo. Nei casi gravi l'intervento può essere immediato
 e la motivazione arrivare subito dopo.</p>
 
 <h3>Segnalare un contenuto</h3>
@@ -509,13 +566,11 @@ Chi ha pubblicato il contenuto viene informato della decisione e può
 contestarla.</p>
 
 <h3>Accesso del team alle conversazioni</h3>
-<p>Il team N'arte può accedere al contenuto delle conversazioni fra artisti e
-organizzatori per fornire assistenza, gestire una contestazione fra le parti o
-verificare una segnalazione. Non le leggiamo per altri scopi e non le usiamo a
-fini commerciali.</p>
-<p class="da-completare"><em>Da rivedere con l'avvocato: tipizzazione dei casi,
-tempi di risposta alle segnalazioni, indirizzo dedicato da indicare, e verifica
-degli obblighi derivanti dal regolamento europeo sui servizi digitali.</em></p>
+<p>Il team N'arte non legge le conversazioni in via ordinaria. Può aprirle solo
+per fornire l'assistenza richiesta da una delle parti, gestire una contestazione,
+verificare una segnalazione o adempiere un obbligo di legge: ogni accesso richiede
+una motivazione, è limitato nel tempo ed è registrato. Non usiamo le conversazioni
+a fini commerciali.</p>
 
 <h2>Responsabilità</h2>
 <p>Ci impegniamo perché il servizio funzioni con continuità, ma non possiamo

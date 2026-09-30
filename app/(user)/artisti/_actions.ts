@@ -14,8 +14,11 @@ import {
 import { sendEmail } from "@/lib/emails/send";
 import ConsultationRequestEmail from "@/lib/emails/templates/ConsultationRequestEmail";
 import { createElement } from "react";
+import { TITOLARE } from "@/lib/legal/titolare";
 
-const ADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "boostcreativeai@gmail.com";
+// Notifiche al team: la casella interna configurata, altrimenti il recapito unico.
+const ADMIN_EMAIL =
+  process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SUPERADMIN_EMAIL || TITOLARE.emailContatti;
 
 const consultationSchema = z.object({
   ...honeypotShape,

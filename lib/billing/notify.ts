@@ -7,6 +7,7 @@ import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
 import { formatPrice } from "@/lib/billing/plans";
+import { TITOLARE } from "@/lib/legal/titolare";
 
 /**
  * Email dell'abbonamento, inviate dal webhook di Stripe.
@@ -91,7 +92,7 @@ export async function notificaEventoAbbonamento(
                 `Ciao ${d.nome}, questa è la conferma del tuo abbonamento. Conservala: contiene le condizioni che hai accettato.`,
                 `Si rinnova automaticamente ogni ${intervallo} allo stesso prezzo finché non disdici. Puoi disdire quando vuoi dalla pagina Abbonamento: il piano resta attivo fino alla fine del periodo già pagato.`,
                 consumatore
-                  ? `Diritto di recesso: puoi recedere entro il ${scadenzaRecesso}, senza motivazione, dalla pagina Abbonamento (pulsante «Recedi dal contratto qui»), via email a narteweb@libero.it o con il modulo di recesso allegato alle Condizioni. Avendo chiesto di iniziare subito, in caso di recesso paghi solo la parte di servizio fruita.`
+                  ? `Diritto di recesso: puoi recedere entro il ${scadenzaRecesso}, senza motivazione, dalla pagina Abbonamento (pulsante «Recedi dal contratto qui»), via email a ${TITOLARE.emailContatti} o con il modulo di recesso allegato alle Condizioni. Avendo chiesto di iniziare subito, in caso di recesso paghi solo la parte di servizio fruita.`
                   : "Ti sei abbonato con partita IVA: si applicano le Condizioni di abbonamento, comprese le clausole che hai approvato specificamente.",
               ],
               rows: [

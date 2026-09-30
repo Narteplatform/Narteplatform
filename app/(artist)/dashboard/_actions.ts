@@ -9,6 +9,7 @@ import {
   reconcileBunnyVideo,
 } from "@/lib/artist/video-status";
 import { logger } from "@/lib/logger";
+import { isMissingColumnError } from "@/lib/supabase/errors";
 import { entitlementsFor } from "@/lib/billing/plans";
 import { checkCollectionLimit, getEntitlements } from "@/lib/billing/entitlements";
 import { PROFILE_SECTION_PAYLOAD_SCHEMAS } from "@/lib/validators/artist-profile";
@@ -55,7 +56,9 @@ export type ProfileColumns = {
   setup_requirements: string | null;
 };
 
-export type ProfileSectionId = "info" | "gallery" | "videos" | "audio" | "booking" | "social";
+// `videos` non è una sezione: i link liberi non sono moderati e non si scrivono
+// più da qui. I video vivono in artist_videos.
+export type ProfileSectionId = "info" | "gallery" | "audio" | "booking" | "social";
 
 /**
  * Whitelist: nient'altro raggiunge il DB.
@@ -70,7 +73,6 @@ export type ProfileSectionId = "info" | "gallery" | "videos" | "audio" | "bookin
 const SECTION_COLUMNS = {
   info: ["stage_name", "city", "genre", "instruments", "bio", "percorso_artistico", "cover_image"],
   gallery: ["gallery"],
-  videos: ["videos"],
   audio: ["audio_files"],
   booking: [
     "price_range",
@@ -647,7 +649,7 @@ export async function addArtistVideo(input: {
     .insert({ ...baseRow, moderation_state: "pending" })
     .select(ARTIST_VIDEO_SELECT)
     .single();
-  if (error) {
+  if (error && isMissingColumnError(error)) {
     const retry = await admin
       .from("artist_videos")
       .insert(baseRow)

@@ -320,7 +320,7 @@ export const PLAN_CARD_HIGHLIGHTS: Record<ArtistTier, string[]> = {
     "Statistiche del profilo sull'ultimo anno",
     "Fino a 30 foto e 5 profili artista",
     "Shooting fotografico incluso (annuale)",
-    "Top artist in evidenza e supporto prioritario",
+    "Top artist in evidenza e assistenza con precedenza",
   ],
 };
 
@@ -438,7 +438,7 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
   },
   {
     label: "Consulenza professionale",
-    values: { free: false, pro: "1 slot al mese", max: "Illimitata" },
+    values: { free: false, pro: "1 slot al mese", max: "Senza limite mensile (in base agli slot)" },
     primary: true,
   },
   {
@@ -449,7 +449,7 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
   },
   {
     label: "Supporto",
-    values: { free: "Community", pro: "Email", max: "Prioritario" },
+    values: { free: "Community", pro: "Email", max: "Email, con precedenza" },
     primary: true,
   },
 ];

@@ -89,7 +89,9 @@ const INNER = WIDTH - PAD * 2;
 export const ASSETS = process.env.BREVO_ASSET_BASE_URL || "https://narteplatform.vercel.app";
 
 /** Recapiti mostrati nel footer. */
-const FOOTER_EMAIL = "brand@narte.it";
+// Recapito pubblico unico (lib/legal/titolare.ts). Scritto qui per esteso:
+// questo file lo usano anche gli script Node, che non risolvono l'alias "@/".
+const FOOTER_EMAIL = "info@narteofficial.it";
 const FOOTER_SITE = "narteofficial.it";
 const FOOTER_SITE_URL = "https://narteofficial.it";
 const SOCIAL: readonly { label: string; glyph: string; href: string }[] = [

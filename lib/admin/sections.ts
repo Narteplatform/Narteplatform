@@ -28,6 +28,7 @@ export const ADMIN_PAGE_KEYS = [
   "recensioni",
   "abbonamenti",
   "proposte",
+  "utenti",
 ] as const;
 export type AdminPageKey = (typeof ADMIN_PAGE_KEYS)[number];
 

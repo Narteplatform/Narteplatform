@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
+import { CloseProfileButton } from "@/components/dashboard/CloseProfileButton";
 import { CreateArtistProfileForm } from "@/components/dashboard/CreateArtistProfileForm";
 
 export const metadata = { title: "I tuoi profili artista — N'arte" };
@@ -88,6 +89,9 @@ export default async function ArtistProfilesPage() {
                       <ExternalLink className="size-4" />
                     </Link>
                   </Button>
+                )}
+                {a.status !== "rejected" && used > 1 && (
+                  <CloseProfileButton artistId={a.id} stageName={a.stage_name} />
                 )}
               </div>
             </CardContent>

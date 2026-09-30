@@ -6,6 +6,7 @@ import { allowByIp, LIMITI } from "@/lib/security/rate-limit";
 import { bunnyUploadsEnabled } from "@/lib/storage/bunny/config";
 import { createStreamVideo, deleteStreamVideo, signTusUpload } from "@/lib/storage/bunny/stream";
 import { logger } from "@/lib/logger";
+import { isMissingColumnError } from "@/lib/supabase/errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -171,7 +172,7 @@ export async function POST(request: Request) {
     // rotto per tutti nella finestra fra il rilascio del codice e l'esecuzione
     // della 0051. Finché la colonna non c'è si pubblica senza approvazione,
     // come si è sempre fatto.
-    if (error) {
+    if (error && isMissingColumnError(error)) {
       const retry = await admin
         .from("artist_videos")
         .insert(baseRow)

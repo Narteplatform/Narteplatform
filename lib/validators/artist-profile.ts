@@ -229,7 +229,6 @@ export const PROFILE_SECTION_PAYLOAD_SCHEMAS = {
     percorso_artistico: z.enum(PERCORSO_VALUES).nullable().optional(),
   }),
   gallery: z.object({ gallery: z.array(z.string()).max(100) }),
-  videos: z.object({ videos: z.array(z.string()).max(50) }),
   audio: z.object({ audio_files: z.array(audioTrackSchema).max(50) }),
   booking: z.object({
     price_range: z.string().max(120).nullable(),

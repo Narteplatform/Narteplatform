@@ -81,6 +81,57 @@ export function BookingBlock({ artist }: { artist: ArtistProfileData }) {
   } = useFieldArray({ control: form.control, name: "personnel" });
 
   const values = useWatch({ control: form.control });
+
+  // Consenso dei componenti NUOVI. Vive solo nel client: non entra nei valori
+  // del form, quindi il payload salvato resta identico a prima. Una riga è
+  // "nuova" se è stata aggiunta in questa sessione di modifica; dopo un
+  // salvataggio riuscito (reset del form, gli id si rigenerano) tutte le righe
+  // tornano a essere "salvate" e la casella non serve più.
+  const prevIdsRef = React.useRef<Set<string>>(new Set(personnelFields.map((f) => f.id)));
+  const justAddedRef = React.useRef(false);
+  const [newIds, setNewIds] = React.useState<Set<string>>(() => new Set());
+  const [consents, setConsents] = React.useState<Record<string, boolean>>({});
+  const [consentError, setConsentError] = React.useState(false);
+
+  React.useEffect(() => {
+    const current = personnelFields.map((f) => f.id);
+    const currentSet = new Set(current);
+    const fresh = current.filter((id) => !prevIdsRef.current.has(id));
+    prevIdsRef.current = currentSet;
+    if (fresh.length > 0 && justAddedRef.current) {
+      justAddedRef.current = false;
+      setNewIds((old) => new Set([...old].filter((id) => currentSet.has(id)).concat(fresh)));
+    } else if (fresh.length > 0) {
+      // Ids rigenerati senza un'aggiunta: è il reset dopo il salvataggio.
+      setNewIds(new Set());
+      setConsents({});
+      setConsentError(false);
+    } else {
+      setNewIds((old) => {
+        const kept = [...old].filter((id) => currentSet.has(id));
+        return kept.length === old.size ? old : new Set(kept);
+      });
+    }
+  }, [personnelFields]);
+
+  // Contano le righe che verrebbero davvero salvate (toBookingPayload scarta
+  // quelle senza nome).
+  const righeSenzaConsenso = personnelFields.filter(
+    (f, i) =>
+      newIds.has(f.id) &&
+      !consents[f.id] &&
+      (values?.personnel?.[i]?.name ?? "").trim().length > 0
+  );
+
+  const guardedSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
+    if (righeSenzaConsenso.length > 0) {
+      e.preventDefault();
+      setConsentError(true);
+      return;
+    }
+    setConsentError(false);
+    return onSubmit(e);
+  };
   const filled = COUNTED_FIELDS.filter((key) => {
     const v = values?.[key];
     if (Array.isArray(v)) return v.length > 0;
@@ -103,7 +154,7 @@ export function BookingBlock({ artist }: { artist: ArtistProfileData }) {
       dirty={isDirty}
     >
       <ProfileSectionForm
-        onSubmit={onSubmit}
+        onSubmit={guardedSubmit}
         isDirty={isDirty}
         isSubmitting={isSubmitting}
         serverError={serverError}
@@ -185,7 +236,8 @@ export function BookingBlock({ artist }: { artist: ArtistProfileData }) {
           <Label>Personale / formazione</Label>
           <div className="space-y-2">
             {personnelFields.map((fieldItem, index) => (
-              <div key={fieldItem.id} className="flex items-center gap-2">
+              <div key={fieldItem.id} className="space-y-1.5">
+              <div className="flex items-center gap-2">
                 <Input
                   placeholder="Nome"
                   {...form.register(`personnel.${index}.name`)}
@@ -208,16 +260,42 @@ export function BookingBlock({ artist }: { artist: ArtistProfileData }) {
                   <Trash2 className="size-4" />
                 </button>
               </div>
+              {newIds.has(fieldItem.id) && (
+                <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={consents[fieldItem.id] === true}
+                    onChange={(e) =>
+                      setConsents((old) => ({ ...old, [fieldItem.id]: e.target.checked }))
+                    }
+                    className="mt-0.5 size-4 shrink-0"
+                  />
+                  <span>
+                    Ho informato questa persona che nome e ruolo compariranno sul profilo e ho il
+                    suo consenso.
+                  </span>
+                </label>
+              )}
+              </div>
             ))}
           </div>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => appendPersonnel({ name: "", role: "" })}
+            onClick={() => {
+              justAddedRef.current = true;
+              appendPersonnel({ name: "", role: "" });
+            }}
           >
             <Plus className="size-4" /> Aggiungi membro
           </Button>
+          {consentError && righeSenzaConsenso.length > 0 && (
+            <p role="alert" className="text-xs text-destructive">
+              Per salvare, conferma per ogni nuovo componente di aver informato la persona e di
+              avere il suo consenso.
+            </p>
+          )}
           {personnelFields.length === 0 && (
             <p className="text-xs text-muted-foreground">
               Nessun membro aggiunto. Clicca &quot;Aggiungi membro&quot; per inserire nome e ruolo.

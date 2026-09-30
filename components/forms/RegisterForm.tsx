@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { TermsConsent } from "@/components/forms/PrivacyConsent";
 import { LEGAL_VERSION } from "@/lib/legal/content";
+import { registraProvaRegistrazione } from "@/app/(auth)/register/_actions";
 
 type AccountKind = "user" | "organizer";
 
@@ -88,6 +89,12 @@ export function RegisterForm({ next }: { next?: string | null }) {
     if (error) {
       setError(authErrorMessage(error.message));
       return;
+    }
+    // Copia della prova presso iubenda. Con `identities` vuoto Supabase ha
+    // risposto «ok» per un'email già registrata: nessun account nuovo, nessuna
+    // prova. Non si attende l'esito e gli errori si ignorano.
+    if (data.user && (data.user.identities?.length ?? 0) > 0) {
+      void registraProvaRegistrazione(data.user.id).catch(() => {});
     }
     if (data.user && !data.session) {
       setInfo(

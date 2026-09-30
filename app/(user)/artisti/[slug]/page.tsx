@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import { openChatAndRedirect } from "@/lib/chat/open";
 import { createAdminClient } from "@/lib/supabase/server";
+import { isMissingColumnError } from "@/lib/supabase/errors";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { Reveal } from "@/components/animations/Reveal";
 import { BookingCalendar, type ViewerRole, type ConfirmedBookingInfo } from "@/components/marketing/BookingCalendar";
@@ -385,7 +386,7 @@ export default async function ArtistDetailPage({
     // questo secondo tentativo il profilo mostrerebbe ZERO video, che è
     // esattamente il modo in cui un contenuto sparisce senza che nessuno se ne
     // accorga. Finché la 0051 non è applicata si vedono tutti, come prima.
-    if (error) {
+    if (error && isMissingColumnError(error)) {
       const retry = await supabase
         .from("artist_videos")
         .select(SELECT)

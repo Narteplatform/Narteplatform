@@ -3,6 +3,7 @@ import { ContactForm } from "@/components/forms/ContactForm";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
 import { heroImageFor } from "@/lib/content/hero-images";
+import { TITOLARE } from "@/lib/legal/titolare";
 
 export const metadata = { title: "Contatti — N'arte" };
 
@@ -40,7 +41,7 @@ export default function ContattiPage() {
               <ul className="mt-6 space-y-3">
                 <li>
                   <a
-                    href="mailto:boostcreativeai@gmail.com"
+                    href={`mailto:${TITOLARE.emailContatti}`}
                     className="group flex items-center gap-4 rounded-2xl border border-border bg-background p-5 transition hover:border-accent"
                   >
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-muted">
@@ -51,7 +52,7 @@ export default function ContattiPage() {
                         Email
                       </span>
                       <span className="block truncate font-display text-base">
-                        boostcreativeai@gmail.com
+                        {TITOLARE.emailContatti}
                       </span>
                     </span>
                   </a>

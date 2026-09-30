@@ -25,6 +25,7 @@ const PAGE_LABELS: Record<AdminPageKey, string> = {
   recensioni: "Recensioni",
   abbonamenti: "Abbonamenti",
   proposte: "Proposte Max",
+  utenti: "Utenti",
 };
 
 const FORCED: AdminPageKey[] = ["overview", "profilo"];

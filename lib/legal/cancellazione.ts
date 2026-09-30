@@ -197,6 +197,31 @@ export async function confermaCancellazione(token: string): Promise<EsitoConferm
 async function disattivaAccount(
   userId: string
 ): Promise<{ ok: true; stato: Json } | { ok: false }> {
+  const esito = await nascondiProfiliEBloccaAccesso(userId, "cancellazione");
+  if (!esito.ok) return { ok: false };
+  return {
+    ok: true,
+    stato: {
+      artisti_riportati_a_pending: esito.nascosti,
+      accesso_bloccato: true,
+      disattivato_il: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Parte comune a cancellazione e sospensione: i profili artista approvati
+ * tornano `pending` (fuori dal catalogo) e l'accesso viene bloccato.
+ *
+ * Restituisce gli id dei profili nascosti, perché chi chiama possa ripristinarli.
+ * In caso di errore restituisce comunque quelli già nascosti prima del
+ * fallimento: senza, un ripristino successivo non saprebbe cosa toccare.
+ * Se la lettura dei profili fallisce non si scrive nulla.
+ */
+export async function nascondiProfiliEBloccaAccesso(
+  userId: string,
+  area: string
+): Promise<{ ok: true; nascosti: string[] } | { ok: false; nascosti: string[] }> {
   const admin = createAdminClient();
 
   const { data: artisti, error: erroreLettura } = await admin
@@ -208,41 +233,35 @@ async function disattivaAccount(
     // Senza sapere lo stato di partenza non si tocca niente: scrivere una
     // modifica di cui non si è potuto registrare il valore precedente
     // significherebbe non poter più tornare indietro.
-    logger.error("cancellazione", `lettura profili artista fallita: ${erroreLettura.message}`);
-    return { ok: false };
+    logger.error(area, `lettura profili artista fallita: ${erroreLettura.message}`);
+    return { ok: false, nascosti: [] };
   }
 
   const daNascondere = (artisti ?? []).filter((a) => a.status === "approved");
+  const nascosti: string[] = [];
   for (const a of daNascondere) {
     const { error } = await admin
       .from("artists")
       .update({ status: "pending" })
       .eq("id", a.id);
     if (error) {
-      logger.error("cancellazione", `profilo ${a.id} non nascosto: ${error.message}`);
-      return { ok: false };
+      logger.error(area, `profilo ${a.id} non nascosto: ${error.message}`);
+      return { ok: false, nascosti };
     }
+    nascosti.push(a.id);
   }
 
   // Blocco dell'accesso. `ban_duration` accetta una durata: cento anni equivale
-  // a «finché qualcuno non lo toglie», ed è reversibile — che è il punto, visto
-  // che per trenta giorni si può ancora tornare indietro.
+  // a «finché qualcuno non lo toglie», ed è reversibile.
   const { error: erroreBan } = await admin.auth.admin.updateUserById(userId, {
     ban_duration: "876000h",
   });
   if (erroreBan) {
-    logger.error("cancellazione", `blocco accesso fallito: ${erroreBan.message}`);
-    return { ok: false };
+    logger.error(area, `blocco accesso fallito: ${erroreBan.message}`);
+    return { ok: false, nascosti };
   }
 
-  return {
-    ok: true,
-    stato: {
-      artisti_riportati_a_pending: daNascondere.map((a) => a.id),
-      accesso_bloccato: true,
-      disattivato_il: new Date().toISOString(),
-    },
-  };
+  return { ok: true, nascosti };
 }
 
 /**

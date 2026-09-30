@@ -29,7 +29,7 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Titolare | Eduardo Castronuovo — ditta individuale |
 | Partita IVA | IT11071661216 |
 | Sede | Via Domenico Fontana 27, 80128 Napoli (Italia) |
-| Contatto per la privacy | narteweb@libero.it — *da sostituire* con una casella dedicata (es. `privacy@narteofficial.it`) quando la posta sul dominio sarà attiva: un indirizzo pubblicato e non presidiato è peggio di nessun indirizzo, perché fissa un canale per esercitare i diritti e poi non risponde, mentre il termine di un mese decorre comunque |
+| Contatto per la privacy | info@narteofficial.it — *da sostituire* con una casella dedicata (es. `privacy@narteofficial.it`) quando la posta sul dominio sarà attiva: un indirizzo pubblicato e non presidiato è peggio di nessun indirizzo, perché fissa un canale per esercitare i diritti e poi non risponde, mentre il termine di un mese decorre comunque |
 | Responsabile della protezione dei dati | Non nominato — *da confermare dall'avvocato: la piattaforma non svolge monitoraggio sistematico su larga scala ai sensi dell'art. 37* |
 
 ---
@@ -321,20 +321,46 @@ pagina e dal centro assistenza.
 riportati a `pending`, quindi fuori dal catalogo pubblico. Lo stato precedente è
 registrato in `account_deletion_requests.restore_state`, così è reversibile.
 
-**A mano, entro 30 giorni**, perché tocca cose che nessun cascade raggiunge:
+**Completamento, entro 30 giorni dalla conferma:** si esegue con lo strumento
+root in **`/admin/impostazioni/cancellazioni`** (codice:
+`lib/legal/completa-cancellazione.ts`). Non c'è più una procedura a mano.
 
-1. `leads`, `contact_messages`, `artist_applications`, `consultations`,
-   `email_log` — non sono legate a `auth.users` e sopravvivono alla cancellazione
-   dell'utente: vanno cercate per indirizzo email.
-2. I file su **bunny.net**: il cascade del database non li tocca. Vedi
-   `scripts/bunny-orfani.mjs`.
-3. I file su **Supabase Storage** nei bucket dell'artista.
-4. Infine `auth.admin.deleteUser`, che porta via per cascade profilo, artisti,
-   consensi e preferiti.
+Come si usa: «Anteprima» (sola lettura) elenca cosa verrebbe rimosso o
+anonimizzato e blocca l'esecuzione se anche una sola lettura fallisce; poi si
+ridigita l'email dell'account, si spunta «Ho verificato l'anteprima» e, prima
+dei 30 giorni dalla conferma, la seconda casella «su richiesta dell'interessato».
+Il server ricalcola l'anteprima e cancella solo ciò che ha appena letto.
 
-> ⛔ Ognuno di questi passaggi cancella dati di produzione. Vanno eseguiti dopo
-> aver verificato che la richiesta sia confermata e non annullata, e dopo aver
-> contato cosa si sta per rimuovere.
+Sequenza, con arresto al primo errore (nessun rollback automatico, log
+dettagliato; si può riprovare):
+
+1. `user_consents`: le righe ricevono `subject_hash` = sha256 dell'email in minuscolo.
+2. `organizers`: anonimizzati (nome «Utente cancellato», foto, bio, telefono, sito, Instagram a null). La riga resta.
+3. File: bunny.net Storage (chiavi in `media_assets`, poi la riga), bunny.net Stream (video dei profili e delle candidature), Supabase Storage (`<userId>/` in `artist-images`, `artist-audio`, `artist-videos`, `venue-images`; video in `application-videos`). Vengono tolti prima delle righe che ne conservano il riferimento, così un errore si può riprovare.
+4. `leads`, `contact_messages`, `artist_applications`, `consultations`: righe eliminate (per email e per utente). `content_reports`: nome, email e utente anonimizzati.
+5. `artists` dell'utente: eliminati prima dell'account (altrimenti resterebbero orfani, `user_id` è `on delete set null`). A cascata cadono recensioni, date e disponibilità, richieste di booking, conversazioni con gli organizzatori, lead ricevuti, video, preferiti, statistiche.
+6. `account_deletion_requests.completed_at`: scritto **prima** dell'eliminazione dell'utente, perché la riga cade a cascata con l'utente. Se l'eliminazione fallisce il campo torna a null.
+7. `auth.admin.deleteUser`: porta via profilo e preferiti.
+8. `moderation_actions`: decisione «cancellazione_completata» (motivo, data di conferma, attore) e comunicazione finale all'interessato, non contestabile. È la traccia durevole dell'avvenuta cancellazione.
+
+**Cosa si conserva, e perché:**
+
+| Dato | Come resta | Motivo |
+|---|---|---|
+| `user_consents` | Senza `user_id`, con `subject_hash` | Prova dei consensi passati, senza identità in chiaro |
+| `content_reports` | Anonimizzate (il testo della segnalazione resta) | Registro DSA |
+| `moderation_actions` | Intatte, compresa l'email nella riga di cancellazione | Registro delle decisioni e prova dell'adempimento |
+| Conversazioni e date dell'organizzatore | Restano alla controparte, con l'organizzatore anonimizzato e mittente null | Diritto della controparte a conservare i propri messaggi |
+| Documenti contabili | Su Stripe, fuori dal database | Obblighi contabili e fiscali |
+
+**Non coperto dallo strumento** (da verificare a mano, restano possibili):
+`email_log`, file su bunny.net non registrati in `media_assets`, copertine
+(`cover_image`) di strutture dell'organizzatore che puntano a file rimossi da
+`venue-images`, backup.
+
+> ⛔ Lo strumento cancella dati di produzione in modo irreversibile. Va usato
+> solo dal superadmin root, su una richiesta confermata e non annullata, dopo
+> aver letto l'anteprima.
 
 ---
 

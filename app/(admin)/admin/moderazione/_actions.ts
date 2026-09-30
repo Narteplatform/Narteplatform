@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { deleteStreamVideo } from "@/lib/storage/bunny/stream";
+import { deleteObject } from "@/lib/storage/bunny/storage";
+import { isBunnyStorageUrl } from "@/lib/storage/bunny/urls";
+import { ARTIST_VIDEO_BUCKET } from "@/lib/upload/video-limits";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { logger } from "@/lib/logger";
@@ -104,6 +107,68 @@ async function comunicaRifiuto(
   if (!esito.ok) logger.warn("admin/moderazione", "rifiuto non registrato:", esito.error);
 }
 
+/**
+ * Dopo un rifiuto, toglie da Bunny Storage il file della submission, ma SOLO se
+ * nessuna parte del profilo lo usa (gallery, cover_image, audio_files): lo
+ * stesso URL può essere già pubblicato da una submission precedente.
+ *
+ * Fail-safe: se la lettura del profilo fallisce, o il profilo non si trova, NON
+ * si cancella nulla. Mai bloccante per la decisione già presa.
+ */
+async function rimuoviFileSubmissionRifiutata(
+  admin: AdminClient,
+  submission: { id: string; artist_id: string | null; url: string; storage_key: string | null },
+) {
+  // Solo la NOSTRA pull zone Bunny: chiavi Supabase o URL esterni non si toccano.
+  if (!submission.artist_id || !isBunnyStorageUrl(submission.url)) return;
+  // `storage_key` oggi non viene valorizzata dal caricamento (verificato in
+  // produzione il 30/09/2026: 0 righe su 1). Sulla pull zone dello storage la
+  // chiave coincide con il percorso dell'URL, quindi la si ricava da lì.
+  let key = submission.storage_key?.trim() || null;
+  if (!key) {
+    try {
+      key = decodeURIComponent(new URL(submission.url).pathname).replace(/^\/+/, "") || null;
+    } catch {
+      key = null;
+    }
+  }
+  if (!key) return;
+
+  try {
+    const { data: profilo, error } = await admin
+      .from("artists")
+      .select("gallery, cover_image, audio_files")
+      .eq("id", submission.artist_id)
+      .maybeSingle();
+    if (error || !profilo) {
+      logger.warn("admin/moderazione", "profilo non leggibile: file rifiutato NON cancellato", {
+        submissionId: submission.id,
+        error: error?.message ?? "profilo non trovato",
+      });
+      return;
+    }
+
+    const inUso = JSON.stringify([profilo.gallery, profilo.cover_image, profilo.audio_files]);
+    if (inUso.includes(submission.url) || inUso.includes(key)) {
+      logger.debug("admin/moderazione", "file rifiutato ancora usato dal profilo: non cancellato", {
+        submissionId: submission.id,
+      });
+      return;
+    }
+
+    const esito = await deleteObject(key);
+    logger.debug("admin/moderazione", "file della submission rifiutata rimosso da Bunny", {
+      submissionId: submission.id,
+      esito,
+    });
+  } catch (e) {
+    logger.error("admin/moderazione", "rimozione da Bunny Storage del file rifiutato fallita", {
+      submissionId: submission.id,
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+}
+
 function notaValida(note: string): { ok: true; note: string } | { ok: false; error: string } {
   const n = (note ?? "").trim();
   if (n.length < MOTIVAZIONE_MIN) {
@@ -145,7 +210,7 @@ export async function rejectMediaSubmission(id: string, note: string): Promise<R
 
   const { data: submission, error: fetchError } = await admin
     .from("artist_media_submissions")
-    .select("id, artist_id, status")
+    .select("id, artist_id, status, url, storage_key")
     .eq("id", id)
     .maybeSingle();
   if (fetchError) return { ok: false, error: fetchError.message };
@@ -169,6 +234,8 @@ export async function rejectMediaSubmission(id: string, note: string): Promise<R
     note: nota.note,
     etichetta: "una foto o un contenuto",
   });
+
+  await rimuoviFileSubmissionRifiutata(admin, submission);
 
   await revalidateArtist(admin, submission.artist_id);
   return { ok: true };
@@ -212,7 +279,7 @@ export async function rejectArtistVideo(id: string, note: string): Promise<Resul
 
   const { data: video, error: fetchError } = await admin
     .from("artist_videos")
-    .select("id, artist_id, moderation_state, provider, bunny_guid")
+    .select("id, artist_id, moderation_state, provider, bunny_guid, storage_path")
     .eq("id", id)
     .maybeSingle();
   if (fetchError) return { ok: false, error: fetchError.message };
@@ -261,6 +328,30 @@ export async function rejectArtistVideo(id: string, note: string): Promise<Resul
       await deleteStreamVideo(video.bunny_guid);
     } catch (e) {
       logger.error("admin/moderazione", "rimozione da Bunny del video rifiutato fallita", {
+        videoId: id,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+
+  // Stesso principio per i video su Supabase Storage: via il file, resta la riga.
+  if (video.provider !== "bunny" && video.storage_path) {
+    try {
+      const { error: rmErr } = await admin.storage
+        .from(ARTIST_VIDEO_BUCKET)
+        .remove([video.storage_path]);
+      if (rmErr) {
+        logger.error("admin/moderazione", "rimozione da Supabase Storage del video rifiutato fallita", {
+          videoId: id,
+          error: rmErr.message,
+        });
+      } else {
+        logger.debug("admin/moderazione", "file del video rifiutato rimosso da Supabase Storage", {
+          videoId: id,
+        });
+      }
+    } catch (e) {
+      logger.error("admin/moderazione", "rimozione da Supabase Storage del video rifiutato fallita", {
         videoId: id,
         error: e instanceof Error ? e.message : String(e),
       });

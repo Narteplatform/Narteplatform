@@ -127,6 +127,8 @@ export const LIMITI = {
   segnalazione: { scope: "segnalazione", windowSeconds: 3600, max: 5 },
   /** Caricamento video di candidatura: pubblico, quindi il più esposto. */
   uploadPubblico: { scope: "upload-pubblico", windowSeconds: 3600, max: 3 },
+  /** Copia della prova di consenso presso iubenda (registrazione). */
+  provaIubenda: { scope: "prova-iubenda", windowSeconds: 3600, max: 20 },
   /** Caricamenti da utente autenticato. */
   uploadAutenticato: { scope: "upload", windowSeconds: 3600, max: 60 },
 } as const satisfies Record<string, RateLimitRule>;

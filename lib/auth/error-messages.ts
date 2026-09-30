@@ -1,3 +1,5 @@
+import { MESSAGGIO_ACCOUNT_SOSPESO } from "@/lib/auth/sospeso";
+
 /**
  * Traduce in italiano gli errori di Supabase Auth.
  *
@@ -12,6 +14,15 @@
  * traduzione sbagliata di un errore diverso.
  */
 const MAP: { match: string; message: string }[] = [
+  // Codice `user_banned` di Supabase Auth; il testo è «User is banned».
+  {
+    match: "user is banned",
+    message: MESSAGGIO_ACCOUNT_SOSPESO,
+  },
+  {
+    match: "user_banned",
+    message: MESSAGGIO_ACCOUNT_SOSPESO,
+  },
   {
     match: "invalid login credentials",
     message: "Email o password non corretti.",

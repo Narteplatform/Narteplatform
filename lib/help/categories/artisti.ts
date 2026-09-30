@@ -422,7 +422,7 @@ export const ARTISTI: HelpCategory = {
     <tr><td>TOP Artist in evidenza</td><td>—</td><td>—</td><td>sì</td></tr>
     <tr><td>Profili artista</td><td>${ENTITLEMENTS.free.artistProfilesMax}</td><td>${ENTITLEMENTS.pro.artistProfilesMax}</td><td>${ENTITLEMENTS.max.artistProfilesMax}</td></tr>
     <tr><td>Statistiche</td><td>—</td><td>—</td><td>ultimo anno</td></tr>
-    <tr><td>Consulenza professionale</td><td>—</td><td>1 al mese</td><td>illimitata</td></tr>
+    <tr><td>Consulenza professionale</td><td>—</td><td>1 al mese</td><td>senza limite mensile, in base agli slot</td></tr>
     <tr><td>Segnalazione del profilo alle strutture</td><td>—</td><td>—</td><td>almeno 2 al mese</td></tr>
   </tbody>
 </table>
@@ -431,7 +431,7 @@ export const ARTISTI: HelpCategory = {
 <p>Su nessun piano, nemmeno quello gratuito. Bloccare una richiesta significherebbe punire l'organizzatore che ti sta cercando, e non ha senso per nessuno. <strong>Il limite scatta sulla chat</strong>: con ${PLAN_LABELS.free} ricevi la richiesta e l'email, per scrivere in chat serve ${PLAN_LABELS.pro} o ${PLAN_LABELS.max}.</p>
 
 <h2>Cosa giustifica il salto a ${PLAN_LABELS.max}</h2>
-<p>Tre cose: le <strong>statistiche</strong>, l'etichetta <strong>TOP Artist</strong> con la fascia in evidenza, e i <strong>${ENTITLEMENTS.max.artistProfilesMax} profili</strong>. Si aggiungono la consulenza illimitata, la segnalazione del tuo profilo ad almeno due strutture al mese, curata dal team (impegno di mezzi: N'arte non tratta per te e non garantisce ingaggi), e — sull'abbonamento annuale — uno <strong>shooting fotografico</strong> incluso una tantum.</p>
+<p>Tre cose: le <strong>statistiche</strong>, l'etichetta <strong>TOP Artist</strong> con la fascia in evidenza, e i <strong>${ENTITLEMENTS.max.artistProfilesMax} profili</strong>. Si aggiungono le consulenze senza limite mensile (in base agli slot disponibili), la segnalazione del tuo profilo ad almeno due strutture al mese, curata dal team (impegno di mezzi: N'arte non tratta per te e non garantisce ingaggi), e — sull'abbonamento annuale — uno <strong>shooting fotografico</strong> incluso una tantum.</p>
 
 <h2>Domande frequenti</h2>
 <h3>C'è un periodo di prova?</h3>

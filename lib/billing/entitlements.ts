@@ -214,7 +214,7 @@ export async function checkMonthlyQuota(
 
   return {
     ok: false,
-    error: `Il piano ${ent.tier.toUpperCase()} include ${limit} consulenza al mese e l'hai già usata. La quota si rinnova il 1° del mese; con Max è illimitata.`,
+    error: `Il piano ${ent.tier.toUpperCase()} include ${limit} consulenza al mese e l'hai già usata. La quota si rinnova il 1° del mese; con Max non c'è un limite mensile, in base agli slot disponibili.`,
   };
 }
 

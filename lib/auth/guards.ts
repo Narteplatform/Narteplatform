@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import type { Role } from "@/lib/supabase/types";
+import { isUtenteSospeso } from "@/lib/auth/sospeso";
 
 export async function getCurrentUser() {
   const supabase = await createClient();
@@ -8,6 +9,15 @@ export async function getCurrentUser() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+
+  // Account sospeso con una sessione ancora aperta: `banned_until` arriva con
+  // l'utente, nessuna query in più. In un Server Component i cookie non si
+  // possono cancellare (l'errore è ignorato dal client), ma il middleware
+  // intercetta la richiesta successiva e li toglie.
+  if (isUtenteSospeso(user)) {
+    await supabase.auth.signOut();
+    redirect("/login?sospeso=1");
+  }
 
   // Admin client per la lettura del profilo: bypassa RLS in modo sicuro
   // (l'id è già verificato da auth.getUser server-side) ed evita la

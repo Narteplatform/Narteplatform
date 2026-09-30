@@ -22,19 +22,17 @@ export const TITOLARE = {
   paese: "Italia",
 
   /**
-   * Indirizzo per le questioni sui dati personali.
+   * Recapito pubblico unico (decisione del 30/09/2026): contatti generali,
+   * questioni sui dati personali, segnalazioni DSA e reclami. Uno solo, così
+   * sito, informativa, termini ed email non possono più divergere.
    *
-   * Per RICEVERE va bene: quello che conta è che sia raggiungibile e presidiato,
-   * e questa casella lo è. Da non confondere con il problema del MITTENTE, che è
-   * un'altra cosa e resta aperto: da libero.it la piattaforma non può spedire —
-   * senza SPF, DKIM e DMARC sul dominio le notifiche finiscono in posta
-   * indesiderata o vengono rifiutate. Il mittente va su un dominio verificato.
-   *
-   * Quando la posta su narteofficial.it sarà attiva conviene passare a un
-   * indirizzo dedicato tipo `privacy@narteofficial.it`: cambiare qui basta,
-   * informativa, termini e registro lo prendono da questa costante.
+   * La casella va attivata e PRESIDIATA sul dominio narteofficial.it: i
+   * termini promettono tempi di risposta alle segnalazioni.
    */
-  emailPrivacy: "narteweb@libero.it",
+  emailContatti: "info@narteofficial.it",
+
+  /** Indirizzo per le questioni sui dati personali: lo stesso recapito unico. */
+  emailPrivacy: "info@narteofficial.it",
 } as const;
 
 /** Una riga sola, per il piè di pagina. */

@@ -120,10 +120,24 @@ Verifica della configurazione: `npm run bunny:check` (non stampa segreti).
 
 ## Documenti legali
 
-`lib/legal/content.ts` contiene bozze **non ancora validate da un avvocato**,
-servite da `/privacy`, `/cookie-policy` e `/termini`. Sono predisposte per
-essere sostituite da iubenda: basta valorizzare `NEXT_PUBLIC_IUBENDA_*` e le
-pagine rimandano ai documenti ospitati, senza cambiare rotte.
+- **Online oggi:** `lib/legal/content.ts` (`TERMINI` v1 su `/termini`, `INTEGRAZIONI_NARTE` sotto
+  l'informativa iubenda). Bozze non validate da un avvocato, ma allineate ai fatti del prodotto
+  al 30/09/2026. `LEGAL_VERSION` si alza a ogni correzione; `LEGAL_CONSENT_VERSION` solo quando
+  serve una nuova accettazione.
+- **Fascicolo per il legale:** `docs/legale/src/*.html` → `node docs/legale/genera-pdf.mjs` (PDF) e
+  `node docs/legale/estrai-testi.mjs` (genera `lib/legal/v2/testi.ts`, da NON modificare a mano).
+- **Pagine v2** (`/condizioni-abbonamento`, `/condizioni-artisti`, `/condizioni-organizzatori`,
+  `/regolamento-recensioni`, `/criteri-di-posizionamento`, e `/termini` v2): spente finché
+  `NEXT_PUBLIC_LEGAL_V2_PUBBLICATO` ≠ `1`. Si accendono solo dopo l'approvazione del legale e la
+  compilazione dei segnaposto; insieme si alza `LEGAL_CONSENT_VERSION`.
+- **Modello:** N'arte è solo promozionale. Non partecipa a trattative né contratti; il Max segnala il
+  profilo alle strutture (`profile_referrals`), non candida. Nessun testo del sito deve dire il contrario.
+- **Recapito pubblico unico:** `TITOLARE.emailContatti` in `lib/legal/titolare.ts` (info@narteofficial.it).
+- **Decisioni del team:** ogni rifiuto/oscuramento/sospensione passa da `registraDecisione`
+  (`lib/moderation/decisioni.ts`): registro `moderation_actions` + email motivata con link di reclamo.
+- **Strumenti distruttivi del root** (`/admin/utenti` sospensione, `/admin/impostazioni/cancellazioni`
+  completamento): si usano solo su richiesta; mai eseguirli per prova.
+- Prove manuali dei flussi: `docs/CHECKLIST_VERIFICA_LEGALE.md`.
 
 ## Subagent dedicati
 
@@ -132,80 +146,24 @@ In `.claude/agents/`:
 - **backend** — Supabase, Server Actions, email Resend
 - **qa** — test E2E, Lighthouse, accessibilità
 
-## Migration in attesa di applicazione
+## Migration
 
-Da eseguire dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md).
-
-**Per sapere quali sono già passate** — non esiste un registro, vengono incollate
-a mano e non lasciano traccia:
+Si applicano dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md).
+**Al 30/09/2026 sono applicate tutte, fino alla 0068** (verificato con lo script qui sotto).
+Per ogni nuova migration: intestazione CONTESTO in italiano, additiva dove possibile, RLS +
+`revoke all … from anon, authenticated` sulle tabelle nuove, voce in
+`scripts/check-migrations.mjs` e in `docs/MIGRATION_DA_APPLICARE.md`, e una riga qui sotto
+finché non è applicata.
 
 ```bash
 npm run db:check-migrations   # sola lettura, cerca gli oggetti che ciascuna crea
 ```
 
-Copre tabelle, colonne, funzioni, bucket e privilegi anonimi. Per indici,
-vincoli validati, pubblicazioni realtime e policy di Storage — che PostgREST non
-espone — le query sono in `docs/VERIFICA_MIGRATION.sql`.
+Copre tabelle, colonne, funzioni, bucket e privilegi anonimi. Per indici, vincoli, trigger,
+policy e pubblicazioni realtime — che PostgREST non espone — le query sono in
+`docs/VERIFICA_MIGRATION.sql`.
 
-
-- `0048_rate_limits.sql` — limitatore di frequenza. Finché manca, i freni
-  registrano un avviso nei log e **lasciano passare**: il sito funziona, ma è
-  senza protezione.
-- `0049_user_consents.sql` — registro dei consensi. Finché manca, la casella in
-  registrazione è obbligatoria lato modulo ma il consenso non viene archiviato.
-- `0050_bunny_video.sql` — colonne per Bunny Stream su `artist_videos` +
-  tabella `media_assets`. Interamente additiva. **Da applicare DOPO 0048 e 0049.**
-  ⚠️ Il default di `playback_state` è `'ready'` e deve restare tale: con
-  `'processing'` tutti i video già online sparirebbero dai profili nell'istante
-  dell'esecuzione. Verifica subito dopo:
-  `select provider, playback_state, count(*) from artist_videos group by 1,2;`
-  → deve dare una sola riga, `supabase | ready | <totale>`.
-- `0050_bunny_video_validate.sql` — validazione dei vincoli, passo separato da
-  eseguire solo dopo aver letto l'esito dei tre controlli scritti nel file.
-- `0059_consents_write.sql` — funzioni di scrittura dei consensi, colonna
-  `profiles.legal_version_accepted` per il gate di accettazione, colonne di
-  prova sui moduli pubblici. **Richiede la 0049.** Additiva.
-  ⚠️ La `0049` è stata modificata: ora contiene anche i `revoke` di tabella
-  che le mancavano. Applicarla nella versione aggiornata.
-  Dal momento in cui la 0059 è applicata, ogni utente già registrato trova la
-  schermata `/accetta-condizioni` al primo accesso alle aree riservate: è voluto,
-  nessuno ha mai accettato nulla. Guida completa in `docs/IUBENDA_INTEGRAZIONE.md`.
-- `0061_booking_integrity.sql` — trigger che rifiuta le transizioni di stato
-  non ammesse sul booking (es. `confermata → rifiutata`) e nuova
-  `accept_offer_v2`: l'offerta accettata in chat conferma la trattativa
-  esistente invece di creare un secondo booking. Additiva, nessun dato toccato.
-  Le server action sono già corrette anche senza questa migration.
-- `0062_consent_kinds.sql` — nuovi tipi nel registro consensi
-  (`condizioni_organizzatori`, `condizioni_abbonamento`, `esecuzione_immediata`,
-  `clausole_specifiche`, …) e colonna `ref`; `record_consent` accetta `p_ref`.
-  Finché manca, l'accettazione delle condizioni organizzatori e del checkout non
-  viene archiviata (avviso nei log, il flusso non si blocca).
-- `0063_content_reports.sql` — segnalazioni di contenuti e reclami (DSA artt. 16,
-  17, 20), tabella `content_reports`, solo SELECT superadmin. Finché manca,
-  `/segnalazioni` invita a scrivere da `/contatti` e `/admin/segnalazioni` lo dice.
-- `0064_chat_access_log.sql` — registro degli accessi del Team alle chat e
-  rimozione della lettura superadmin dalle policy `messages_select` /
-  `conversations_select`. ⚠️ Finché manca, `/admin/chat` NON mostra alcun
-  messaggio (senza registro non si legge). Artisti e organizzatori non toccati.
-- `0065_moderation_log.sql` — registro unico delle decisioni di moderazione
-  (`moderation_actions`). Finché manca, le decisioni proseguono e l'email parte,
-  ma nel registro non resta traccia (avviso nei log). **Da applicare prima della 0066.**
-- `0066_feedback_moderation.sql` — recensioni: risposta dell'artista,
-  cancellazione logica, motivo/autore/data della moderazione, dichiarazione I1.
-  Finché manca, nascondere/eliminare agisce solo su `hidden` (mai DELETE fisica).
-- `0067_account_deletion_safety.sql` — `organizers.user_id`, `user_consents.user_id`
-  e le chiavi del compenso diventano `on delete set null` (cancellare un utente
-  non cancella più chat e date della controparte, né la prova dei consensi);
-  la vista `booking_requests_public` nasconde organizzatori privati e strutture
-  «privato» ed è chiusa ad anon.
-- `0068_profile_referrals.sql` — registro delle segnalazioni del profilo alle
-  strutture (piano Max, doc. 02 art. 9) e registro di chi le ha disattivate.
-  Finché manca, `/admin/proposte` avvisa e l'invio è bloccato; la sezione nella
-  dashboard artista non compare. Impostare `REFERRAL_OPTOUT_SECRET` una volta
-  sola (firma i link «disattiva segnalazioni»; cambiarlo invalida i link spediti).
-- `0060_account_deletion.sql` — tabella delle richieste di cancellazione account,
-  con token di conferma. Additiva. Finché manca, la richiesta dalla pagina
-  `/account/i-miei-dati` non parte e invita a scrivere dalla pagina contatti.
+**In attesa:** nessuna.
 
 ## Comandi
 

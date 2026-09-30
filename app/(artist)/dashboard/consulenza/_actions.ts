@@ -8,8 +8,11 @@ import { sendEmail } from "@/lib/emails/send";
 import ConsultationRequestEmail from "@/lib/emails/templates/ConsultationRequestEmail";
 import { checkMonthlyQuota, getEntitlementsForUser } from "@/lib/billing/entitlements";
 import { resolveActiveArtist } from "@/lib/artist/current";
+import { TITOLARE } from "@/lib/legal/titolare";
 
-const ADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || "boostcreativeai@gmail.com";
+// Notifiche al team: la casella interna configurata, altrimenti il recapito unico.
+const ADMIN_EMAIL =
+  process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SUPERADMIN_EMAIL || TITOLARE.emailContatti;
 
 const bookSchema = z.object({
   slotId: z.string().uuid(),

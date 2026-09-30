@@ -9,6 +9,7 @@ import { priceIdFor } from "@/lib/stripe/prices";
 import { formatPrice, PLAN_LABELS, type BillingInterval, type PaidTier } from "@/lib/billing/plans";
 import { LEGAL_VERSION } from "@/lib/legal/content";
 import { logger } from "@/lib/logger";
+import { registraProvaSuIubendaInBackground } from "@/lib/legal/iubenda-consent";
 
 /**
  * Checkout e fatturazione.
@@ -196,6 +197,32 @@ export async function createCheckoutSession(input: {
       });
       if (consErr) logger.warn("abbonamento", `accettazione ${kind} non registrata:`, consErr.message);
     }
+
+    // Copia presso iubenda: non bloccante, l'esito è solo nei log.
+    const testi = ["Ho letto e accetto le Condizioni di abbonamento."];
+    if (parsed.data.esecuzioneImmediata) {
+      testi.push(
+        "Chiedo che l'abbonamento inizi subito. So che, se recedo entro 14 giorni, pagherò solo la parte di servizio già fruita e mi verrà rimborsato il resto."
+      );
+    }
+    if (parsed.data.clausoleSpecifiche) {
+      testi.push(
+        "Ai sensi degli artt. 1341 e 1342 c.c. approvo specificamente le clausole indicate in fondo alle Condizioni di abbonamento: rinnovo automatico, esclusione di rimborsi per il periodo in corso, obbligo di mezzi e rimedio, modifiche di prezzo e servizio, sospensione e cessazione."
+      );
+    }
+    registraProvaSuIubendaInBackground({
+      soggettoId: user.id,
+      email: user.email ?? undefined,
+      documenti: ["terms"],
+      preferenze: {
+        condizioni_abbonamento: true,
+        esecuzione_immediata: parsed.data.esecuzioneImmediata === true,
+        clausole_specifiche: parsed.data.clausoleSpecifiche === true,
+      },
+      modulo: "Checkout abbonamento",
+      testoCasella: testi.join(" "),
+      versione: LEGAL_VERSION,
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error("[abbonamento] createCheckoutSession", message);

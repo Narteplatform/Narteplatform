@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database, Role } from "@/lib/supabase/types";
+import { isUtenteSospeso } from "@/lib/auth/sospeso";
 import { ADMIN_PAGES_SEMPRE_VISIBILI, adminSectionForPath } from "@/lib/admin/sections";
 import {
   LEGAL_COOKIE,
@@ -41,6 +42,26 @@ export async function middleware(request: NextRequest) {
 
   const url = request.nextUrl.clone();
   const path = url.pathname;
+
+  // Account sospeso con sessione ancora valida: chiusura della sessione e invio
+  // al login. Usa il campo `banned_until` già restituito da getUser, nessuna
+  // query in più. `signOut` scrive i cookie cancellati su `response` (tramite
+  // setAll): si copiano sulla risposta di redirect.
+  if (isUtenteSospeso(user)) {
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Se la chiusura fallisce il redirect avviene comunque.
+    }
+    // Su /login si resta, per non creare un ciclo con il rimando in home.
+    if (path === "/login") return response;
+    const login = request.nextUrl.clone();
+    login.pathname = "/login";
+    login.search = "?sospeso=1";
+    const redirect = NextResponse.redirect(login);
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  }
 
   // /artisti è pubblica come vetrina; il dettaglio richiede auth internamente
   // perché contiene il form di booking. /admin e /dashboard restano dietro auth.

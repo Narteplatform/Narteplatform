@@ -13,6 +13,7 @@
 import {
   buttonPair,
   callout,
+  card,
   dataTable,
   em,
   eyebrow,
@@ -20,6 +21,7 @@ import {
   layout,
   paragraph,
   param,
+  sectionTitle,
   title,
 } from "../blocks.ts";
 import { defineTemplate } from "./types.ts";
@@ -44,19 +46,24 @@ const moderationDecision = defineTemplate({
     body: [
       eyebrow("Moderazione"),
       title(`Una ${em("decisione")} che ti riguarda`, { size: "xl" }),
-      paragraph(`Ciao ${param("name")}, ${param("decision")}`),
-      dataTable([
-        { icon: "doc", label: "Contenuto", value: param("target"), multiline: true },
-        { icon: "info", label: "Motivo", value: param("reason"), multiline: true },
-        {
-          icon: "clock",
-          label: "Effetti",
-          value: param("consequences"),
-          onlyIf: "consequences",
-          multiline: true,
-        },
-        { icon: "badge", label: "Riferimento", value: param("reference") },
-      ]),
+      paragraph(`Ciao ${param("name")},<br />${param("decision")}`),
+      card(
+        [
+          sectionTitle("La decisione"),
+          dataTable([
+            { icon: "doc", label: "Contenuto", value: param("target"), multiline: true },
+            { icon: "info", label: "Motivo", value: param("reason"), multiline: true },
+            {
+              icon: "clock",
+              label: "Effetti",
+              value: param("consequences"),
+              onlyIf: "consequences",
+              multiline: true,
+            },
+            { icon: "badge", label: "Riferimento", value: param("reference") },
+          ]),
+        ].join("\n")
+      ),
       ifParam(
         "contestUrl",
         buttonPair({ href: param("contestUrl"), label: "Contesta la decisione" })
@@ -91,11 +98,16 @@ const reportReceipt = defineTemplate({
         `Ciao ${param("name")}, abbiamo registrato la tua ${param("kindLabel")}.<br />
               La esaminiamo e ti scriviamo con la decisione e il motivo.`
       ),
-      dataTable([
-        { icon: "badge", label: "Riferimento", value: param("reference") },
-        { icon: "clock", label: "Ricevuta il", value: param("receivedAt") },
-        { icon: "link", label: "Oggetto", value: param("targetLabel"), multiline: true },
-      ]),
+      card(
+        [
+          sectionTitle("La tua segnalazione"),
+          dataTable([
+            { icon: "badge", label: "Riferimento", value: param("reference") },
+            { icon: "clock", label: "Ricevuta il", value: param("receivedAt") },
+            { icon: "link", label: "Oggetto", value: param("targetLabel"), multiline: true },
+          ]),
+        ].join("\n")
+      ),
       paragraph(`Conserva il riferimento: ti servirà se vorrai scriverci di nuovo su questo caso.`),
     ].join("\n"),
   }),
@@ -121,14 +133,19 @@ const reportAdmin = defineTemplate({
     body: [
       eyebrow("Copia interna"),
       title(`Nuova ${em(param("kindLabel"))}`, { size: "lg" }),
-      dataTable([
-        { icon: "badge", label: "Riferimento", value: param("reference") },
-        { icon: "info", label: "Categoria", value: param("category") },
-        { icon: "doc", label: "Oggetto", value: param("targetLabel") },
-        { icon: "link", label: "Indirizzo", value: param("targetUrl"), onlyIf: "targetUrl" },
-        { icon: "chat", label: "Descrizione", value: param("description"), multiline: true },
-        { icon: "user", label: "Segnalante", value: param("reporterLabel") },
-      ]),
+      card(
+        [
+          sectionTitle("Segnalazione"),
+          dataTable([
+            { icon: "badge", label: "Riferimento", value: param("reference") },
+            { icon: "info", label: "Categoria", value: param("category") },
+            { icon: "doc", label: "Oggetto", value: param("targetLabel") },
+            { icon: "link", label: "Indirizzo", value: param("targetUrl"), onlyIf: "targetUrl" },
+            { icon: "chat", label: "Descrizione", value: param("description"), multiline: true },
+            { icon: "user", label: "Segnalante", value: param("reporterLabel") },
+          ]),
+        ].join("\n")
+      ),
       buttonPair({ href: param("adminUrl"), label: "Apri le segnalazioni" }),
     ].join("\n"),
   }),
@@ -152,10 +169,15 @@ const reportOutcome = defineTemplate({
       eyebrow("Segnalazioni"),
       title(`L'${em("esito")} della tua segnalazione`, { size: "xl" }),
       paragraph(`Ciao ${param("name")}, abbiamo esaminato la segnalazione ${param("reference")}.`),
-      dataTable([
-        { icon: "check", label: "Decisione", value: param("outcome"), multiline: true },
-        { icon: "info", label: "Motivo", value: param("reason"), multiline: true },
-      ]),
+      card(
+        [
+          sectionTitle("Esito"),
+          dataTable([
+            { icon: "check", label: "Decisione", value: param("outcome"), multiline: true },
+            { icon: "info", label: "Motivo", value: param("reason"), multiline: true },
+          ]),
+        ].join("\n")
+      ),
       ifParam(
         "contestUrl",
         buttonPair({ href: param("contestUrl"), label: "Contesta l'esito" })
@@ -185,11 +207,16 @@ const renewalReminder = defineTemplate({
         `Ciao ${param("name")}, ti ricordiamo che il tuo abbonamento si rinnova<br />
               automaticamente. Se vuoi continuare non devi fare nulla.`
       ),
-      dataTable([
-        { icon: "star", label: "Piano", value: param("planLabel") },
-        { icon: "calendar", label: "Rinnovo", value: param("renewalDate") },
-        { icon: "euro", label: "Importo", value: param("amountLabel") },
-      ]),
+      card(
+        [
+          sectionTitle("Il tuo abbonamento"),
+          dataTable([
+            { icon: "star", label: "Piano", value: param("planLabel") },
+            { icon: "calendar", label: "Rinnovo", value: param("renewalDate") },
+            { icon: "euro", label: "Importo", value: param("amountLabel") },
+          ]),
+        ].join("\n")
+      ),
       buttonPair({ href: param("manageUrl"), label: "Gestisci l'abbonamento" }),
       callout({
         tone: "warning",
@@ -221,12 +248,17 @@ const subscriptionWithdrawal = defineTemplate({
         `Ciao ${param("name")}, confermiamo di aver ricevuto la tua comunicazione di<br />
               recesso. L'abbonamento è cessato e il tuo account è tornato al piano Free.`
       ),
-      dataTable([
-        { icon: "star", label: "Piano", value: param("planLabel") },
-        { icon: "clock", label: "Ricevuto il", value: param("receivedAt") },
-        { icon: "euro", label: "Rimborso", value: param("refundLabel") },
-        { icon: "info", label: "Calcolo", value: param("refundNote"), multiline: true },
-      ]),
+      card(
+        [
+          sectionTitle("Riepilogo del recesso"),
+          dataTable([
+            { icon: "star", label: "Piano", value: param("planLabel") },
+            { icon: "clock", label: "Ricevuto il", value: param("receivedAt") },
+            { icon: "euro", label: "Rimborso", value: param("refundLabel") },
+            { icon: "info", label: "Calcolo", value: param("refundNote"), multiline: true },
+          ]),
+        ].join("\n")
+      ),
       paragraph(
         `Il rimborso arriva sullo stesso metodo di pagamento entro 14 giorni.<br />
               I tuoi contenuti non sono stati cancellati: quelli oltre i limiti del piano Free<br />
@@ -255,11 +287,16 @@ const profileReferral = defineTemplate({
       eyebrow("Artisti su N'arte"),
       title(`Vi segnaliamo ${em(param("artistName"))}`, { size: "xl" }),
       paragraph(`Ciao ${param("recipientName")}, pensiamo che questo profilo possa interessarvi.`),
-      dataTable([
-        { icon: "mic", label: "Artista", value: param("artistName") },
-        { icon: "star", label: "In breve", value: param("artistSummary") },
-        { icon: "chat", label: "Nota", value: param("note"), onlyIf: "note", multiline: true },
-      ]),
+      card(
+        [
+          sectionTitle("L'artista"),
+          dataTable([
+            { icon: "mic", label: "Artista", value: param("artistName") },
+            { icon: "star", label: "In breve", value: param("artistSummary") },
+            { icon: "chat", label: "Nota", value: param("note"), onlyIf: "note", multiline: true },
+          ]),
+        ].join("\n")
+      ),
       buttonPair({ href: param("profileUrl"), label: "Guarda il profilo" }),
       callout({
         heading: "Come funziona",

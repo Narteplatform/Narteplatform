@@ -8,6 +8,8 @@ import { slugify } from "@/lib/utils";
 import { getOwnedArtists, ACTIVE_ARTIST_COOKIE } from "@/lib/artist/current";
 import { getAccountEntitlements } from "@/lib/billing/entitlements";
 import { formatLimit, isUnlimited, PLAN_LABELS } from "@/lib/billing/plans";
+import { registraDecisione } from "@/lib/moderation/decisioni";
+import { logger } from "@/lib/logger";
 
 /**
  * Gestione dei profili artista di un account.
@@ -132,5 +134,107 @@ export async function switchArtistProfile(artistId: string) {
   });
 
   revalidatePath("/dashboard", "layout");
+  return { ok: true as const };
+}
+
+/**
+ * Chiusura di un profilo da parte dell'artista.
+ *
+ * NON cancella nulla: la riga resta con `status = 'rejected'` (esce dal
+ * catalogo pubblico) e tutti i suoi contenuti, le richieste e lo storico
+ * restano al loro posto.
+ */
+export async function chiudiProfilo(artistId: string) {
+  const user = await requireArtistUser();
+  if (!user) return { ok: false as const, error: "Non autorizzato" };
+  if (typeof artistId !== "string" || artistId.length === 0) {
+    return { ok: false as const, error: "Profilo non disponibile" };
+  }
+
+  // Proprietà verificata sui profili realmente posseduti, mai sul cookie.
+  const owned = await getOwnedArtists(user.id);
+  const target = owned.find((a) => a.id === artistId);
+  if (!target) return { ok: false as const, error: "Profilo non disponibile" };
+  if (target.status === "rejected") {
+    return { ok: false as const, error: "Questo profilo è già chiuso." };
+  }
+
+  // Mai l'ultimo: un account senza profili lascerebbe la dashboard senza
+  // contesto. Per chiudere tutto c'è la cancellazione dell'account.
+  const altri = owned.filter((a) => a.id !== artistId && a.status !== "rejected");
+  if (altri.length === 0) {
+    return {
+      ok: false as const,
+      error:
+        "Questo è l'ultimo profilo del tuo account. Per chiudere tutto usa la cancellazione dell'account in /account/i-miei-dati.",
+    };
+  }
+
+  const admin = createAdminClient();
+
+  // Date confermate future: se la lettura fallisce NON si procede.
+  const oggi = new Date().toISOString().slice(0, 10);
+  const { count, error: bookingErr } = await admin
+    .from("booking_requests")
+    .select("id", { count: "exact", head: true })
+    .eq("artist_id", artistId)
+    .eq("status", "confermata")
+    .gte("event_date", oggi);
+  if (bookingErr) {
+    logger.error("dashboard/profili", "lettura date confermate fallita", {
+      artistId,
+      error: bookingErr.message,
+    });
+    return { ok: false as const, error: "Non è stato possibile verificare le date confermate. Riprova fra poco." };
+  }
+  if ((count ?? 0) > 0) {
+    return {
+      ok: false as const,
+      error:
+        "Hai date confermate future: accordati con l'organizzatore e scrivi al team prima di chiudere il profilo.",
+    };
+  }
+
+  const { error: updErr } = await admin
+    .from("artists")
+    .update({ status: "rejected" })
+    .eq("id", artistId)
+    .eq("user_id", user.id);
+  if (updErr) {
+    logger.error("dashboard/profili", "chiusura profilo fallita", { artistId, error: updErr.message });
+    return { ok: false as const, error: updErr.message };
+  }
+
+  // Se era il profilo attivo, si passa a un altro profilo dell'account.
+  try {
+    const jar = await cookies();
+    if (jar.get(ACTIVE_ARTIST_COOKIE)?.value === artistId) {
+      jar.set(ACTIVE_ARTIST_COOKIE, altri[0].id, {
+        httpOnly: false,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+      });
+    }
+  } catch (e) {
+    logger.warn("dashboard/profili", "cambio profilo attivo dopo la chiusura fallito", e);
+  }
+
+  // La chiusura è già avvenuta: un problema di registro non la annulla.
+  const esito = await registraDecisione({
+    actorId: user.id,
+    targetType: "profilo",
+    targetId: artistId,
+    action: "profilo_chiuso_dall_artista",
+    reason: "Chiusura del profilo richiesta dall'artista.",
+    affectedUserId: user.id,
+    affectedName: target.stage_name,
+    notify: false,
+  });
+  if (!esito.ok) logger.warn("dashboard/profili", "chiusura non registrata:", esito.error);
+
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/artisti");
+  revalidatePath(`/artisti/${target.slug}`);
   return { ok: true as const };
 }

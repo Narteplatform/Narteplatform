@@ -105,13 +105,11 @@ export default async function ArtistOverviewPage() {
   ]);
 
   const gallery = artist.gallery ?? [];
-  // ⚠️ `artist.videos` sono i LINK YouTube/Vimeo, non i video caricati. La
-  // scheda mostrava solo quelli: un artista con tre video caricati e nessun
-  // link leggeva «0 video». Ora riflette ciò che c'è davvero sulla pagina
-  // pubblica, cioè la somma dei due.
-  const externalVideos = (artist.videos ?? []) as unknown[];
+  // Contano solo i video caricati (artist_videos). I link in `artist.videos`
+  // non sono moderati e il profilo pubblico non li mostra più: non sono
+  // «video visibili» e non vanno sommati.
   const uploadedVideos = uploadedVideoCount ?? 0;
-  const totalVideos = uploadedVideos + externalVideos.length;
+  const totalVideos = uploadedVideos;
   const audioTracks = Array.isArray(artist.audio_files) ? artist.audio_files.length : 0;
   // La chat è una feature Pro/Max: l'enforcement vero sta in lib/chat/actions.ts,
   // qui serve solo a decidere se mostrare il conteggio o il lucchetto.
@@ -179,9 +177,9 @@ export default async function ArtistOverviewPage() {
           icon={<Video className="size-4" />}
           sublabel={
             totalVideos > 0
-              ? `${uploadedVideos} caricat${uploadedVideos === 1 ? "o" : "i"}${
-                  externalVideos.length ? ` · ${externalVideos.length} da link` : ""
-                }${audioTracks ? ` · ${audioTracks} audio` : ""}`
+              ? `${totalVideos} caricat${totalVideos === 1 ? "o" : "i"}${
+                  audioTracks ? ` · ${audioTracks} audio` : ""
+                }`
               : "Carica il tuo primo video"
           }
         />
