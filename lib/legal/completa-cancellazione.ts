@@ -364,7 +364,7 @@ async function costruisci(richiestaId: string, attoreId: string | null): Promise
   const vOrg: VoceAnteprima = {
     chiave: "organizzatori",
     etichetta: "Profilo organizzatore",
-    azione: "Anonimizzato («Utente cancellato», foto/bio/contatti azzerati). La riga resta: conversazioni e date della controparte non si toccano",
+    azione: "Anonimizzato («Utente cancellato», foto/bio/contatti azzerati), con le sue strutture (recapiti, descrizione e immagini rimossi; nome delle strutture «privato» sostituito). Le righe restano: conversazioni e date della controparte non si toccano",
     conteggio: 0,
   };
   const org = await leggiIds(() =>
@@ -758,8 +758,33 @@ export async function eseguiCompletamento(input: {
       })
       .in("id", piano.organizzatoriIds);
     if (error) return fallito("organizzatori", error.message);
+
+    // Anche le strutture: restano (le date confermate della controparte le
+    // citano), ma perdono recapiti, descrizione e immagini — i file sono
+    // rimossi dal bucket al passo successivo, e un URL rotto non serve a
+    // nessuno. Le strutture «privato» (domicili) perdono anche il nome.
+    const { error: erroreStrutture } = await admin
+      .from("venues")
+      .update({
+        address: null,
+        phone: null,
+        email: null,
+        website: null,
+        instagram: null,
+        description: null,
+        cover_image: null,
+        gallery: [],
+      })
+      .in("organizer_id", piano.organizzatoriIds);
+    if (erroreStrutture) return fallito("organizzatori", `strutture: ${erroreStrutture.message}`);
+    const { error: errorePrivate } = await admin
+      .from("venues")
+      .update({ name: "Luogo privato" })
+      .in("organizer_id", piano.organizzatoriIds)
+      .eq("venue_type", "privato");
+    if (errorePrivate) return fallito("organizzatori", `strutture private: ${errorePrivate.message}`);
   }
-  ok("organizzatori", `${piano.organizzatoriIds.length} record`);
+  ok("organizzatori", `${piano.organizzatoriIds.length} record, strutture anonimizzate`);
 
   // ── 3a. Bunny Storage ──
   {

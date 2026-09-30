@@ -8,6 +8,9 @@ import { AccountDeletionRunner } from "@/components/admin/AccountDeletionRunner"
 import { AnnullaCancellazione } from "./AnnullaCancellazione";
 
 export const dynamic = "force-dynamic";
+// La procedura è seriale (file su Bunny e Supabase, poi tabelle): il tempo
+// predefinito di una funzione potrebbe interromperla a metà.
+export const maxDuration = 300;
 export const metadata = { title: "Cancellazioni account — N'arte Admin" };
 
 const LIMITE = 100;
