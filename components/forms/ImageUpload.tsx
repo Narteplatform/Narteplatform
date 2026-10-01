@@ -21,9 +21,11 @@ type Props = {
   value: string;
   onChange: (url: string) => void;
   kind?: Kind;
+  /** Se restituisce false il selettore file non si apre (es. dichiarazione dei diritti mancante). */
+  beforePick?: () => boolean;
 };
 
-export function ImageUpload({ label, value, onChange, kind = "artist" }: Props) {
+export function ImageUpload({ label, value, onChange, kind = "artist", beforePick }: Props) {
   const [open, setOpen] = useState(false);
   const [src, setSrc] = useState<string | null>(null);
   const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null);
@@ -38,6 +40,7 @@ export function ImageUpload({ label, value, onChange, kind = "artist" }: Props) 
   const target = IMAGE_TARGETS[kind];
 
   function pick() {
+    if (beforePick && !beforePick()) return;
     inputRef.current?.click();
   }
 

@@ -28,7 +28,7 @@ export const ORGANIZZATORI: HelpCategory = {
 <p>Il contatore si aggiorna mentre filtri, e si azzera tutto da "Reset filtri".</p>
 
 <h2>Serve l'accesso per vedere la scheda completa</h2>
-<p>Senza account vedi l'elenco, i generi e la categoria, ma non la scheda: biografia, galleria, tracce audio, video, formazione, requisiti tecnici e calendario sono riservati agli utenti registrati.</p>
+<p>Senza account vedi solo schede anonime, con genere, strumenti e piano: nome d'arte, copertina, città, biografia, galleria, tracce audio, video, formazione, requisiti tecnici e calendario sono riservati agli utenti registrati.</p>
 <p>L'<a href="/register">iscrizione è gratuita</a> e richiede meno di un minuto. Se non hai ancora un account, puoi anche crearlo direttamente mentre invii la prima richiesta.</p>
 
 <h2>Cosa guardare nella scheda</h2>

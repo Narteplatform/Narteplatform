@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRootSuperadmin } from "@/lib/admin/permissions";
+import { registraAzione } from "@/lib/moderation/decisioni";
 import {
   inviteSuperadminSchema,
   pagePermissionsSchema,
@@ -43,7 +44,7 @@ function generateStrongPassword(length = 16): string {
 }
 
 export async function inviteSuperadmin(formData: FormData): Promise<Result> {
-  await requireRootSuperadmin();
+  const attore = await requireRootSuperadmin();
   const parsed = inviteSuperadminSchema.safeParse({
     email: formData.get("email"),
     full_name: formData.get("full_name") ?? undefined,
@@ -85,12 +86,21 @@ export async function inviteSuperadmin(formData: FormData): Promise<Result> {
     });
   }
 
+  await registraAzione({
+    actorId: attore.id,
+    targetType: "account",
+    targetId: newUserId ?? null,
+    action: "superadmin_invitato",
+    descrizione: `Invitato come superadmin: ${email}.`,
+    affectedUserId: newUserId ?? null,
+  });
+
   revalidatePath("/admin/impostazioni");
   return { ok: true };
 }
 
 export async function updatePagePermissions(formData: FormData): Promise<Result> {
-  await requireRootSuperadmin();
+  const attore = await requireRootSuperadmin();
   const pageKeysRaw = formData.getAll("page_keys").map(String);
   const parsed = pagePermissionsSchema.safeParse({
     user_id: formData.get("user_id"),
@@ -102,19 +112,35 @@ export async function updatePagePermissions(formData: FormData): Promise<Result>
   const { user_id, page_keys } = parsed.data;
   const admin = createAdminClient();
 
-  // Strategy: cancella tutto, reinserisci quelle spuntate. Overview+profilo forzate.
+  // Overview+profilo forzate. Prima si scrivono (upsert) le pagine spuntate,
+  // poi si tolgono le altre: se la scrittura fallisce, i permessi precedenti
+  // restano intatti invece di essere azzerati a metà.
   const finalSet = new Set<AdminPageKey>(["overview", "profilo", ...page_keys]);
+  const rows = Array.from(finalSet).map((p) => ({
+    user_id,
+    page_key: p,
+    can_view: true,
+  }));
+  const { error: upsertErr } = await admin
+    .from("admin_page_permissions")
+    .upsert(rows, { onConflict: "user_id,page_key" });
+  if (upsertErr) return { ok: false, error: upsertErr.message };
 
-  await admin.from("admin_page_permissions").delete().eq("user_id", user_id);
-  if (finalSet.size > 0) {
-    const rows = Array.from(finalSet).map((p) => ({
-      user_id,
-      page_key: p,
-      can_view: true,
-    }));
-    const { error } = await admin.from("admin_page_permissions").insert(rows);
-    if (error) return { ok: false, error: error.message };
-  }
+  const { error: delErr } = await admin
+    .from("admin_page_permissions")
+    .delete()
+    .eq("user_id", user_id)
+    .not("page_key", "in", `(${Array.from(finalSet).join(",")})`);
+  if (delErr) return { ok: false, error: delErr.message };
+
+  await registraAzione({
+    actorId: attore.id,
+    targetType: "account",
+    targetId: user_id,
+    action: "permessi_modificati",
+    descrizione: `Permessi del superadmin ${user_id} impostati su: ${Array.from(finalSet).join(", ")}.`,
+    affectedUserId: user_id,
+  });
 
   revalidatePath("/admin/impostazioni");
   revalidatePath("/admin");
@@ -122,17 +148,18 @@ export async function updatePagePermissions(formData: FormData): Promise<Result>
 }
 
 export async function removeSuperadmin(formData: FormData): Promise<Result> {
-  await requireRootSuperadmin();
+  const attore = await requireRootSuperadmin();
   const userId = String(formData.get("user_id") ?? "");
   if (!userId) return { ok: false, error: "user_id mancante" };
   const admin = createAdminClient();
 
   // Non degradare il root.
-  const { data: target } = await admin
+  const { data: target, error: targetErr } = await admin
     .from("profiles")
     .select("id")
     .eq("id", userId)
     .maybeSingle();
+  if (targetErr) return { ok: false, error: targetErr.message };
   if (!target) return { ok: false, error: "Utente non trovato" };
 
   // Degrada a 'user' (non eliminiamo l'account).
@@ -143,6 +170,15 @@ export async function removeSuperadmin(formData: FormData): Promise<Result> {
   if (error) return { ok: false, error: error.message };
 
   await admin.from("admin_page_permissions").delete().eq("user_id", userId);
+
+  await registraAzione({
+    actorId: attore.id,
+    targetType: "account",
+    targetId: userId,
+    action: "superadmin_rimosso",
+    descrizione: `Ruolo superadmin rimosso all'account ${userId} (tornato utente).`,
+    affectedUserId: userId,
+  });
 
   revalidatePath("/admin/impostazioni");
   return { ok: true };
@@ -180,7 +216,7 @@ export async function generateConsultantCredentials(input: {
   consultantId?: string;
   email?: string;
 }): Promise<CredentialsResult> {
-  await requireRootSuperadmin();
+  const attore = await requireRootSuperadmin();
   const parsed = consultantCredentialsSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
@@ -262,6 +298,15 @@ export async function generateConsultantCredentials(input: {
     await admin.auth.admin.deleteUser(userId);
     return { ok: false, error: linkErr.message };
   }
+
+  await registraAzione({
+    actorId: attore.id,
+    targetType: "consulente",
+    targetId: consultantId,
+    action: "credenziali_consulente_generate",
+    descrizione: `Credenziali generate per il consulente «${consultantName}» (${email}).`,
+    affectedUserId: userId,
+  });
 
   revalidatePath("/admin/impostazioni");
   revalidatePath("/admin/consulenza");

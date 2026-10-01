@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
+import { MotivazioneField } from "@/components/admin/MotivazioneField";
 import {
   riattivaAccountAction,
   sospendiAccountAction,
@@ -77,27 +77,14 @@ export function SospensioneAccount({
     );
   }
 
-  const id = `motivo-${userId}`;
   return (
     <div className="w-full max-w-md space-y-2 text-left">
-      <label className="block text-xs font-semibold" htmlFor={id}>
-        Motivazione (obbligatoria, minimo {MIN} caratteri)
-      </label>
-      <Textarea
-        id={id}
-        rows={3}
-        value={motivo}
-        onChange={(e) => setMotivo(e.target.value)}
-        placeholder={
-          sospeso
-            ? "Perché riattivi l'account."
-            : "Cosa è successo e quale regola dei termini è stata violata."
-        }
+      <MotivazioneField
+        label="Motivazione (obbligatoria)"
+        disabled={pending}
+        onChange={setMotivo}
+        hint="La motivazione viene inviata per email all'interessato, con il collegamento per contestare la decisione."
       />
-      <p className="text-xs text-muted-foreground">
-        La motivazione viene inviata per email all&apos;interessato, con il collegamento per
-        contestare la decisione.
-      </p>
       {msg && msg.tone === "err" && (
         <p role="alert" className="text-xs text-corallo">
           {msg.text}

@@ -10,13 +10,17 @@ import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
 
 export type ExplorerArtist = {
   id: string;
-  slug: string;
-  stage_name: string;
-  city: string | null;
-  cover_image: string | null;
+  /**
+   * Identificativi e dati riservati: assenti per gli ospiti. La pagina server
+   * non li legge nemmeno dal database, quindi non sono mai nel payload.
+   */
+  slug?: string;
+  stage_name?: string;
+  city?: string | null;
+  cover_image?: string | null;
   genre: string[];
   instruments: string[];
-  price_band: PriceBand;
+  price_band?: PriceBand;
   tier?: ArtistTier | null;
   /** Media dei voti ricevuti. `null` quando l'artista non ha recensioni. */
   rating?: { average: number; count: number } | null;
@@ -234,12 +238,14 @@ export function ArtistsExplorer({
         if (!ok) return false;
       }
       if (q) {
-        const hay = `${a.stage_name} ${a.city ?? ""}`.toLowerCase();
+        const hay = isGuest
+          ? `${(a.genre ?? []).join(" ")} ${(a.instruments ?? []).join(" ")}`.toLowerCase()
+          : `${a.stage_name ?? ""} ${a.city ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [artists, genreFilters, roleFilters, query]);
+  }, [artists, genreFilters, roleFilters, query, isGuest]);
 
   // Top artists: tier='max', shown as a dedicated section when no filters active
   const topArtists = useMemo(
@@ -270,6 +276,40 @@ export function ArtistsExplorer({
     else setList([...list, value]);
   }
 
+  function renderCard(a: ExplorerArtist) {
+    const category =
+      ROLE_GROUPS.find((g) => (a.instruments ?? []).some((i) => g.match(i)))?.label ?? null;
+    if (isGuest) {
+      // Variante anonima: solo ciò che il server ha mandato (genere, strumenti, piano).
+      return (
+        <ArtistCard
+          key={a.id}
+          isGuest
+          genres={a.genre}
+          instruments={a.instruments}
+          category={category}
+          tier={a.tier}
+        />
+      );
+    }
+    return (
+      <ArtistCard
+        key={a.id}
+        slug={a.slug}
+        stageName={a.stage_name}
+        city={a.city}
+        coverImage={a.cover_image}
+        genres={a.genre}
+        priceBand={a.price_band}
+        canSeePrice={canSeePrice}
+        category={category}
+        tier={a.tier}
+        artistId={a.id}
+        rating={a.rating}
+      />
+    );
+  }
+
   function reset() {
     setGenreFilters([]);
     setRoleFilters([]);
@@ -287,7 +327,7 @@ export function ArtistsExplorer({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cerca per nome o città…"
+            placeholder={isGuest ? "Cerca per genere o strumento…" : "Cerca per nome o città…"}
             className="h-10 w-full rounded-full border border-notte-60 bg-notte-80 pl-10 pr-4 text-sm text-palco placeholder:text-palco/40 focus:outline-none focus:ring-2 focus:ring-azzurro focus:ring-offset-1 focus:ring-offset-notte"
             aria-label="Cerca artista"
           />
@@ -343,7 +383,7 @@ export function ArtistsExplorer({
           visibile, anche da telefono, sopra i risultati. */}
       <p className="mt-3 text-xs text-muted-foreground">
         Ordine: prima gli artisti con piano Max, poi Pro (abbonamenti a pagamento), poi gli
-        altri, in ordine alfabetico. I filtri restringono l&rsquo;elenco, non cambiano
+        altri{isGuest ? "" : ", in ordine alfabetico"}. I filtri restringono l&rsquo;elenco, non cambiano
         l&rsquo;ordine.{" "}
         <Link
           href={urlCriteriPosizionamento()}
@@ -364,26 +404,7 @@ export function ArtistsExplorer({
           </div>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {topArtists.map((a) => {
-              const roleLabel =
-                ROLE_GROUPS.find((g) => (a.instruments ?? []).some((i) => g.match(i)))?.label ??
-                null;
-              return (
-                <ArtistCard
-                  key={a.id}
-                  slug={a.slug}
-                  stageName={a.stage_name}
-                  city={a.city}
-                  coverImage={a.cover_image}
-                  genres={a.genre}
-                  priceBand={a.price_band}
-                  canSeePrice={canSeePrice}
-                  isGuest={isGuest}
-                  category={roleLabel}
-                  tier={a.tier}
-                  artistId={a.id}
-                  rating={a.rating}
-                />
-              );
+              return renderCard(a);
             })}
           </div>
           {showGridSection && (
@@ -404,26 +425,7 @@ export function ArtistsExplorer({
           ) : (
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
               {gridArtists.map((a) => {
-                const roleLabel =
-                  ROLE_GROUPS.find((g) => (a.instruments ?? []).some((i) => g.match(i)))?.label ??
-                  null;
-                return (
-                  <ArtistCard
-                    key={a.id}
-                    slug={a.slug}
-                    stageName={a.stage_name}
-                    city={a.city}
-                    coverImage={a.cover_image}
-                    genres={a.genre}
-                    priceBand={a.price_band}
-                    canSeePrice={canSeePrice}
-                    isGuest={isGuest}
-                    category={roleLabel}
-                    tier={a.tier}
-                    artistId={a.id}
-                    rating={a.rating}
-                  />
-                );
+                return renderCard(a);
               })}
             </div>
           )}

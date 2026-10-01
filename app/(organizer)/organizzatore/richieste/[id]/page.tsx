@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 const STATUS_LABEL: Record<BookingStatus, string> = {
   pending: "In attesa di conferma dell'artista",
   in_trattativa: "In trattativa",
+  accettata: "Accettata dall'artista — conferma tu la data",
   confermata: "Confermata",
   rifiutata: "Rifiutata",
   annullata: "Annullata",

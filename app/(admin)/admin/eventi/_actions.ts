@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { eventSchema, type EventInput } from "@/lib/validators/schemas";
 import { slugify } from "@/lib/utils";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
+import { registraAzione } from "@/lib/moderation/decisioni";
 
 // Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
 // controllo del ruolo superadmin non bastava, perché un superadmin delegato
@@ -75,12 +76,18 @@ export async function createEvent(input: EventInput) {
     created_by: user.id,
   });
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "evento",
+    action: "evento_creato",
+    descrizione: `Evento «${data.title}» creato.`,
+  });
   revalidateAll();
   return { ok: true as const };
 }
 
 export async function updateEvent(id: string, input: EventInput) {
-  await requireAdminPageAccess("eventi");
+  const user = await requireAdminPageAccess("eventi");
   const parsed = eventSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: primoErrore(parsed.error) };
   const data = parsed.data;
@@ -105,15 +112,29 @@ export async function updateEvent(id: string, input: EventInput) {
     })
     .eq("id", id);
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "evento",
+    targetId: id,
+    action: "evento_modificato",
+    descrizione: `Evento «${data.title}» modificato.`,
+  });
   revalidateAll();
   return { ok: true as const };
 }
 
 export async function deleteEvent(id: string) {
-  await requireAdminPageAccess("eventi");
+  const user = await requireAdminPageAccess("eventi");
   const admin = createAdminClient();
   const { error } = await admin.from("events").delete().eq("id", id);
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "evento",
+    targetId: id,
+    action: "evento_eliminato",
+    descrizione: `Evento ${id} eliminato.`,
+  });
   revalidateAll();
   return { ok: true as const };
 }

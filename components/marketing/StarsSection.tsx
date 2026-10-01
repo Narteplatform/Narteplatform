@@ -4,32 +4,31 @@ import { ArtistCard, type ArtistCardProps } from "./ArtistCard";
 import { StaggerList, Reveal } from "@/components/animations/Reveal";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
+import { logger } from "@/lib/logger";
 import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
 
+/**
+ * Vetrina per chi ha una sessione: schede complete.
+ */
 async function getStars(limit = 8): Promise<ArtistCardProps[]> {
   try {
     // Admin client server-side: bypassa RLS (lettura di dati pubblici approved).
     const supabase = createAdminClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("artists")
       .select("id, slug, stage_name, city, cover_image, genre, tier")
       // ⚠️  `is_public` NON è opzionale: è la colonna generata
       //     (status='approved' and not plan_suspended, 0043) che decide chi
-      //     esiste sul sito pubblico. Senza, la home mostrerebbe profili non
-      //     approvati o sospesi per piano, con un link che porta a 404 — la
-      //     pagina più visitata del sito che manda le persone nel vuoto.
+      //     esiste sul sito pubblico.
       .eq("is_public", true)
-      // Stesso ranking della pagina /artisti: `artist_tier_enum` è dichiarato
-      // ('free','pro','max') e Postgres ordina gli enum per ordine di
-      // dichiarazione, quindi `desc` è già max → pro → free.
-      //
-      // ⚠️  Con `limit` a 8, quando gli artisti Pro/Max saranno almeno otto
-      //     questa vetrina smetterà di mostrare i Free e di ruotare all'arrivo
-      //     di nuovi iscritti. È voluto: la home è la prima superficie in cui
-      //     l'abbonamento deve valere qualcosa.
+      // `artist_tier_enum` è dichiarato ('free','pro','max'): `desc` = max → pro → free.
       .order("tier", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(limit);
+    if (error) {
+      logger.error("StarsSection", "lettura roster fallita", error);
+      return [];
+    }
     return (data ?? []).map((a) => ({
       artistId: a.id,
       slug: a.slug,
@@ -44,9 +43,39 @@ async function getStars(limit = 8): Promise<ArtistCardProps[]> {
   }
 }
 
+/**
+ * Vetrina per gli ospiti. Legge SOLO le colonne concesse al ruolo anonimo dalla
+ * migration 0070 (id, genre, instruments, tier, is_public): nessun nome, slug,
+ * città o copertina esce dal server. `id` serve solo come chiave React e NON
+ * viene passato alla scheda.
+ */
+async function getAnonymousStars(limit = 8): Promise<ArtistCardProps[]> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("artists")
+      .select("id, genre, instruments, tier")
+      .eq("is_public", true)
+      .order("tier", { ascending: false })
+      .limit(limit);
+    if (error) {
+      logger.error("StarsSection", "lettura vetrina ospiti fallita", error);
+      return [];
+    }
+    return (data ?? []).map((a) => ({
+      genres: a.genre ?? [],
+      instruments: a.instruments ?? [],
+      tier: a.tier,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function StarsSection() {
-  const [artists, viewer] = await Promise.all([getStars(), getCurrentUser()]);
+  const viewer = await getCurrentUser();
   const isGuest = !viewer;
+  const artists = isGuest ? await getAnonymousStars() : await getStars();
 
   return (
     <section className="bg-[#F7F5F2] py-20 text-notte md:py-28">
@@ -74,8 +103,9 @@ export async function StarsSection() {
           </div>
           <Reveal delay={0.25}>
             <p className="mx-auto mb-4 max-w-xl text-pretty text-sm text-notte/70 md:mx-0 md:text-base">
-              Iscriviti per sbloccare i dettagli degli artisti e la possibilità di
-              fare una richiesta di booking.
+              {isGuest
+                ? "Nomi, copertine e contatti degli artisti sono riservati a chi è registrato. L'iscrizione è gratuita."
+                : "Scopri i dettagli degli artisti e fai una richiesta di booking."}
             </p>
           </Reveal>
           <Reveal delay={0.3}>
@@ -98,10 +128,27 @@ export async function StarsSection() {
           </p>
         ) : (
           <StaggerList className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {artists.map((a) => (
-              <ArtistCard key={a.slug} {...a} isGuest={isGuest} />
-            ))}
+            {artists.map((a, i) =>
+              isGuest ? (
+                <ArtistCard key={`anon-${i}`} {...a} isGuest />
+              ) : (
+                <ArtistCard key={a.slug} {...a} />
+              )
+            )}
           </StaggerList>
+        )}
+
+        {isGuest && (
+          <Reveal delay={0.1}>
+            <div className="mt-10 flex flex-col items-center gap-4 rounded-2xl bg-notte px-6 py-10 text-center text-palco">
+              <p className="font-display text-2xl text-balance md:text-4xl">
+                Registrati gratis per scoprire chi sono
+              </p>
+              <Button asChild variant="accent" size="lg">
+                <Link href="/register">Registrati gratis</Link>
+              </Button>
+            </div>
+          </Reveal>
         )}
       </div>
     </section>

@@ -27,7 +27,18 @@ import { BUDGET_RANGES } from "@/lib/constants/budget-ranges";
 
 // ─── helper di normalizzazione ────────────────────────────────────────────────
 
-export type PersonnelMember = { name: string; role: string };
+/**
+ * `consenso_at` (ISO) è facoltativo: le righe salvate prima dell'introduzione
+ * del campo non ce l'hanno e restano valide e invariate. Non deve mai arrivare
+ * al profilo pubblico.
+ */
+export type PersonnelMember = { name: string; role: string; consenso_at?: string };
+
+const personnelMemberSchema = z.object({
+  name: z.string().max(120),
+  role: z.string().max(120),
+  consenso_at: z.string().max(40).optional(),
+});
 export type AudioTrack = { url: string; title: string };
 
 export function splitLines(text: string): string[] {
@@ -140,7 +151,7 @@ export const bookingSectionSchema = z
     gig_max_minutes: z.string(),
     what_to_expect: z.string().max(4000),
     about_extended: z.string().max(4000),
-    personnel: z.array(z.object({ name: z.string().max(120), role: z.string().max(120) })),
+    personnel: z.array(personnelMemberSchema),
     set_list: z.string().max(4000),
     influences: z.string().max(1000),
     setup_requirements: z.string().max(4000),
@@ -170,7 +181,12 @@ export function toBookingPayload(v: BookingSectionValues) {
     what_to_expect: emptyToNull(v.what_to_expect),
     about_extended: emptyToNull(v.about_extended),
     personnel: v.personnel
-      .map((m) => ({ name: m.name.trim(), role: m.role.trim() }))
+      .map((m) => ({
+        name: m.name.trim(),
+        role: m.role.trim(),
+        // Si preserva: scartarlo cancellerebbe la prova del consenso.
+        ...(m.consenso_at ? { consenso_at: m.consenso_at } : {}),
+      }))
       .filter((m) => m.name.length > 0),
     set_list: emptyToNull(v.set_list),
     influences: splitCsv(v.influences),
@@ -237,7 +253,7 @@ export const PROFILE_SECTION_PAYLOAD_SCHEMAS = {
     gig_max_minutes: z.number().int().min(0).max(1440).nullable(),
     what_to_expect: nullableText,
     about_extended: nullableText,
-    personnel: z.array(z.object({ name: z.string().max(120), role: z.string().max(120) })).max(50),
+    personnel: z.array(personnelMemberSchema).max(50),
     set_list: nullableText,
     influences: z.array(z.string()).max(50),
     setup_requirements: nullableText,

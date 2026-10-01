@@ -16,6 +16,7 @@ type Search = { status?: string };
 const TABS: { value: BookingStatus | "all"; label: string }[] = [
   { value: "pending", label: "In attesa" },
   { value: "in_trattativa", label: "In trattativa" },
+  { value: "accettata", label: "Da confermare" },
   { value: "confermata", label: "Confermate" },
   { value: "all", label: "Tutte" },
 ];
@@ -23,6 +24,7 @@ const TABS: { value: BookingStatus | "all"; label: string }[] = [
 const STATUS_LABEL: Record<BookingStatus, string> = {
   pending: "In attesa di conferma dell'artista",
   in_trattativa: "In trattativa",
+  accettata: "Accettata dall'artista — conferma tu la data",
   confermata: "Confermata",
   rifiutata: "Rifiutata",
   annullata: "Annullata",
@@ -31,6 +33,7 @@ const STATUS_LABEL: Record<BookingStatus, string> = {
 const STATUS_VARIANT: Record<BookingStatus, "accent" | "default"> = {
   pending: "default",
   in_trattativa: "accent",
+  accettata: "accent",
   confermata: "accent",
   rifiutata: "default",
   annullata: "default",

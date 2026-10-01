@@ -265,9 +265,18 @@ export function BookingBlock({ artist }: { artist: ArtistProfileData }) {
                   <input
                     type="checkbox"
                     checked={consents[fieldItem.id] === true}
-                    onChange={(e) =>
-                      setConsents((old) => ({ ...old, [fieldItem.id]: e.target.checked }))
-                    }
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setConsents((old) => ({ ...old, [fieldItem.id]: checked }));
+                      // Il momento della spunta entra nel payload: è la prova
+                      // datata del consenso. Togliendo la spunta si toglie anche
+                      // la data (la riga è nuova, quindi non si perde nulla).
+                      form.setValue(
+                        `personnel.${index}.consenso_at`,
+                        checked ? new Date().toISOString() : undefined,
+                        { shouldDirty: true }
+                      );
+                    }}
                     className="mt-0.5 size-4 shrink-0"
                   />
                   <span>

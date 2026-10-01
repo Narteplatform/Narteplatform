@@ -36,6 +36,64 @@ export type PublicReviews = {
   count: number;
 };
 
+const ORGANIZZATORE = "Organizzatore";
+const ORGANIZZATORE_CHIUSO = "Organizzatore — account chiuso";
+
+/**
+ * Il nome con cui mostrare gli organizzatori nelle recensioni.
+ *
+ *  - «Organizzatore — account chiuso» se `organizers.user_id` è null (account
+ *    eliminato) oppure l'utente ha una richiesta di cancellazione confermata e
+ *    non annullata (completata o no: dopo la conferma l'interessato ha chiesto
+ *    di non essere più identificabile).
+ *  - «Organizzatore» se la scheda è privata (`is_private`).
+ *  - altrimenti `display_name`.
+ *
+ * CLAUDE.md regola 4: se una delle due letture fallisce NON si può sapere se
+ * l'account è chiuso, e il nome non va mostrato "per default". Si ripiega su
+ * «Organizzatore» per TUTTI gli id, per prudenza.
+ */
+async function nomiOrganizzatoriPubblici(
+  admin: ReturnType<typeof createAdminClient>,
+  orgIds: string[]
+): Promise<(id: string) => string> {
+  const tuttiAnonimi = () => ORGANIZZATORE;
+  if (orgIds.length === 0) return tuttiAnonimi;
+
+  const { data: orgs, error: orgErr } = await admin
+    .from("organizers")
+    .select("id, display_name, user_id, is_private")
+    .in("id", orgIds);
+  if (orgErr || !orgs) return tuttiAnonimi;
+
+  // `user_id` è null per gli account eliminati (FK on delete set null), anche
+  // se il tipo generato lo dichiara non nullo.
+  const userIds = orgs
+    .map((o) => (o as { user_id: string | null }).user_id)
+    .filter((u): u is string => !!u);
+
+  const chiusi = new Set<string>();
+  if (userIds.length > 0) {
+    const { data: richieste, error: delErr } = await admin
+      .from("account_deletion_requests")
+      .select("user_id")
+      .in("user_id", userIds)
+      .not("confirmed_at", "is", null)
+      .is("cancelled_at", null);
+    if (delErr || !richieste) return tuttiAnonimi;
+    for (const r of richieste) chiusi.add(r.user_id);
+  }
+
+  const nomi = new Map<string, string>();
+  for (const o of orgs) {
+    const userId = (o as { user_id: string | null }).user_id;
+    if (!userId || chiusi.has(userId)) nomi.set(o.id, ORGANIZZATORE_CHIUSO);
+    else if (o.is_private) nomi.set(o.id, ORGANIZZATORE);
+    else nomi.set(o.id, o.display_name);
+  }
+  return (id) => nomi.get(id) ?? ORGANIZZATORE;
+}
+
 const NESSUNA_RECENSIONE: PublicReviews = { reviews: [], average: 0, count: 0 };
 
 /**
@@ -105,14 +163,7 @@ export async function getPublicFeedbackForArtist(
   const average = Math.round((somma / rows.length) * 10) / 10;
 
   const orgIds = [...new Set(rows.map((r) => r.organizer_id))];
-  const nomi = new Map<string, string>();
-  if (orgIds.length > 0) {
-    const { data: orgs } = await admin
-      .from("organizers")
-      .select("id, display_name")
-      .in("id", orgIds);
-    for (const o of orgs ?? []) nomi.set(o.id, o.display_name);
-  }
+  const nomeOrganizzatore = await nomiOrganizzatoriPubblici(admin, orgIds);
 
   return {
     average,
@@ -122,7 +173,7 @@ export async function getPublicFeedbackForArtist(
       rating: r.rating,
       body: r.body,
       created_at: r.created_at,
-      organizer_name: nomi.get(r.organizer_id) ?? "Organizzatore",
+      organizer_name: nomeOrganizzatore(r.organizer_id),
       artist_reply: r.artist_reply ?? null,
       artist_reply_at: r.artist_reply_at ?? null,
     })),
@@ -226,19 +277,12 @@ export async function getFeedbackForArtistUser(userId: string) {
 
   const rows = data ?? [];
   const orgIds = [...new Set(rows.map((r) => r.organizer_id))];
-  const orgs = new Map<string, string>();
-  if (orgIds.length > 0) {
-    const { data: o } = await admin
-      .from("organizers")
-      .select("id, display_name")
-      .in("id", orgIds);
-    for (const r of o ?? []) orgs.set(r.id, r.display_name);
-  }
+  const nomeOrganizzatore = await nomiOrganizzatoriPubblici(admin, orgIds);
   return {
     artist,
     feedback: rows.map((r) => ({
       ...r,
-      organizer_name: orgs.get(r.organizer_id) ?? "Organizzatore",
+      organizer_name: nomeOrganizzatore(r.organizer_id),
     })),
   };
 }

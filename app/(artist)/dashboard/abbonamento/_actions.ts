@@ -9,6 +9,7 @@ import { getStripe } from "@/lib/stripe/client";
 import { priceIdFor } from "@/lib/stripe/prices";
 import { formatPrice, PLAN_LABELS, type BillingInterval, type PaidTier } from "@/lib/billing/plans";
 import { LEGAL_VERSION } from "@/lib/legal/content";
+import { registraConsensoConContesto } from "@/lib/legal/consents";
 import { logger } from "@/lib/logger";
 import { registraProvaSuIubendaInBackground } from "@/lib/legal/iubenda-consent";
 import { TITOLARE } from "@/lib/legal/titolare";
@@ -212,13 +213,12 @@ export async function createCheckoutSession(input: {
     if (parsed.data.esecuzioneImmediata) daRegistrare.push("esecuzione_immediata");
     if (parsed.data.clausoleSpecifiche) daRegistrare.push("clausole_specifiche");
     for (const kind of daRegistrare) {
-      const { error: consErr } = await supabase.rpc("record_consent", {
-        p_kind: kind,
-        p_version: LEGAL_VERSION,
-        p_accepted: true,
-        p_ref: session.id,
+      const consErr = await registraConsensoConContesto(supabase, {
+        kind,
+        version: LEGAL_VERSION,
+        ref: session.id,
       });
-      if (consErr) logger.warn("abbonamento", `accettazione ${kind} non registrata:`, consErr.message);
+      if (consErr) logger.warn("abbonamento", `accettazione ${kind} non registrata:`, consErr);
     }
 
     // Copia presso iubenda: non bloccante, l'esito è solo nei log.
@@ -507,7 +507,26 @@ export async function recediAbbonamento(): Promise<
     }
   }
 
-  // 3. Conferma di ricezione su supporto durevole (art. 54, c. 4 Cod. consumo).
+  // 3. Prova del recesso nel nostro registro (0070). Non bloccante: il recesso
+  //    è già efficace su Stripe; se la tabella manca resta l'email e il log.
+  {
+    const { error: regErr } = await createAdminClient()
+      .from("subscription_withdrawals")
+      .insert({
+        user_id: user.id,
+        user_email: user.email ?? null,
+        stripe_subscription_id: sub.id,
+        canale: "online",
+        ricevuto_il: ricevutoIl.toISOString(),
+        rimborso_cent: rimborso,
+        stato_rimborso:
+          esito === "eseguito" ? "eseguito" : esito === "manuale" ? "da_eseguire" : "non_dovuto",
+        note: sub.metadata?.esecuzione_immediata === "1" ? "esecuzione immediata richiesta" : null,
+      });
+    if (regErr) logger.warn("abbonamento", "recesso non registrato in subscription_withdrawals:", regErr.message);
+  }
+
+  // 4. Conferma di ricezione su supporto durevole (art. 54, c. 4 Cod. consumo).
   const piano = PLAN_LABELS[riga.tier as PaidTier] ?? "Abbonamento N'arte";
   const rimborsoLabel =
     esito === "nessuno"

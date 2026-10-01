@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger";
 import { deleteObject } from "@/lib/storage/bunny/storage";
 import { deleteStreamVideo } from "@/lib/storage/bunny/stream";
 import { registraDecisione } from "@/lib/moderation/decisioni";
+import { disiscriviNewsletter } from "@/lib/brevo/contacts";
 
 /**
  * Completamento della cancellazione dell'account: la rimozione DEFINITIVA.
@@ -727,6 +728,12 @@ export async function eseguiCompletamento(input: {
     `AVVIO cancellazione definitiva — richiesta=${input.richiestaId} utente=${userId} attore=${input.attoreId} ` +
       `forzata=${anteprima.richiedeForzatura ? "sì" : "no"}`
   );
+
+  // Prima di togliere l'account: fuori dalla lista newsletter di Brevo, così
+  // non arrivano campagne a chi ha chiesto la cancellazione. NON BLOCCANTE:
+  // `disiscriviNewsletter` non solleva, e un suo insuccesso non ferma né
+  // modifica la procedura (non è un passo, non entra in `passiEseguiti`).
+  await disiscriviNewsletter(piano.email);
 
   const ok = (id: PassoId, dettaglio: string) => {
     passiEseguiti.push(id);

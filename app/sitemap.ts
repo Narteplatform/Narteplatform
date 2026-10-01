@@ -19,11 +19,11 @@ import { LEGAL_V2_ROTTE, legalV2Pubblicato } from "@/lib/legal/v2";
  * problema e restituisce le sole pagine statiche. Poche voci corrette valgono
  * più di zero voci silenziose.
  *
- * NOTA SUL PROFILO ARTISTA: `/artisti/[slug]` è dietro un muro di login (vedi
- * app/(user)/artisti/[slug]/page.tsx). Un crawler non ne vede il contenuto ma
- * la schermata "Accedi per scoprire questo artista". I profili restano in
- * sitemap perché gli URL sono legittimi e condivisibili, ma finché resta il
- * muro non porteranno traffico organico. È una scelta di prodotto aperta.
+ * NOTA SUL PROFILO ARTISTA: i profili `/artisti/[slug]` NON sono in sitemap.
+ * Sono riservati a chi ha un account (decisione del cliente): non devono essere
+ * indicizzati né rivelare, tramite l'elenco degli URL, chi è nel roster. La
+ * pagina è anche `noindex`. Resta solo il catalogo `/artisti`, che agli ospiti
+ * mostra schede anonime.
  */
 
 export const revalidate = 3600;
@@ -92,9 +92,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const admin = createAdminClient();
 
-    const [eventi, artisti, format, articoli] = await Promise.all([
+    const [eventi, format, articoli] = await Promise.all([
       admin.from("events").select("slug, created_at"),
-      admin.from("artists").select("slug, created_at").eq("is_public", true),
       admin.from("formats").select("slug, updated_at").eq("published", true),
       admin
         .from("blog_posts")
@@ -104,7 +103,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Un solo errore basta a rendere inaffidabile l'intera sitemap: meglio
     // pubblicare le statiche e riprovare al prossimo rigenero.
-    const fallita = [eventi, artisti, format, articoli].find((r) => r.error);
+    const fallita = [eventi, format, articoli].find((r) => r.error);
     if (fallita?.error) {
       logger.error("sitemap", "lettura fallita, pubblico solo le statiche", fallita.error);
       return statiche;
@@ -118,13 +117,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         (eventi.data ?? []).map((e) => ({ slug: e.slug, updated: e.created_at })),
         "weekly",
         0.8
-      ),
-      ...entries(
-        base,
-        "/artisti",
-        (artisti.data ?? []).map((a) => ({ slug: a.slug, updated: a.created_at })),
-        "weekly",
-        0.7
       ),
       ...entries(
         base,

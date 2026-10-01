@@ -300,3 +300,27 @@ from information_schema.role_table_grants
 where table_schema='public' and table_name in ('profile_referrals','referral_optouts')
   and grantee in ('anon','authenticated');
 -- Atteso: solo (profile_referrals, authenticated, SELECT).
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 0069 + 0070 — doppia conferma e privacy dei visitatori
+-- ═══════════════════════════════════════════════════════════════════════════
+select enum_range(null::public.booking_status_enum);
+-- Atteso: contiene 'accettata'.
+
+select
+  case when prosrc like '%accettata%' then 'OK — accept_offer_v2 della 0070'
+       else 'DA RIFARE — accept_offer_v2 precedente' end as stato
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'accept_offer_v2';
+
+-- Colonne di artists leggibili da anon (privilegi di colonna):
+select column_name
+from information_schema.column_privileges
+where table_schema = 'public' and table_name = 'artists'
+  and grantee = 'anon' and privilege_type = 'SELECT'
+order by column_name;
+-- Atteso SOLO: genre, id, instruments, is_public, percorso_artistico, status, tier.
+
+select has_table_privilege('anon', 'public.artists', 'SELECT') as select_tabella_intera;
+-- Atteso: false (resta solo il privilegio sulle colonne elencate sopra).

@@ -10,6 +10,7 @@ import {
   type ProfileSectionId,
   type SectionPayload,
 } from "@/app/(artist)/dashboard/_actions";
+import { useDirittiContenuti } from "@/components/dashboard/profile/DirittiContenuti";
 
 /**
  * Un form per blocco, non un form gigante con più pulsanti.
@@ -38,6 +39,7 @@ export function useProfileSectionForm<TValues extends FieldValues, S extends Pro
 } {
   const { artistId, section, schema, defaultValues, toPayload, successMessage } = opts;
   const [serverError, setServerError] = React.useState<string | null>(null);
+  const diritti = useDirittiContenuti();
 
   const form = useForm<TValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,6 +52,14 @@ export function useProfileSectionForm<TValues extends FieldValues, S extends Pro
     setServerError(null);
     const res = await updateArtistProfileSection(artistId, section, toPayload(values));
     if (!res.ok) {
+      // Mancata dichiarazione dei diritti: non è un errore da mostrare crudo,
+      // si apre la modale e si invita a ripetere il salvataggio.
+      if (diritti.gestisciErrore(res.error)) {
+        setServerError(
+          "Prima di salvare nuovi contenuti conferma la dichiarazione sui diritti, poi salva di nuovo."
+        );
+        return;
+      }
       setServerError(res.error);
       toast.error(res.error);
       return;

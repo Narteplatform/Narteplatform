@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess, getAllowedAdminPages } from "@/lib/admin/permissions";
+import { registraAzione } from "@/lib/moderation/decisioni";
 
 // Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
 // controllo del ruolo superadmin non bastava, perché un superadmin delegato
@@ -62,7 +63,7 @@ export async function createSlot(input: {
   durationMin?: number;
   consultantId?: string;
 }) {
-  await requireAdminPageAccess("consulenza");
+  const user = await requireAdminPageAccess("consulenza");
   const parsed = slotSchema.safeParse({
     slotAt: input.slotAt,
     durationMin: input.durationMin ?? 30,
@@ -79,6 +80,13 @@ export async function createSlot(input: {
     consultant_id: parsed.data.consultantId ?? null,
   });
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "consulenza",
+    targetId: parsed.data.consultantId ?? null,
+    action: "slot_creato",
+    descrizione: `Slot di consulenza creato per il ${parsed.data.slotAt}.`,
+  });
   revalidatePath("/admin/consulenza");
   revalidatePath("/admin/consulenza/slots");
   if (parsed.data.consultantId) {
@@ -126,6 +134,15 @@ export async function createSlotBatch(input: {
   if (rows.length === 0) return { ok: true as const, count: 0 };
   const { error } = await admin.from("consultant_slots").insert(rows);
   if (error) return { ok: false as const, error: error.message };
+  if (ctx.isSuperadmin) {
+    await registraAzione({
+      actorId: ctx.user.id,
+      targetType: "consulenza",
+      targetId: input.consultantId,
+      action: "slot_creati",
+      descrizione: `${rows.length} slot di consulenza creati per il consulente ${input.consultantId}.`,
+    });
+  }
   revalidatePath(`/admin/consulenza/consulenti/${input.consultantId}`);
   revalidatePath("/admin/consulenza");
   revalidatePath("/dashboard/consulenza");
@@ -185,6 +202,15 @@ export async function createSlotBatchMulti(input: {
   if (rows.length === 0) return { ok: true as const, count: 0 };
   const { error } = await admin.from("consultant_slots").insert(rows);
   if (error) return { ok: false as const, error: error.message };
+  if (ctx.isSuperadmin) {
+    await registraAzione({
+      actorId: ctx.user.id,
+      targetType: "consulenza",
+      targetId: input.consultantId,
+      action: "slot_creati",
+      descrizione: `${rows.length} slot di consulenza creati per il consulente ${input.consultantId}.`,
+    });
+  }
   revalidatePath(`/admin/consulenza/consulenti/${input.consultantId}`);
   revalidatePath("/admin/consulenza");
   revalidatePath("/dashboard/consulenza");
@@ -212,7 +238,7 @@ const consultantSchema = z.object({
 });
 
 export async function createConsultant(input: z.infer<typeof consultantSchema>) {
-  await requireAdminPageAccess("consulenza");
+  const user = await requireAdminPageAccess("consulenza");
   const parsed = consultantSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
@@ -257,6 +283,14 @@ export async function createConsultant(input: z.infer<typeof consultantSchema>) 
     if (userId) await admin.auth.admin.deleteUser(userId);
     return { ok: false as const, error: error.message };
   }
+  await registraAzione({
+    actorId: user.id,
+    targetType: "consulente",
+    targetId: (data as { id: string } | null)?.id ?? null,
+    action: "consulente_creato",
+    descrizione: `Consulente «${parsed.data.name}» creato${userId ? " con account di accesso" : ""}.`,
+    affectedUserId: userId,
+  });
   revalidatePath("/admin/consulenza");
   revalidatePath("/admin/consulenza/consulenti");
   revalidatePath("/dashboard/consulenza");
@@ -268,7 +302,7 @@ export async function linkConsultantAccount(input: {
   email: string;
   password: string;
 }) {
-  await requireAdminPageAccess("consulenza");
+  const user = await requireAdminPageAccess("consulenza");
   if (!input.email || !input.password || input.password.length < 8) {
     return { ok: false as const, error: "Email valida e password (min 8) obbligatorie" };
   }
@@ -301,6 +335,14 @@ export async function linkConsultantAccount(input: {
     await admin.auth.admin.deleteUser(userId);
     return { ok: false as const, error: linkErr.message };
   }
+  await registraAzione({
+    actorId: user.id,
+    targetType: "consulente",
+    targetId: input.consultantId,
+    action: "account_consulente_collegato",
+    descrizione: `Account di accesso creato e collegato al consulente «${row.name}».`,
+    affectedUserId: userId,
+  });
   revalidatePath(`/admin/consulenza/consulenti/${input.consultantId}`);
   return { ok: true as const };
 }
@@ -333,6 +375,15 @@ export async function updateConsultant(
     })
     .eq("id", consultantId);
   if (error) return { ok: false as const, error: error.message };
+  if (ctx.isSuperadmin) {
+    await registraAzione({
+      actorId: ctx.user.id,
+      targetType: "consulente",
+      targetId: consultantId,
+      action: "consulente_modificato",
+      descrizione: `Profilo del consulente «${parsed.data.name}» modificato dal team.`,
+    });
+  }
   revalidatePath(`/admin/consulenza/consulenti/${consultantId}`);
   revalidatePath("/admin/consulenza/consulenti");
   revalidatePath("/admin/profilo");
@@ -341,13 +392,20 @@ export async function updateConsultant(
 }
 
 export async function toggleConsultant(consultantId: string, isActive: boolean) {
-  await requireAdminPageAccess("consulenza");
+  const user = await requireAdminPageAccess("consulenza");
   const admin = createAdminClient();
   const { error } = await admin
     .from("consultants")
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
     .eq("id", consultantId);
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "consulente",
+    targetId: consultantId,
+    action: isActive ? "consulente_attivato" : "consulente_disattivato",
+    descrizione: `Consulente ${consultantId} ${isActive ? "attivato" : "disattivato"}.`,
+  });
   revalidatePath("/admin/consulenza/consulenti");
   revalidatePath(`/admin/consulenza/consulenti/${consultantId}`);
   revalidatePath("/dashboard/consulenza");
@@ -356,10 +414,17 @@ export async function toggleConsultant(consultantId: string, isActive: boolean) 
 }
 
 export async function deleteConsultant(consultantId: string) {
-  await requireAdminPageAccess("consulenza");
+  const user = await requireAdminPageAccess("consulenza");
   const admin = createAdminClient();
   const { error } = await admin.from("consultants").delete().eq("id", consultantId);
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "consulente",
+    targetId: consultantId,
+    action: "consulente_eliminato",
+    descrizione: `Consulente ${consultantId} eliminato.`,
+  });
   revalidatePath("/admin/consulenza/consulenti");
   revalidatePath("/dashboard/consulenza");
   revalidatePath("/artisti");
@@ -399,6 +464,15 @@ export async function toggleSlot(slotId: string, isActive: boolean) {
     .update({ is_active: isActive })
     .eq("id", slotId);
   if (error) return { ok: false as const, error: error.message };
+  if (ctx.isSuperadmin) {
+    await registraAzione({
+      actorId: ctx.user.id,
+      targetType: "consulenza",
+      targetId: slotId,
+      action: isActive ? "slot_attivato" : "slot_disattivato",
+      descrizione: `Slot di consulenza ${slotId} ${isActive ? "attivato" : "disattivato"}.`,
+    });
+  }
   revalidatePath("/admin/consulenza/slots");
   revalidatePath("/dashboard/consulenza");
   revalidatePath("/artisti");
@@ -413,6 +487,15 @@ export async function deleteSlot(slotId: string) {
   if (!own.ok) return { ok: false as const, error: own.error };
   const { error } = await admin.from("consultant_slots").delete().eq("id", slotId);
   if (error) return { ok: false as const, error: error.message };
+  if (ctx.isSuperadmin) {
+    await registraAzione({
+      actorId: ctx.user.id,
+      targetType: "consulenza",
+      targetId: slotId,
+      action: "slot_eliminato",
+      descrizione: `Slot di consulenza ${slotId} eliminato.`,
+    });
+  }
   revalidatePath("/admin/consulenza/slots");
   revalidatePath("/dashboard/consulenza");
   revalidatePath("/artisti");
@@ -433,6 +516,14 @@ export async function toggleSlotBatch(slotIds: string[], isActive: boolean) {
     .update({ is_active: isActive })
     .in("id", ids);
   if (error) return { ok: false as const, error: error.message };
+  if (ctx.isSuperadmin) {
+    await registraAzione({
+      actorId: ctx.user.id,
+      targetType: "consulenza",
+      action: isActive ? "slot_attivati" : "slot_disattivati",
+      descrizione: `${ids.length} slot di consulenza ${isActive ? "attivati" : "disattivati"}.`,
+    });
+  }
   revalidatePath("/admin/consulenza/slots");
   revalidatePath("/dashboard/consulenza");
   revalidatePath("/artisti");
@@ -449,6 +540,14 @@ export async function deleteSlotBatch(slotIds: string[]) {
   if (!own.ok) return { ok: false as const, error: own.error };
   const { error } = await admin.from("consultant_slots").delete().in("id", ids);
   if (error) return { ok: false as const, error: error.message };
+  if (ctx.isSuperadmin) {
+    await registraAzione({
+      actorId: ctx.user.id,
+      targetType: "consulenza",
+      action: "slot_eliminati",
+      descrizione: `${ids.length} slot di consulenza eliminati.`,
+    });
+  }
   revalidatePath("/admin/consulenza/slots");
   revalidatePath("/dashboard/consulenza");
   revalidatePath("/artisti");
@@ -457,7 +556,7 @@ export async function deleteSlotBatch(slotIds: string[]) {
 
 // #12 — Assegna un consulente reale a uno slot legacy (consultant_id NULL).
 export async function assignConsultantToSlot(slotId: string, consultantId: string) {
-  await requireAdminPageAccess("consulenza");
+  const user = await requireAdminPageAccess("consulenza");
   if (!z.string().uuid().safeParse(slotId).success) {
     return { ok: false as const, error: "Slot non valido" };
   }
@@ -465,17 +564,25 @@ export async function assignConsultantToSlot(slotId: string, consultantId: strin
     return { ok: false as const, error: "Consulente non valido" };
   }
   const admin = createAdminClient();
-  const { data: consultant } = await admin
+  const { data: consultant, error: consultantErr } = await admin
     .from("consultants")
     .select("id, is_active")
     .eq("id", consultantId)
     .maybeSingle();
+  if (consultantErr) return { ok: false as const, error: consultantErr.message };
   if (!consultant) return { ok: false as const, error: "Consulente non trovato" };
   const { error } = await admin
     .from("consultant_slots")
     .update({ consultant_id: consultantId })
     .eq("id", slotId);
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "consulenza",
+    targetId: slotId,
+    action: "slot_assegnato",
+    descrizione: `Slot ${slotId} assegnato al consulente ${consultantId}.`,
+  });
   revalidatePath("/admin/consulenza");
   revalidatePath("/admin/consulenza/confermati");
   revalidatePath("/admin/consulenza/slots");
@@ -490,7 +597,7 @@ export async function updateConsultationStatus(
   consultationId: string,
   status: z.infer<typeof statusSchema>
 ) {
-  await requireAdminPageAccess("consulenza");
+  const user = await requireAdminPageAccess("consulenza");
   if (!statusSchema.safeParse(status).success) {
     return { ok: false as const, error: "Status non valido" };
   }
@@ -500,18 +607,33 @@ export async function updateConsultationStatus(
     .update({ status })
     .eq("id", consultationId);
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "consulenza",
+    targetId: consultationId,
+    action: "consulenza_stato",
+    descrizione: `Stato della consulenza ${consultationId} impostato su «${status}».`,
+  });
   revalidatePath("/admin/consulenza");
   return { ok: true as const };
 }
 
 export async function updateConsultationNotes(consultationId: string, notes: string) {
-  await requireAdminPageAccess("consulenza");
+  const user = await requireAdminPageAccess("consulenza");
   const admin = createAdminClient();
   const { error } = await admin
     .from("consultations")
     .update({ admin_notes: notes })
     .eq("id", consultationId);
   if (error) return { ok: false as const, error: error.message };
+  // Il contenuto delle note interne non entra nel registro.
+  await registraAzione({
+    actorId: user.id,
+    targetType: "consulenza",
+    targetId: consultationId,
+    action: "consulenza_note",
+    descrizione: `Note interne della consulenza ${consultationId} aggiornate.`,
+  });
   revalidatePath("/admin/consulenza");
   return { ok: true as const };
 }

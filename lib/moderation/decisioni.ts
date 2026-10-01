@@ -165,6 +165,47 @@ export async function registraDecisione(input: DecisioneInput): Promise<Decision
   return { ok: true, reference, notified: res.ok };
 }
 
+export type AzioneInput = {
+  actorId: string;
+  targetType: string;
+  targetId?: string | null;
+  action: string;
+  /** Cosa è stato fatto, in chiaro. Se più corto del minimo, se ne compone una standard. */
+  descrizione: string;
+  affectedUserId?: string | null;
+};
+
+/**
+ * Registra un'azione del team che non è una decisione verso un interessato
+ * (approvazioni, modifiche di servizio, aperture di conversazione...). Stessa
+ * tabella di `registraDecisione`, nessuna email. Non lancia mai: un registro
+ * che non risponde non deve bloccare il lavoro del team; l'esito è nel
+ * valore di ritorno e nei log.
+ */
+export async function registraAzione(input: AzioneInput): Promise<DecisioneEsito> {
+  try {
+    let descrizione = (input.descrizione ?? "").trim();
+    if (descrizione.length < MOTIVAZIONE_MIN) {
+      descrizione = `Azione ${input.action} su ${input.targetType}${input.targetId ? ` ${input.targetId}` : ""}`;
+    }
+    const esito = await registraDecisione({
+      actorId: input.actorId,
+      targetType: input.targetType,
+      targetId: input.targetId ?? null,
+      action: input.action,
+      reason: descrizione.slice(0, 1000),
+      affectedUserId: input.affectedUserId ?? null,
+      notify: false,
+    });
+    if (!esito.ok) logger.warn("moderation", "azione non registrata:", esito.error);
+    return esito;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.warn("moderation", "azione non registrata:", msg);
+    return { ok: false, error: msg };
+  }
+}
+
 async function segnaNotifica(id: string | null, notifiedAt: string | null, errore: string | null) {
   if (!id) return;
   const admin = createAdminClient();

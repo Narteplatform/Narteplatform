@@ -9,7 +9,8 @@ import {
   type ChatMessageInput,
   type ChatOfferInput,
 } from "@/lib/validators/schemas";
-import { sendBookingConfirmedEmail } from "@/lib/emails/send";
+import { sendBookingAcceptedEmail, sendBookingConfirmedEmail } from "@/lib/emails/send";
+import { logger } from "@/lib/logger";
 import { notifyNewChatMessage, notifyNewChatOffer } from "@/lib/chat/notify";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import type { Role } from "@/lib/supabase/types";
@@ -241,7 +242,7 @@ export async function sendOffer(input: ChatOfferInput): Promise<ActionResult> {
     .select("id")
     .eq("artist_id", conv.artist_id)
     .eq("organizer_id", conv.organizer_id)
-    .in("status", ["pending", "in_trattativa"])
+    .in("status", ["pending", "in_trattativa", "accettata"])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -345,12 +346,26 @@ export async function respondToOffer(
   // Accept via RPC security definer
   const { data, error } = await supabase.rpc("accept_offer_v2", { p_message_id: messageId });
   if (error) return { ok: false, error: error.message };
-  const res = (data as unknown as { ok: boolean; error?: string; booking_request_id?: string } | null) ?? null;
+  const res =
+    (data as unknown as {
+      ok: boolean;
+      error?: string;
+      booking_request_id?: string;
+      stato?: "accettata" | "confermata";
+    } | null) ?? null;
   if (!res || !res.ok) return { ok: false, error: res?.error ?? "Errore nell'accettazione" };
 
+  // Doppia conferma (0070): se ha accettato l'artista la richiesta è
+  // «accettata» e l'organizzatore riceve l'invito a confermare la data; se ha
+  // accettato l'organizzatore la data è confermata e partono le conferme.
+  // Senza `stato` (DB ancora alla 0061) vale il comportamento precedente.
   if (res.booking_request_id) {
-    await sendBookingConfirmedEmail(res.booking_request_id).catch((e) =>
-      console.error("email confirmed (chat):", e),
+    const invio =
+      res.stato === "accettata"
+        ? sendBookingAcceptedEmail(res.booking_request_id)
+        : sendBookingConfirmedEmail(res.booking_request_id);
+    await invio.catch((e) =>
+      logger.error("chat", "email dopo accettazione offerta:", e instanceof Error ? e.message : String(e)),
     );
   }
 

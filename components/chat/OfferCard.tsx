@@ -54,6 +54,7 @@ export function OfferCard({
   bookingHref,
   isOwn = false,
   tick = "delivered",
+  viewerRole,
 }: {
   msg: ChatMessage;
   canRespond: boolean;
@@ -62,6 +63,8 @@ export function OfferCard({
   bookingHref?: string;
   isOwn?: boolean;
   tick?: TickState;
+  /** Chi sta guardando: decide il testo della conferma (doppia conferma, 0070). */
+  viewerRole?: "artist" | "organizer" | "superadmin";
 }) {
   const [busy, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -136,10 +139,18 @@ export function OfferCard({
               isOwn ? "bg-white/10 text-white" : "bg-white text-foreground border border-azzurro/30",
             )}
           >
-            <p>
-              Accettando confermi di aver raggiunto un accordo <strong>direttamente</strong> con
-              l&rsquo;altra parte: la data viene bloccata nel calendario di entrambi.
-            </p>
+            {viewerRole === "artist" ? (
+              <p>
+                Accettando dichiari di aver raggiunto un accordo <strong>direttamente</strong> con
+                l&rsquo;organizzatore. La data sarà confermata e bloccata solo quando
+                l&rsquo;organizzatore la confermerà.
+              </p>
+            ) : (
+              <p>
+                Accettando confermi di aver raggiunto un accordo <strong>direttamente</strong> con
+                l&rsquo;artista: la data viene confermata e bloccata nel calendario di entrambi.
+              </p>
+            )}
             <p className="mt-1.5">
               L&rsquo;accordo è solo fra voi. N&rsquo;arte non è parte del contratto e non
               gestisce il pagamento.

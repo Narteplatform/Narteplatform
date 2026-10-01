@@ -65,6 +65,33 @@ export function PrivacyConsent({
 }
 
 /**
+ * Frase informativa dei moduli pubblici, senza casella.
+ *
+ * Quando il trattamento serve a rispondere alla richiesta (art. 6, par. 1,
+ * lett. b GDPR) non si chiede alcun consenso: si informa. Il testo coincide con
+ * `TESTO_CASELLA.privacy` in `lib/legal/iubenda-consent.ts` (che è server-only e
+ * non si può importare qui): se cambia uno, cambia anche l'altro. La presa
+ * visione è registrata dalla server action con `publicFormConsent()`.
+ */
+export function PrivacyNotice({ className }: { className?: string }) {
+  return (
+    <p className={className ?? "text-xs text-muted-foreground"}>
+      Usiamo i dati che ci lasci solo per rispondere a questa richiesta, come
+      descritto nell&rsquo;
+      <Link
+        href="/privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2"
+      >
+        informativa privacy
+      </Link>
+      .
+    </p>
+  );
+}
+
+/**
  * La casella di accettazione di termini e informativa, per i punti in cui non
  * si sta solo lasciando un recapito ma si entra nella piattaforma: la
  * registrazione, e la richiesta di booking che crea un account per conto di chi

@@ -5,15 +5,8 @@ import { z } from "zod";
 // solo funzioni async — esportare uno schema/zod object da quel file rompe
 // la registrazione delle Server Actions su Next.js 15/16.
 export const artistInterestSchema = z.object({
-  /**
-   * Presa visione dell'informativa. Chi compila questo modulo è un visitatore
-   * non registrato che lascia nome, email e telefono: la casella è obbligatoria
-   * come su ogni altro modulo pubblico.
-   */
-  acceptedPrivacy: z.literal(true, {
-    errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
-  }),
-
+  // Nessuna casella privacy: come sugli altri moduli pubblici, una frase
+  // informativa (doc. 08). La presa visione si registra con consent_version.
   artistId: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
   timeSlot: z

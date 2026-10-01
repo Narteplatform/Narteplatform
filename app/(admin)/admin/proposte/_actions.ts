@@ -11,6 +11,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import { creaTokenOptout, hashEmail, normalizzaEmail } from "@/lib/referrals/optout";
 import { meseCorrente, tabellaAssente } from "@/lib/referrals/periodo";
 import { logger } from "@/lib/logger";
+import { registraAzione } from "@/lib/moderation/decisioni";
 
 export type SegnalazioneState = { error?: string; ok?: string };
 
@@ -230,6 +231,14 @@ export async function inviaSegnalazioneProfilo(
       logger.error("referrals", "esito invio non registrato (email partita):", upErr.message);
     }
   }
+
+  await registraAzione({
+    actorId: user.id,
+    targetType: "segnalazione_profilo",
+    targetId: riga.id,
+    action: res.ok ? "segnalazione_profilo_inviata" : "segnalazione_profilo_registrata",
+    descrizione: `Profilo «${artist.stage_name}» segnalato a ${dest.name}${res.ok ? "" : " (email non partita)"}.`,
+  });
 
   revalidatePath("/admin/proposte");
   revalidatePath("/dashboard/overview");

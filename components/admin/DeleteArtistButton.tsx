@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
+import { MotivazioneField } from "@/components/admin/MotivazioneField";
 import { deleteArtist } from "@/app/(admin)/admin/artisti/_actions";
 
 const REASON_MIN = 10;
@@ -37,20 +37,13 @@ export function DeleteArtistButton({
     <div className="w-80 max-w-full space-y-2 rounded-lg border border-red-200 p-3">
       <p className="text-sm font-semibold">Eliminare definitivamente &laquo;{artistName}&raquo;?</p>
       <p className="text-[11px] text-muted-foreground">L&apos;azione non è reversibile.</p>
-      <Textarea
-        rows={3}
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        maxLength={1000}
+      <MotivazioneField
+        compact
+        label="Motivazione dell'eliminazione"
         disabled={pending}
-        aria-label="Motivazione dell'eliminazione"
-        placeholder="Motivazione (obbligatoria, almeno 10 caratteri)"
-        className="min-h-0 text-xs"
+        onChange={setReason}
+        hint="La motivazione viene inviata al proprietario del profilo per email, con il modo per contestare la decisione."
       />
-      <p className="text-[11px] text-muted-foreground">
-        La motivazione viene inviata al proprietario del profilo per email, con il modo per contestare
-        la decisione.
-      </p>
       {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
         <Button

@@ -70,6 +70,8 @@ export type EmailKey =
   | "account_deletion_confirm"
   // --- moderazione, segnalazioni, trasparenza (DSA) ---
   | "moderation_decision"
+  | "media_approved"
+  | "profile_reactivated"
   | "report_receipt"
   | "report_admin"
   | "report_outcome"
@@ -344,6 +346,21 @@ export interface ModerationDecisionParams {
   reference: string;
 }
 
+/** Contenuti caricati dall'artista approvati dal team (uno o più, anche «approva tutto»). */
+export interface MediaApprovedParams {
+  name: string;
+  /** Cosa è stato approvato, in chiaro: «2 foto e 1 video». */
+  itemsLabel: string;
+  profileUrl: string;
+}
+
+/** Profilo tornato visibile nel catalogo dopo una sospensione o un rifiuto. */
+export interface ProfileReactivatedParams {
+  name: string;
+  profileName: string;
+  profileUrl: string;
+}
+
 /** Ricevuta di una segnalazione o di un reclamo (art. 16, par. 4 DSA). */
 export interface ReportReceiptParams {
   name: string;
@@ -495,6 +512,8 @@ export interface EmailParamsMap {
   welcome_user: WelcomeUserParams;
   account_deletion_confirm: AccountDeletionConfirmParams;
   moderation_decision: ModerationDecisionParams;
+  media_approved: MediaApprovedParams;
+  profile_reactivated: ProfileReactivatedParams;
   report_receipt: ReportReceiptParams;
   report_admin: ReportAdminParams;
   report_outcome: ReportOutcomeParams;
@@ -684,6 +703,14 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
   moderation_decision: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_MODERATION_DECISION),
     label: "Decisione di moderazione",
+  },
+  media_approved: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_MEDIA_APPROVED),
+    label: "Contenuti approvati",
+  },
+  profile_reactivated: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILE_REACTIVATED),
+    label: "Profilo di nuovo visibile",
   },
   report_receipt: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_REPORT_RECEIPT),

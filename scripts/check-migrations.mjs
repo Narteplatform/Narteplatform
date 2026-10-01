@@ -338,6 +338,20 @@ const MIGRATION = [
       ["referral_optouts: anon senza privilegi", () => privilegioAnonRevocato("referral_optouts")],
     ],
   },
+  {
+    file: "0070_allineamento_finale.sql",
+    cosa: "Doppia conferma, prova accettazioni, allegati segnalazioni, recessi, privacy visitatori",
+    controlli: [
+      ["colonna user_consents.ip_hash", () => colonna("user_consents", "ip_hash")],
+      ["colonna content_reports.attachments", () => colonna("content_reports", "attachments")],
+      ["colonna venues.hidden_at", () => colonna("venues", "hidden_at")],
+      ["tabella subscription_withdrawals", () => tabella("subscription_withdrawals")],
+      ["subscription_withdrawals: anon senza privilegi", () => privilegioAnonRevocato("subscription_withdrawals")],
+      ["bucket report-attachments privato", () => bucketPrivato("report-attachments")],
+      ["artist_videos: anon senza privilegi", () => privilegioAnonRevocato("artist_videos")],
+      ["consultants: anon senza privilegi", () => privilegioAnonRevocato("consultants")],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };
@@ -387,6 +401,8 @@ pubblicazioni realtime. Vanno controllate a mano nel SQL editor:
   • 0061_booking_integrity.sql      trigger sulle transizioni del booking e
                                     nuova accept_offer_v2 (stesso nome della 0013)
   • 0062 / 0064 / 0066 / 0067       vincoli, policy e chiavi esterne ricreate
+  • 0069_booking_accettata.sql      nuovo valore dell'enum (verificato dalla 0070)
+  • 0070 (artists per anon)         privilegi di COLONNA: query in VERIFICA_MIGRATION
 
 Le query per queste sono in docs/VERIFICA_MIGRATION.sql.
 `);

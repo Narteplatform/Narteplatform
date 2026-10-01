@@ -83,6 +83,8 @@ const ESENTI_ESATTI = new Set([
   "/condizioni-organizzatori",
   "/regolamento-recensioni",
   "/criteri-di-posizionamento",
+  // Informazioni e modulo di recesso: devono restare raggiungibili sempre.
+  "/recesso",
   "/sitemap.xml",
   "/robots.txt",
   "/favicon.ico",

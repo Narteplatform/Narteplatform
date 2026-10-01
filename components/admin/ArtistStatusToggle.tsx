@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
+import { MotivazioneField } from "@/components/admin/MotivazioneField";
 import { updateArtistStatus } from "@/app/(admin)/admin/artisti/_actions";
 
 const STATUSES = ["pending", "approved", "rejected"] as const;
@@ -73,20 +73,12 @@ export function ArtistStatusToggle({
           <p className="text-sm font-semibold">
             Passa a &laquo;{STATUS_LABEL[target]}&raquo;
           </p>
-          <Textarea
-            rows={3}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            maxLength={1000}
+          <MotivazioneField
+            compact
             disabled={pending}
-            aria-label="Motivazione"
-            placeholder="Motivazione (obbligatoria, almeno 10 caratteri)"
-            className="min-h-0 text-xs"
+            onChange={setReason}
+            hint="La motivazione viene inviata al proprietario del profilo per email, con il modo per contestare la decisione."
           />
-          <p className="text-[11px] text-muted-foreground">
-            La motivazione viene inviata al proprietario del profilo per email, con il modo per
-            contestare la decisione.
-          </p>
           <div className="flex gap-2">
             <Button
               size="sm"

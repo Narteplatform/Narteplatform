@@ -10,7 +10,8 @@ import { artistSchema, type ArtistInput } from "@/lib/validators/schemas";
 import { sendEmail, sendBookingCancelledByAdminEmail } from "@/lib/emails/send";
 import ArtistApprovedEmail from "@/lib/emails/templates/ArtistApprovedEmail";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
-import { registraDecisione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
+import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
+import { notificaProfiloRiattivato } from "@/lib/moderation/approvazioni";
 import { verificaProprietarioNonSospeso } from "@/lib/admin/sospensione";
 import { nascondiRecensioniDiBookingAnnullato } from "@/lib/feedback/moderation";
 import { logger } from "@/lib/logger";
@@ -98,6 +99,19 @@ export async function updateArtistTier(artistId: string, input: TierOverrideInpu
       notify: false,
     });
     if (!esito.ok) logger.warn("artisti", "omaggio non registrato:", esito.error);
+  } else {
+    // Revoca o declassamento dell'omaggio: resta traccia anche di questo.
+    // (Azione diversa da «omaggio_%», che indica i piani concessi e attivi.)
+    await registraAzione({
+      actorId: user.id,
+      targetType: "profilo",
+      targetId: artistId,
+      action: "piano_omaggio_rimosso",
+      descrizione:
+        (parsed.data.reason ?? "").trim().length >= MOTIVAZIONE_MIN
+          ? (parsed.data.reason ?? "").trim()
+          : `Piano omaggio rimosso dal profilo ${artistId}.`,
+    });
   }
 
   revalidatePath(`/admin/artisti/${artistId}`);
@@ -108,7 +122,7 @@ export async function updateArtistTier(artistId: string, input: TierOverrideInpu
 }
 
 export async function approveApplication(applicationId: string) {
-  await requireAdminPageAccess("artisti");
+  const user = await requireAdminPageAccess("artisti");
 
   const admin = createAdminClient();
   const { data: app, error: appErr } = await admin
@@ -156,6 +170,15 @@ export async function approveApplication(applicationId: string) {
   if (insertErr) return { ok: false as const, error: insertErr.message };
 
   await admin.from("artist_applications").update({ status: "approved" }).eq("id", applicationId);
+
+  await registraAzione({
+    actorId: user.id,
+    targetType: "candidatura",
+    targetId: applicationId,
+    action: "approvazione_candidatura",
+    descrizione: `Candidatura «${app.stage_name}» approvata e profilo creato.`,
+    affectedUserId: userId,
+  });
 
   // Email brandizzata con magic link per impostare la password
   const siteUrl = getSiteUrl();
@@ -274,6 +297,19 @@ export async function updateArtistStatus(
 
   const { error } = await admin.from("artists").update({ status }).eq("id", artistId);
   if (error) return { ok: false as const, error: error.message };
+
+  if (!negativa) {
+    await registraAzione({
+      actorId: user.id,
+      targetType: "profilo",
+      targetId: artistId,
+      action: "profilo_approvato",
+      descrizione:
+        m.reason ?? `Profilo «${current.stage_name}» approvato (era ${current.status}).`,
+      affectedUserId: current.user_id,
+    });
+    await notificaProfiloRiattivato(artistId);
+  }
 
   if (negativa && m.reason) {
     const nome = current.stage_name;
@@ -491,7 +527,7 @@ export async function createArtistManual(input: {
   bio?: string;
   cover_image?: string;
 }) {
-  await requireAdminPageAccess("artisti");
+  const user = await requireAdminPageAccess("artisti");
   const admin = createAdminClient();
 
   let userId: string | null = null;
@@ -510,7 +546,7 @@ export async function createArtistManual(input: {
   }
 
   const slug = `${slugify(input.stage_name)}-${Date.now().toString(36).slice(-4)}`;
-  const { error } = await admin.from("artists").insert({
+  const { data: creato, error } = await admin.from("artists").insert({
     user_id: userId,
     stage_name: input.stage_name,
     slug,
@@ -519,8 +555,16 @@ export async function createArtistManual(input: {
     bio: input.bio ?? null,
     cover_image: input.cover_image ?? null,
     status: "approved",
-  });
+  }).select("id").maybeSingle();
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "profilo",
+    targetId: creato?.id ?? null,
+    action: "profilo_creato_dal_team",
+    descrizione: `Profilo «${input.stage_name}» creato manualmente dal team e approvato.`,
+    affectedUserId: userId,
+  });
   revalidatePath("/admin/artisti");
   revalidatePath("/artisti");
   return { ok: true as const };

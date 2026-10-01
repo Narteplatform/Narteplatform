@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import { requireRole } from "@/lib/auth/guards";
 import { getActiveArtistRow } from "@/lib/artist/current";
+import { haDichiaratoDiritti } from "@/lib/legal/diritti-contenuti-server";
+import { DirittiContenutiProvider } from "@/components/dashboard/profile/DirittiContenuti";
 import { getArtistMediaNotices } from "@/lib/media/moderation-queries";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -59,6 +61,11 @@ export default async function ArtistProfileEditPage() {
     getArtistMediaNotices(artist.id),
   ]);
 
+  // Se la lettura fallisce si parte da «non dichiarato»: la modale compare, ma
+  // la barriera vera resta quella del server.
+  const diritti = await haDichiaratoDiritti(user.id);
+  const dirittiDichiarati = diritti.ok && diritti.dichiarato;
+
   const genreOptions = (genresData ?? []).map((g) => g.name as string);
   const initialVideos: ArtistVideoItem[] = (videosData ?? []).map((v) => ({
     id: v.id,
@@ -102,6 +109,7 @@ export default async function ArtistProfileEditPage() {
         </Button>
       </header>
 
+      <DirittiContenutiProvider initialDichiarato={dirittiDichiarati}>
       <div className="space-y-3">
         <InfoArtistaBlock
           artist={profile}
@@ -119,6 +127,7 @@ export default async function ArtistProfileEditPage() {
           avatarUrl={user.profile?.avatar_url ?? ""}
         />
       </div>
+      </DirittiContenutiProvider>
     </div>
   );
 }

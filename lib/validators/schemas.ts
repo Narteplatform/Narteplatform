@@ -62,14 +62,11 @@ export type FlexLeadInput = z.infer<typeof flexLeadSchema>;
 
 export const artistApplicationSchema = z.object({
   ...honeypotShape,
-  /**
-   * Presa visione dell'informativa privacy. Obbligatoria: questi moduli
-   * raccolgono nome, email e messaggio di una persona identificabile, e li
-   * conservano. Vale `literal(true)` per la stessa ragione di authSchema.
+  /*
+   * Nessuna casella privacy: l'informativa si LEGGE, non si «accetta» (art. 6,
+   * par. 1, lett. b GDPR). Il modulo mostra la frase informativa e la server
+   * action scrive `consent_version`/`consent_at` come presa visione.
    */
-  acceptedPrivacy: z.literal(true, {
-    errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
-  }),
   /**
    * Dichiarazione di maggiore età.
    *
@@ -82,6 +79,16 @@ export const artistApplicationSchema = z.object({
    */
   acceptedAge: z.literal(true, {
     errorMap: () => ({ message: "Il servizio è riservato ai maggiorenni" }),
+  }),
+  /**
+   * Dichiarazione E2: veridicità delle informazioni e titolarità dei diritti
+   * su video e materiali allegati (compreso il consenso delle persone che vi
+   * compaiono). Obbligatoria.
+   */
+  acceptedRights: z.literal(true, {
+    errorMap: () => ({
+      message: "Per inviare la candidatura devi dichiarare la veridicità e i diritti sui materiali",
+    }),
   }),
 
   name: z.string().min(2).max(80),
@@ -100,14 +107,11 @@ export type ArtistApplicationInput = z.infer<typeof artistApplicationSchema>;
 
 export const contactSchema = z.object({
   ...honeypotShape,
-  /**
-   * Presa visione dell'informativa privacy. Obbligatoria: questi moduli
-   * raccolgono nome, email e messaggio di una persona identificabile, e li
-   * conservano. Vale `literal(true)` per la stessa ragione di authSchema.
+  /*
+   * Nessuna casella privacy: l'informativa si LEGGE, non si «accetta» (art. 6,
+   * par. 1, lett. b GDPR). Il modulo mostra la frase informativa e la server
+   * action scrive `consent_version`/`consent_at` come presa visione.
    */
-  acceptedPrivacy: z.literal(true, {
-    errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
-  }),
 
   name: z.string().min(2).max(80),
   email: z.string().email(),
@@ -188,6 +192,11 @@ export const contentReportSchema = z.object({
     .regex(REPORT_REFERENCE_RE, "Riferimento non valido")
     .optional()
     .or(z.literal("")),
+  /** Percorsi provvisori degli allegati già caricati (al massimo 3). */
+  attachments: z
+    .array(z.string().regex(/^pending\/[0-9a-f-]{36}-[A-Za-z0-9._-]{1,80}$/))
+    .max(3)
+    .optional(),
 });
 export type ContentReportInput = z.infer<typeof contentReportSchema>;
 
@@ -246,14 +255,11 @@ export type FormatInput = z.infer<typeof formatSchema>;
 
 export const formatInterestSchema = z.object({
   ...honeypotShape,
-  /**
-   * Presa visione dell'informativa privacy. Obbligatoria: questi moduli
-   * raccolgono nome, email e messaggio di una persona identificabile, e li
-   * conservano. Vale `literal(true)` per la stessa ragione di authSchema.
+  /*
+   * Nessuna casella privacy: l'informativa si LEGGE, non si «accetta» (art. 6,
+   * par. 1, lett. b GDPR). Il modulo mostra la frase informativa e la server
+   * action scrive `consent_version`/`consent_at` come presa visione.
    */
-  acceptedPrivacy: z.literal(true, {
-    errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
-  }),
 
   name: z.string().min(2, "Almeno 2 caratteri").max(120),
   email: z.string().email("Email non valida"),

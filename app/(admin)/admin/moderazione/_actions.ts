@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { deleteStreamVideo } from "@/lib/storage/bunny/stream";
-import { deleteObject } from "@/lib/storage/bunny/storage";
-import { isBunnyStorageUrl } from "@/lib/storage/bunny/urls";
+import { rimuoviFileSeNonUsato } from "@/lib/media/file-cleanup";
 import { ARTIST_VIDEO_BUCKET } from "@/lib/upload/video-limits";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { logger } from "@/lib/logger";
-import { registraDecisione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
+import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
+import { etichettaContenuti, notificaMediaApprovati } from "@/lib/moderation/approvazioni";
 
 type Result = { ok: true } | { ok: false; error: string };
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -108,93 +108,20 @@ async function comunicaRifiuto(
 }
 
 /**
- * Dopo un rifiuto, toglie da Bunny Storage il file della submission, ma SOLO se
- * nessuna parte del profilo lo usa (gallery, cover_image, audio_files): lo
- * stesso URL può essere già pubblicato da una submission precedente.
- *
- * Fail-safe: se la lettura del profilo fallisce, o il profilo non si trova, NON
- * si cancella nulla. Mai bloccante per la decisione già presa.
+ * Dopo un rifiuto, toglie da Bunny Storage il file della submission se nessuna
+ * parte del profilo lo usa. La logica è in lib/media/file-cleanup.ts.
  */
 async function rimuoviFileSubmissionRifiutata(
   admin: AdminClient,
   submission: { id: string; artist_id: string | null; url: string; storage_key: string | null },
 ) {
-  // Solo la NOSTRA pull zone Bunny: chiavi Supabase o URL esterni non si toccano.
-  if (!submission.artist_id || !isBunnyStorageUrl(submission.url)) return;
-  // `storage_key` oggi non viene valorizzata dal caricamento (verificato in
-  // produzione il 30/09/2026: 0 righe su 1). Sulla pull zone dello storage la
-  // chiave coincide con il percorso dell'URL, quindi la si ricava da lì.
-  let key = submission.storage_key?.trim() || null;
-  if (!key) {
-    try {
-      key = decodeURIComponent(new URL(submission.url).pathname).replace(/^\/+/, "") || null;
-    } catch {
-      key = null;
-    }
-  }
-  if (!key) return;
-
-  try {
-    // Il file è «in uso» se compare in QUALSIASI profilo dello stesso account
-    // (una foto può essere stata copiata su più profili) o in un'altra
-    // richiesta di moderazione non respinta con lo stesso indirizzo.
-    const { data: profilo, error } = await admin
-      .from("artists")
-      .select("user_id")
-      .eq("id", submission.artist_id)
-      .maybeSingle();
-    if (error || !profilo) {
-      logger.warn("admin/moderazione", "profilo non leggibile: file rifiutato NON cancellato", {
-        submissionId: submission.id,
-        error: error?.message ?? "profilo non trovato",
-      });
-      return;
-    }
-    const profili = profilo.user_id
-      ? await admin.from("artists").select("gallery, cover_image, audio_files").eq("user_id", profilo.user_id)
-      : await admin.from("artists").select("gallery, cover_image, audio_files").eq("id", submission.artist_id);
-    if (profili.error || !profili.data) {
-      logger.warn("admin/moderazione", "profili dell'account non leggibili: file NON cancellato", {
-        submissionId: submission.id,
-        error: profili.error?.message,
-      });
-      return;
-    }
-    const altre = await admin
-      .from("artist_media_submissions")
-      .select("id", { count: "exact", head: true })
-      .eq("url", submission.url)
-      .neq("id", submission.id)
-      .neq("status", "rejected");
-    if (altre.error) {
-      logger.warn("admin/moderazione", "altre richieste non leggibili: file NON cancellato", {
-        submissionId: submission.id,
-        error: altre.error.message,
-      });
-      return;
-    }
-    if ((altre.count ?? 0) > 0) return;
-
-    const inUso = JSON.stringify(profili.data.map((p) => [p.gallery, p.cover_image, p.audio_files]));
-    const varianti = [submission.url, key, encodeURI(key)];
-    if (varianti.some((v) => inUso.includes(v))) {
-      logger.debug("admin/moderazione", "file rifiutato ancora usato: non cancellato", {
-        submissionId: submission.id,
-      });
-      return;
-    }
-
-    const esito = await deleteObject(key);
-    logger.debug("admin/moderazione", "file della submission rifiutata rimosso da Bunny", {
-      submissionId: submission.id,
-      esito,
-    });
-  } catch (e) {
-    logger.error("admin/moderazione", "rimozione da Bunny Storage del file rifiutato fallita", {
-      submissionId: submission.id,
-      error: e instanceof Error ? e.message : String(e),
-    });
-  }
+  await rimuoviFileSeNonUsato(admin, {
+    artistId: submission.artist_id,
+    url: submission.url,
+    storageKey: submission.storage_key,
+    ignoraSubmissionId: submission.id,
+    contesto: "admin/moderazione",
+  });
 }
 
 function notaValida(note: string): { ok: true; note: string } | { ok: false; error: string } {
@@ -211,7 +138,7 @@ export async function approveMediaSubmission(id: string): Promise<Result> {
 
   const { data: submission, error: fetchError } = await admin
     .from("artist_media_submissions")
-    .select("id, artist_id, status")
+    .select("id, artist_id, status, media_kind")
     .eq("id", id)
     .maybeSingle();
   if (fetchError) return { ok: false, error: fetchError.message };
@@ -225,6 +152,18 @@ export async function approveMediaSubmission(id: string): Promise<Result> {
     p_reviewer: user.id,
   });
   if (error) return { ok: false, error: error.message };
+
+  await registraAzione({
+    actorId: user.id,
+    targetType: "media",
+    targetId: id,
+    action: "approvazione_contenuto",
+    descrizione: `Contenuto (${submission.media_kind}) approvato sul profilo ${submission.artist_id}.`,
+  });
+  await notificaMediaApprovati(
+    submission.artist_id,
+    submission.media_kind === "audio" ? etichettaContenuti(0, 1, 0) : etichettaContenuti(1, 0, 0),
+  );
 
   await revalidateArtist(admin, submission.artist_id);
   return { ok: true };
@@ -294,6 +233,15 @@ export async function approveArtistVideo(id: string): Promise<Result> {
     })
     .eq("id", id);
   if (error) return { ok: false, error: error.message };
+
+  await registraAzione({
+    actorId: user.id,
+    targetType: "video",
+    targetId: id,
+    action: "approvazione_video",
+    descrizione: `Video approvato sul profilo ${video.artist_id}.`,
+  });
+  await notificaMediaApprovati(video.artist_id, etichettaContenuti(0, 0, 1));
 
   await revalidateArtist(admin, video.artist_id);
   return { ok: true };
@@ -410,7 +358,7 @@ export async function approveAllForArtist(artistId: string): Promise<Result> {
   const [{ data: submissions, error: subsError }, { data: videos, error: videosError }] = await Promise.all([
     admin
       .from("artist_media_submissions")
-      .select("id")
+      .select("id, media_kind")
       .eq("artist_id", artistId)
       .eq("status", "pending"),
     admin
@@ -423,13 +371,22 @@ export async function approveAllForArtist(artistId: string): Promise<Result> {
   if (videosError) return { ok: false, error: videosError.message };
 
   const errors: string[] = [];
+  let foto = 0;
+  let audio = 0;
+  let video = 0;
 
   for (const s of submissions ?? []) {
     const { error } = await moderationRpc(admin).rpc("approve_artist_media_submission", {
       p_submission_id: s.id,
       p_reviewer: user.id,
     });
-    if (error) errors.push(error.message);
+    if (error) {
+      errors.push(error.message);
+    } else if (s.media_kind === "audio") {
+      audio += 1;
+    } else {
+      foto += 1;
+    }
   }
 
   const videoIds = (videos ?? []).map((v) => v.id);
@@ -444,6 +401,19 @@ export async function approveAllForArtist(artistId: string): Promise<Result> {
       })
       .in("id", videoIds);
     if (error) errors.push(error.message);
+    else video = videoIds.length;
+  }
+
+  if (foto + audio + video > 0) {
+    await registraAzione({
+      actorId: user.id,
+      targetType: "profilo",
+      targetId: artistId,
+      action: "approvazione_in_blocco",
+      descrizione: `Approvati in blocco sul profilo ${artistId}: ${etichettaContenuti(foto, audio, video)}.`,
+    });
+    // Una sola email per l'azione, non una per elemento.
+    await notificaMediaApprovati(artistId, etichettaContenuti(foto, audio, video));
   }
 
   await revalidateArtist(admin, artistId);

@@ -72,19 +72,22 @@ export default async function ArtistLeadsPage({
       "id, event_date, time_slot, budget_offer, message, status, notes_artist, organizer_id, venue_id, created_at, final_price, final_price_proposed_by, final_price_proposed_at, final_price_confirmed_by, final_price_confirmed_at"
     )
     .eq("artist_id", artist.id)
-    .eq("status", activeTab)
+    // Il tab «In trattativa» comprende anche le richieste «accettata»: offerta
+    // accettata dall'artista, in attesa della conferma dell'organizzatore.
+    .in("status", activeTab === "in_trattativa" ? ["in_trattativa", "accettata"] : [activeTab])
     .order("created_at", { ascending: false });
   const bookings = bookingRows ?? [];
 
   // Conteggi per badge
   const [pendingCntRes, trattativaCntRes, confermataCntRes] = await Promise.all([
     supabase.from("booking_requests").select("id", { count: "exact", head: true }).eq("artist_id", artist.id).eq("status", "pending"),
-    supabase.from("booking_requests").select("id", { count: "exact", head: true }).eq("artist_id", artist.id).eq("status", "in_trattativa"),
+    supabase.from("booking_requests").select("id", { count: "exact", head: true }).eq("artist_id", artist.id).in("status", ["in_trattativa", "accettata"]),
     supabase.from("booking_requests").select("id", { count: "exact", head: true }).eq("artist_id", artist.id).eq("status", "confermata"),
   ]);
   const counts: Record<BookingStatus, number> = {
     pending: pendingCntRes.count ?? 0,
     in_trattativa: trattativaCntRes.count ?? 0,
+    accettata: 0,
     confermata: confermataCntRes.count ?? 0,
     rifiutata: 0,
     annullata: 0,
@@ -118,7 +121,8 @@ export default async function ArtistLeadsPage({
 
   const BOOKING_LABEL: Record<BookingStatus, string> = {
     pending: "Nuova richiesta",
-    in_trattativa: "In attesa della conferma definitiva dell'organizzatore",
+    in_trattativa: "In trattativa",
+    accettata: "Hai accettato: in attesa della conferma dell'organizzatore",
     confermata: "Confermata",
     rifiutata: "Rifiutata",
     annullata: "Annullata",
@@ -207,7 +211,7 @@ export default async function ArtistLeadsPage({
                       variant={
                         b.status === "confermata"
                           ? "success"
-                          : b.status === "in_trattativa"
+                          : b.status === "in_trattativa" || b.status === "accettata"
                             ? "warning"
                             : "muted"
                       }

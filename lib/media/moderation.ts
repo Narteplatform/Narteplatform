@@ -148,10 +148,11 @@ export function toCoverSubmission(
  *  - il salvataggio del profilo scriverebbe la sola intersezione in `gallery`
  *    per poi non riuscire ad accodare le aggiunte, che andrebbero perse.
  *
- * Finché la 0051 non è applicata la piattaforma si comporta esattamente come
- * prima: si pubblica senza approvazione. È lo stesso criterio già adottato qui
- * per il limitatore di frequenza e per Bunny — la funzione nuova resta spenta,
- * niente si rompe e niente sparisce.
+ * FAIL-CLOSED. Un `false` NON autorizza più a pubblicare senza approvazione:
+ * vuol dire «la coda non è disponibile», e chi chiama deve rifiutare ogni
+ * salvataggio che AGGIUNGE media (foto, copertina, audio) senza scrivere quei
+ * campi. I salvataggi che non aggiungono nulla proseguono. Prima, un guasto o
+ * una migration mancante spegnevano la moderazione in silenzio.
  *
  * Il risultato si memorizza per la durata dell'istanza: è una proprietà dello
  * schema, non un dato, e cambia una volta sola nella vita del progetto. Un esito

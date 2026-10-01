@@ -163,7 +163,18 @@ Copre tabelle, colonne, funzioni, bucket e privilegi anonimi. Per indici, vincol
 policy e pubblicazioni realtime — che PostgREST non espone — le query sono in
 `docs/VERIFICA_MIGRATION.sql`.
 
-**In attesa:** nessuna.
+**In attesa:**
+
+- `0069_booking_accettata.sql` — nuovo stato `accettata` del booking (doppia conferma).
+  Da eseguire da solo, PRIMA della 0070.
+- `0070_allineamento_finale.sql` — doppia conferma (`accept_offer_v2`: accetta l'artista →
+  `accettata`, accetta l'organizzatore → `confermata`), ruolo/user agent/IP in hash nelle
+  accettazioni, allegati e assegnazione delle segnalazioni (bucket privato
+  `report-attachments`), `venues.hidden_at`, tabella `subscription_withdrawals`, e
+  **visitatori senza dati identificativi**: anon legge di `artists` solo
+  `id, genre, instruments, tier, is_public, status, percorso_artistico`; nessuna lettura anon
+  su `artist_videos`, calendario e `consultants`. Il codice per gli ospiti usa già solo
+  quelle colonne.
 
 ## Comandi
 

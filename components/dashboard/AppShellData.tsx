@@ -14,6 +14,7 @@ import {
   MessageCircle,
   CreditCard,
   Phone,
+  ScrollText,
   Settings,
   Shapes,
   ShieldCheck,
@@ -281,6 +282,11 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       label: "Utenti",
       icon: <UserX className="size-4" />,
     },
+    registro: {
+      href: "/admin/registro",
+      label: "Registro",
+      icon: <ScrollText className="size-4" />,
+    },
     impostazioni: opts?.isRoot
       ? {
           href: "/admin/impostazioni",
@@ -314,6 +320,7 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     "abbonamenti",
     "proposte",
     "utenti",
+    "registro",
     "impostazioni",
     "profilo",
   ];

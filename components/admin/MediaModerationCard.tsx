@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
+import { MotivazioneField } from "@/components/admin/MotivazioneField";
 import { streamOriginalUrl, streamThumbnailUrl } from "@/lib/storage/bunny/urls";
 import {
   approveAllForArtist,
@@ -177,17 +177,14 @@ function MediaItemCard({
 
       {rejecting ? (
         <div className="space-y-2">
-          <Textarea
+          <MotivazioneField
+            compact
             rows={2}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Motivazione del rifiuto (obbligatoria, almeno 10 caratteri)"
+            label="Motivazione del rifiuto"
             disabled={pending}
-            className="text-xs"
+            onChange={setNote}
+            hint="La motivazione viene inviata all'artista per email, con il modo per contestare la decisione."
           />
-          <p className="text-[11px] text-muted-foreground">
-            La motivazione viene inviata all&rsquo;artista per email, con il modo per contestare la decisione.
-          </p>
           {item.kind === "video" && (
             <p className="text-[11px] text-muted-foreground">
               Il file verrà rimosso da bunny.net: l&rsquo;artista dovrà ricaricarlo.

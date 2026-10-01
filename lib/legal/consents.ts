@@ -1,9 +1,11 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+import { headers } from "next/headers";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { LEGAL_CONSENT_VERSION, LEGAL_VERSION } from "@/lib/legal/content";
 import { logger } from "@/lib/logger";
-import type { ConsentKind } from "@/lib/supabase/types";
+import type { ConsentKind, Role } from "@/lib/supabase/types";
 
 /**
  * Consensi: scrittura, lettura, revoca.
@@ -49,6 +51,88 @@ const ERRORE_GENERICO =
   "Non siamo riusciti a registrare la tua scelta. Riprova fra un momento.";
 
 /**
+ * Il contesto tecnico dell'accettazione: user agent e impronta dell'IP.
+ *
+ * L'IP non esce mai in chiaro: si conserva `sha256(sale + ip)`, prova tecnica
+ * che non permette di risalire all'indirizzo senza conoscere il sale. Senza
+ * sale configurato (`CONSENT_IP_SALT`, ripiego `VISIT_HASH_SALT`) l'impronta è
+ * `null`: un hash senza sale sarebbe ricostruibile da chiunque provi gli IPv4.
+ *
+ * Fuori da una richiesta (script, test) `headers()` solleva: si restituisce
+ * un contesto vuoto, che è la lettura prudente.
+ */
+export async function contestoRichiesta(): Promise<{
+  userAgent: string | null;
+  ipHash: string | null;
+}> {
+  try {
+    const h = await headers();
+    const userAgent = h.get("user-agent")?.trim() || null;
+    const forwarded = h.get("x-forwarded-for")?.split(",")[0]?.trim();
+    const ip = forwarded || h.get("x-real-ip")?.trim() || "";
+    const sale = process.env.CONSENT_IP_SALT || process.env.VISIT_HASH_SALT || "";
+    const ipHash =
+      ip && sale ? createHash("sha256").update(`${sale}${ip}`).digest("hex") : null;
+    return { userAgent, ipHash };
+  } catch {
+    return { userAgent: null, ipHash: null };
+  }
+}
+
+/** Il client Supabase con i cookie, nel tipo che restituisce `createClient()`. */
+type ClientUtente = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * La funzione SQL non ha la firma cercata? Succede finché la 0070 non è
+ * applicata: `record_consent` ha ancora quattro parametri e PostgREST risponde
+ * PGRST202 («Could not find the function») a una chiamata con parametri in più.
+ */
+function firmaAssente(error: { code?: string; message: string }): boolean {
+  return (
+    error.code === "PGRST202" ||
+    error.code === "42883" ||
+    /could not find the function/i.test(error.message)
+  );
+}
+
+/**
+ * Chiama `record_consent` con il contesto della richiesta; se la funzione non
+ * conosce ancora i parametri nuovi (prima della 0070) riprova senza.
+ *
+ * Restituisce il messaggio dell'errore, `null` se la riga è stata scritta.
+ * Il ripiego scatta SOLO per firma assente: ogni altro errore (sessione, tipo
+ * di consenso sconosciuto…) si propaga, perché riprovare non lo risolverebbe.
+ * Usa il client con i cookie: la funzione ricava l'utente da `auth.uid()`.
+ */
+export async function registraConsensoConContesto(
+  supabase: ClientUtente,
+  args: { kind: ConsentKind; version?: string; accepted?: boolean; ref?: string | null }
+): Promise<string | null> {
+  const base = {
+    p_kind: args.kind,
+    p_version: args.version ?? LEGAL_VERSION,
+    p_accepted: args.accepted ?? true,
+    ...(args.ref ? { p_ref: args.ref } : {}),
+  };
+  const ctx = await contestoRichiesta();
+
+  const { error } = await supabase.rpc("record_consent", {
+    ...base,
+    p_user_agent: ctx.userAgent,
+    p_ip_hash: ctx.ipHash,
+  });
+  if (!error) return null;
+  if (!firmaAssente(error)) return error.message;
+
+  logger.warn(
+    "legal/consents",
+    "record_consent senza contesto (0070 non applicata): riprovo con la firma vecchia"
+  );
+  const { error: retry } = await supabase.rpc("record_consent", base);
+  return retry ? retry.message : null;
+}
+
+/**
  * Registra un singolo consenso per l'utente in sessione.
  *
  * `accepted = false` non cancella niente: scrive una riga di RITIRO. Cancellare
@@ -59,17 +143,19 @@ const ERRORE_GENERICO =
 export async function recordConsent(
   kind: ConsentKind,
   accepted = true,
-  version: string = LEGAL_VERSION
+  version: string = LEGAL_VERSION,
+  ref?: string | null
 ): Promise<ConsentEsito> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("record_consent", {
-    p_kind: kind,
-    p_version: version,
-    p_accepted: accepted,
+  const errore = await registraConsensoConContesto(supabase, {
+    kind,
+    version,
+    accepted,
+    ref,
   });
 
-  if (error) {
-    logger.error("legal/consents", `record_consent(${kind}) fallita: ${error.message}`);
+  if (errore) {
+    logger.error("legal/consents", `record_consent(${kind}) fallita: ${errore}`);
     return { ok: false, error: ERRORE_GENERICO };
   }
   return { ok: true };
@@ -81,6 +167,14 @@ export async function recordConsent(
  * Una sola chiamata invece di tre: se la seconda fallisse resterebbe un utente
  * con la privacy accettata e i termini no, e la cache aggiornata o meno a
  * seconda di dove si è rotto. La funzione SQL scrive tutto o niente.
+ *
+ * LIMITE NOTO: `accept_legal_documents` non ha i parametri `p_user_agent` e
+ * `p_ip_hash` (la 0070 li aggiunge solo a `record_consent`), quindi le righe
+ * `privacy`/`termini` scritte da qui NON portano user agent né impronta IP.
+ * Non si "completano" a posteriori con un update: sarebbe una scrittura
+ * derivata da una lettura incerta. Tutte le altre accettazioni passano il
+ * contesto. Il gate dei ruoli (v2) scrive in più, con contesto, le righe
+ * specifiche del ruolo.
  *
  * `marketing` a `undefined` significa «non si è espresso», che non è un
  * rifiuto e non va registrato come tale.
@@ -143,20 +237,39 @@ export async function getLatestConsents(
   return ultimo;
 }
 
+/** Il regime v2 (documenti per ruolo) è acceso solo con il flag pubblico. */
+export function legalV2Attivo(): boolean {
+  return process.env.NEXT_PUBLIC_LEGAL_V2_PUBBLICATO === "1";
+}
+
 /**
  * True solo se privacy E termini risultano accettati alla versione del consenso
  * oggi in vigore.
+ *
+ * Con `NEXT_PUBLIC_LEGAL_V2_PUBBLICATO=1` e un `ruolo` noto si richiede anche il
+ * documento del ruolo: `condizioni_artisti` per gli artisti,
+ * `condizioni_organizzatori` per gli organizzatori. Senza flag il comportamento
+ * è identico a prima.
  *
  * È la funzione con cui la schermata di gate si accorge di essere stata aperta
  * per sbaglio — cache disallineata, trigger che non ha trovato il profilo — e
  * si rimette in pari invece di riproporre all'utente un modulo che ha già
  * compilato.
  */
-export async function hasAcceptedCurrentLegal(userId: string): Promise<boolean> {
+export async function hasAcceptedCurrentLegal(
+  userId: string,
+  ruolo?: Role | null
+): Promise<boolean> {
   const ultimo = await getLatestConsents(userId);
   const valido = (riga?: ConsentRow) =>
     riga?.accepted === true && versioneAlmeno(riga.version, LEGAL_CONSENT_VERSION);
-  return valido(ultimo.privacy) && valido(ultimo.termini);
+  if (!(valido(ultimo.privacy) && valido(ultimo.termini))) return false;
+
+  if (legalV2Attivo()) {
+    if (ruolo === "artist") return valido(ultimo.condizioni_artisti);
+    if (ruolo === "organizer") return valido(ultimo.condizioni_organizzatori);
+  }
+  return true;
 }
 
 /**

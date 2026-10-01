@@ -324,7 +324,7 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
                 )}
                 {!loading && hits.length === 0 && (
                   <p className="px-4 py-3 text-xs uppercase tracking-wider text-notte/50">
-                    Nessun artista per &quot;{q}&quot;
+                    Nessun risultato per &quot;{q}&quot;
                   </p>
                 )}
                 {hits.length > 0 && (

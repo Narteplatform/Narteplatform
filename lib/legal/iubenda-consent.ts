@@ -263,11 +263,23 @@ export function registraProvaSuIubendaInBackground(prova: ProvaConsenso): void {
 
 /** Il testo delle caselle, in un posto solo, per ritrovarlo nelle prove. */
 export const TESTO_CASELLA = {
+  /**
+   * Frase INFORMATIVA mostrata sotto i moduli pubblici: non c'è una casella da
+   * spuntare, quindi la prova è una presa visione, non un consenso.
+   */
   privacy:
-    "Ho letto l'informativa privacy: i miei dati servono solo a rispondere a questa richiesta.",
+    "Usiamo i dati che ci lasci solo per rispondere a questa richiesta, come descritto nell'informativa privacy.",
   termini:
     "Ho letto e accetto i termini d'uso. Ho preso visione dell'informativa privacy.",
   eta: "Dichiaro di avere almeno 18 anni.",
+  /** Casella E2 della candidatura artista. */
+  dirittiMateriali:
+    "Dichiaro che le informazioni inserite sono veritiere e che ho i diritti per inviare il video e i materiali allegati, compreso il consenso delle persone che vi compaiono.",
+  /** Casella 1341 per gli artisti professionisti (gate v2). */
+  clausoleSpecifiche:
+    "Ai sensi degli artt. 1341 e 1342 c.c. approvo specificamente le clausole indicate in fondo ai Termini d'uso e alle Condizioni per gli artisti.",
+  condizioniArtisti: "Ho letto e accetto le Condizioni per gli artisti.",
+  condizioniOrganizzatori: "Ho letto e accetto le Condizioni per gli organizzatori.",
   marketing:
     "Voglio ricevere novità sugli eventi e sulle opportunità N'arte.",
 } as const;

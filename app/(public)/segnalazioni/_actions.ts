@@ -3,6 +3,13 @@
 import { createElement } from "react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { guardPublicForm } from "@/lib/security/form-guard";
+import {
+  PENDING_PATH_RE,
+  REPORT_BUCKET,
+  REPORT_MAX_BYTES,
+  REPORT_MAX_FILES,
+  tipoDaiByte,
+} from "@/lib/security/report-attachments";
 import { publicFormConsent } from "@/lib/legal/consents";
 import { LIMITI } from "@/lib/security/rate-limit";
 import {
@@ -122,6 +129,11 @@ export async function submitContentReport(input: ContentReportInput) {
   }
   if (!inserita) return { ok: false as const, error: MSG_GENERICO };
 
+  // Allegati: solo dopo che la segnalazione esiste, così hanno un riferimento.
+  // Un allegato che non supera i controlli viene cancellato e non blocca la
+  // segnalazione, che è già registrata.
+  const allegati = await archiviaAllegati(admin, reference, data.attachments ?? []);
+
   const kindLabel = kind === "reclamo" ? "reclamo" : "segnalazione";
   const oggetto = REPORT_TARGET_TYPES[targetType];
   const targetLabel = targetUrl ? `${oggetto} — ${targetUrl}` : oggetto;
@@ -200,5 +212,59 @@ export async function submitContentReport(input: ContentReportInput) {
       : Promise.resolve(),
   ]);
 
-  return { ok: true as const, reference };
+  return { ok: true as const, reference, allegatiScartati: allegati.scartati };
+}
+
+/**
+ * Sposta gli allegati provvisori sotto il riferimento della segnalazione, dopo
+ * aver verificato i byte veri del file (non il nome né il MIME dichiarato).
+ */
+async function archiviaAllegati(
+  admin: ReturnType<typeof createAdminClient>,
+  reference: string,
+  percorsi: string[],
+): Promise<{ archiviati: number; scartati: number }> {
+  const esito = { archiviati: 0, scartati: 0 };
+  if (percorsi.length === 0) return esito;
+  const bucket = admin.storage.from(REPORT_BUCKET);
+  const finali: { path: string; tipo: string; nome: string }[] = [];
+
+  for (const pending of percorsi.slice(0, REPORT_MAX_FILES)) {
+    if (!PENDING_PATH_RE.test(pending)) {
+      esito.scartati++;
+      continue;
+    }
+    const { data: blob, error } = await bucket.download(pending);
+    if (error || !blob) {
+      logger.warn("segnalazioni", "allegato non trovato, ignorato:", error?.message);
+      esito.scartati++;
+      continue;
+    }
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const tipo = bytes.byteLength <= REPORT_MAX_BYTES ? tipoDaiByte(bytes.subarray(0, 16)) : null;
+    if (!tipo) {
+      await bucket.remove([pending]);
+      esito.scartati++;
+      continue;
+    }
+    const nome = pending.replace(/^pending\/[0-9a-f-]{36}-/, "");
+    const destinazione = `${reference}/${pending.slice("pending/".length)}`;
+    const { error: mvErr } = await bucket.move(pending, destinazione);
+    if (mvErr) {
+      logger.warn("segnalazioni", "allegato non archiviato:", mvErr.message);
+      esito.scartati++;
+      continue;
+    }
+    finali.push({ path: destinazione, tipo, nome });
+    esito.archiviati++;
+  }
+
+  if (finali.length > 0) {
+    const { error } = await admin
+      .from("content_reports")
+      .update({ attachments: finali })
+      .eq("reference", reference);
+    if (error) logger.error("segnalazioni", `allegati di ${reference} non collegati:`, error.message);
+  }
+  return esito;
 }

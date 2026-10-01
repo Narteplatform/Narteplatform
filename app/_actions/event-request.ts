@@ -15,15 +15,7 @@ import {
 
 export const eventRequestSchema = z.object({
   ...honeypotShape,
-  /**
-   * Presa visione dell'informativa. Obbligatoria come negli altri moduli
-   * pubblici: qui si raccolgono nome, email, telefono e budget di una persona
-   * identificabile, e si conservano.
-   */
-  acceptedPrivacy: z.literal(true, {
-    errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
-  }),
-
+  // Nessuna casella: informativa mostrata come frase, presa visione in `publicFormConsent()`.
   name: z.string().min(2).max(80),
   email: z.string().email(),
   phone: z.string().max(30).optional().or(z.literal("").transform(() => undefined)),

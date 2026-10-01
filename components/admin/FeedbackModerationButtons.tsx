@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
+import { MotivazioneField } from "@/components/admin/MotivazioneField";
 import { toggleFeedbackHidden, deleteFeedback } from "@/lib/feedback/_actions";
 
 type Azione = "toggle" | "delete";
@@ -97,19 +97,15 @@ export function FeedbackModerationButtons({
       {azione && (
         <div className="space-y-2 rounded-md border border-border p-3">
           <p className="text-xs font-medium">{titolo}</p>
-          <p className="text-xs text-muted-foreground">
-            Viene comunicato per email all&rsquo;autore e all&rsquo;artista, con il link per
-            contestare. Cita la regola del Regolamento violata.
-          </p>
-          <Textarea
-            rows={3}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Almeno 10 caratteri"
+          <MotivazioneField
+            compact
+            disabled={pending}
+            onChange={setReason}
+            hint="Viene comunicato per email all'autore e all'artista, con il link per contestare."
           />
           {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="flex gap-2">
-            <Button type="button" size="sm" onClick={conferma} disabled={pending}>
+            <Button type="button" size="sm" onClick={conferma} disabled={pending || reason.length === 0}>
               {pending ? "Invio…" : "Conferma"}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={chiudi} disabled={pending}>

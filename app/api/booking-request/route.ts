@@ -1,3 +1,4 @@
+import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
@@ -14,6 +15,7 @@ import {
 } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
 import { LEGAL_VERSION } from "@/lib/legal/content";
+import { registraConsensoConContesto } from "@/lib/legal/consents";
 import { registraProvaSuIubendaInBackground } from "@/lib/legal/iubenda-consent";
 
 export const runtime = "nodejs";
@@ -140,15 +142,14 @@ export async function POST(req: Request) {
         logger.error("booking-request", rid, "promote-fail", promErr.message);
       }
       // Con il client dell'utente: record_consent usa auth.uid().
-      const { error: consErr } = await supabaseSrv.rpc("record_consent", {
-        p_kind: "condizioni_organizzatori",
-        p_version: LEGAL_VERSION,
-        p_accepted: true,
+      const consErr = await registraConsensoConContesto(supabaseSrv, {
+        kind: "condizioni_organizzatori",
+        version: LEGAL_VERSION,
       });
       if (consErr) {
         // Tipicamente la migration 0062 non ancora applicata. L'accettazione
         // resta nel log applicativo; non si blocca la richiesta.
-        logger.warn("booking-request", rid, "consenso organizzatore non registrato:", consErr.message);
+        logger.warn("booking-request", rid, "consenso organizzatore non registrato:", consErr);
       }
       registraProvaSuIubendaInBackground({
         soggettoId: currentUser.id,
@@ -196,6 +197,22 @@ export async function POST(req: Request) {
 
     // --- Resolve venue
     let venueId: string | null = data.venueId ?? null;
+    if (venueId) {
+      // Una struttura nascosta dal team non si può scegliere. Prima della
+      // migration 0070 la colonna manca: in quel caso il controllo si salta.
+      const { data: venueScelta, error: venueScelErr } = await admin
+        .from("venues")
+        .select("id, hidden_at")
+        .eq("id", venueId)
+        .maybeSingle();
+      if (venueScelErr && !colonnaAssente(venueScelErr, "hidden_at")) {
+        logger.warn("booking-request", rid, "lettura struttura fallita:", venueScelErr.message);
+        return fail(rid, "venue-check", "Non riesco a verificare la struttura. Riprova.", 500);
+      }
+      if (venueScelta?.hidden_at) {
+        return fail(rid, "venue-hidden", "Questa struttura non è al momento disponibile.", 400);
+      }
+    }
     if (!venueId && data.venueName) {
       const baseSlug = slugify(data.venueName) || "struttura";
       let finalSlug = baseSlug;

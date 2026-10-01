@@ -98,7 +98,7 @@ export const INIZIARE: HelpCategory = {
 <p>Ogni ruolo ha un'area dedicata e permessi diversi. Il tuo viene assegnato quando crei l'account e in un caso cambia da solo.</p>
 
 <h3>Visitatore — senza account</h3>
-<p>Può navigare eventi, format, blog, l'elenco degli artisti con i filtri, candidarsi come artista e scrivere dal modulo contatti. <strong>Non può</strong> aprire il profilo completo di un artista: bio, galleria, audio, video e calendario sono riservati a chi ha un account. I preferiti restano salvati nel browser.</p>
+<p>Può navigare eventi, format, blog, il catalogo degli artisti in forma anonima (genere, strumenti e piano, filtrabili), candidarsi come artista e scrivere dal modulo contatti. <strong>Non vede</strong> chi sono gli artisti: nome d'arte, copertina, città, bio, galleria, audio, video, social e calendario sono riservati a chi ha un account. I preferiti restano salvati nel browser.</p>
 
 <h3>Utente registrato</h3>
 <p>Sblocca i profili completi degli artisti e salva i preferiti sul proprio account, ritrovandoli su qualunque dispositivo. Può inviare una richiesta di booking: nel momento in cui lo fa, <strong>diventa automaticamente organizzatore</strong>.</p>
@@ -136,7 +136,7 @@ export const INIZIARE: HelpCategory = {
 <p>Accessibili a chiunque, anche senza account.</p>
 <ul>
   <li><strong><a href="/">Home</a></strong> — eventi in evidenza, come funziona la piattaforma, artisti, collaborazioni e un modulo per raccontarci l'evento che hai in mente.</li>
-  <li><strong><a href="/artisti">Artisti</a></strong> — il roster completo, con filtri per tipologia, generi e ricerca testuale. La scheda completa richiede l'accesso.</li>
+  <li><strong><a href="/artisti">Artisti</a></strong> — il catalogo, con filtri per tipologia e generi. Senza account le schede sono anonime (genere, strumenti e piano): per scoprire chi sono gli artisti serve l'accesso.</li>
   <li><strong><a href="/eventi">Eventi</a></strong> — le date in arrivo e l'archivio di quelle passate, filtrabili per categoria.</li>
   <li><strong><a href="/format">Format</a></strong> — i quattro contenitori live curati da N'arte: NaJam, NuLive, NaBand, NaCena.</li>
   <li><strong><a href="/blog">Blog</a></strong> — guide e approfondimenti su booking e musica dal vivo.</li>
@@ -159,7 +159,7 @@ export const INIZIARE: HelpCategory = {
 <p>Si raggiunge da <strong>/organizzatore</strong>. Contiene overview, <strong>Richieste inviate</strong>, <strong>Strutture</strong>, <strong>Calendario</strong> delle date confermate, <strong>Recensioni</strong>, <strong>Chat</strong> e <strong>Profilo</strong>.</p>
 
 <h2>Cosa vedi solo dopo l'accesso</h2>
-<p>La scheda completa di un artista — biografia estesa, galleria, tracce audio, video, formazione, requisiti tecnici e calendario — è visibile solo agli utenti registrati. Da visitatore vedi generi e categoria, e un invito a iscriverti. L'iscrizione è gratuita.</p>
+<p>Tutto ciò che identifica un artista — nome d'arte, copertina, città, biografia, galleria, tracce audio, video, formazione, requisiti tecnici e calendario — è visibile solo agli utenti registrati. Da visitatore vedi per ogni scheda solo genere, strumenti e piano, e un invito a iscriverti. L'iscrizione è gratuita.</p>
 `,
     },
 

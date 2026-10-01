@@ -372,3 +372,17 @@ che siano applicate, con i limiti descritti in CLAUDE.md per ciascuna.
 
 Verifica dopo l'esecuzione: `npm run db:check-migrations` e le query in fondo a
 `docs/VERIFICA_MIGRATION.sql`.
+
+## Seconda lista del cliente — `0069` e `0070` (01/10/2026)
+
+1. **`0069_booking_accettata.sql`** — da sola. Aggiunge lo stato `accettata`.
+2. **`0070_allineamento_finale.sql`** — subito dopo, come comando separato.
+
+| Parte | Effetto | Attenzione |
+|---|---|---|
+| Booking | accetta l'artista → `accettata`; accetta l'organizzatore → `confermata` | le date «accettate» non bloccano il calendario finché l'organizzatore non conferma |
+| Accettazioni | ruolo, user agent e IP in hash su ogni accettazione | `record_consent` passa a 6 argomenti (con valori predefiniti) |
+| Segnalazioni | allegati (bucket privato) e assegnazione | — |
+| Strutture | `hidden_at` | — |
+| Recessi | tabella `subscription_withdrawals` | — |
+| Visitatori | anon legge di `artists` solo 7 colonne non identificative; niente video, calendario, consulenti | **verificare subito dopo** con le query in fondo a `docs/VERIFICA_MIGRATION.sql` che il catalogo da non loggati si veda (schede anonime) |

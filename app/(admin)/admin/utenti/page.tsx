@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { SospensioneAccount } from "@/components/admin/SospensioneAccount";
+import { ChiusuraAccount } from "@/components/admin/ChiusuraAccount";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Utenti — N'arte Admin" };
@@ -261,7 +262,18 @@ export default async function AdminUtentiPage({
                       </td>
                       <td className="px-2 py-2">
                         {puoAgire && (sospensione || !bloccato) ? (
-                          <SospensioneAccount userId={u.id} sospeso={!!sospensione} />
+                          <div className="space-y-2">
+                            <SospensioneAccount userId={u.id} sospeso={!!sospensione} />
+                            {!cancellazioni.has(u.id) && <ChiusuraAccount userId={u.id} />}
+                            {org && (
+                              <Link
+                                href={`/admin/utenti/${u.id}`}
+                                className="block text-xs text-azzurro underline-offset-2 hover:underline"
+                              >
+                                Strutture
+                              </Link>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-xs text-muted-foreground">
                             {bloccato && !sospensione ? "Bloccato per altro motivo" : "—"}

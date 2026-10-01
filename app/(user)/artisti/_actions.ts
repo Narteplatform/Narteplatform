@@ -6,7 +6,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import { LIMITI } from "@/lib/security/rate-limit";
 import { honeypotShape } from "@/lib/validators/schemas";
-import { publicFormConsent, recordConsent } from "@/lib/legal/consents";
+import { publicFormConsent } from "@/lib/legal/consents";
 import {
   registraProvaSuIubendaInBackground,
   TESTO_CASELLA,
@@ -22,16 +22,7 @@ const ADMIN_EMAIL =
 
 const consultationSchema = z.object({
   ...honeypotShape,
-  /**
-   * Presa visione dell'informativa. Obbligatoria: il campo «necessità» è testo
-   * libero in cui una persona racconta spontaneamente la propria situazione, e
-   * finisce sotto gli occhi di un consulente. È il modulo pubblico che raccoglie
-   * i dati più delicati di tutto il sito.
-   */
-  acceptedPrivacy: z.literal(true, {
-    errorMap: () => ({ message: "Devi accettare l'informativa privacy per inviare" }),
-  }),
-
+  // Nessuna casella: informativa mostrata come frase, presa visione in `publicFormConsent()`.
   slotId: z.string().uuid("Seleziona uno slot"),
   name: z.string().trim().min(2, "Nome obbligatorio"),
   email: z.string().email("Email non valida"),
@@ -97,12 +88,6 @@ export async function requestConsultation(input: ConsultationInput) {
     ...publicFormConsent(),
   });
   if (error) return { ok: false as const, error: error.message };
-
-  // Se chi prenota ha un account, il consenso finisce anche nel registro
-  // nominativo: lì è consultabile dall'interessato e revocabile, cosa che una
-  // colonna su `consultations` non permette. Non blocca la prenotazione se
-  // fallisce — la prova è già sulla riga qui sopra.
-  if (user) await recordConsent("privacy");
 
   registraProvaSuIubendaInBackground({
     soggettoId: user?.id,

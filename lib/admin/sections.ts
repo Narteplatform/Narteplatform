@@ -29,6 +29,7 @@ export const ADMIN_PAGE_KEYS = [
   "abbonamenti",
   "proposte",
   "utenti",
+  "registro",
 ] as const;
 export type AdminPageKey = (typeof ADMIN_PAGE_KEYS)[number];
 

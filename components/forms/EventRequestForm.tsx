@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { submitEventRequest, type EventRequestInput } from "@/app/_actions/event-request";
 import { HoneypotFields } from "@/components/forms/HoneypotField";
 import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from "@/lib/security/honeypot";
-import { PrivacyConsent } from "@/components/forms/PrivacyConsent";
+import { PrivacyNotice } from "@/components/forms/PrivacyConsent";
 
 type Values = {
   name: string;
@@ -18,7 +18,6 @@ type Values = {
   location: string;
   budget: string;
   message: string;
-  acceptedPrivacy: boolean;
   // I due campi trappola. Devono stare qui e finire nel payload: la guardia
   // lato server, se non li trova, lascia passare — quindi dimenticarli non
   // rompe niente in modo visibile, disattiva solo l'anti-bot in silenzio.
@@ -39,16 +38,11 @@ export function EventRequestForm() {
       location: "",
       budget: "",
       message: "",
-      acceptedPrivacy: false,
     },
   });
 
   async function onSubmit(values: Values) {
     setError(null);
-    if (!values.acceptedPrivacy) {
-      setError("Devi accettare l'informativa privacy per inviare la richiesta.");
-      return;
-    }
     const payload: EventRequestInput = {
       name: values.name,
       email: values.email,
@@ -58,7 +52,6 @@ export function EventRequestForm() {
       location: values.location || undefined,
       budget: values.budget || undefined,
       message: values.message,
-      acceptedPrivacy: true,
       [HONEYPOT_FIELD]: values[HONEYPOT_FIELD],
       [TIMESTAMP_FIELD]: values[TIMESTAMP_FIELD],
     };
@@ -160,7 +153,7 @@ export function EventRequestForm() {
           {error}
         </p>
       )}
-      <PrivacyConsent register={register("acceptedPrivacy")} />
+      <PrivacyNotice />
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" variant="default" size="lg" disabled={isSubmitting}>
           {isSubmitting ? "Invio in corso…" : "Invia richiesta"}

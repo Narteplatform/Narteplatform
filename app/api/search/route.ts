@@ -14,9 +14,8 @@ export type SearchHit = {
   /** Solo sugli artisti: alimenta i badge Artista Pro / TOP nella tendina. */
   tier?: ArtistTier | null;
   /**
-   * Artista mostrato a chi non ha una sessione. Il nome non è nella risposta —
-   * `title` è un segnaposto — e la UI sfoca copertina e testo. Chi consuma
-   * questo campo non deve mai mostrare `title` come se fosse un nome vero.
+   * Non più valorizzato: agli ospiti il server non restituisce artisti.
+   * Resta nel tipo solo perché la UI lo legge ancora.
    */
   locked?: boolean;
 };
@@ -63,8 +62,10 @@ export async function GET(request: Request) {
   const supabase = createAdminClient();
 
   // Il roster è visibile solo a chi è iscritto: senza sessione gli artisti
-  // escono oscurati. In caso di errore si resta ospiti — un dubbio
-  // sull'autenticazione non deve mai aprire il roster.
+  // sono ESCLUSI dai risultati (né nome, né slug, né copertina, né città) e non
+  // vengono nemmeno interrogati, quindi la ricerca non può fare da oracolo
+  // ("esiste un artista che si chiama X?"). In caso di errore si resta ospiti —
+  // un dubbio sull'autenticazione non deve mai aprire il roster.
   let isGuest = true;
   try {
     const authed = await createClient();
@@ -88,13 +89,19 @@ export async function GET(request: Request) {
 
   // Nomi di genere che contengono il testo cercato, poi le varianti di
   // maiuscola con cui possono essere stati scritti sugli artisti.
-  const genreNames = await supabase
-    .from("genres")
-    .select("name")
-    .ilike("name", patContains)
-    .limit(20);
+  const genreNames = isGuest
+    ? { data: null, error: null }
+    : await supabase
+        .from("genres")
+        .select("name")
+        .ilike("name", patContains)
+        .limit(20);
   if (genreNames.error) {
-    logger.error("search", "lettura generi fallita, ricerca per genere saltata", genreNames.error);
+    logger.error(
+      "search",
+      "lettura generi fallita, ricerca per genere saltata",
+      genreNames.error,
+    );
   }
   const genreVariants = Array.from(
     new Set(
@@ -102,24 +109,29 @@ export async function GET(request: Request) {
         const n = g.name;
         const cap = n.charAt(0).toUpperCase() + n.slice(1).toLowerCase();
         return [n, n.toLowerCase(), n.toUpperCase(), cap];
-      })
-    )
+      }),
+    ),
   ).filter((v) => !/[,{}"\\]/.test(v));
 
-  const [starts, contains, byGenre, byCity, { data: events }] = await Promise.all([
-    artistBase().ilike("stage_name", patStarts),
-    artistBase().ilike("stage_name", patContains),
-    genreVariants.length > 0
-      ? artistBase().overlaps("genre", genreVariants)
-      : Promise.resolve(null),
-    artistBase().ilike("city", patContains),
-    supabase
-      .from("events")
-      .select("slug, title, city, date, cover_image")
-      .or(`title.ilike.${like},city.ilike.${like}`)
-      .order("date", { ascending: true })
-      .limit(MAX_HITS),
-  ]);
+  const [starts, contains, byGenre, byCity, { data: events }] =
+    await Promise.all([
+      isGuest
+        ? Promise.resolve(null)
+        : artistBase().ilike("stage_name", patStarts),
+      isGuest
+        ? Promise.resolve(null)
+        : artistBase().ilike("stage_name", patContains),
+      !isGuest && genreVariants.length > 0
+        ? artistBase().overlaps("genre", genreVariants)
+        : Promise.resolve(null),
+      isGuest ? Promise.resolve(null) : artistBase().ilike("city", patContains),
+      supabase
+        .from("events")
+        .select("slug, title, city, date, cover_image")
+        .or(`title.ilike.${like},city.ilike.${like}`)
+        .order("date", { ascending: true })
+        .limit(MAX_HITS),
+    ]);
 
   const seenSlugs = new Set<string>();
   const artistRows = [starts, contains, byGenre, byCity].flatMap((r) => {
@@ -157,7 +169,9 @@ export async function GET(request: Request) {
   // Prima la rilevanza, poi il piano: con cinque posti disponibili il piano
   // decide ancora CHI entra, ma non può più scavalcare un artista che si
   // chiama esattamente come la ricerca.
-  matched.sort((x, y) => x.rank - y.rank || tierRank(x.a.tier) - tierRank(y.a.tier));
+  matched.sort(
+    (x, y) => x.rank - y.rank || tierRank(x.a.tier) - tierRank(y.a.tier),
+  );
 
   const hits: SearchHit[] = [
     ...matched.slice(0, MAX_HITS).map(({ a, hitGenres, genres }) => {
@@ -167,7 +181,10 @@ export async function GET(request: Request) {
       // di sola maiuscola spariscono: a database "pop" e "Pop" convivono sullo
       // stesso profilo e verrebbero fuori come due generi diversi.
       const seen = new Set<string>();
-      const genreLabel = [...hitGenres, ...genres.filter((g) => !hitGenres.includes(g))]
+      const genreLabel = [
+        ...hitGenres,
+        ...genres.filter((g) => !hitGenres.includes(g)),
+      ]
         .filter((g) => {
           const key = g.toLowerCase();
           if (seen.has(key)) return false;
@@ -176,20 +193,6 @@ export async function GET(request: Request) {
         })
         .slice(0, 2)
         .join(" / ");
-
-      if (isGuest) {
-        return {
-          type: "artist" as const,
-          slug: a.slug,
-          // Segnaposto, non il nome: la stessa stringa che mostra ArtistCard
-          // a un ospite. Il nome vero non lascia il server.
-          title: "Nome artista",
-          subtitle: genreLabel || null,
-          image: a.cover_image,
-          tier: a.tier,
-          locked: true,
-        };
-      }
 
       return {
         type: "artist" as const,
@@ -206,7 +209,10 @@ export async function GET(request: Request) {
       title: e.title,
       subtitle: [
         e.city,
-        new Date(e.date).toLocaleDateString("it-IT", { day: "2-digit", month: "short" }),
+        new Date(e.date).toLocaleDateString("it-IT", {
+          day: "2-digit",
+          month: "short",
+        }),
       ]
         .filter(Boolean)
         .join(" · "),

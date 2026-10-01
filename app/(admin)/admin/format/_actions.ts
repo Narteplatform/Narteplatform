@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { formatSchema, type FormatInput } from "@/lib/validators/schemas";
 import { slugify } from "@/lib/utils";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
+import { registraAzione } from "@/lib/moderation/decisioni";
 
 // Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
 // controllo del ruolo superadmin non bastava, perché un superadmin delegato
@@ -19,7 +20,7 @@ function revalidateAll(slug?: string) {
 }
 
 export async function createFormat(input: FormatInput) {
-  await requireAdminPageAccess("format");
+  const user = await requireAdminPageAccess("format");
   const parsed = formatSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
   const data = parsed.data;
@@ -44,12 +45,18 @@ export async function createFormat(input: FormatInput) {
     published: data.published ?? true,
   });
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "format",
+    action: "format_creato",
+    descrizione: `Format «${data.title}» creato.`,
+  });
   revalidateAll(slug);
   return { ok: true as const };
 }
 
 export async function updateFormat(id: string, input: FormatInput) {
-  await requireAdminPageAccess("format");
+  const user = await requireAdminPageAccess("format");
   const parsed = formatSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
   const data = parsed.data;
@@ -73,15 +80,29 @@ export async function updateFormat(id: string, input: FormatInput) {
     })
     .eq("id", id);
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "format",
+    targetId: id,
+    action: "format_modificato",
+    descrizione: `Format «${data.title}» modificato.`,
+  });
   revalidateAll();
   return { ok: true as const };
 }
 
 export async function deleteFormat(id: string) {
-  await requireAdminPageAccess("format");
+  const user = await requireAdminPageAccess("format");
   const admin = createAdminClient();
   const { error } = await admin.from("formats").delete().eq("id", id);
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "format",
+    targetId: id,
+    action: "format_eliminato",
+    descrizione: `Format ${id} eliminato.`,
+  });
   revalidateAll();
   return { ok: true as const };
 }

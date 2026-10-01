@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Lock, MapPin } from "lucide-react";
+import { Lock, MapPin, Music2 } from "lucide-react";
 import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
 import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
@@ -28,13 +28,23 @@ function genreClass(g: string) {
 }
 
 export type ArtistCardProps = {
-  slug: string;
-  stageName: string;
-  city: string | null;
-  coverImage: string | null;
+  /** Assenti nella variante anonima (`isGuest`): agli ospiti non arriva nulla di identificativo. */
+  slug?: string;
+  stageName?: string;
+  city?: string | null;
+  coverImage?: string | null;
   genres?: string[];
+  /** Usati solo dalla variante anonima, che li mostra al posto del nome. */
+  instruments?: string[];
   priceBand?: PriceBand;
   canSeePrice?: boolean;
+  /**
+   * Variante anonima, per chi non ha una sessione. La scheda mostra solo
+   * genere, strumenti e piano; nessun nome, slug, città, copertina, prezzo o
+   * voto, e il link porta al login. Chi chiama NON deve nemmeno passare i dati
+   * identificativi: la sicurezza sta nel fatto che non arrivano al componente,
+   * non nel fatto che qui vengano nascosti.
+   */
   isGuest?: boolean;
   category?: string | null;
   /**
@@ -45,29 +55,96 @@ export type ArtistCardProps = {
   tier?: ArtistTier | null;
   /**
    * Id dell'artista, necessario per salvarlo nei preferiti di un utente
-   * autenticato: la riga a database è (user_id, artist_id). Senza, il cuore
-   * continua a funzionare per gli ospiti (che salvano per slug nel browser).
+   * autenticato: la riga a database è (user_id, artist_id).
    */
   artistId?: string;
   /**
    * Media dei voti e numero di recensioni. Assente o a zero: la riga non
-   * compare affatto. Un "0,0 (0)" su una scheda comunica solo che l'artista
-   * non ha mai lavorato, il che su un catalogo appena aperto è vero per
-   * quasi tutti e non aiuta nessuno.
+   * compare affatto.
    */
   rating?: { average: number; count: number } | null;
 };
 
-export function ArtistCard({
-  slug,
-  stageName,
-  city,
-  coverImage,
+export function ArtistCard(props: ArtistCardProps) {
+  return props.isGuest ? <AnonymousArtistCard {...props} /> : <FullArtistCard {...props} />;
+}
+
+/** Scheda per gli ospiti: riquadro grafico neutro, niente dati identificativi. */
+function AnonymousArtistCard({
+  genres = [],
+  instruments = [],
+  category = null,
+  tier = null,
+}: ArtistCardProps) {
+  return (
+    <Link
+      href="/login?next=/artisti"
+      className="group relative flex w-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)] transition-all duration-220 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-[var(--shadow-md)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azzurro focus-visible:ring-offset-2"
+      aria-label="Accedi o registrati per scoprire chi è questo artista"
+    >
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-notte-80">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.10),transparent_55%)]"
+        />
+        <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
+          <span className="inline-flex size-20 items-center justify-center rounded-full border border-palco/20 bg-palco/5">
+            <Music2 className="size-9 text-palco/60" />
+          </span>
+        </div>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-notte via-notte/20 to-transparent" />
+
+        <ArtistTierBadges
+          tier={tier}
+          compact
+          onImage
+          className="pointer-events-none absolute left-3 top-3 z-10 max-w-[calc(100%-1.5rem)]"
+        />
+
+        <div className="absolute inset-x-3 bottom-3">
+          <h3 className="font-display text-xl font-bold leading-tight text-palco">Artista</h3>
+          {genres.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {genres.slice(0, 3).map((g) => (
+                <span
+                  key={g}
+                  className="rounded-full bg-palco/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-palco backdrop-blur-sm"
+                >
+                  {g}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2.5 px-4 py-4">
+        <div className="flex items-center justify-between gap-2">
+          <span className="narte-label">Categoria</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent">
+            {category ?? "Artista"}
+          </span>
+        </div>
+        {instruments.length > 0 && (
+          <p className="text-xs text-palco-20">{instruments.slice(0, 3).join(" · ")}</p>
+        )}
+        <p className="inline-flex items-center gap-1.5 text-xs text-palco-20">
+          <Lock className="size-3" aria-hidden="true" />
+          Registrati gratis per scoprire chi è
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+function FullArtistCard({
+  slug = "",
+  stageName = "",
+  city = null,
+  coverImage = null,
   genres = [],
   priceBand = "standard",
   canSeePrice = false,
-  isGuest = false,
-  category = null,
   tier = null,
   artistId,
   rating,
@@ -77,31 +154,26 @@ export function ArtistCard({
     <Link
       href={href}
       className="group relative flex w-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)] transition-all duration-220 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-[var(--shadow-md)]"
-      aria-label={isGuest ? "Iscriviti per vedere i dettagli dell'artista" : stageName}
+      aria-label={stageName}
     >
-      {/* IMAGE */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-notte-80">
         {coverImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={coverImage}
-            alt={isGuest ? "Artista bloccato" : stageName}
+            alt={stageName}
             loading="lazy"
-            className={`absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
-              isGuest ? "blur-xl scale-110" : ""
-            }`}
+            className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center font-display text-4xl text-palco/40">
-            {isGuest ? "?" : stageName.slice(0, 2)}
+            {stageName.slice(0, 2)}
           </div>
         )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-notte via-notte/20 to-transparent" />
 
         {/* Badge di piano in alto a sinistra: il lato destro è occupato dal
-            cuore dei preferiti. Restano visibili anche ai guest — sono il
-            motivo per cui vale la pena iscriversi, non un dettaglio da
-            nascondere dietro il blur. */}
+            cuore dei preferiti. */}
         <ArtistTierBadges
           tier={tier}
           compact
@@ -109,40 +181,21 @@ export function ArtistCard({
           className="pointer-events-none absolute left-3 top-3 z-10 max-w-[calc(100%-4rem)]"
         />
 
-        {isGuest && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span
-              aria-hidden="true"
-              className="inline-flex size-14 items-center justify-center rounded-full bg-notte/70 backdrop-blur-sm"
-            >
-              <Lock className="size-6 text-palco" />
-            </span>
-          </div>
-        )}
+        <FavoriteToggle
+          artist={{
+            id: artistId,
+            slug,
+            stage_name: stageName,
+            cover_image: coverImage,
+            city,
+            tier,
+          }}
+          variant="card"
+        />
 
-        {!isGuest && (
-          <FavoriteToggle
-            artist={{
-              id: artistId,
-              slug,
-              stage_name: stageName,
-              cover_image: coverImage,
-              city,
-              tier,
-            }}
-            variant="card"
-          />
-        )}
-
-        {/* Nome sull'immagine in basso */}
         <div className="absolute inset-x-3 bottom-3">
-          <h3
-            className={`font-display text-xl font-bold leading-tight text-palco drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] ${
-              isGuest ? "blur-md select-none" : ""
-            }`}
-            aria-hidden={isGuest}
-          >
-            {isGuest ? "Nome artista" : stageName}
+          <h3 className="font-display text-xl font-bold leading-tight text-palco drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
+            {stageName}
           </h3>
           {genres.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
@@ -159,26 +212,14 @@ export function ArtistCard({
         </div>
       </div>
 
-      {/* INFO */}
       <div className="flex flex-col gap-2.5 px-4 py-4">
-        {isGuest ? (
-          <div className="flex items-center justify-between gap-2">
-            <span className="narte-label">Categoria</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent">
-              {category ?? "Artista"}
-            </span>
-          </div>
-        ) : (
-          <PriceRow priceBand={priceBand} canSeePrice={canSeePrice} />
-        )}
+        <PriceRow priceBand={priceBand} canSeePrice={canSeePrice} />
         <p className="inline-flex items-center gap-1.5 text-xs text-palco-20">
           <MapPin className="size-3" />
-          {isGuest ? "Iscriviti per scoprire" : city || "Italia"}
+          {city || "Italia"}
         </p>
 
-        {/* Le recensioni sono nascoste agli ospiti come tutto il resto della
-            scheda: è la stessa regola che vale per prezzo e città. */}
-        {!isGuest && rating && rating.count > 0 && (
+        {rating && rating.count > 0 && (
           <StarRating
             value={rating.average}
             count={rating.count}

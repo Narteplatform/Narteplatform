@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/guards";
 import { createAdminClient } from "@/lib/supabase/server";
 import { esportaDatiUtente } from "@/lib/legal/export-dati";
 import { recordConsent } from "@/lib/legal/consents";
+import { iscriviNewsletter, disiscriviNewsletter } from "@/lib/brevo/contacts";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
@@ -36,9 +37,16 @@ export async function scaricaImieiDati() {
 
 /** Consenso al marketing: si concede e si ritira, e ogni gesto lascia una riga. */
 export async function aggiornaConsensoMarketing(attivo: boolean) {
-  await requireUser();
+  const utente = await requireUser();
   const esito = await recordConsent("marketing", attivo);
   if (!esito.ok) return esito;
+
+  // Copia sulla lista Brevo. Dopo la riga di registro, che è la prova; non
+  // bloccante: se Brevo non risponde la scelta è comunque registrata.
+  if (utente.email) {
+    if (attivo) await iscriviNewsletter(utente.email, utente.profile?.full_name ?? undefined);
+    else await disiscriviNewsletter(utente.email);
+  }
   return { ok: true as const };
 }
 

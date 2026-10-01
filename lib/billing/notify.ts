@@ -177,41 +177,12 @@ export async function notificaEventoAbbonamento(
         return;
       }
 
-      case "invoice.upcoming": {
-        // Solo per gli annuali: sul mensile un promemoria al mese sarebbe rumore.
-        if (item?.price?.recurring?.interval !== "year") return;
-        const invoice = event.data.object as Stripe.Invoice;
-        const importoRinnovo = formatPrice(invoice.amount_due ?? item?.price?.unit_amount ?? 0);
-        await dispatchEmail({
-          key: "renewal_reminder",
-          to: d.email,
-          params: {
-            name: d.nome,
-            planLabel: `${piano} annuale`,
-            renewalDate: dataIt(item?.current_period_end),
-            amountLabel: importoRinnovo,
-            manageUrl: billingUrl,
-          },
-          fallback: {
-            subject: `Il tuo abbonamento si rinnova il ${dataIt(item?.current_period_end)} — N'arte`,
-            template: "renewal_reminder",
-            react: createElement(NoticeEmail, {
-              preview: "Nessuna azione richiesta se vuoi continuare.",
-              heading: "Il rinnovo è vicino",
-              paragraphs: [
-                `Ciao ${d.nome}, il tuo abbonamento ${piano} annuale si rinnova automaticamente. Se vuoi continuare non devi fare nulla.`,
-                "Se vuoi disdire, fallo dalla pagina Abbonamento prima della data di rinnovo, senza costi.",
-              ],
-              rows: [
-                { label: "Rinnovo", value: dataIt(item?.current_period_end) },
-                { label: "Importo", value: importoRinnovo },
-              ],
-              button: { label: "Gestisci l'abbonamento", href: billingUrl },
-            }),
-          },
-        });
+      case "invoice.upcoming":
+        // Il promemoria del rinnovo annuale lo invia il lavoro notturno
+        // (lib/billing/promemoria-rinnovo.ts), con la regola dei 30 giorni
+        // scritta nel codice e non dipendente dal pannello Stripe. Qui non si
+        // invia nulla, per non mandare due email.
         return;
-      }
 
       default:
         return;

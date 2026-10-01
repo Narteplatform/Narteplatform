@@ -65,9 +65,9 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
     email: data.email,
     nomeCompleto: data.name,
     documenti: ["privacy_policy"],
-    preferenze: { privacy_policy: true, maggiore_eta: true },
+    preferenze: { privacy_policy: true, maggiore_eta: true, diritti_materiali: true },
     modulo: "Candidatura artista",
-    testoCasella: `${TESTO_CASELLA.privacy} — ${TESTO_CASELLA.eta}`,
+    testoCasella: `${TESTO_CASELLA.privacy} — ${TESTO_CASELLA.eta} — ${TESTO_CASELLA.dirittiMateriali}`,
   });
 
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;

@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 const STATUS_LABEL: Record<BookingStatus, string> = {
   pending: "Nuova",
   in_trattativa: "In trattativa",
+  accettata: "Accettata — da confermare",
   confermata: "Confermata",
   rifiutata: "Rifiutata",
   annullata: "Annullata",
@@ -23,6 +24,7 @@ const STATUS_LABEL: Record<BookingStatus, string> = {
 const STATUS_VARIANT: Record<BookingStatus, "warning" | "default" | "success" | "danger" | "muted"> = {
   pending: "warning",
   in_trattativa: "default",
+  accettata: "warning",
   confermata: "success",
   rifiutata: "danger",
   annullata: "muted",
@@ -31,6 +33,7 @@ const STATUS_VARIANT: Record<BookingStatus, "warning" | "default" | "success" | 
 const ALL_STATUSES: BookingStatus[] = [
   "pending",
   "in_trattativa",
+  "accettata",
   "confermata",
   "rifiutata",
   "annullata",
@@ -40,6 +43,7 @@ const TABS: { v: "" | BookingStatus; label: string }[] = [
   { v: "", label: "Tutte" },
   { v: "pending", label: "Nuove" },
   { v: "in_trattativa", label: "In trattativa" },
+  { v: "accettata", label: "Da confermare" },
   { v: "confermata", label: "Confermate" },
   { v: "rifiutata", label: "Rifiutate" },
   { v: "annullata", label: "Annullate" },

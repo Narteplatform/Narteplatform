@@ -73,7 +73,13 @@ export function normalisePersonnel(
       .map((item) => {
         if (item && typeof item === "object" && "name" in item) {
           const m = item as PersonnelMember;
-          return { name: String(m.name ?? "").trim(), role: String(m.role ?? "").trim() };
+          const consenso = typeof m.consenso_at === "string" ? m.consenso_at : null;
+          return {
+            name: String(m.name ?? "").trim(),
+            role: String(m.role ?? "").trim(),
+            // Preservato: è la prova del consenso del componente.
+            ...(consenso ? { consenso_at: consenso } : {}),
+          };
         }
         if (typeof item === "string") {
           const [name, ...rest] = item.split("—");

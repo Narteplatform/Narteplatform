@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/Button";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import { openChatAndRedirect } from "@/lib/chat/open";
 import { createAdminClient } from "@/lib/supabase/server";
-import { isMissingColumnError } from "@/lib/supabase/errors";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { Reveal } from "@/components/animations/Reveal";
 import { BookingCalendar, type ViewerRole, type ConfirmedBookingInfo } from "@/components/marketing/BookingCalendar";
@@ -50,10 +49,9 @@ type ArtistMeta = {
  * il link incollato in chat mostrava "N'arte — Find your vibe" per qualunque
  * artista. È la pagina che gli artisti stessi condividono di più.
  *
- * Nota: il contenuto del profilo è dietro login (vedi il ramo `isGuest` qui
- * sotto), quindi un crawler indicizza la schermata d'invito, non la scheda.
- * Questi metadata servono soprattutto all'anteprima nelle condivisioni, che
- * funziona comunque perché la genera il server.
+ * Il profilo è riservato a chi ha un account (vedi il ramo `isGuest` qui
+ * sotto): ospiti e crawler ricevono metadata generici e `noindex`, senza nome,
+ * bio né immagine. I metadata specifici li vede solo chi è registrato.
  */
 export async function generateMetadata({
   params,
@@ -61,6 +59,22 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+
+  // Le pagine artista sono riservate: mai indicizzate, per nessuno.
+  const robots = { index: false, follow: false } as const;
+
+  // Ospiti e crawler: metadata generici, nessuna lettura dal database e nessuna
+  // immagine OG. Il nome, la bio e la copertina non devono comparire neppure
+  // nel <head> né nelle anteprime di condivisione.
+  const viewer = await getCurrentUser();
+  if (!viewer) {
+    return {
+      title: "Artista su N'arte",
+      description: "Registrati gratis su N'arte per scoprire gli artisti emergenti.",
+      robots,
+    };
+  }
+
   const admin = createAdminClient();
   const { data } = await admin
     .from("artists")
@@ -70,7 +84,7 @@ export async function generateMetadata({
     .maybeSingle();
 
   const artist = data as ArtistMeta | null;
-  if (!artist) return { title: "Artista non trovato — N'arte" };
+  if (!artist) return { title: "Artista non trovato — N'arte", robots };
 
   const dove = artist.city ? ` da ${artist.city}` : "";
   const genere = artist.genre ? `${artist.genre}` : "Artista";
@@ -81,6 +95,7 @@ export async function generateMetadata({
   return {
     title: `${artist.stage_name} — N'arte`,
     description,
+    robots,
     alternates: { canonical: `/artisti/${artist.slug}` },
     openGraph: {
       title: `${artist.stage_name} · N'arte`,
@@ -109,121 +124,54 @@ export default async function ArtistDetailPage({
   const isGuest = !viewer;
 
   if (isGuest) {
-    // Fetch minimo: solo cover blurrata + genere/categoria
-    let admin;
-    try {
-      admin = createAdminClient();
-    } catch {
-      notFound();
-    }
-    const { data: locked } = await admin
-      .from("artists")
-      .select("stage_name, cover_image, genre, instruments")
-      .eq("slug", slug)
-      .eq("is_public", true)
-      .maybeSingle();
-    if (!locked) notFound();
+    // Nessuna query sull'artista: agli ospiti non arriva nulla di identificativo
+    // (né nome, né copertina, né genere) e la pagina è identica per qualunque
+    // slug, esistente o no — così non rivela nemmeno chi è nel roster.
     return (
       <article className="min-h-[80vh]">
         {/* Anche la visita di un ospite alla pagina bloccata è una visita al
-            profilo — anzi, commercialmente è la più interessante: qualcuno
-            cercava questo artista e ha trovato un muro. */}
+            profilo: qualcuno cercava questo artista e ha trovato un muro. */}
         <ProfileViewBeacon slug={slug} />
         <section className="relative overflow-hidden border-b border-border pt-24 pb-12 md:pt-32 md:pb-16">
           <div
             aria-hidden="true"
             className="hero-glow-ring pointer-events-none absolute left-1/2 top-1/3 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 sm:h-[1000px] sm:w-[1000px]"
           />
-          <div className="container-narte relative z-10 grid gap-8 md:grid-cols-[1fr_1.4fr] md:items-center md:gap-10 lg:gap-14">
-            {/* Cover bloccata */}
-            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-border bg-muted">
-              {locked.cover_image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={locked.cover_image}
-                  alt="Artista bloccato"
-                  className="h-full w-full scale-110 object-cover blur-2xl"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center font-display text-6xl text-foreground/30">
-                  ?
-                </div>
-              )}
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span className="inline-flex size-20 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm">
-                  <Lock className="size-9 text-white" />
-                </span>
-              </div>
-            </div>
+          <div className="container-narte relative z-10 flex max-w-2xl flex-col items-start">
+            <span
+              aria-hidden="true"
+              className="mb-6 inline-flex size-16 items-center justify-center rounded-full bg-notte text-palco"
+            >
+              <Lock className="size-7" />
+            </span>
+            <p className="accent-label mb-3">contenuto riservato</p>
+            <h1 className="display-xl text-4xl md:text-5xl lg:text-6xl">
+              Accedi per vedere questo artista
+            </h1>
+            <p className="mt-5 text-base text-muted-foreground md:text-lg">
+              Nome, biografia, gallery, calendario e tutti i dettagli sono visibili solo agli
+              utenti iscritti a N&apos;arte. Registrati gratis o accedi per scoprire chi sono.
+            </p>
 
-            {/* CTA */}
-            <div className="flex flex-col">
-              <p className="accent-label mb-3">contenuto riservato</p>
-              <h1 className="display-xl text-4xl md:text-5xl lg:text-6xl">
-                Accedi per scoprire questo artista
-              </h1>
-              <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
-                Nome, biografia, gallery, calendario e tutti i dettagli sono visibili solo agli
-                utenti iscritti a N&apos;arte. Iscriviti o accedi per sbloccare l&apos;intero roster.
-              </p>
-
-              {(locked.genre?.length ?? 0) > 0 && (
-                <div className="mt-6">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Generi
-                  </p>
-                  <ul className="mt-2 flex flex-wrap gap-2">
-                    {(locked.genre ?? []).slice(0, 5).map((g: string) => (
-                      <li
-                        key={g}
-                        className="rounded-full border border-border bg-muted px-3 py-1 text-xs lowercase tracking-wide"
-                      >
-                        {g}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {(locked.instruments?.length ?? 0) > 0 && (
-                <div className="mt-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Categoria
-                  </p>
-                  <ul className="mt-2 flex flex-wrap gap-2">
-                    {(locked.instruments ?? []).slice(0, 4).map((i: string) => (
-                      <li
-                        key={i}
-                        className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs text-accent"
-                      >
-                        {i}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button asChild variant="accent" size="lg">
-                  <Link href={`/register?next=/artisti/${slug}`}>
-                    <UserPlus className="size-4" /> Iscriviti per sbloccare
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                  <Link href={`/login?next=/artisti/${slug}`}>
-                    <LogIn className="size-4" /> Ho già un account
-                  </Link>
-                </Button>
-              </div>
-
-              <p className="mt-6 text-xs text-muted-foreground">
-                Iscrizione gratuita.{" "}
-                <Link href="/artisti" className="underline underline-offset-2 hover:text-foreground">
-                  Torna al roster
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild variant="accent" size="lg">
+                <Link href={`/register?next=/artisti/${encodeURIComponent(slug)}`}>
+                  <UserPlus className="size-4" /> Registrati gratis
                 </Link>
-              </p>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href={`/login?next=/artisti/${encodeURIComponent(slug)}`}>
+                  <LogIn className="size-4" /> Ho già un account
+                </Link>
+              </Button>
             </div>
+
+            <p className="mt-6 text-xs text-muted-foreground">
+              Iscrizione gratuita.{" "}
+              <Link href="/artisti" className="underline underline-offset-2 hover:text-foreground">
+                Torna al catalogo
+              </Link>
+            </p>
           </div>
         </section>
       </article>
@@ -373,31 +321,16 @@ export default async function ArtistDetailPage({
     // Solo i video approvati dal superadmin. Il filtro è sicuro perché la
     // colonna nasce con default 'approved' (migration 0051): i video già online
     // restano online, in attesa finiscono solo i nuovi caricamenti.
-    let { data, error } = await supabase
+    // Se la query fallisce (anche per colonna mancante) non si mostra nessun
+    // video: niente riprova senza filtro, che farebbe uscire anche i video non
+    // approvati dal superadmin. L'errore si registra, non si ingoia.
+    const { data, error } = await supabase
       .from("artist_videos")
       .select(SELECT)
       .eq("artist_id", artist.id)
       .eq("moderation_state", "approved")
       .order("created_at", { ascending: false });
 
-    // Ripiego per il database non ancora migrato. Le migration qui si applicano
-    // a mano, quindi esiste una finestra in cui questo codice gira su uno
-    // schema che la colonna non ce l'ha: la query fallisce in blocco e senza
-    // questo secondo tentativo il profilo mostrerebbe ZERO video, che è
-    // esattamente il modo in cui un contenuto sparisce senza che nessuno se ne
-    // accorga. Finché la 0051 non è applicata si vedono tutti, come prima.
-    if (error && isMissingColumnError(error)) {
-      const retry = await supabase
-        .from("artist_videos")
-        .select(SELECT)
-        .eq("artist_id", artist.id)
-        .order("created_at", { ascending: false });
-      data = retry.data;
-      error = retry.error;
-    }
-    // L'errore veniva ingoiato da un `data ?? []`: un guasto transitorio
-    // nascondeva TUTTI i video di un artista, in modo indistinguibile da
-    // "non ne ha". Non è distruttivo, ma va almeno detto.
     if (error) {
       console.error("[ArtistDetailPage] artist_videos fetch error", error);
     }
@@ -411,7 +344,7 @@ export default async function ArtistDetailPage({
     // Il filtro sta QUI e non dopo il cap di piano: altrimenti un video non
     // mostrabile occuperebbe uno dei posti disponibili e ne nasconderebbe uno
     // buono.
-    uploadedVideos = ((data ?? []) as PlayableArtistVideo[]).filter(
+    uploadedVideos = (error ? [] : ((data ?? []) as PlayableArtistVideo[])).filter(
       (v) => v.provider !== "bunny" || isRenderable(v.playback_state)
     );
   } catch (e) {
@@ -728,7 +661,7 @@ export default async function ArtistDetailPage({
                 languages={languages}
                 whatToExpect={artist.what_to_expect ?? null}
                 aboutExtended={artist.about_extended ?? null}
-                personnel={personnelList}
+                personnel={personnelList.map((m) => ({ name: m.name, role: m.role }))}
                 setList={artist.set_list ?? null}
                 influences={influences}
                 setupRequirements={artist.setup_requirements ?? null}

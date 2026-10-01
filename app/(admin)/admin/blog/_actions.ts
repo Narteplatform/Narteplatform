@@ -6,6 +6,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { formatContentToSeoHtml, deriveFullSeo, stripUnsafe } from "@/lib/blog/seo-format";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
+import { registraAzione } from "@/lib/moderation/decisioni";
 
 // Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
 // controllo del ruolo superadmin non bastava, perché un superadmin delegato
@@ -77,7 +78,7 @@ function buildSeoFields(d: {
 }
 
 export async function createBlogPost(input: BlogPostInput) {
-  await requireAdminPageAccess("blog");
+  const user = await requireAdminPageAccess("blog");
   const parsed = postSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
@@ -116,6 +117,13 @@ export async function createBlogPost(input: BlogPostInput) {
     .select("id")
     .single();
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "blog",
+    targetId: (data as { id: string } | null)?.id ?? null,
+    action: "blog_creato",
+    descrizione: `Articolo «${d.title}» creato${d.publish ? " e pubblicato" : " come bozza"}.`,
+  });
   revalidatePath("/admin/blog");
   revalidatePath("/blog");
   revalidatePath(`/blog/${slug}`);
@@ -123,7 +131,7 @@ export async function createBlogPost(input: BlogPostInput) {
 }
 
 export async function updateBlogPost(id: string, input: BlogPostInput) {
-  await requireAdminPageAccess("blog");
+  const user = await requireAdminPageAccess("blog");
   const parsed = postSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
@@ -183,6 +191,13 @@ export async function updateBlogPost(id: string, input: BlogPostInput) {
     })
     .eq("id", id);
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "blog",
+    targetId: id,
+    action: "blog_modificato",
+    descrizione: `Articolo «${d.title}» modificato${published_at ? "" : " (bozza)"}.`,
+  });
   revalidatePath("/admin/blog");
   revalidatePath(`/admin/blog/${id}`);
   revalidatePath("/blog");
@@ -192,7 +207,7 @@ export async function updateBlogPost(id: string, input: BlogPostInput) {
 }
 
 export async function deleteBlogPost(id: string) {
-  await requireAdminPageAccess("blog");
+  const user = await requireAdminPageAccess("blog");
   const admin = createAdminClient();
   const { data: existing } = await admin
     .from("blog_posts")
@@ -201,6 +216,13 @@ export async function deleteBlogPost(id: string) {
     .maybeSingle();
   const { error } = await admin.from("blog_posts").delete().eq("id", id);
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "blog",
+    targetId: id,
+    action: "blog_eliminato",
+    descrizione: `Articolo ${id} eliminato.`,
+  });
   revalidatePath("/admin/blog");
   revalidatePath("/blog");
   if (existing && (existing as { slug: string }).slug) {

@@ -133,6 +133,16 @@ export function Footer() {
                   I miei dati
                 </Link>
               </li>
+              <li>
+                <Link href="/recesso" className="transition-opacity hover:opacity-75">
+                  Recesso
+                </Link>
+              </li>
+              <li>
+                <Link href="/segnalazioni" className="transition-opacity hover:opacity-75">
+                  Segnalazioni
+                </Link>
+              </li>
               {/* Compare da sé quando la gestione del consenso è attiva, e
                   scompare — separatore incluso — quando non c'è nulla da
                   gestire. */}

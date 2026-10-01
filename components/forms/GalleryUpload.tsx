@@ -22,6 +22,8 @@ type Props = {
    * risolvere da dove sono, nessun contenuto esistente si sposta o sparisce.
    */
   kind?: "artist" | "event" | "format";
+  /** Se restituisce false il selettore file non si apre (es. dichiarazione dei diritti mancante). */
+  beforePick?: () => boolean;
 };
 
 /**
@@ -35,13 +37,14 @@ type Props = {
  */
 const MAX_INPUT_BYTES = 20 * 1024 * 1024;
 
-export function GalleryUpload({ label, value, onChange, kind = "artist" }: Props) {
+export function GalleryUpload({ label, value, onChange, kind = "artist", beforePick }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [phase, setPhase] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function pick() {
+    if (beforePick && !beforePick()) return;
     inputRef.current?.click();
   }
 

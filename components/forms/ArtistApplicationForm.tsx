@@ -14,7 +14,7 @@ import { ApplicationVideoUpload } from "@/components/forms/ApplicationVideoUploa
 import { submitArtistApplication } from "@/app/(public)/candidatura-artista/_actions";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
 import { HoneypotFields } from "@/components/forms/HoneypotField";
-import { PrivacyConsent } from "@/components/forms/PrivacyConsent";
+import { PrivacyNotice } from "@/components/forms/PrivacyConsent";
 import { Checkbox } from "@/components/ui/Checkbox";
 
 export function ArtistApplicationForm({
@@ -157,14 +157,16 @@ export function ArtistApplicationForm({
         />
       </Field>
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <PrivacyConsent
-        register={register("acceptedPrivacy")}
-        error={errors.acceptedPrivacy?.message}
-      />
+      <PrivacyNotice />
       <Checkbox
         {...register("acceptedAge")}
         error={errors.acceptedAge?.message}
         label="Dichiaro di avere almeno 18 anni."
+      />
+      <Checkbox
+        {...register("acceptedRights")}
+        error={errors.acceptedRights?.message}
+        label="Dichiaro che le informazioni inserite sono veritiere e che ho i diritti per inviare il video e i materiali allegati, compreso il consenso delle persone che vi compaiono."
       />
 
       <Button type="submit" disabled={isSubmitting}>

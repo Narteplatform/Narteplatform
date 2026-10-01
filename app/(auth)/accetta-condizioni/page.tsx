@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/guards";
 import {
   hasAcceptedCurrentLegal,
+  legalV2Attivo,
   syncLegalVersionFromConsents,
 } from "@/lib/legal/consents";
 import { findLegalDoc } from "@/lib/legal/content";
@@ -48,7 +49,15 @@ export default async function AccettaCondizioniPage({
   // modulo già compilato: si riallinea la colonna e la si rimanda dov'era
   // diretta. Senza questo controllo ogni disallineamento diventerebbe un
   // account permanentemente bloccato.
-  if (await hasAcceptedCurrentLegal(user.id)) {
+  // Documenti per ruolo: attivi solo col flag v2. Spento, `ruoloGate` è null e
+  // tutto resta com'era.
+  const ruoloProfilo = user.profile?.role ?? null;
+  const ruoloGate =
+    legalV2Attivo() && (ruoloProfilo === "artist" || ruoloProfilo === "organizer")
+      ? ruoloProfilo
+      : null;
+
+  if (await hasAcceptedCurrentLegal(user.id, ruoloProfilo)) {
     await syncLegalVersionFromConsents(user.id);
     redirect(next);
   }
@@ -97,7 +106,7 @@ export default async function AccettaCondizioniPage({
           </div>
 
           <div className="mt-8">
-            <AcceptLegalForm next={next} />
+            <AcceptLegalForm next={next} ruolo={ruoloGate} />
           </div>
 
           {/* Via d'uscita. Senza, chi non vuole accettare resterebbe prigioniero

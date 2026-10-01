@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
+import { inviaPromemoriaRinnovi } from "@/lib/billing/promemoria-rinnovo";
 import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
@@ -53,6 +54,8 @@ type Regola = {
    * verrebbe cancellato.
    */
   escludi?: { colonna: string; valori: string[] };
+  /** Righe da considerare SOLO se la colonna ha uno di questi valori. */
+  soloSe?: { colonna: string; valori: string[] };
 };
 
 const REGOLE: Regola[] = [
@@ -102,6 +105,40 @@ const REGOLE: Regola[] = [
     // dell'artista e i consensi dati in quel momento.
     escludi: { colonna: "status", valori: ["approved"] },
   },
+  // ── Aggiunte del 01/10/2026 (fascicolo legale, doc. 09 §11) ──
+  {
+    tabella: "moderation_actions",
+    colonnaData: "created_at",
+    giorni: 1826,
+    motivo: "registro delle decisioni e delle azioni del team: 5 anni (prescrizione ordinaria, verifiche delle autorità)",
+  },
+  {
+    tabella: "chat_access_log",
+    colonnaData: "created_at",
+    giorni: 1826,
+    motivo: "registro degli accessi del team alle chat: 5 anni",
+  },
+  {
+    tabella: "content_reports",
+    colonnaData: "created_at",
+    giorni: 1826,
+    motivo: "segnalazioni e reclami (DSA): 5 anni; gli allegati si cancellano con la riga",
+  },
+  {
+    tabella: "subscription_withdrawals",
+    colonnaData: "created_at",
+    giorni: 3653,
+    motivo: "prova dei recessi dagli abbonamenti: 10 anni (documentazione contabile)",
+  },
+  {
+    // Solo richieste CHIUSE senza data. Le date confermate restano: reggono le
+    // recensioni (che cadrebbero a cascata) e lo storico dell'artista.
+    tabella: "booking_requests",
+    colonnaData: "updated_at",
+    giorni: 1095,
+    motivo: "richieste rifiutate o annullate: 36 mesi dalla chiusura",
+    soloSe: { colonna: "status", valori: ["rifiutata", "annullata"] },
+  },
 ];
 
 /**
@@ -146,6 +183,7 @@ export async function GET(req: Request) {
       .select("*", { count: "exact", head: true })
       .lt(regola.colonnaData, soglia);
     if (regola.escludi && esclusi) conteggio = conteggio.not(regola.escludi.colonna, "in", esclusi);
+    if (regola.soloSe) conteggio = conteggio.in(regola.soloSe.colonna, regola.soloSe.valori);
     const { count, error } = await conteggio;
 
     if (error) {
@@ -181,6 +219,7 @@ export async function GET(req: Request) {
     if (regola.escludi && esclusi) {
       cancellazione = cancellazione.not(regola.escludi.colonna, "in", esclusi);
     }
+    if (regola.soloSe) cancellazione = cancellazione.in(regola.soloSe.colonna, regola.soloSe.valori);
     const { error: erroreCancella } = await cancellazione;
 
     if (erroreCancella) {
@@ -214,6 +253,18 @@ export async function GET(req: Request) {
     });
   }
 
+  // ── Casi che non sono una semplice regola per data ──
+  esiti.push(...(await conversazioniInattive(admin, cancella)));
+  esiti.push(...(await fileCandidatureScadute(admin, cancella)));
+
+  // Promemoria dei rinnovi annuali (doc. 02, art. 5.2): non è conservazione,
+  // ma è un lavoro notturno e il piano Vercel ammette pochi cron.
+  const rinnovi = await inviaPromemoriaRinnovi().catch((e) => {
+    logger.error("retention", "promemoria rinnovi:", e instanceof Error ? e.message : String(e));
+    return null;
+  });
+  if (rinnovi) esiti.push({ lavoro: "promemoria_rinnovi_annuali", ...rinnovi });
+
   const totale = esiti.reduce(
     (n, e) => n + Number(e.righeCheSarebberoRimosse ?? e.rimosse ?? 0),
     0
@@ -236,4 +287,113 @@ export async function GET(req: Request) {
     },
     { headers: { "Cache-Control": "no-store" } }
   );
+}
+
+type Admin = ReturnType<typeof createAdminClient>;
+const GIORNO = 86_400_000;
+
+/**
+ * Conversazioni senza attività da 36 mesi, con i loro allegati.
+ *
+ * Si escludono le conversazioni fra parti che hanno ancora una richiesta
+ * aperta o una data confermata futura. Con la cancellazione attiva si rimuovono
+ * PRIMA i file degli allegati (bucket privato chat-attachments) e poi la riga
+ * della conversazione, che porta con sé i messaggi (cascade). Un errore su un
+ * file ferma quella conversazione: mai righe cancellate con file rimasti orfani.
+ */
+async function conversazioniInattive(admin: Admin, cancella: boolean): Promise<Array<Record<string, unknown>>> {
+  const soglia = new Date(Date.now() - 1095 * GIORNO).toISOString();
+  const { data: convs, error } = await admin
+    .from("conversations")
+    .select("id, artist_id, organizer_id, last_message_at, created_at")
+    .lt("last_message_at", soglia)
+    .limit(500);
+  if (error) {
+    logger.error("retention", `conversations: ${error.message}`);
+    return [{ tabella: "conversations", errore: error.message }];
+  }
+  const oggi = new Date().toISOString().slice(0, 10);
+  const candidati: string[] = [];
+  for (const c of convs ?? []) {
+    const { count, error: bErr } = await admin
+      .from("booking_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("artist_id", c.artist_id)
+      .eq("organizer_id", c.organizer_id)
+      .or(`status.in.(pending,in_trattativa,accettata),and(status.eq.confermata,event_date.gte.${oggi})`);
+    if (bErr) {
+      logger.warn("retention", `conversazione ${c.id}: richieste non leggibili, saltata`);
+      continue;
+    }
+    if ((count ?? 0) === 0) candidati.push(c.id);
+  }
+  if (!cancella) {
+    return [{
+      tabella: "conversations",
+      oltre: "36 mesi senza attività",
+      righeCheSarebberoRimosse: candidati.length,
+      motivo: "chat, allegati e note vocali: 36 mesi dall'ultima attività, salvo richieste aperte o date future",
+    }];
+  }
+  let rimosse = 0;
+  for (const id of candidati) {
+    const { data: files, error: lErr } = await admin.storage.from("chat-attachments").list(id, { limit: 1000 });
+    if (lErr) {
+      logger.error("retention", `allegati di ${id} non elencabili: conversazione NON rimossa`);
+      continue;
+    }
+    if (files && files.length > 0) {
+      const { error: rErr } = await admin.storage.from("chat-attachments").remove(files.map((f) => `${id}/${f.name}`));
+      if (rErr) {
+        logger.error("retention", `allegati di ${id} non rimossi: conversazione NON rimossa`);
+        continue;
+      }
+    }
+    const { error: dErr } = await admin.from("conversations").delete().eq("id", id);
+    if (dErr) logger.error("retention", `conversazione ${id} non rimossa: ${dErr.message}`);
+    else rimosse++;
+  }
+  return [{ tabella: "conversations", rimosse }];
+}
+
+/**
+ * Video delle candidature non approvate oltre 12 mesi. Vanno rimossi PRIMA che
+ * la regola su `artist_applications` cancelli le righe che ne conservano il
+ * percorso: altrimenti il file resterebbe nell'archivio senza riferimento.
+ * (L'ordine è garantito perché la regola per data gira dopo, alla notte
+ * successiva, sulle righe già prive di file: qui si azzera solo `video_path`.)
+ */
+async function fileCandidatureScadute(admin: Admin, cancella: boolean): Promise<Array<Record<string, unknown>>> {
+  const soglia = new Date(Date.now() - 335 * GIORNO).toISOString();
+  const { data: righe, error } = await admin
+    .from("artist_applications")
+    .select("id, video_path")
+    .neq("status", "approved")
+    .lt("created_at", soglia)
+    .not("video_path", "is", null)
+    .limit(500);
+  if (error) {
+    logger.error("retention", `video candidature: ${error.message}`);
+    return [{ lavoro: "video_candidature", errore: error.message }];
+  }
+  const elenco = (righe ?? []).filter((r) => typeof r.video_path === "string" && r.video_path.length > 0);
+  if (!cancella) {
+    return [{
+      lavoro: "video_candidature",
+      righeCheSarebberoRimosse: elenco.length,
+      motivo: "video delle candidature non approvate: rimossi prima della riga (12 mesi)",
+    }];
+  }
+  let rimossi = 0;
+  for (const r of elenco) {
+    const { error: rErr } = await admin.storage.from("application-videos").remove([r.video_path as string]);
+    if (rErr) {
+      logger.error("retention", `video candidatura ${r.id} non rimosso`);
+      continue;
+    }
+    const { error: uErr } = await admin.from("artist_applications").update({ video_path: null }).eq("id", r.id);
+    if (uErr) logger.error("retention", `video_path di ${r.id} non azzerato: ${uErr.message}`);
+    else rimossi++;
+  }
+  return [{ lavoro: "video_candidature", rimossi }];
 }

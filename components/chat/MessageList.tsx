@@ -108,6 +108,7 @@ export function MessageList({
                     }
                     isOwn={isOwn}
                     tick={tick}
+                    viewerRole={viewerRole}
                   />
                 );
               }

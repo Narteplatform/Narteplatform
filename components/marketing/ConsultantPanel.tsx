@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { Phone, Calendar, CheckCircle2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { requestConsultation } from "@/app/(user)/artisti/_actions";
-import { PrivacyConsent } from "@/components/forms/PrivacyConsent";
+import { PrivacyNotice } from "@/components/forms/PrivacyConsent";
 import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from "@/lib/security/honeypot";
 import { TITOLARE } from "@/lib/legal/titolare";
 
@@ -19,7 +19,6 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [needs, setNeeds] = useState("");
-  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [openCalendar, setOpenCalendar] = useState(false);
 
   // Trappola anti-bot. Questo pannello non usa react-hook-form, quindi i due
@@ -54,8 +53,6 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
     if (!/^\S+@\S+\.\S+$/.test(email)) return setError("Email non valida.");
     if (phone.trim().length < 5) return setError("Inserisci un numero di telefono valido.");
     if (needs.trim().length < 10) return setError("Descrivi brevemente le tue necessità.");
-    if (!acceptedPrivacy)
-      return setError("Devi accettare l'informativa privacy per proseguire.");
     setOpenCalendar(true);
   }
 
@@ -69,7 +66,6 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
         email,
         phone,
         needs,
-        acceptedPrivacy: true,
         [HONEYPOT_FIELD]: esca,
         [TIMESTAMP_FIELD]: String(apertoAlle),
       });
@@ -201,13 +197,7 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
               />
             </label>
           </div>
-          <PrivacyConsent
-            register={{
-              checked: acceptedPrivacy,
-              onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-                setAcceptedPrivacy(e.target.checked),
-            }}
-          />
+          <PrivacyNotice />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button
             type="button"

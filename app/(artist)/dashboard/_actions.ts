@@ -23,6 +23,8 @@ import {
   type PendingSubmission,
 } from "@/lib/media/moderation";
 import { notifyMediaSubmission } from "@/lib/media/notify";
+import { DIRITTI_NON_DICHIARATI } from "@/lib/legal/diritti-contenuti";
+import { haDichiaratoDiritti } from "@/lib/legal/diritti-contenuti-server";
 import type { ArtistTier, Database } from "@/lib/supabase/types";
 
 type ArtistUpdate = Database["public"]["Tables"]["artists"]["Update"];
@@ -107,6 +109,37 @@ export type SectionPayload<S extends ProfileSectionId> = Pick<
   Partial<
     Pick<ProfileColumns, Extract<(typeof SECTION_COLUMNS)[S][number], OptionalProfileColumn>>
   >;
+
+const MODERAZIONE_NON_DISPONIBILE =
+  "La moderazione dei contenuti non è disponibile in questo momento: riprova più tardi";
+
+/**
+ * Il patch AGGIUNGE media rispetto a quanto è già pubblicato?
+ *
+ * Funzione pura, usata quando la coda di moderazione non è raggiungibile: lì
+ * l'unica scelta sicura è non pubblicare, quindi serve sapere se il salvataggio
+ * porterebbe contenuti nuovi. Togliere, riordinare o rinominare non aggiunge.
+ */
+function aggiungeMedia(
+  patch: ArtistUpdate,
+  current: { gallery: string[]; audio_files: AudioTrack[]; cover_image: string | null }
+): boolean {
+  if ("gallery" in patch && diffGallery(current.gallery, (patch.gallery as string[]) ?? []).added.length > 0) {
+    return true;
+  }
+  if (
+    "audio_files" in patch &&
+    diffAudio(current.audio_files, (patch.audio_files as AudioTrack[]) ?? []).added.length > 0
+  ) {
+    return true;
+  }
+  return (
+    "cover_image" in patch &&
+    typeof patch.cover_image === "string" &&
+    patch.cover_image.length > 0 &&
+    patch.cover_image !== current.cover_image
+  );
+}
 
 function pickAllowed(
   values: Record<string, unknown>,
@@ -227,6 +260,26 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
   // isMediaModerationEnabled per il perché.
   const moderationOn = await isMediaModerationEnabled(admin);
 
+  // FAIL-CLOSED. Se la coda non è raggiungibile non si pubblica niente di nuovo:
+  // prima si ripiegava sul vecchio comportamento (pubblicazione diretta), il che
+  // vuol dire che un guasto della moderazione la spegneva. Ora un salvataggio che
+  // aggiunge foto, copertina o audio viene rifiutato PRIMA di scrivere qualsiasi
+  // campo; quelli che non aggiungono media (bio, riordino, rimozioni) proseguono.
+  if (
+    !moderationOn &&
+    aggiungeMedia(patch, {
+      gallery: current.gallery ?? [],
+      audio_files: current.audio_files ?? [],
+      cover_image: current.cover_image ?? null,
+    })
+  ) {
+    logger.error("[updateArtistProfileSection] coda moderazione non disponibile", {
+      artistId,
+      section,
+    });
+    return { ok: false as const, error: MODERAZIONE_NON_DISPONIBILE };
+  }
+
   // Cosa c'è già in coda per questo artista. Serve a due cose: contare il tetto
   // di piano su pubblicati + in attesa, e non riaccodare una seconda volta un
   // contenuto già in attesa.
@@ -340,6 +393,16 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
     coverPending = patch.cover_image;
     delete patch.cover_image;
     pending.push(toCoverSubmission(artistId, user.id, coverPending));
+  }
+
+  // Dichiarazione dei diritti: serve solo quando il salvataggio AGGIUNGE media
+  // (le aggiunte sono tutte in `pending`, la cover compresa). Un errore di
+  // lettura non vale «non dichiarato»: si rifiuta con un messaggio leggibile,
+  // senza far comparire la modale e senza scrivere nulla.
+  if (pending.length > 0) {
+    const diritti = await haDichiaratoDiritti(user.id);
+    if (!diritti.ok) return { ok: false as const, error: diritti.error };
+    if (!diritti.dichiarato) return { ok: false as const, error: DIRITTI_NON_DICHIARATI };
   }
 
   // percorso_artistico: gate di scrittura. Chi non ha il piano non può
@@ -616,6 +679,11 @@ export async function addArtistVideo(input: {
     return { ok: false as const, error: "Formato video non supportato" };
   }
 
+  // Aggiungere un video è pubblicare un contenuto nuovo: serve la dichiarazione.
+  const diritti = await haDichiaratoDiritti(user.id);
+  if (!diritti.ok) return { ok: false as const, error: diritti.error };
+  if (!diritti.dichiarato) return { ok: false as const, error: DIRITTI_NON_DICHIARATI };
+
   const admin = createAdminClient();
 
   const ent = await getEntitlements(input.artist_id);
@@ -641,22 +709,19 @@ export async function addArtistVideo(input: {
     title: input.title ?? null,
   };
 
-  // Riproducibile subito, pubblicabile solo dopo l'approvazione. Il secondo
-  // tentativo serve al database non ancora migrato: senza, il caricamento
-  // sarebbe rotto fra il rilascio del codice e l'esecuzione a mano della 0051.
-  let { data, error } = await admin
+  // Riproducibile subito, pubblicabile solo dopo l'approvazione. Se manca la
+  // colonna `moderation_state` si RIFIUTA: inserire la riga senza stato vorrebbe
+  // dire pubblicarla senza approvazione (fail-closed).
+  const { data, error } = await admin
     .from("artist_videos")
     .insert({ ...baseRow, moderation_state: "pending" })
     .select(ARTIST_VIDEO_SELECT)
     .single();
   if (error && isMissingColumnError(error)) {
-    const retry = await admin
-      .from("artist_videos")
-      .insert(baseRow)
-      .select(ARTIST_VIDEO_SELECT)
-      .single();
-    data = retry.data;
-    error = retry.error;
+    logger.error("[addArtistVideo] colonna moderation_state assente", {
+      artistId: input.artist_id,
+    });
+    return { ok: false as const, error: MODERAZIONE_NON_DISPONIBILE };
   }
   if (error || !data) return { ok: false as const, error: error?.message ?? "Errore" };
   await revalidateArtistVideoPaths(input.artist_id);

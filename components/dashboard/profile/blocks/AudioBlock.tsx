@@ -7,6 +7,7 @@ import { AudioUpload, type AudioTrack } from "@/components/forms/AudioUpload";
 import { ProfileSection } from "@/components/dashboard/profile/ProfileSection";
 import { ProfileSectionForm } from "@/components/dashboard/profile/ProfileSectionForm";
 import { useProfileSectionForm } from "@/components/dashboard/profile/useProfileSectionForm";
+import { useDirittiContenuti } from "@/components/dashboard/profile/DirittiContenuti";
 import { PendingMediaNotice } from "@/components/dashboard/PendingMediaNotice";
 import { PendingMediaThumbs } from "@/components/dashboard/PendingMediaThumbs";
 import {
@@ -38,6 +39,7 @@ export function AudioBlock({
     successMessage: "Tracce audio salvate",
   });
 
+  const diritti = useDirittiContenuti();
   const tracks = useWatch({ control: form.control, name: "audio_files" }) ?? [];
 
   return (
@@ -76,6 +78,7 @@ export function AudioBlock({
               value={(field.value ?? []) as AudioTrack[]}
               onChange={field.onChange}
               artistId={artist.id}
+              beforePick={diritti.richiedi}
             />
           )}
         />

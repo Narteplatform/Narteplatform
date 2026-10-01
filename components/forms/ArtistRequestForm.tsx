@@ -7,6 +7,7 @@ import { leadSchema, type LeadInput } from "@/lib/validators/schemas";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { submitLead } from "@/app/(user)/artisti/[slug]/_actions";
+import { PrivacyNotice } from "@/components/forms/PrivacyConsent";
 
 export function ArtistRequestForm({
   artistId,
@@ -82,6 +83,7 @@ export function ArtistRequestForm({
         {errors.message && <p className="text-xs text-red-600">{errors.message.message}</p>}
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <PrivacyNotice />
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? "Invio..." : "Invia richiesta"}
       </Button>

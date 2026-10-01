@@ -9,6 +9,7 @@ import { ImageUpload } from "@/components/forms/ImageUpload";
 import { ProfileSection } from "@/components/dashboard/profile/ProfileSection";
 import { Field, ProfileSectionForm } from "@/components/dashboard/profile/ProfileSectionForm";
 import { useProfileSectionForm } from "@/components/dashboard/profile/useProfileSectionForm";
+import { useDirittiContenuti } from "@/components/dashboard/profile/DirittiContenuti";
 import { PendingMediaNotice } from "@/components/dashboard/PendingMediaNotice";
 import { PendingMediaThumbs } from "@/components/dashboard/PendingMediaThumbs";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
@@ -64,6 +65,7 @@ export function InfoArtistaBlock({
     successMessage: "Informazioni artista salvate",
   });
 
+  const diritti = useDirittiContenuti();
   const values = useWatch({ control: form.control });
   const complete =
     Boolean(values?.cover_image) &&
@@ -184,6 +186,7 @@ export function InfoArtistaBlock({
                 value={field.value ?? ""}
                 onChange={field.onChange}
                 kind="artist"
+                beforePick={diritti.richiedi}
               />
             )}
           />

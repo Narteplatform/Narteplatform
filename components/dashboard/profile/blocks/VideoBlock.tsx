@@ -1,8 +1,10 @@
 "use client";
 
 import { Video } from "lucide-react";
+import { DIRITTI_NON_DICHIARATI } from "@/lib/legal/diritti-contenuti";
 import { VideoUpload, type ArtistVideoItem } from "@/components/forms/VideoUpload";
 import { ProfileSection } from "@/components/dashboard/profile/ProfileSection";
+import { useDirittiContenuti } from "@/components/dashboard/profile/DirittiContenuti";
 import type { ArtistProfileData } from "@/components/dashboard/profile/types";
 
 /**
@@ -34,6 +36,7 @@ export function VideoBlock({
   /** Tetto del piano dell'artista, risolto lato server: 1 Free, 3 Pro, 3 Max. */
   videoMax: number;
 }) {
+  const diritti = useDirittiContenuti();
   const count = initialVideos.length;
 
   return (
@@ -56,7 +59,15 @@ export function VideoBlock({
         comparire sul tuo profilo pubblico: finché sono in attesa li vedi solo tu,
         contrassegnati qui sotto.
       </p>
-      <VideoUpload artistId={artist.id} initialVideos={initialVideos} videoMax={videoMax} />
+      <VideoUpload
+        artistId={artist.id}
+        initialVideos={initialVideos}
+        videoMax={videoMax}
+        beforePick={diritti.richiedi}
+        onRightsRequired={() => {
+          diritti.gestisciErrore(DIRITTI_NON_DICHIARATI);
+        }}
+      />
     </ProfileSection>
   );
 }

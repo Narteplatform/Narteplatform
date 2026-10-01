@@ -23,7 +23,14 @@ export type ConsentKind =
   | "diritti_contenuti";
 export type ArtistPath = "cover_artist" | "tribute_band" | "progetto_inedito";
 export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "privato" | "altro";
-export type BookingStatus = "pending" | "in_trattativa" | "confermata" | "rifiutata" | "annullata";
+/** «accettata» (0069): l'artista ha accettato un'offerta, manca la conferma dell'organizzatore. */
+export type BookingStatus =
+  | "pending"
+  | "in_trattativa"
+  | "accettata"
+  | "confermata"
+  | "rifiutata"
+  | "annullata";
 export type ChatMessageKind = "text" | "offer" | "system" | "image" | "document" | "voice";
 export type ChatOfferStatus = "pending" | "accepted" | "rejected" | "superseded";
 export type SubscriptionStatus =
@@ -591,6 +598,8 @@ export interface Database {
           decided_by: string | null;
           decided_at: string | null;
           reporter_notified_at: string | null;
+          attachments: Json;
+          assigned_to: string | null;
         };
         Insert: {
           id?: string;
@@ -614,6 +623,8 @@ export interface Database {
           decided_by?: string | null;
           decided_at?: string | null;
           reporter_notified_at?: string | null;
+          attachments?: Json;
+          assigned_to?: string | null;
         };
         Update: {
           id?: string;
@@ -637,6 +648,8 @@ export interface Database {
           decided_by?: string | null;
           decided_at?: string | null;
           reporter_notified_at?: string | null;
+          attachments?: Json;
+          assigned_to?: string | null;
         };
         Relationships: [];
       };
@@ -733,6 +746,49 @@ export interface Database {
         };
         Relationships: [];
       };
+      /** Registro dei recessi dagli abbonamenti (0070). */
+      subscription_withdrawals: {
+        Row: {
+          id: string;
+          created_at: string;
+          user_id: string | null;
+          user_email: string | null;
+          stripe_subscription_id: string;
+          canale: "online" | "email" | "pec" | "modulo";
+          ricevuto_il: string;
+          rimborso_cent: number;
+          stato_rimborso: "non_dovuto" | "eseguito" | "da_eseguire" | "fallito";
+          registrato_da: string | null;
+          note: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          user_id?: string | null;
+          user_email?: string | null;
+          stripe_subscription_id: string;
+          canale: "online" | "email" | "pec" | "modulo";
+          ricevuto_il: string;
+          rimborso_cent?: number;
+          stato_rimborso?: "non_dovuto" | "eseguito" | "da_eseguire" | "fallito";
+          registrato_da?: string | null;
+          note?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          user_id?: string | null;
+          user_email?: string | null;
+          stripe_subscription_id?: string;
+          canale?: "online" | "email" | "pec" | "modulo";
+          ricevuto_il?: string;
+          rimborso_cent?: number;
+          stato_rimborso?: "non_dovuto" | "eseguito" | "da_eseguire" | "fallito";
+          registrato_da?: string | null;
+          note?: string | null;
+        };
+        Relationships: [];
+      };
       account_deletion_requests: {
         Row: {
           id: string;
@@ -782,6 +838,9 @@ export interface Database {
           accepted_at: string;
           ref: string | null;
           subject_hash: string | null;
+          role: string | null;
+          user_agent: string | null;
+          ip_hash: string | null;
         };
         Insert: {
           id?: string;
@@ -792,6 +851,9 @@ export interface Database {
           accepted_at?: string;
           ref?: string | null;
           subject_hash?: string | null;
+          role?: string | null;
+          user_agent?: string | null;
+          ip_hash?: string | null;
         };
         Update: {
           id?: string;
@@ -802,6 +864,9 @@ export interface Database {
           accepted_at?: string;
           ref?: string | null;
           subject_hash?: string | null;
+          role?: string | null;
+          user_agent?: string | null;
+          ip_hash?: string | null;
         };
         Relationships: [];
       };
@@ -931,6 +996,7 @@ export interface Database {
           email: string | null;
           created_at: string;
           updated_at: string;
+          hidden_at: string | null;
         };
         Insert: {
           id?: string;
@@ -952,6 +1018,7 @@ export interface Database {
           email?: string | null;
           created_at?: string;
           updated_at?: string;
+          hidden_at?: string | null;
         };
         Update: {
           id?: string;
@@ -973,6 +1040,7 @@ export interface Database {
           email?: string | null;
           created_at?: string;
           updated_at?: string;
+          hidden_at?: string | null;
         };
         Relationships: [];
       };
@@ -1906,7 +1974,14 @@ export interface Database {
       // Scrivono sempre e solo per l'utente in sessione: il chiamante non
       // sceglie per chi si sta registrando il consenso.
       record_consent: {
-        Args: { p_kind: ConsentKind; p_version: string; p_accepted?: boolean; p_ref?: string | null };
+        Args: {
+          p_kind: ConsentKind;
+          p_version: string;
+          p_accepted?: boolean;
+          p_ref?: string | null;
+          p_user_agent?: string | null;
+          p_ip_hash?: string | null;
+        };
         Returns: undefined;
       };
       accept_legal_documents: {

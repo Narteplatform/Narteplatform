@@ -196,7 +196,7 @@ export async function confermaCancellazione(token: string): Promise<EsitoConferm
  * policy — e una policy sbagliata su `artists` fa sparire l'intero catalogo,
  * non un profilo.
  */
-async function disattivaAccount(
+export async function disattivaAccount(
   userId: string
 ): Promise<{ ok: true; stato: Json } | { ok: false }> {
   // Se l'account è già sospeso, i suoi profili sono già `pending` e l'elenco
@@ -282,7 +282,7 @@ export async function nascondiProfiliEBloccaAccesso(
  * Imposta `cancel_at_period_end` sull'abbonamento attivo, se c'è.
  * Restituisce cosa è stato fatto, da conservare nello stato di ripristino.
  */
-async function disdiciAbbonamentoAFinePeriodo(userId: string): Promise<Json> {
+export async function disdiciAbbonamentoAFinePeriodo(userId: string): Promise<Json> {
   const admin = createAdminClient();
   const { data: subs, error } = await admin
     .from("subscriptions")

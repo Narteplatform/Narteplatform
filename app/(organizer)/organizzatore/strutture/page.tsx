@@ -4,18 +4,43 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth/guards";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
 export default async function OrganizerVenuesPage() {
   const { organizer } = await requireOrganizer();
   const admin = createAdminClient();
-  const { data } = await admin
+  type Struttura = {
+    id: string;
+    name: string;
+    city: string | null;
+    venue_type: string;
+    cover_image: string | null;
+    capacity: number | null;
+    hidden_at: string | null;
+  };
+  let venues: Struttura[] = [];
+  const completa = await admin
     .from("venues")
-    .select("id, name, city, venue_type, cover_image, capacity")
+    .select("id, name, city, venue_type, cover_image, capacity, hidden_at")
     .eq("organizer_id", organizer.id)
     .order("created_at", { ascending: false });
-  const venues = data ?? [];
+  if (!completa.error) {
+    venues = completa.data ?? [];
+  } else if (colonnaAssente(completa.error, "hidden_at")) {
+    // Migration 0070 non ancora applicata: nessuna struttura è nascosta.
+    const senza = await admin
+      .from("venues")
+      .select("id, name, city, venue_type, cover_image, capacity")
+      .eq("organizer_id", organizer.id)
+      .order("created_at", { ascending: false });
+    if (senza.error) logger.warn("organizzatore/strutture", "strutture non leggibili:", senza.error.message);
+    venues = (senza.data ?? []).map((v) => ({ ...v, hidden_at: null }));
+  } else {
+    logger.warn("organizzatore/strutture", "strutture non leggibili:", completa.error.message);
+  }
 
   return (
     <div className="space-y-6">
@@ -71,6 +96,9 @@ export default async function OrganizerVenuesPage() {
               </div>
               <div className="space-y-1 p-4">
                 <h3 className="font-display text-lg">{v.name}</h3>
+                {v.hidden_at && (
+                  <p className="text-xs font-semibold text-corallo">Nascosta dal team</p>
+                )}
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
                   <MapPin className="size-3" /> {v.city ?? "—"}
                   {v.capacity ? ` · ${v.capacity} pax` : ""}

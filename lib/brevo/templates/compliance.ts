@@ -77,6 +77,71 @@ const moderationDecision = defineTemplate({
   }),
 });
 
+const mediaApproved = defineTemplate({
+  key: "media_approved",
+  name: "N'arte · Contenuti approvati [media_approved]",
+  subject: "I tuoi contenuti sono online — N'Arte",
+  sample: {
+    name: "Marco Esposito",
+    itemsLabel: "2 foto e 1 video",
+    profileUrl: "https://narteofficial.it/artisti/esempio",
+  },
+  html: layout({
+    key: "media_approved",
+    preheader: "Il team ha approvato quello che hai caricato: ora è visibile sul tuo profilo.",
+    body: [
+      eyebrow("Moderazione"),
+      title(`Contenuti ${em("approvati")}`, { size: "xl" }),
+      paragraph(
+        `Ciao ${param("name")}, il team ha esaminato e approvato quello che hai caricato.<br />
+              Da adesso è visibile sul tuo profilo pubblico.`
+      ),
+      card(
+        [
+          sectionTitle("Cosa è stato approvato"),
+          dataTable([
+            { icon: "check", label: "Contenuti", value: param("itemsLabel"), multiline: true },
+          ]),
+        ].join("\n")
+      ),
+      buttonPair({ href: param("profileUrl"), label: "Guarda il tuo profilo" }),
+    ].join("\n"),
+  }),
+});
+
+const profileReactivated = defineTemplate({
+  key: "profile_reactivated",
+  name: "N'arte · Profilo di nuovo visibile [profile_reactivated]",
+  subject: "Il tuo profilo è di nuovo nel catalogo — N'Arte",
+  sample: {
+    name: "Marco Esposito",
+    profileName: "Trio Esempio",
+    profileUrl: "https://narteofficial.it/artisti/esempio",
+  },
+  html: layout({
+    key: "profile_reactivated",
+    preheader: "Il profilo è di nuovo visibile nel catalogo pubblico.",
+    body: [
+      eyebrow("Moderazione"),
+      title(`Profilo di nuovo ${em("visibile")}`, { size: "xl" }),
+      paragraph(
+        `Ciao ${param("name")}, abbiamo concluso la verifica: il tuo profilo è<br />
+              tornato nel catalogo pubblico.`
+      ),
+      card(
+        [
+          sectionTitle("Il tuo profilo"),
+          dataTable([
+            { icon: "mic", label: "Profilo", value: param("profileName") },
+            { icon: "link", label: "Indirizzo", value: param("profileUrl"), multiline: true },
+          ]),
+        ].join("\n")
+      ),
+      buttonPair({ href: param("profileUrl"), label: "Guarda il tuo profilo" }),
+    ].join("\n"),
+  }),
+});
+
 const reportReceipt = defineTemplate({
   key: "report_receipt",
   name: "N'arte · Ricevuta segnalazione [report_receipt]",
@@ -311,6 +376,8 @@ const profileReferral = defineTemplate({
 
 export const COMPLIANCE_TEMPLATES = [
   moderationDecision,
+  mediaApproved,
+  profileReactivated,
   reportReceipt,
   reportAdmin,
   reportOutcome,

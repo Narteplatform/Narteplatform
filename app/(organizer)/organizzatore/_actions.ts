@@ -180,14 +180,16 @@ export async function confirmBookingRequest(requestId: string) {
   if (!req || req.organizer_id !== organizer.id) {
     return { ok: false as const, error: "Non autorizzato" };
   }
-  if (req.status !== "in_trattativa") {
+  // Da «accettata» (l'artista ha accettato un'offerta) o da «in_trattativa»:
+  // la conferma dell'organizzatore è quella che blocca la data.
+  if (req.status !== "in_trattativa" && req.status !== "accettata") {
     return { ok: false as const, error: "Richiesta non in trattativa" };
   }
   const { data: aggiornate, error } = await admin
     .from("booking_requests")
     .update({ status: "confermata", organizer_confirmed_at: new Date().toISOString() })
     .eq("id", requestId)
-    .eq("status", "in_trattativa")
+    .in("status", ["in_trattativa", "accettata"])
     .select("id");
   if (error) {
     // L'indice unico sulle date confermate (artista, giorno) scatta qui se la
@@ -226,7 +228,7 @@ export async function cancelBookingRequest(requestId: string) {
   // `superadmin_cancel_booking`: prima questo controllo lasciava passare
   // `confermata`, e bastava una chiamata diretta all'azione (il pulsante era
   // nascosto solo nell'interfaccia) per liberare una data già concordata.
-  const ANNULLABILI = ["pending", "in_trattativa"] as const;
+  const ANNULLABILI = ["pending", "in_trattativa", "accettata"] as const;
   if (!(ANNULLABILI as readonly string[]).includes(req.status)) {
     return {
       ok: false as const,

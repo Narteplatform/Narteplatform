@@ -19,6 +19,8 @@ type Props = {
   value: AudioTrack[];
   onChange: (tracks: AudioTrack[]) => void;
   artistId: string;
+  /** Se restituisce false il selettore file non si apre (es. dichiarazione dei diritti mancante). */
+  beforePick?: () => boolean;
 };
 
 type SignResponse =
@@ -39,13 +41,14 @@ type SignResponse =
  */
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 
-export function AudioUpload({ label, value, onChange, artistId }: Props) {
+export function AudioUpload({ label, value, onChange, artistId, beforePick }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<{ name: string; pct: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function pick() {
+    if (beforePick && !beforePick()) return;
     inputRef.current?.click();
   }
 

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { ShieldAlert, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { MotivazioneField } from "@/components/admin/MotivazioneField";
 import { blockConversationUser, unblockConversationUser } from "@/lib/chat/moderation";
 import type { ActiveConversationBlock } from "@/lib/chat/queries";
 
@@ -192,29 +193,14 @@ function BlockSlot({
               {name} non potrà più inviare messaggi, offerte o allegati in questa conversazione, finché
               non lo sblocchi. Le altre conversazioni non sono toccate.
             </p>
-            <label
-              htmlFor="block-reason"
-              className="mt-4 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-            >
-              Motivazione (obbligatoria, {REASON_MIN}-{REASON_MAX} caratteri) *
-            </label>
-            <p className="mt-1 text-xs text-muted-foreground">
-              La motivazione viene inviata per email a {name}, con il modo per contestare la decisione,
-              e resta nel registro delle decisioni.
-            </p>
-            <textarea
-              id="block-reason"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={4}
-              maxLength={REASON_MAX}
+            <MotivazioneField
+              className="mt-4"
+              label="Motivazione (obbligatoria)"
               disabled={pending}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azzurro"
-              placeholder="Es: linguaggio offensivo verso l'altra parte (art. 5 dei termini d'uso)."
+              maxFatti={420}
+              onChange={setReason}
+              hint={`La motivazione viene inviata per email a ${name}, con il modo per contestare la decisione, e resta nel registro delle decisioni.`}
             />
-            <p className="mt-1 text-right text-[11px] text-muted-foreground">
-              {reason.trim().length}/{REASON_MAX}
-            </p>
             {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
             <div className="mt-5 flex justify-end gap-2">
               <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={closeAndReset}>

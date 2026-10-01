@@ -3,7 +3,7 @@
 import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
+import { MotivazioneField } from "@/components/admin/MotivazioneField";
 import { approveApplication, rejectApplication } from "@/app/(admin)/admin/artisti/_actions";
 
 const REASON_MIN = 10;
@@ -18,19 +18,14 @@ export function ApplicationActions({ applicationId }: { applicationId: string })
   if (rejecting) {
     return (
       <div className="flex w-72 max-w-full flex-col items-end gap-2">
-        <Textarea
-          rows={3}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          maxLength={1000}
+        <MotivazioneField
+          compact
+          label="Motivazione del rifiuto"
           disabled={pending}
-          aria-label="Motivazione del rifiuto"
-          placeholder="Motivazione del rifiuto (obbligatoria, almeno 10 caratteri)"
-          className="min-h-0 text-xs"
+          onChange={setReason}
+          hint="La motivazione viene inviata al candidato per email, con il modo per contestare la decisione."
+          className="w-full"
         />
-        <p className="text-[11px] text-muted-foreground">
-          La motivazione viene inviata al candidato per email, con il modo per contestare la decisione.
-        </p>
         <div className="flex gap-2">
           <Button
             size="sm"

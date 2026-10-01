@@ -11,6 +11,7 @@ import {
   renameArtistVideo,
   refreshArtistVideoStatus,
 } from "@/app/(artist)/dashboard/_actions";
+import { DIRITTI_NON_DICHIARATI } from "@/lib/legal/diritti-contenuti";
 import { probeVideo } from "@/lib/upload/probeVideo";
 import { putWithProgress, UploadAbortedError } from "@/lib/upload/putWithProgress";
 import { uploadViaTus } from "@/lib/upload/tusUpload";
@@ -64,13 +65,23 @@ type Props = {
   initialVideos: ArtistVideoItem[];
   /** Tetto del PIANO dell'artista (1 Free / 3 Pro / 3 Max), non una costante piatta. */
   videoMax: number;
+  /** Se restituisce false il selettore file non si apre (es. dichiarazione dei diritti mancante). */
+  beforePick?: () => boolean;
+  /** Chiamata quando il server risponde DIRITTI_NON_DICHIARATI: apre la modale. */
+  onRightsRequired?: () => void;
 };
 
 /** Ogni quanto chiedere a Bunny se il video è pronto, e per quanto insistere. */
 const POLL_MS = 5000;
 const POLL_MAX_ATTEMPTS = 60;
 
-export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
+export function VideoUpload({
+  artistId,
+  initialVideos,
+  videoMax,
+  beforePick,
+  onRightsRequired,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
   const [videos, setVideos] = useState<ArtistVideoItem[]>(initialVideos);
@@ -89,6 +100,7 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
   const clientAccept = videoLimitsFor("bunny").accept;
 
   function pick() {
+    if (beforePick && !beforePick()) return;
     inputRef.current?.click();
   }
 
@@ -286,6 +298,9 @@ export function VideoUpload({ artistId, initialVideos, videoMax }: Props) {
     } catch (err) {
       if (err instanceof UploadAbortedError) {
         setError("Caricamento annullato.");
+      } else if (err instanceof Error && err.message === DIRITTI_NON_DICHIARATI) {
+        onRightsRequired?.();
+        setError("Prima di caricare devi confermare la dichiarazione sui diritti dei contenuti.");
       } else {
         setError(err instanceof Error ? err.message : "Errore durante il caricamento");
       }

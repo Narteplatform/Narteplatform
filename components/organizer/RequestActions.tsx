@@ -62,7 +62,7 @@ export function RequestActions({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        {status === "in_trattativa" && (
+        {(status === "in_trattativa" || status === "accettata") && (
           <Button size="sm" disabled={pending} onClick={() => setConfirming(true)}>
             <CheckCircle2 className="size-4" /> Conferma data
           </Button>

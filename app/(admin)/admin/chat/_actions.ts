@@ -6,6 +6,7 @@ import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 import { DURATA_ACCESSO_MINUTI, registroAssente } from "@/lib/chat/access";
+import { registraAzione } from "@/lib/moderation/decisioni";
 
 export type AccessoState = { error?: string };
 
@@ -74,6 +75,15 @@ export async function apriConversazioneMotivata(
     logger.error("chat-access", "registrazione accesso fallita:", error.message);
     return { error: "Non sono riuscito a registrare l'accesso, quindi la conversazione non è stata aperta." };
   }
+
+  // Seconda traccia, nel registro unico delle azioni del team. Non blocca.
+  await registraAzione({
+    actorId: user.id,
+    targetType: "conversazione",
+    targetId: conversationId,
+    action: "chat_aperta",
+    descrizione: `Conversazione aperta per ${DURATA_ACCESSO_MINUTI} minuti (${category}): ${reason}`,
+  });
 
   redirect(`/admin/chat/${conversationId}`);
 }

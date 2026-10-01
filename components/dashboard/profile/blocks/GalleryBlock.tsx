@@ -7,6 +7,7 @@ import { GalleryUpload } from "@/components/forms/GalleryUpload";
 import { ProfileSection } from "@/components/dashboard/profile/ProfileSection";
 import { ProfileSectionForm } from "@/components/dashboard/profile/ProfileSectionForm";
 import { useProfileSectionForm } from "@/components/dashboard/profile/useProfileSectionForm";
+import { useDirittiContenuti } from "@/components/dashboard/profile/DirittiContenuti";
 import { PendingMediaNotice } from "@/components/dashboard/PendingMediaNotice";
 import { PendingMediaThumbs } from "@/components/dashboard/PendingMediaThumbs";
 import {
@@ -38,6 +39,7 @@ export function GalleryBlock({
     successMessage: "Galleria salvata",
   });
 
+  const diritti = useDirittiContenuti();
   const gallery = useWatch({ control: form.control, name: "gallery" }) ?? [];
 
   return (
@@ -75,6 +77,7 @@ export function GalleryBlock({
               label="Carica foto direttamente da computer o cellulare"
               value={field.value ?? []}
               onChange={field.onChange}
+              beforePick={diritti.richiedi}
             />
           )}
         />

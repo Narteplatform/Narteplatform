@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth/guards";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { logger } from "@/lib/logger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { OrganizerCalendar } from "@/components/organizer/OrganizerCalendar";
 import { VenueSwitch } from "@/components/organizer/VenueSwitch";
@@ -16,12 +18,29 @@ export default async function OrganizerCalendarPage({
   const sp = await searchParams;
   const admin = createAdminClient();
 
-  const { data: venues } = await admin
+  // Le strutture nascoste dal team (0070) non si possono scegliere. Prima della
+  // migration la colonna manca: si rilegge senza e nessuna risulta nascosta.
+  let allVenues: { id: string; name: string }[] = [];
+  const conNascoste = await admin
     .from("venues")
-    .select("id, name")
+    .select("id, name, hidden_at")
     .eq("organizer_id", organizer.id)
     .order("name");
-  const allVenues = venues ?? [];
+  if (conNascoste.error) {
+    if (!colonnaAssente(conNascoste.error, "hidden_at")) {
+      logger.warn("organizzatore/calendario", "strutture non leggibili:", conNascoste.error.message);
+    } else {
+      const senza = await admin
+        .from("venues")
+        .select("id, name")
+        .eq("organizer_id", organizer.id)
+        .order("name");
+      if (senza.error) logger.warn("organizzatore/calendario", "strutture non leggibili:", senza.error.message);
+      allVenues = senza.data ?? [];
+    }
+  } else {
+    allVenues = (conNascoste.data ?? []).filter((v) => !v.hidden_at).map((v) => ({ id: v.id, name: v.name }));
+  }
   const selected = sp.venue && allVenues.some((v) => v.id === sp.venue) ? sp.venue : null;
 
   let bookingQuery = admin

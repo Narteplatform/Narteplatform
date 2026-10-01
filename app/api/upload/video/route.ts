@@ -7,6 +7,8 @@ import { bunnyUploadsEnabled } from "@/lib/storage/bunny/config";
 import { createStreamVideo, deleteStreamVideo, signTusUpload } from "@/lib/storage/bunny/stream";
 import { logger } from "@/lib/logger";
 import { isMissingColumnError } from "@/lib/supabase/errors";
+import { DIRITTI_NON_DICHIARATI } from "@/lib/legal/diritti-contenuti";
+import { haDichiaratoDiritti } from "@/lib/legal/diritti-contenuti-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -112,6 +114,17 @@ export async function POST(request: Request) {
     }
   }
 
+  // Dichiarazione dei diritti sui contenuti: senza, non si firma nessun upload.
+  // Un errore di lettura non è «non dichiarato»: 503 con messaggio leggibile,
+  // così il client non apre la modale per una dichiarazione forse già data.
+  const diritti = await haDichiaratoDiritti(user.id);
+  if (!diritti.ok) {
+    return NextResponse.json({ error: diritti.error }, { status: 503 });
+  }
+  if (!diritti.dichiarato) {
+    return NextResponse.json({ error: DIRITTI_NON_DICHIARATI }, { status: 403 });
+  }
+
   // Il tetto va verificato anche qui: il client può essere aggirato, e senza
   // questo controllo il file finirebbe comunque nello storage a nostre spese.
   // Il gate deve precedere l'upload, non seguirlo.
@@ -161,25 +174,26 @@ export async function POST(request: Request) {
     // approva. Le due cose sono indipendenti — il webhook Bunny non tocca
     // questa colonna — e vanno tenute separate: un video pronto può essere
     // ancora da approvare, e viceversa.
-    let { data: row, error } = await admin
+    const { data: row, error } = await admin
       .from("artist_videos")
       .insert({ ...baseRow, moderation_state: "pending" })
       .select("id")
       .single();
 
-    // Ripiego per il database non ancora migrato: le migration qui si applicano
-    // a mano, e senza questo secondo tentativo il caricamento video sarebbe
-    // rotto per tutti nella finestra fra il rilascio del codice e l'esecuzione
-    // della 0051. Finché la colonna non c'è si pubblica senza approvazione,
-    // come si è sempre fatto.
+    // Colonna assente = schema senza moderazione. Si RIFIUTA invece di inserire
+    // la riga senza stato (fail-closed): il video finirebbe pubblicabile senza
+    // approvazione. Il video appena creato su Bunny va eliminato, altrimenti
+    // resterebbe orfano e a pagamento.
     if (error && isMissingColumnError(error)) {
-      const retry = await admin
-        .from("artist_videos")
-        .insert(baseRow)
-        .select("id")
-        .single();
-      row = retry.data;
-      error = retry.error;
+      await deleteStreamVideo(guid).catch(() => undefined);
+      logger.error("api/upload/video", "colonna moderation_state assente", error);
+      return NextResponse.json(
+        {
+          error:
+            "La moderazione dei contenuti non è disponibile in questo momento: riprova più tardi",
+        },
+        { status: 503 }
+      );
     }
 
     if (error || !row) {

@@ -25,7 +25,7 @@ export default async function OrganizerOverviewPage() {
         .from("booking_requests")
         .select("id", { count: "exact", head: true })
         .eq("organizer_id", organizer.id)
-        .eq("status", "in_trattativa"),
+        .in("status", ["in_trattativa", "accettata"]),
       admin
         .from("booking_requests")
         .select("id", { count: "exact", head: true })

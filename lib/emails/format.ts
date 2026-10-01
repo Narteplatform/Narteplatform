@@ -75,6 +75,7 @@ export function bookingStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     pending: "In attesa di risposta",
     in_trattativa: "In trattativa",
+    accettata: "Accettata dall'artista, in attesa di conferma",
     confermata: "Confermata",
     rifiutata: "Rifiutata",
     annullata: "Annullata",

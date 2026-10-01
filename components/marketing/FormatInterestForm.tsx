@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { submitFormatInterest } from "@/app/(public)/format/_actions";
 import { CheckCircle2 } from "lucide-react";
 import { HoneypotFields } from "@/components/forms/HoneypotField";
-import { PrivacyConsent } from "@/components/forms/PrivacyConsent";
+import { PrivacyNotice } from "@/components/forms/PrivacyConsent";
 
 function Field({
   label,
@@ -129,10 +129,7 @@ export function FormatInterestForm({ formatTitle }: { formatTitle?: string } = {
                   {serverError}
                 </p>
               )}
-              <PrivacyConsent
-                register={register("acceptedPrivacy")}
-                error={errors.acceptedPrivacy?.message}
-              />
+              <PrivacyNotice />
 
               <Button
                 type="submit"

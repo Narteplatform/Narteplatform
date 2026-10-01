@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
+import { MotivazioneField } from "@/components/admin/MotivazioneField";
 import { MediaViewer, type MediaViewerItem } from "@/components/media/MediaViewer";
 import type { ModerationItem } from "@/lib/media/moderation-queries";
 
@@ -90,13 +90,14 @@ export function MediaModerationViewer({
         if (rejecting) {
           return (
             <div className="space-y-2 rounded-2xl bg-white/10 p-3">
-              <Textarea
+              <MotivazioneField
+                onDark
+                compact
                 rows={2}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Motivazione del rifiuto (obbligatoria, almeno 10 caratteri: viene inviata all'artista)"
+                label="Motivazione del rifiuto"
                 disabled={busy}
-                className="bg-white/90 text-sm"
+                onChange={setNote}
+                hint="Viene inviata all'artista per email."
               />
               {viewerItem.kind === "video" && (
                 <p className="text-[11px] text-white/70">

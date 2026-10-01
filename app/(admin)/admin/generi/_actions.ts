@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
+import { registraAzione } from "@/lib/moderation/decisioni";
 
 // Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
 // controllo del ruolo superadmin non bastava, perché un superadmin delegato
@@ -10,7 +11,7 @@ import { requireAdminPageAccess } from "@/lib/admin/permissions";
 // requireAdminPageAccess applica anche il permesso per-pagina.
 
 export async function createGenre(name: string) {
-  await requireAdminPageAccess("generi");
+  const user = await requireAdminPageAccess("generi");
   const trimmed = name.trim();
   if (trimmed.length < 2 || trimmed.length > 60) {
     return { ok: false as const, error: "Nome non valido (2-60 caratteri)" };
@@ -25,15 +26,28 @@ export async function createGenre(name: string) {
   const nextOrder = (max?.order_index ?? 0) + 10;
   const { error } = await admin.from("genres").insert({ name: trimmed, order_index: nextOrder });
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "genere",
+    action: "genere_creato",
+    descrizione: `Genere «${trimmed}» creato.`,
+  });
   revalidatePath("/admin/generi");
   return { ok: true as const };
 }
 
 export async function deleteGenre(id: string) {
-  await requireAdminPageAccess("generi");
+  const user = await requireAdminPageAccess("generi");
   const admin = createAdminClient();
   const { error } = await admin.from("genres").delete().eq("id", id);
   if (error) return { ok: false as const, error: error.message };
+  await registraAzione({
+    actorId: user.id,
+    targetType: "genere",
+    targetId: id,
+    action: "genere_eliminato",
+    descrizione: `Genere ${id} eliminato.`,
+  });
   revalidatePath("/admin/generi");
   return { ok: true as const };
 }
