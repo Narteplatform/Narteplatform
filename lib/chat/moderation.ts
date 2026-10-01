@@ -1,11 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/server";
 import { conversationBlockReasonSchema } from "@/lib/validators/schemas";
 import { registraDecisione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 import { logger } from "@/lib/logger";
+import { getAccessoValido } from "@/lib/chat/access";
+import { MESSAGGIO_RIMOSSO, percorsoAllegatoChat } from "@/lib/chat/removed";
 import type { Role } from "@/lib/supabase/types";
 
 type ActionErr = { ok: false; error: string };
@@ -245,4 +248,108 @@ export async function unblockConversationUser(input: {
 
   revalidateChatRoutes(block.conversation_id);
   return { ok: true };
+}
+
+const CHAT_BUCKET = "chat-attachments";
+
+/**
+ * Rimuove UN messaggio (o allegato) da una conversazione, con motivazione.
+ *
+ * Solo con un accesso motivato valido alla conversazione. Il messaggio non si
+ * cancella: il testo diventa «Messaggio rimosso dal team N'arte» e gli
+ * `attachment_*` si azzerano; l'allegato esce dal bucket privato. Offerte e
+ * messaggi di sistema non si toccano da qui. Il mittente riceve la decisione
+ * con il modo per contestarla.
+ */
+export async function rimuoviMessaggioChat(input: {
+  conversationId: string;
+  messageId: string;
+  motivo: string;
+}): Promise<ActionResult<{ notified: boolean }>> {
+  const admin_user = await requireAdminPageAccess("chat");
+
+  const ids = z.object({ conversationId: z.string().uuid(), messageId: z.string().uuid() }).safeParse(input);
+  if (!ids.success) return { ok: false, error: "Dati non validi" };
+  const motivo = (input.motivo ?? "").trim();
+  if (motivo.length < MOTIVAZIONE_MIN) {
+    return { ok: false, error: `La motivazione deve avere almeno ${MOTIVAZIONE_MIN} caratteri.` };
+  }
+  if (motivo.length > 1000) return { ok: false, error: "La motivazione è troppo lunga (massimo 1000 caratteri)." };
+  const { conversationId, messageId } = ids.data;
+
+  // Senza accesso motivato e ancora valido non si interviene sulla conversazione.
+  const accesso = await getAccessoValido(admin_user.id, conversationId);
+  if (accesso.stato !== "valido") {
+    return { ok: false, error: "Serve un accesso motivato ancora valido a questa conversazione." };
+  }
+
+  const admin = createAdminClient();
+  const { data: msg, error: readErr } = await admin
+    .from("messages")
+    .select("id, conversation_id, sender_id, kind, body, attachment_url")
+    .eq("id", messageId)
+    .eq("conversation_id", conversationId)
+    .maybeSingle();
+  if (readErr) return { ok: false, error: readErr.message };
+  if (!msg) return { ok: false, error: "Messaggio non trovato" };
+  if (msg.kind === "offer" || msg.kind === "system") {
+    return { ok: false, error: "Offerte e messaggi di sistema non si rimuovono da qui." };
+  }
+  if (msg.body === MESSAGGIO_RIMOSSO && !msg.attachment_url) {
+    return { ok: false, error: "Il messaggio è già stato rimosso." };
+  }
+
+  const { error: updErr } = await admin
+    .from("messages")
+    .update({
+      kind: "text",
+      body: MESSAGGIO_RIMOSSO,
+      attachment_url: null,
+      attachment_type: null,
+      attachment_name: null,
+      attachment_size: null,
+      attachment_duration_ms: null,
+    })
+    .eq("id", msg.id)
+    .eq("conversation_id", conversationId);
+  if (updErr) return { ok: false, error: updErr.message };
+
+  // L'allegato esce dal bucket. Il messaggio è già stato aggiornato: un errore
+  // qui si segnala nei log ma non annulla la rimozione.
+  if (msg.attachment_url) {
+    const path = percorsoAllegatoChat(msg.attachment_url, conversationId);
+    if (!path) {
+      logger.warn("chat", "allegato non riconducibile a un percorso del bucket: file NON cancellato", {
+        messageId: msg.id,
+      });
+    } else {
+      const { error: rmErr } = await admin.storage.from(CHAT_BUCKET).remove([path]);
+      if (rmErr) logger.error("chat", "allegato rimosso dal messaggio ma non dal bucket:", rmErr.message);
+    }
+  }
+
+  const parties = await getConversationParties(conversationId);
+  const destinazione =
+    "data" in parties ? `Conversazione tra ${parties.data.artist.name} e ${parties.data.organizer.name}` : "Conversazione";
+  const esito = await registraDecisione({
+    actorId: admin_user.id,
+    targetType: "messaggio",
+    targetId: msg.id,
+    action: "messaggio_rimosso",
+    reason: motivo,
+    affectedUserId: msg.sender_id,
+    notify: msg.sender_id
+      ? {
+          decision: msg.attachment_url
+            ? "Abbiamo rimosso un allegato che avevi inviato in una conversazione."
+            : "Abbiamo rimosso un messaggio che avevi inviato in una conversazione.",
+          target: destinazione,
+          consequences: "Al suo posto la conversazione mostra «Messaggio rimosso dal team N'arte».",
+        }
+      : false,
+  });
+  if (!esito.ok) logger.warn("chat", "rimozione messaggio non registrata:", esito.error);
+
+  revalidateChatRoutes(conversationId);
+  return { ok: true, notified: esito.ok ? esito.notified : false };
 }

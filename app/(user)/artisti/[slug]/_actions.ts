@@ -2,7 +2,9 @@
 
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { leadSchema, type LeadInput } from "@/lib/validators/schemas";
-import { sendEmail } from "@/lib/emails/send";
+import { dispatchEmail } from "@/lib/emails/dispatch";
+import { buildBookingRequestParams } from "@/lib/emails/booking-request-params";
+import { getSiteUrl } from "@/lib/site-url";
 import BookingRequestEmail from "@/lib/emails/templates/BookingRequestEmail";
 import { allowByIp, LIMITI } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
@@ -155,14 +157,28 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
       }
     }
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+    const interestParams = buildBookingRequestParams({
+      artistName: artist.stage_name,
+      contactName: data.name,
+      eventDate: data.date,
+      eventTime: data.timeSlot ?? null,
+      location: eventLocation,
+      message: composedMessage,
+      contactEmail: data.email,
+      contactPhone: data.phone ?? null,
+      baseUrl: getSiteUrl(),
+    });
     const results = await Promise.allSettled([
       artistEmail
-        ? sendEmail({
+        ? dispatchEmail({
+            key: "booking_request_artist",
             to: artistEmail,
-            subject: `Nuova richiesta booking — ${data.date}`,
+            params: interestParams,
             replyTo: data.email,
-            template: "BookingRequestArtist",
-            react: BookingRequestEmail({
+            fallback: {
+              subject: `Nuova richiesta booking — ${data.date}`,
+              template: "BookingRequestArtist",
+              react: BookingRequestEmail({
               artistName: artist.stage_name,
               requesterName: data.name,
               eventDate: data.date,
@@ -171,16 +187,20 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
               message: composedMessage,
               contactEmail: data.email,
               contactPhone: data.phone ?? null,
-            }),
+              }),
+            },
           })
         : Promise.resolve({ ok: false as const, skipped: true }),
       adminEmail
-        ? sendEmail({
+        ? dispatchEmail({
+            key: "booking_request_admin",
             to: adminEmail,
-            subject: `[N'arte] Nuovo lead per ${artist.stage_name}`,
+            params: interestParams,
             replyTo: data.email,
-            template: "BookingRequestAdmin",
-            react: BookingRequestEmail({
+            fallback: {
+              subject: `[N'arte] Nuovo lead per ${artist.stage_name}`,
+              template: "BookingRequestAdmin",
+              react: BookingRequestEmail({
               artistName: artist.stage_name,
               requesterName: data.name,
               eventDate: data.date,
@@ -190,7 +210,8 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
               contactEmail: data.email,
               contactPhone: data.phone ?? null,
               isAdminCopy: true,
-            }),
+              }),
+            },
           })
         : Promise.resolve({ ok: false as const, skipped: true }),
     ]);
@@ -252,40 +273,59 @@ export async function submitLead(input: LeadInput) {
 
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
 
+  const leadParams = buildBookingRequestParams({
+    artistName: artist.stage_name,
+    eventDate: data.eventDate,
+    location: data.eventLocation,
+    budget: data.budget,
+    message: data.message,
+    contactEmail: data.contactEmail,
+    contactPhone: data.contactPhone,
+    baseUrl: getSiteUrl(),
+  });
+
   await Promise.all([
     artistEmail
-      ? sendEmail({
+      ? dispatchEmail({
+          key: "lead_artist",
           to: artistEmail,
-          subject: `Nuova richiesta booking — ${data.eventLocation}`,
+          params: leadParams,
           replyTo: data.contactEmail,
-          template: "LeadArtist",
-          react: BookingRequestEmail({
-            artistName: artist.stage_name,
-            eventDate: data.eventDate,
-            eventLocation: data.eventLocation,
-            budget: data.budget,
-            message: data.message,
-            contactEmail: data.contactEmail,
-            contactPhone: data.contactPhone,
-          }),
+          fallback: {
+            subject: `Nuova richiesta booking — ${data.eventLocation}`,
+            template: "LeadArtist",
+            react: BookingRequestEmail({
+              artistName: artist.stage_name,
+              eventDate: data.eventDate,
+              eventLocation: data.eventLocation,
+              budget: data.budget,
+              message: data.message,
+              contactEmail: data.contactEmail,
+              contactPhone: data.contactPhone,
+            }),
+          },
         })
       : Promise.resolve(),
     adminEmail
-      ? sendEmail({
+      ? dispatchEmail({
+          key: "lead_admin",
           to: adminEmail,
-          subject: `[N'arte] Nuovo lead per ${artist.stage_name}`,
+          params: leadParams,
           replyTo: data.contactEmail,
-          template: "LeadAdmin",
-          react: BookingRequestEmail({
-            artistName: artist.stage_name,
-            eventDate: data.eventDate,
-            eventLocation: data.eventLocation,
-            budget: data.budget,
-            message: data.message,
-            contactEmail: data.contactEmail,
-            contactPhone: data.contactPhone,
-            isAdminCopy: true,
-          }),
+          fallback: {
+            subject: `[N'arte] Nuovo lead per ${artist.stage_name}`,
+            template: "LeadAdmin",
+            react: BookingRequestEmail({
+              artistName: artist.stage_name,
+              eventDate: data.eventDate,
+              eventLocation: data.eventLocation,
+              budget: data.budget,
+              message: data.message,
+              contactEmail: data.contactEmail,
+              contactPhone: data.contactPhone,
+              isAdminCopy: true,
+            }),
+          },
         })
       : Promise.resolve(),
   ]);

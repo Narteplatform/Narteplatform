@@ -1,7 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Clock3, Images, Maximize2, Music4, Video, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Clock3, Images, Maximize2, Music4, Trash2, Video, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { MotivazioneField } from "@/components/admin/MotivazioneField";
+import { rimuoviMediaPubblicato } from "@/app/(admin)/admin/artisti/_actions";
 import { VideoPoster } from "@/components/media/VideoPoster";
 import { streamOriginalUrl } from "@/lib/storage/bunny/urls";
 import { MediaViewer, type MediaViewerItem } from "@/components/media/MediaViewer";
@@ -21,12 +25,20 @@ export type ArtistMediaItem = MediaViewerItem & {
   /** Stato editoriale, quando esiste. Le foto approvate non ne hanno bisogno. */
   moderation?: "pending" | "rejected" | null;
   moderationNote?: string | null;
+  /**
+   * Presente solo per i contenuti già pubblicati sul profilo: abilita
+   * «Rimuovi dal profilo». `ref` è l'indirizzo del file (foto, copertina,
+   * audio) oppure l'id del video.
+   */
+  removable?: { tipo: "gallery" | "cover" | "audio" | "video"; ref: string };
 };
 
 export function ArtistMediaPanel({
+  artistId,
   artistName,
   items,
 }: {
+  artistId: string;
   artistName: string;
   items: ArtistMediaItem[];
 }) {
@@ -108,7 +120,111 @@ export function ArtistMediaPanel({
         heading={artistName}
         onClose={() => setAperto(null)}
         onNavigate={setAperto}
+        footer={(viewerItem) => {
+          const originale = items.find((i) => i.id === viewerItem.id && i.kind === viewerItem.kind);
+          if (!originale?.removable) return null;
+          return (
+            <RimuoviDalProfilo
+              key={originale.id}
+              artistId={artistId}
+              removable={originale.removable}
+              onDone={() => setAperto(null)}
+            />
+          );
+        }}
       />
+    </div>
+  );
+}
+
+/**
+ * Rimozione di un singolo contenuto già pubblicato. Motivazione obbligatoria:
+ * viene inviata all'artista con il modo per contestare.
+ */
+function RimuoviDalProfilo({
+  artistId,
+  removable,
+  onDone,
+}: {
+  artistId: string;
+  removable: NonNullable<ArtistMediaItem["removable"]>;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const [aperto, setAperto] = React.useState(false);
+  const [motivo, setMotivo] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+  const [pending, start] = React.useTransition();
+
+  function conferma() {
+    setError(null);
+    start(async () => {
+      const res = await rimuoviMediaPubblicato({ artistId, tipo: removable.tipo, ref: removable.ref }, motivo);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      onDone();
+      router.refresh();
+    });
+  }
+
+  if (!aperto) {
+    return (
+      <div className="flex justify-center">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setAperto(true)}
+          className="border-white/40 bg-transparent text-white hover:bg-white hover:text-notte"
+        >
+          <Trash2 className="size-4" /> Rimuovi dal profilo
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 rounded-2xl bg-white/10 p-3">
+      <MotivazioneField
+        onDark
+        compact
+        rows={2}
+        label="Motivazione della rimozione"
+        disabled={pending}
+        onChange={setMotivo}
+        hint={
+          removable.tipo === "video"
+            ? "Viene inviata all'artista per email. Il video sarà rimosso anche dallo storage."
+            : "Viene inviata all'artista per email."
+        }
+      />
+      {error && (
+        <p role="alert" className="text-xs text-red-200">
+          {error}
+        </p>
+      )}
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={pending}
+          onClick={() => setAperto(false)}
+          className="text-white hover:bg-white/20"
+        >
+          Annulla
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          disabled={pending || !motivo}
+          onClick={conferma}
+          className="bg-red-600 text-white hover:bg-red-700"
+        >
+          {pending ? "Rimozione…" : "Conferma rimozione"}
+        </Button>
+      </div>
     </div>
   );
 }

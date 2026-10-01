@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
+import { MotivazioneField } from "@/components/admin/MotivazioneField";
 import { decideReport, takeReportInCharge } from "@/app/(admin)/admin/segnalazioni/_actions";
 
 const MIN = 10;
@@ -11,14 +11,18 @@ const MIN = 10;
 export function ContentReportActions({
   id,
   status,
+  conflitto = null,
 }: {
   id: string;
   status: "ricevuta" | "in_esame" | "accolta" | "respinta" | "archiviata";
+  /** Avviso se chi decide ha preso la decisione contestata da questo reclamo. */
+  conflitto?: string | null;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [note, setNote] = useState("");
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+  const [confermaConflitto, setConfermaConflitto] = useState(false);
 
   if (status !== "ricevuta" && status !== "in_esame") return null;
 
@@ -34,7 +38,7 @@ export function ContentReportActions({
   function decidi(outcome: "accolta" | "respinta" | "archiviata") {
     setMsg(null);
     start(async () => {
-      const res = await decideReport(id, outcome, note);
+      const res = await decideReport(id, outcome, note, confermaConflitto);
       if (!res.ok) {
         setMsg({ tone: "err", text: res.error });
         return;
@@ -49,7 +53,7 @@ export function ContentReportActions({
     });
   }
 
-  const motivazioneOk = note.trim().length >= MIN;
+  const motivazioneOk = note.trim().length >= MIN && (!conflitto || confermaConflitto);
 
   return (
     <div className="mt-4 space-y-3 border-t border-border pt-4">
@@ -59,15 +63,26 @@ export function ContentReportActions({
         </Button>
       )}
       <div className="space-y-2">
-        <label className="block text-xs font-semibold" htmlFor={`nota-${id}`}>
-          Motivazione (obbligatoria, la riceve il segnalante)
-        </label>
-        <Textarea
-          id={`nota-${id}`}
-          rows={3}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Cosa è stato deciso e perché, con il riferimento alla regola."
+        {conflitto && (
+          <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+            <p>{conflitto}</p>
+            <label className="mt-2 flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={confermaConflitto}
+                disabled={pending}
+                onChange={(e) => setConfermaConflitto(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>Lo so: decido comunque io.</span>
+            </label>
+          </div>
+        )}
+        <MotivazioneField
+          label="Motivazione (obbligatoria, la riceve il segnalante)"
+          disabled={pending}
+          onChange={setNote}
+          maxFatti={1800}
         />
         <div className="flex flex-wrap gap-2">
           <Button type="button" size="sm" disabled={pending || !motivazioneOk} onClick={() => decidi("accolta")}>

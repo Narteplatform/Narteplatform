@@ -46,7 +46,7 @@ export type LegalDoc = {
 /** Versione dei documenti. È la data dell'ultima modifica, anche minima, ed è
  *  quella che si mostra in pagina e si registra insieme al consenso: serve a
  *  sapere esattamente quale testo l'utente aveva davanti. */
-export const LEGAL_VERSION = "2026-09-30";
+export const LEGAL_VERSION = "2026-10-01";
 
 /**
  * Versione del CONSENSO — deliberatamente separata dalla precedente.
@@ -183,6 +183,70 @@ all&rsquo;email.</p>
 <p>Teniamo traccia delle comunicazioni che il sistema invia — destinatario,
 oggetto, esito — per accorgerci quando qualcosa non arriva a destinazione e
 poterlo correggere. È un registro tecnico, consultabile solo dal team.</p>
+
+<h3>Chi non è registrato</h3>
+<p>Il catalogo e i profili degli artisti sono riservati agli utenti registrati: chi
+non ha un account non riceve nomi, foto, città né altri dati che identifichino
+un artista, nemmeno interrogando direttamente i nostri sistemi.</p>
+
+<h3>Le prove delle tue accettazioni</h3>
+<p>Quando accetti termini, condizioni o una dichiarazione registriamo il documento
+e la sua versione, la data e l&rsquo;ora, il tuo ruolo, il tipo di browser e
+un&rsquo;impronta dell&rsquo;indirizzo IP (non l&rsquo;indirizzo in chiaro). Servono a
+dimostrare cosa hai accettato e quando. Una copia della prova è conservata anche da
+iubenda.</p>
+
+<h3>Contenuti degli artisti e componenti della formazione</h3>
+<p>Prima di pubblicare foto, audio e video l&rsquo;artista dichiara di averne i
+diritti; la dichiarazione è registrata. I contenuti nuovi vengono controllati dal
+team prima di essere pubblicati. Per ogni componente della formazione registriamo
+che l&rsquo;artista ha dichiarato di averlo informato e di avere il suo consenso.</p>
+
+<h3>Candidature degli artisti</h3>
+<p>Nome, email, presentazione, link e l&rsquo;eventuale video servono a valutare la
+candidatura. Se non viene accolta, la conserviamo 12 mesi e poi la cancelliamo,
+video compreso.</p>
+
+<h3>Consulenze</h3>
+<p>Per le consulenze trattiamo nome, email, telefono e quanto descrivi delle tue
+esigenze, solo per organizzare e svolgere l&rsquo;incontro con il consulente.</p>
+
+<h3>Strutture e organizzatori</h3>
+<p>Indirizzo e recapiti di una struttura sono visibili all&rsquo;artista che riceve la
+richiesta e al team. Per le date confermate gli utenti registrati vedono il nome
+della struttura e la città; se la struttura è un luogo privato o
+l&rsquo;organizzatore è un privato, solo la città.</p>
+
+<h3>Abbonamenti e pagamenti</h3>
+<p>I pagamenti li gestisce Stripe: noi non vediamo i dati della carta. Conserviamo
+piano, date, importi e i dati di fatturazione (nome, indirizzo, eventuale partita
+IVA) per la contabilità, e registriamo i recessi con data, canale ed esito del
+rimborso.</p>
+
+<h3>Allegati delle segnalazioni</h3>
+<p>Gli allegati di una segnalazione sono conservati in un archivio privato,
+visibile solo al team, e vengono cancellati insieme alla segnalazione.</p>
+
+<h3>Newsletter</h3>
+<p>Se dai il consenso al marketing, il tuo indirizzo viene inserito nella lista
+newsletter sul nostro fornitore email (Brevo). Puoi revocarlo in ogni momento da
+<a href="/account/i-miei-dati">I miei dati</a> o con il link in fondo alle email:
+le due cose restano allineate.</p>
+
+<h3>Per quanto conserviamo i dati</h3>
+<ul>
+<li>Conversazioni, allegati e note vocali: 36 mesi dall&rsquo;ultima attività, salvo
+richieste aperte o date future.</li>
+<li>Richieste di booking rifiutate o annullate: 36 mesi.</li>
+<li>Candidature non accolte, con il video: 12 mesi.</li>
+<li>Messaggi dal modulo contatti, richieste e consulenze: 24 mesi.</li>
+<li>Registro delle email inviate: 12 mesi.</li>
+<li>Statistiche di visita: 425 giorni.</li>
+<li>Registro delle decisioni del team, degli accessi alle chat, segnalazioni e
+reclami: 5 anni.</li>
+<li>Prove dei recessi e dati contabili: 10 anni.</li>
+<li>Account cancellati: rimozione definitiva entro 30 giorni dalla conferma.</li>
+</ul>
 
 <h3>I tuoi dati, in autonomia</h3>
 <p>Dalla pagina <a href="/account/i-miei-dati">I miei dati</a> puoi scaricare una

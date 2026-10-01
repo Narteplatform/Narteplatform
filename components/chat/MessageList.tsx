@@ -34,11 +34,13 @@ export function MessageList({
   currentUserId,
   viewerRole,
   readOnly,
+  moderazione,
 }: {
   messages: ChatMessage[];
   currentUserId: string | null;
   viewerRole: "artist" | "organizer" | "superadmin";
   readOnly: boolean;
+  moderazione?: { conversationId: string };
 }) {
   // Ogni ruolo ha una destinazione diversa per lo stesso booking: l'organizer
   // ha una pagina di dettaglio, artista e superadmin hanno solo la lista, dove
@@ -113,7 +115,7 @@ export function MessageList({
                 );
               }
               return (
-                <MessageBubble key={m.id} msg={m} isOwn={isOwn} tick={tick} />
+                <MessageBubble key={m.id} msg={m} isOwn={isOwn} tick={tick} moderazione={moderazione} />
               );
             })}
           </div>

@@ -116,3 +116,24 @@ function parseDate(value: string): Date | null {
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
 }
+
+/** Come `formatDateIt`, ma nel fuso di Roma: serve agli appuntamenti con un orario. */
+export function formatDateRome(value: string | Date): string {
+  const d = typeof value === "string" ? parseDate(value) : value;
+  if (!d) return "";
+  const s = d.toLocaleDateString(IT, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Rome",
+  });
+  return s.replace(/(^|\s)(\p{Ll})/gu, (_m, sep: string, ch: string) => sep + ch.toUpperCase());
+}
+
+/** "15:30" nel fuso di Roma. */
+export function formatTimeRome(value: string | Date): string {
+  const d = typeof value === "string" ? parseDate(value) : value;
+  if (!d) return "";
+  return d.toLocaleTimeString(IT, { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
+}

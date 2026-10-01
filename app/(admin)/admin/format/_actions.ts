@@ -69,8 +69,9 @@ export async function updateFormat(id: string, input: FormatInput) {
       tagline: data.tagline ?? null,
       description: data.description ?? null,
       cover_image: data.cover_image ?? null,
-      gallery: data.gallery ?? [],
-      videos: data.videos ?? [],
+      // Regola 3 di CLAUDE.md: solo se inviati dal modulo.
+      ...(data.gallery !== undefined ? { gallery: data.gallery } : {}),
+      ...(data.videos !== undefined ? { videos: data.videos } : {}),
       icon: data.icon ?? null,
       order_index: data.order_index ?? 0,
       details: data.details ?? {},

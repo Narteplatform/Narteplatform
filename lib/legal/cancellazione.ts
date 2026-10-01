@@ -6,7 +6,7 @@ import type { Json } from "@/lib/supabase/types";
 import { logger } from "@/lib/logger";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/client";
 import { leggiSospensione } from "@/lib/auth/sospeso";
-import { registraDecisione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
+import { registraAzione, registraDecisione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 
 /**
  * Cancellazione dell'account: richiesta, conferma, disattivazione.
@@ -160,6 +160,16 @@ export async function confermaCancellazione(token: string): Promise<EsitoConferm
   // automatico del periodo in corso: doc. 02, art. 6.3). Se Stripe non risponde
   // la disattivazione resta valida e l'errore finisce nei log, da gestire a mano.
   const disdetta = await disdiciAbbonamentoAFinePeriodo(richiesta.user_id);
+  // Nel registro delle azioni resta traccia della cancellazione confermata e
+  // di cosa è successo all'abbonamento (nessun rinnovo, nessun rimborso).
+  await registraAzione({
+    actorId: richiesta.user_id,
+    targetType: "account",
+    targetId: richiesta.user_id,
+    action: "cancellazione_confermata",
+    descrizione: `Cancellazione dell'account confermata dall'interessato. Abbonamento: ${JSON.stringify(disdetta)}`,
+    affectedUserId: richiesta.user_id,
+  });
 
   const { error: erroreConferma } = await admin
     .from("account_deletion_requests")

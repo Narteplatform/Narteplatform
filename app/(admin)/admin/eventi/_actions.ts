@@ -104,8 +104,10 @@ export async function updateEvent(id: string, input: EventInput) {
       venue: data.venue ?? null,
       price: data.price ?? null,
       cover_image: data.coverImage ?? null,
-      gallery: data.gallery ?? [],
-      videos: data.videos ?? [],
+      // Regola 3 di CLAUDE.md: in un aggiornamento, galleria e video si
+      // scrivono solo se il modulo li ha inviati; `?? []` li svuoterebbe.
+      ...(data.gallery !== undefined ? { gallery: data.gallery } : {}),
+      ...(data.videos !== undefined ? { videos: data.videos } : {}),
       ticket_url: data.ticketUrl ?? null,
       description: data.description ?? null,
       featured: data.featured ?? false,

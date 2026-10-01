@@ -4,6 +4,8 @@ import { Check, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MessageAttachment } from "./MessageAttachment";
 import type { ChatMessage } from "@/lib/chat/queries";
+import { MESSAGGIO_RIMOSSO } from "@/lib/chat/removed";
+import { RimuoviMessaggioChat } from "@/components/admin/RimuoviMessaggioChat";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -27,10 +29,13 @@ export function MessageBubble({
   msg,
   isOwn,
   tick,
+  moderazione,
 }: {
   msg: ChatMessage;
   isOwn: boolean;
   tick: TickState;
+  /** Solo per il Team con accesso motivato: abilita «Rimuovi» sul messaggio. */
+  moderazione?: { conversationId: string };
 }) {
   if (msg.kind === "system") {
     return (
@@ -59,6 +64,13 @@ export function MessageBubble({
           <MessageAttachment msg={msg} isOwn={isOwn} />
         ) : (
           <span>{msg.body}</span>
+        )}
+        {moderazione && !(msg.body === MESSAGGIO_RIMOSSO && !msg.attachmentUrl) && (
+          <RimuoviMessaggioChat
+            conversationId={moderazione.conversationId}
+            messageId={msg.id}
+            haAllegato={Boolean(msg.attachmentUrl)}
+          />
         )}
         <div
           className={cn(

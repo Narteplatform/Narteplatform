@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createElement } from "react";
+
 import { createAdminClient } from "@/lib/supabase/server";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
@@ -11,6 +13,7 @@ import {
   toPlainText,
 } from "@/lib/emails/format";
 import type { BookingStatusParams } from "@/lib/brevo/registry";
+import BookingStatusEmail from "@/lib/emails/templates/BookingStatusEmail";
 
 /**
  * Notifiche di stato di una richiesta di booking, nel formato dei template
@@ -106,6 +109,16 @@ async function loadContext(requestId: string) {
   return {
     params,
     base,
+    requestId,
+    artistId: req.artist_id,
+    // Dati grezzi per il componente React di ripiego (identico a prima).
+    raw: {
+      artistName: artist?.stage_name ?? "Artista",
+      organizerName: organizer?.display_name ?? "",
+      venueName: venue?.name ?? null,
+      eventDate: req.event_date,
+      notesArtist: req.notes_artist,
+    },
     notesArtist: toPlainText(req.notes_artist),
     cancellationReason: toPlainText(req.cancellation_reason),
     artistEmail: artistAccount?.data?.user?.email ?? null,
@@ -134,5 +147,130 @@ export async function sendBookingCancelledByOrganizerEmail(requestId: string) {
       bookingUrl: `${ctx.base}/dashboard/richieste`,
     },
     subjectPreview: `Richiesta annullata: ${ctx.params.organizerName} · ${ctx.params.eventDate}`,
+  });
+}
+
+type BookingContext = NonNullable<Awaited<ReturnType<typeof loadContext>>>;
+type StatusKind = "accepted" | "confirmed" | "declined" | "cancelled_by_admin";
+
+/** Link per ruolo del destinatario: l'artista e l'organizzatore hanno aree diverse. */
+function linksFor(base: string, role: "artist" | "organizer") {
+  return role === "artist"
+    ? { chatUrl: `${base}/dashboard/chat`, bookingUrl: `${base}/dashboard/richieste` }
+    : { chatUrl: `${base}/organizzatore/chat`, bookingUrl: `${base}/organizzatore/richieste` };
+}
+
+/**
+ * Invia una notifica di stato a uno o più destinatari. Con più destinatari
+ * parte una email ciascuno: i link nel corpo puntano all'area di ciascuno e
+ * nessuno vede l'indirizzo dell'altro.
+ */
+async function notifyStatus(
+  ctx: BookingContext,
+  opts: {
+    key: "booking_accepted" | "booking_confirmed" | "booking_declined" | "booking_cancelled_admin";
+    kind: StatusKind;
+    subject: string;
+    template: string;
+    message: string;
+    cancellationReason?: string;
+    recipients: { email: string; role: "artist" | "organizer" }[];
+    meta: Record<string, string>;
+  }
+) {
+  const results = await Promise.all(
+    opts.recipients.map((r) =>
+      dispatchEmail({
+        key: opts.key,
+        to: r.email,
+        params: { ...ctx.params, message: opts.message, ...linksFor(ctx.base, r.role) },
+        meta: opts.meta,
+        fallback: {
+          subject: opts.subject,
+          template: opts.template,
+          react: createElement(BookingStatusEmail, {
+            kind: opts.kind,
+            ...ctx.raw,
+            cancellationReason: opts.cancellationReason,
+          }),
+        },
+      })
+    )
+  );
+  return { ok: results.some((r) => r.ok) };
+}
+
+function bothRecipients(ctx: BookingContext) {
+  const out: { email: string; role: "artist" | "organizer" }[] = [];
+  if (ctx.artistEmail) out.push({ email: ctx.artistEmail, role: "artist" });
+  if (ctx.organizerEmail) out.push({ email: ctx.organizerEmail, role: "organizer" });
+  return out;
+}
+
+/**
+ * Artista ha accettato (richiesta o offerta in chat) → all'organizzatore, che
+ * deve confermare la data dalla propria area.
+ */
+export async function sendBookingAcceptedEmail(requestId: string) {
+  const ctx = await loadContext(requestId);
+  if (!ctx?.organizerEmail) return { ok: false as const };
+  return notifyStatus(ctx, {
+    key: "booking_accepted",
+    kind: "accepted",
+    subject: `${ctx.raw.artistName} ha accettato: conferma la data`,
+    template: "BookingAccepted",
+    message: ctx.notesArtist,
+    recipients: [{ email: ctx.organizerEmail, role: "organizer" }],
+    meta: { requestId, artistId: ctx.artistId },
+  });
+}
+
+/** Data confermata da entrambe le parti → artista e organizzatore. */
+export async function sendBookingConfirmedEmail(requestId: string) {
+  const ctx = await loadContext(requestId);
+  if (!ctx) return { ok: false as const };
+  const recipients = bothRecipients(ctx);
+  if (recipients.length === 0) return { ok: false as const };
+  return notifyStatus(ctx, {
+    key: "booking_confirmed",
+    kind: "confirmed",
+    subject: `Data confermata: ${ctx.raw.artistName} · ${ctx.raw.eventDate}`,
+    template: "BookingConfirmed",
+    message: ctx.notesArtist,
+    recipients,
+    meta: { requestId, artistId: ctx.artistId },
+  });
+}
+
+/** Artista non disponibile → organizzatore. */
+export async function sendBookingDeclinedEmail(requestId: string) {
+  const ctx = await loadContext(requestId);
+  if (!ctx?.organizerEmail) return { ok: false as const };
+  return notifyStatus(ctx, {
+    key: "booking_declined",
+    kind: "declined",
+    subject: `${ctx.raw.artistName} non disponibile per la data richiesta`,
+    template: "BookingDeclined",
+    message: ctx.notesArtist,
+    recipients: [{ email: ctx.organizerEmail, role: "organizer" }],
+    meta: { requestId, artistId: ctx.artistId },
+  });
+}
+
+/** Annullamento deciso dal superadmin → artista e organizzatore. */
+export async function sendBookingCancelledByAdminEmail(requestId: string, reason: string) {
+  const ctx = await loadContext(requestId);
+  if (!ctx) return { ok: false as const };
+  const recipients = bothRecipients(ctx);
+  if (recipients.length === 0) return { ok: false as const };
+  return notifyStatus(ctx, {
+    key: "booking_cancelled_admin",
+    kind: "cancelled_by_admin",
+    subject: `Data annullata da N'arte · ${ctx.raw.eventDate}`,
+    template: "BookingCancelledByAdmin",
+    message: toPlainText(reason),
+    cancellationReason: reason,
+    recipients,
+    meta: { requestId, artistId: ctx.artistId, reason },
   });
 }

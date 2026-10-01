@@ -9,6 +9,7 @@ import { REPORT_CATEGORIES, REPORT_TARGET_TYPES } from "@/lib/validators/schemas
 import type { Database } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
+import { conflittoNelReclamo } from "@/lib/admin/reclami";
 
 export const metadata = { title: "Segnalazioni — N'arte Admin" };
 export const dynamic = "force-dynamic";
@@ -68,7 +69,7 @@ export default async function AdminSegnalazioniPage({
 }: {
   searchParams: Promise<{ stato?: string; tipo?: string }>;
 }) {
-  await requireAdminPageAccess("segnalazioni");
+  const attore = await requireAdminPageAccess("segnalazioni");
   const sp = await searchParams;
   const stato = (STATI as string[]).includes(sp.stato ?? "") ? (sp.stato as Status) : null;
   const tipo = (TIPI as string[]).includes(sp.tipo ?? "") ? (sp.tipo as Kind) : null;
@@ -106,6 +107,29 @@ export default async function AdminSegnalazioniPage({
       }
     }
   }
+
+  // Assegnatari (colonna dalla migration 0070: se manca, `assigned_to` è undefined).
+  const assegnatari = new Map<string, string>();
+  const idAssegnatari = new Set<string>();
+  for (const r of data ?? []) if (r.assigned_to) idAssegnatari.add(r.assigned_to);
+  await Promise.all(
+    [...idAssegnatari].map(async (uid) => {
+      const { data: u, error: uErr } = await admin.auth.admin.getUserById(uid);
+      if (uErr) logger.warn("admin/segnalazioni", "assegnatario non leggibile:", uErr.message);
+      assegnatari.set(uid, u?.user?.email ?? uid.slice(0, 8));
+    }),
+  );
+
+  // Reclami aperti contro una decisione presa dall'operatore che li sta guardando.
+  const conflitti = new Map<string, string>();
+  await Promise.all(
+    (data ?? [])
+      .filter((r) => r.kind === "reclamo" && (r.status === "ricevuta" || r.status === "in_esame"))
+      .map(async (r) => {
+        const c = await conflittoNelReclamo(r, attore.id);
+        if (c.ok && c.conflitto && c.descrizione) conflitti.set(r.id, c.descrizione);
+      }),
+  );
 
   const href = (over: { stato?: string | null; tipo?: string | null }) => {
     const p = new URLSearchParams();
@@ -171,7 +195,12 @@ export default async function AdminSegnalazioniPage({
             <ul className="space-y-4">
               {(data ?? []).map((r) => (
                 <li key={r.id}>
-                  <ReportCard r={r} profiloId={profiloPerReport.get(r.id) ?? null} />
+                  <ReportCard
+                    r={r}
+                    profiloId={profiloPerReport.get(r.id) ?? null}
+                    assegnatario={r.assigned_to ? (assegnatari.get(r.assigned_to) ?? null) : null}
+                    conflitto={conflitti.get(r.id) ?? null}
+                  />
                 </li>
               ))}
             </ul>
@@ -196,7 +225,17 @@ function FilterLink({ href, active, children }: { href: string; active: boolean;
   );
 }
 
-function ReportCard({ r, profiloId }: { r: Report; profiloId: string | null }) {
+function ReportCard({
+  r,
+  profiloId,
+  assegnatario,
+  conflitto,
+}: {
+  r: Report;
+  profiloId: string | null;
+  assegnatario: string | null;
+  conflitto: string | null;
+}) {
   const categoria = (REPORT_CATEGORIES as Record<string, string>)[r.category] ?? r.category;
   const misura = SEZIONE_MISURA[r.target_type];
   const interno = r.target_url?.startsWith("/");
@@ -237,6 +276,9 @@ function ReportCard({ r, profiloId }: { r: Report; profiloId: string | null }) {
             </Row>
           )}
           {r.contested_reference && <Row label="Contesta">{r.contested_reference}</Row>}
+          {(r.status === "ricevuta" || r.status === "in_esame") && (
+            <Row label="Assegnata a">{assegnatario ?? "Nessuno"}</Row>
+          )}
           <Row label="Descrizione">
             <span className="whitespace-pre-wrap">{r.description}</span>
           </Row>
@@ -274,7 +316,7 @@ function ReportCard({ r, profiloId }: { r: Report; profiloId: string | null }) {
           </p>
         )}
 
-        <ContentReportActions id={r.id} status={r.status} />
+        <ContentReportActions id={r.id} status={r.status} conflitto={conflitto} />
       </CardContent>
     </Card>
   );

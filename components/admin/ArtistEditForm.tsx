@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/Button";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { ImageUpload } from "@/components/forms/ImageUpload";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
+import { MotivazioneField } from "@/components/admin/MotivazioneField";
 import { updateArtist } from "@/app/(admin)/admin/artisti/_actions";
+import type { PersonnelRowView } from "@/lib/admin/personnel";
 
 type Values = {
   stage_name: string;
@@ -29,13 +31,28 @@ type Props = {
   artistId: string;
   genreOptions: string[];
   defaults: Partial<Values>;
+  /** Componenti della band, ciascuno con la posizione nell'array salvato. */
+  personnel?: PersonnelRowView[];
 };
 
-export function ArtistEditForm({ artistId, genreOptions, defaults }: Props) {
+type PersonaRow = { name: string; role: string; origine: number | null; origineNome: string | null };
+
+export function ArtistEditForm({ artistId, genreOptions, defaults, personnel = [] }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const [reason, setReason] = useState("");
+  const [resetKey, setResetKey] = useState(0);
+  const [persone, setPersone] = useState<PersonaRow[]>(() =>
+    personnel.map((p) => ({ name: p.name, role: p.role, origine: p.origine, origineNome: p.name })),
+  );
+  // I componenti si inviano solo se sono stati toccati.
+  const personeToccate =
+    persone.length !== personnel.length ||
+    persone.some((p, i) => {
+      const o = personnel[i];
+      return !o || p.origine !== o.origine || p.name.trim() !== o.name.trim() || p.role.trim() !== o.role.trim();
+    });
   const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<Values>({
     defaultValues: {
       stage_name: defaults.stage_name ?? "",
@@ -59,6 +76,10 @@ export function ArtistEditForm({ artistId, genreOptions, defaults }: Props) {
   async function onSubmit(values: Values) {
     setError(null);
     setOk(false);
+    if (personeToccate && !reason) {
+      setError("Hai modificato i componenti della band: indica regola e fatti nella motivazione.");
+      return;
+    }
     const res = await updateArtist(artistId, {
       stage_name: values.stage_name,
       city: values.city || undefined,
@@ -72,13 +93,18 @@ export function ArtistEditForm({ artistId, genreOptions, defaults }: Props) {
       youtube: values.youtube || undefined,
       spotify: values.spotify || undefined,
       website: values.website || undefined,
-    }, reason);
+    }, reason, personeToccate
+      ? persone
+          .filter((p) => p.name.trim() !== "")
+          .map((p) => ({ name: p.name.trim(), role: p.role.trim(), origine: p.origine, origineNome: p.origineNome }))
+      : undefined);
     if (!res.ok) {
       setError(res.error ?? "Errore aggiornamento");
       return;
     }
     setOk(true);
     setReason("");
+    setResetKey((k) => k + 1);
     router.refresh();
   }
 
@@ -144,20 +170,57 @@ export function ArtistEditForm({ artistId, genreOptions, defaults }: Props) {
         </div>
       </fieldset>
 
+      <fieldset className="space-y-2 border-t border-border pt-4">
+        <legend className="text-xs uppercase tracking-wider text-muted-foreground">Componenti della band</legend>
+        {persone.length === 0 && <p className="text-xs text-muted-foreground">Nessun componente indicato.</p>}
+        {persone.map((p, i) => (
+          <div key={p.origine ?? `nuovo-${i}`} className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+            <Input
+              aria-label={`Nome del componente ${i + 1}`}
+              placeholder="Nome"
+              value={p.name}
+              maxLength={120}
+              onChange={(e) => setPersone((prev) => prev.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+            />
+            <Input
+              aria-label={`Ruolo del componente ${i + 1}`}
+              placeholder="Ruolo"
+              value={p.role}
+              maxLength={120}
+              onChange={(e) => setPersone((prev) => prev.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setPersone((prev) => prev.filter((_, j) => j !== i))}
+            >
+              Rimuovi
+            </Button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setPersone((prev) => [...prev, { name: "", role: "", origine: null, origineNome: null }])}
+        >
+          Aggiungi componente
+        </Button>
+        {personeToccate && (
+          <p className="text-xs text-muted-foreground">
+            Modifica ai componenti: la motivazione qui sotto è obbligatoria e viene inviata all&apos;artista.
+          </p>
+        )}
+      </fieldset>
+
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <Field label="Motivo della modifica (facoltativo)">
-        <Textarea
-          rows={2}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          maxLength={1000}
-          placeholder="Es: rimosso un link non funzionante su richiesta dell'artista."
-        />
-        <p className="mt-1 text-xs text-muted-foreground">
-          Se lo compili (almeno 10 caratteri) e il profilo appartiene a un altro utente, gli inviamo
-          un&apos;email con l&apos;elenco dei campi cambiati e questo motivo.
-        </p>
-      </Field>
+      <MotivazioneField
+        label={personeToccate ? "Motivazione della modifica (obbligatoria)" : "Motivo della modifica (facoltativo)"}
+        resetKey={resetKey}
+        onChange={setReason}
+        hint="Se la compili e il profilo appartiene a un altro utente, gli inviamo un'email con l'elenco dei campi cambiati e questo motivo."
+      />
       {ok && <p className="text-sm text-green-700">Profilo aggiornato.</p>}
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Salvataggio..." : "Salva modifiche"}

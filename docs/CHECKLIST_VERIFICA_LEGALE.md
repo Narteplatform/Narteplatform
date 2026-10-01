@@ -1,6 +1,8 @@
-# Checklist di verifica — allineamento legale (30/09/2026)
+# Checklist di verifica — allineamento legale (01/10/2026)
 
-Prove manuali dei flussi introdotti con il fascicolo legale v0.95–0.96.
+Prove manuali dei flussi introdotti con il fascicolo legale v0.95–0.97.
+Le sezioni 13–19 riguardano la seconda lista del cliente e richiedono le
+migration 0069 e 0070.
 Il codice è stato verificato solo staticamente (typecheck, lint, build): queste
 prove vanno fatte **a mano, con account di prova**, prima di considerare i
 flussi chiusi.
@@ -29,8 +31,10 @@ Segna ✅ o ❌ e annota cosa non torna.
 ## 3. Trattativa e date
 - [ ] L'artista accetta la richiesta: si apre la chat.
 - [ ] L'artista **Free** vede il blocco della chat; Pro/Max scrivono.
-- [ ] Un'Offerta accettata chiede la conferma «L'accordo è solo fra voi…» e poi **conferma la richiesta esistente** (non ne crea una seconda): in «Richieste» dell'organizzatore c'è una sola riga confermata.
-- [ ] «Conferma data» dell'organizzatore mostra lo stesso avviso.
+- [ ] **Doppia conferma.** L'artista accetta un'Offerta dell'organizzatore: la richiesta passa ad **«Accettata»** (non «Confermata»); in chat compare «La data sarà confermata solo quando l'organizzatore la confermerà»; l'organizzatore riceve l'email «… ha accettato: conferma la data».
+- [ ] L'organizzatore, da «Richieste», vede «Conferma data» sulla richiesta accettata: dopo l'avviso «L'accordo è solo fra voi…» passa a **«Confermata»** e l'artista riceve l'email. In «Richieste» c'è una sola riga.
+- [ ] Se è l'organizzatore ad accettare un'Offerta dell'artista, la richiesta va direttamente a «Confermata».
+- [ ] Una richiesta «Accettata» si può ancora annullare dall'organizzatore.
 - [ ] Una data già confermata **non** si può annullare dall'organizzatore né rifiutare dall'artista.
 - [ ] Il riquadro «Compenso concordato – promemoria»: proposta, conferma dell'altra parte, e dopo la conferma il pulsante «Ritira» non c'è più.
 
@@ -86,3 +90,48 @@ Segna ✅ o ❌ e annota cosa non torna.
 - [ ] Il catalogo mostra «Ordine: prima gli artisti con piano Max, poi Pro…» con «Come funziona».
 - [ ] Il badge dice «Artista Pro» e, al passaggio del puntatore, spiega che è un abbonamento.
 - [ ] La pagina contatti e le email riportano **info@narteofficial.it**.
+
+## 13. Visitatori non registrati (da browser anonimo)
+- [ ] Home: la vetrina mostra card senza nome né foto, con «Registrati gratis per scoprire chi sono».
+- [ ] `/artisti`: card anonime (genere, formazione, piano); nel sorgente della pagina (Visualizza sorgente) **non** compaiono nomi d'arte, città, slug né URL di copertine.
+- [ ] Un link diretto `/artisti/<slug>` mostra «Accedi per vedere questo artista»; titolo della scheda generico; nessuna anteprima social con nome o foto.
+- [ ] La ricerca in alto non restituisce artisti; `/sitemap.xml` non elenca profili.
+- [ ] Da loggato tutto torna visibile come prima.
+
+## 14. Registro delle azioni del team
+- [ ] Ogni azione delle sezioni precedenti (approvazioni, rifiuti, omaggi, accesso chat, sospensioni) compare in `/admin/registro` con chi, cosa, su chi, quando e perché.
+- [ ] Filtri per operatore, tipo e data; «Esporta CSV» scarica le righe filtrate.
+- [ ] Le motivazioni hanno la forma «Regola: … — Fatti: …» e l'email all'interessato riporta entrambe.
+
+## 15. Strumenti del team su singoli contenuti
+- [ ] Da `/admin/artisti/<id>` rimuovi **una sola** foto della galleria dell'artista di prova con motivazione: le altre foto restano, l'artista riceve l'email.
+- [ ] Rimuovi un componente della band con motivazione: gli altri componenti restano.
+- [ ] Da una chat aperta con accesso motivato, rimuovi un messaggio: diventa «Messaggio rimosso dal team», il mittente riceve l'email.
+- [ ] Da `/admin/utenti/<id>` dell'organizzatore di prova, nascondi una struttura: sparisce dal profilo pubblico dell'artista e dalle scelte; «Mostra» la ripristina.
+- [ ] «Chiudi account» con motivazione: accesso bloccato, profili nascosti, richiesta di cancellazione già confermata in `/admin/impostazioni/cancellazioni` (completabile dopo 30 giorni).
+- [ ] `/admin/abbonamenti` → «Piani omaggio attivi» elenca artista, piano, scadenza, motivo, chi e quando.
+- [ ] Approvando un media o riattivando un profilo l'artista riceve l'email.
+
+## 16. Diritti sui contenuti
+- [ ] Primo caricamento di una foto, traccia o video: si apre la dichiarazione sui diritti; senza conferma il caricamento non parte.
+- [ ] Dopo la conferma, i caricamenti successivi non la richiedono più (fino alla prossima versione dei documenti).
+- [ ] In `/account/i-miei-dati` compare il consenso «diritti_contenuti» con la versione.
+- [ ] In `user_consents` (sola lettura) le nuove righe hanno ruolo, user agent e IP in hash, mai l'IP in chiaro.
+
+## 17. Segnalazioni con allegati
+- [ ] Su `/segnalazioni` allega fino a 3 file (jpg, png, webp, pdf, max 5 MB); un quarto file o un `.exe` rinominato vengono rifiutati.
+- [ ] Da `/admin/segnalazioni` gli allegati si aprono con link a scadenza; «Prendi in carico» mostra il tuo nome come responsabile.
+- [ ] Un reclamo deciso dalla stessa persona della decisione contestata mostra l'avviso.
+
+## 18. Recesso e rinnovi
+- [ ] `/recesso` (anche da non loggato) mostra istruzioni e modulo tipo stampabile.
+- [ ] Un recesso online dall'area abbonamento crea una riga in `subscription_withdrawals` (sola lettura) con canale «online» ed esito del rimborso.
+- [ ] Il promemoria del rinnovo annuale parte dal cron giornaliero 30 giorni prima, una sola volta per periodo (controlla `email_log`, template `renewal_reminder`).
+- [ ] Cancellazione account con abbonamento attivo: nessun rinnovo, periodo pagato fruibile, nessun rimborso; in `/admin/registro` c'è «cancellazione_confermata».
+
+## 19. Newsletter e conservazione
+- [ ] Registrazione con newsletter spuntata: il contatto compare nella lista Brevo «N'arte – Newsletter».
+- [ ] Togliendo il consenso da `/account/i-miei-dati` il contatto esce dalla lista.
+- [ ] Disiscrizione dal link di un'email Brevo: in `/account/i-miei-dati` il marketing risulta revocato (richiede il webhook registrato).
+- [ ] Una recensione di un organizzatore che ha chiesto la cancellazione mostra «Organizzatore — account chiuso».
+- [ ] Il log del cron `/api/cron/retention` (Vercel → Logs) riporta i conteggi delle nuove regole (chat 36 mesi, registro 5 anni, candidature 12 mesi) **senza cancellare nulla** finché `RETENTION_ENFORCE` è spento.

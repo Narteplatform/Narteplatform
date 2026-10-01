@@ -65,7 +65,7 @@ export default async function AdminChatDetailPage({
                     {" — "}
                     {esito.accesso.reasonText}
                     {esito.accesso.reportReference ? ` (${esito.accesso.reportReference})` : ""}
-                    . Scade alle {ora(esito.accesso.expiresAt)}. Sola lettura.
+                    . Scade alle {ora(esito.accesso.expiresAt)}. Sola lettura, salvo la rimozione motivata di singoli messaggi.
                   </span>
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
@@ -87,6 +87,7 @@ export default async function AdminChatDetailPage({
                   viewerRole="superadmin"
                   currentUserId={user.id}
                   readOnly
+                  canModerate
                   compact
                   backHref="/admin/chat"
                 />

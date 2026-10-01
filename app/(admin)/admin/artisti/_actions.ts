@@ -7,14 +7,20 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 import { getSiteUrl } from "@/lib/site-url";
 import { artistSchema, type ArtistInput } from "@/lib/validators/schemas";
-import { sendEmail, sendBookingCancelledByAdminEmail } from "@/lib/emails/send";
+import { dispatchEmail } from "@/lib/emails/dispatch";
+import { sendBookingCancelledByAdminEmail } from "@/lib/emails/booking-notify";
 import ArtistApprovedEmail from "@/lib/emails/templates/ArtistApprovedEmail";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 import { notificaProfiloRiattivato } from "@/lib/moderation/approvazioni";
+import { applicaModificaPersonale, type PersonnelEditRow } from "@/lib/admin/personnel";
 import { verificaProprietarioNonSospeso } from "@/lib/admin/sospensione";
 import { nascondiRecensioniDiBookingAnnullato } from "@/lib/feedback/moderation";
 import { logger } from "@/lib/logger";
+import { rimuoviFileSeNonUsato } from "@/lib/media/file-cleanup";
+import { deleteStreamVideo } from "@/lib/storage/bunny/stream";
+import { ARTIST_VIDEO_BUCKET } from "@/lib/upload/video-limits";
+import type { Json } from "@/lib/supabase/types";
 
 // Una Server Action è un endpoint HTTP raggiungibile direttamente (non solo
 // dalla UI): il solo controllo `role === "superadmin"` non bastava, perché un
@@ -207,15 +213,24 @@ export async function approveApplication(applicationId: string) {
   }
 
   if (actionLink) {
-    await sendEmail({
+    await dispatchEmail({
+      key: "artist_approved",
       to: app.email,
-      subject: "Candidatura approvata — N'arte",
-      template: "ArtistApproved",
-      react: ArtistApprovedEmail({
+      params: {
         applicantName: app.name,
         stageName: app.stage_name,
         actionUrl: actionLink,
-      }),
+        profileUrl: `${siteUrl}/artisti/${slug}`,
+      },
+      fallback: {
+        subject: "Candidatura approvata — N'arte",
+        template: "ArtistApproved",
+        react: ArtistApprovedEmail({
+          applicantName: app.name,
+          stageName: app.stage_name,
+          actionUrl: actionLink,
+        }),
+      },
     });
   }
 
@@ -341,22 +356,50 @@ export async function updateArtistStatus(
   return { ok: true as const };
 }
 
-export async function updateArtist(artistId: string, input: ArtistInput, reason?: string) {
+const personnelEditSchema = z
+  .array(
+    z.object({
+      name: z.string().trim().min(1).max(120),
+      role: z.string().trim().max(120),
+      origine: z.number().int().min(0).nullable(),
+      origineNome: z.string().max(120).nullable(),
+    }),
+  )
+  .max(40);
+
+/**
+ * `personnel` è il quarto argomento e va passato SOLO se i componenti sono
+ * stati toccati: se è `undefined` la colonna non viene né letta né scritta.
+ * Quando c'è, la motivazione è obbligatoria.
+ */
+export async function updateArtist(
+  artistId: string,
+  input: ArtistInput,
+  reason?: string,
+  personnel?: PersonnelEditRow[],
+) {
   const user = await requireAdminPageAccess("artisti");
   const parsed = artistSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
   const data = parsed.data;
+  const personnelParsed = personnel === undefined ? null : personnelEditSchema.safeParse(personnel);
+  if (personnelParsed && !personnelParsed.success) {
+    return { ok: false as const, error: "Componenti della band non validi" };
+  }
   // Facoltativa: se c'è, la modifica viene registrata e comunicata al proprietario.
-  const m = motivazione(reason, false);
+  // Obbligatoria se si toccano i componenti della band.
+  const m = motivazione(reason, personnelParsed !== null);
   if (!m.ok) return { ok: false as const, error: m.error };
 
-  const social_links: Record<string, string> = {};
-  if (data.instagram) social_links.instagram = data.instagram;
-  if (data.facebook) social_links.facebook = data.facebook;
-  if (data.tiktok) social_links.tiktok = data.tiktok;
-  if (data.youtube) social_links.youtube = data.youtube;
-  if (data.spotify) social_links.spotify = data.spotify;
-  if (data.website) social_links.website = data.website;
+  // I sei collegamenti del modulo. Eventuali altre chiavi già salvate si
+  // conservano (vedi sotto): il modulo non le conosce, non deve cancellarle.
+  const socialForm: Record<string, string> = {};
+  if (data.instagram) socialForm.instagram = data.instagram;
+  if (data.facebook) socialForm.facebook = data.facebook;
+  if (data.tiktok) socialForm.tiktok = data.tiktok;
+  if (data.youtube) socialForm.youtube = data.youtube;
+  if (data.spotify) socialForm.spotify = data.spotify;
+  if (data.website) socialForm.website = data.website;
 
   const admin = createAdminClient();
 
@@ -364,11 +407,21 @@ export async function updateArtist(artistId: string, input: ArtistInput, reason?
   // profilo. Se la lettura fallisce ci si ferma: senza di essa non si scrive.
   const { data: prima, error: readErr } = await admin
     .from("artists")
-    .select("user_id, stage_name, city, genre, instruments, bio, cover_image, social_links")
+    .select("user_id, stage_name, city, genre, instruments, bio, cover_image, social_links, personnel")
     .eq("id", artistId)
     .maybeSingle();
   if (readErr) return { ok: false as const, error: readErr.message };
   if (!prima) return { ok: false as const, error: "Profilo non trovato" };
+
+  const chiaviDelModulo = ["instagram", "facebook", "tiktok", "youtube", "spotify", "website"];
+  const socialAttuali =
+    prima.social_links && typeof prima.social_links === "object" && !Array.isArray(prima.social_links)
+      ? (prima.social_links as Record<string, Json | undefined>)
+      : {};
+  const socialConservati = Object.fromEntries(
+    Object.entries(socialAttuali).filter(([k]) => !chiaviDelModulo.includes(k)),
+  ) as Record<string, Json>;
+  const social_links: Record<string, Json> = { ...socialConservati, ...socialForm };
 
   const nuovi = {
     stage_name: data.stage_name,
@@ -393,9 +446,24 @@ export async function updateArtist(artistId: string, input: ArtistInput, reason?
   if ((prima.cover_image ?? null) !== nuovi.cover_image) cambiati.push("immagine di copertina");
   if (JSON.stringify(prima.social_links ?? {}) !== JSON.stringify(nuovi.social_links)) cambiati.push("collegamenti social");
 
-  const { error } = await admin.from("artists").update(nuovi).eq("id", artistId);
+  // Componenti della band: si parte dall'array letto ora, mai da zero.
+  let personnelNuovo: Json[] | null = null;
+  if (personnelParsed && personnelParsed.success) {
+    const esitoPers = applicaModificaPersonale(prima.personnel, personnelParsed.data);
+    if (!esitoPers.ok) return { ok: false as const, error: esitoPers.error };
+    if (esitoPers.cambiato) {
+      personnelNuovo = esitoPers.value;
+      cambiati.push("componenti della band");
+    }
+  }
+
+  const { error } = await admin
+    .from("artists")
+    .update(personnelNuovo ? { ...nuovi, personnel: personnelNuovo } : nuovi)
+    .eq("id", artistId);
   if (error) return { ok: false as const, error: error.message };
 
+  let comunicata = false;
   if (m.reason && cambiati.length > 0 && prima.user_id && prima.user_id !== user.id) {
     const esito = await registraDecisione({
       actorId: user.id,
@@ -412,6 +480,20 @@ export async function updateArtist(artistId: string, input: ArtistInput, reason?
       },
     });
     if (!esito.ok) logger.warn("artisti", "modifica del team non registrata:", esito.error);
+    comunicata = true;
+  }
+
+  // Nessuna comunicazione all'interessato (niente motivo, o profilo senza altro
+  // proprietario): la modifica resta comunque nel registro.
+  if (!comunicata && cambiati.length > 0) {
+    await registraAzione({
+      actorId: user.id,
+      targetType: "profilo",
+      targetId: artistId,
+      action: "profilo_modificato_dal_team",
+      descrizione: `Profilo «${nuovi.stage_name}» modificato dal team (campi: ${cambiati.join(", ")}).`,
+      affectedUserId: prima.user_id,
+    });
   }
 
   revalidatePath("/admin/artisti");
@@ -568,4 +650,159 @@ export async function createArtistManual(input: {
   revalidatePath("/admin/artisti");
   revalidatePath("/artisti");
   return { ok: true as const };
+}
+
+const rimuoviMediaSchema = z.object({
+  artistId: z.string().uuid(),
+  tipo: z.enum(["gallery", "cover", "audio", "video"]),
+  /** Per foto, copertina e audio l'indirizzo del file; per i video l'id della riga. */
+  ref: z.string().min(1).max(2000),
+});
+
+export type RimuoviMediaInput = z.infer<typeof rimuoviMediaSchema>;
+
+/**
+ * Rimuove UN solo media già pubblicato dal profilo di un artista.
+ *
+ * Si identifica l'elemento per indirizzo (o id del video), mai per posizione:
+ * se l'elenco è cambiato nel frattempo si rimuove quello giusto o niente.
+ * Il profilo si legge con errore controllato; si riscrive solo l'array
+ * interessato, privato di quell'elemento. Il file esce dallo storage solo se
+ * nessun'altra parte del profilo lo usa. La motivazione è obbligatoria e viene
+ * comunicata all'artista con il modo per contestare.
+ */
+export async function rimuoviMediaPubblicato(input: RimuoviMediaInput, motivo: string) {
+  const user = await requireAdminPageAccess("artisti");
+  const parsed = rimuoviMediaSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "Dati non validi" };
+  const m = motivazione(motivo, true);
+  if (!m.ok || !m.reason) return { ok: false as const, error: m.ok ? "Motivazione mancante" : m.error };
+  const { artistId, tipo, ref } = parsed.data;
+
+  const admin = createAdminClient();
+  const { data: artista, error: readErr } = await admin
+    .from("artists")
+    .select("user_id, stage_name, slug, cover_image, gallery, audio_files")
+    .eq("id", artistId)
+    .maybeSingle();
+  if (readErr) return { ok: false as const, error: readErr.message };
+  if (!artista) return { ok: false as const, error: "Profilo non trovato" };
+
+  let etichetta: string;
+
+  if (tipo === "video") {
+    const { data: video, error: videoErr } = await admin
+      .from("artist_videos")
+      .select("id, artist_id, provider, bunny_guid, storage_path, moderation_state")
+      .eq("id", ref)
+      .eq("artist_id", artistId)
+      .maybeSingle();
+    if (videoErr) return { ok: false as const, error: videoErr.message };
+    if (!video) return { ok: false as const, error: "Video non trovato su questo profilo" };
+    if (video.moderation_state === "rejected") {
+      return { ok: false as const, error: "Il video è già stato rimosso o respinto" };
+    }
+
+    const { error } = await admin
+      .from("artist_videos")
+      .update({
+        moderation_state: "rejected",
+        moderation_note: m.reason,
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", video.id);
+    if (error) return { ok: false as const, error: error.message };
+    etichetta = "un video";
+
+    // Il file esce dallo storage, la riga resta (storico e motivazione), come
+    // per un video respinto in moderazione. Un errore qui non annulla la rimozione.
+    if (video.provider === "bunny" && video.bunny_guid) {
+      try {
+        await deleteStreamVideo(video.bunny_guid);
+      } catch (e) {
+        logger.error("artisti", "rimozione da Bunny del video rimosso fallita", {
+          videoId: video.id,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+    if (video.provider !== "bunny" && video.storage_path) {
+      const { error: rmErr } = await admin.storage.from(ARTIST_VIDEO_BUCKET).remove([video.storage_path]);
+      if (rmErr) {
+        logger.error("artisti", "rimozione da Supabase Storage del video rimosso fallita", {
+          videoId: video.id,
+          error: rmErr.message,
+        });
+      }
+    }
+  } else if (tipo === "cover") {
+    if (artista.cover_image !== ref) {
+      return { ok: false as const, error: "La foto profilo è cambiata nel frattempo: ricarica la pagina." };
+    }
+    const { error } = await admin.from("artists").update({ cover_image: null }).eq("id", artistId);
+    if (error) return { ok: false as const, error: error.message };
+    etichetta = "la tua foto profilo";
+  } else if (tipo === "gallery") {
+    if (!Array.isArray(artista.gallery)) {
+      return { ok: false as const, error: "Galleria non leggibile: nessuna modifica fatta." };
+    }
+    const idx = artista.gallery.indexOf(ref);
+    if (idx === -1) {
+      return { ok: false as const, error: "La foto non è più nella galleria: ricarica la pagina." };
+    }
+    const nuova = artista.gallery.filter((_, i) => i !== idx);
+    const { error } = await admin.from("artists").update({ gallery: nuova }).eq("id", artistId);
+    if (error) return { ok: false as const, error: error.message };
+    etichetta = "una foto della galleria";
+  } else {
+    if (!Array.isArray(artista.audio_files)) {
+      return { ok: false as const, error: "Tracce audio non leggibili: nessuna modifica fatta." };
+    }
+    const elenco: Json[] = artista.audio_files;
+    const idx = elenco.findIndex(
+      (t) => typeof t === "object" && t !== null && !Array.isArray(t) && t.url === ref,
+    );
+    if (idx === -1) {
+      return { ok: false as const, error: "La traccia non è più tra quelle pubblicate: ricarica la pagina." };
+    }
+    const nuova = elenco.filter((_, i) => i !== idx);
+    const { error } = await admin.from("artists").update({ audio_files: nuova }).eq("id", artistId);
+    if (error) return { ok: false as const, error: error.message };
+    etichetta = "una traccia audio";
+  }
+
+  // File fuori dallo storage solo se non usato altrove (profili dell'account,
+  // richieste ancora in attesa). Mai bloccante.
+  if (tipo !== "video") {
+    await rimuoviFileSeNonUsato(admin, {
+      artistId,
+      url: ref,
+      soloInAttesa: true,
+      contesto: "artisti/rimozione-media",
+    });
+  }
+
+  const esito = await registraDecisione({
+    actorId: user.id,
+    targetType: tipo === "video" ? "video" : "media",
+    targetId: tipo === "video" ? ref : artistId,
+    action: "media_rimosso_dal_team",
+    reason: m.reason,
+    affectedUserId: artista.user_id,
+    affectedName: artista.stage_name,
+    notify: artista.user_id
+      ? {
+          decision: `Abbiamo rimosso ${etichetta} dal tuo profilo.`,
+          target: `Profilo "${artista.stage_name}"`,
+          consequences: "Il contenuto non è più visibile sul profilo pubblico. Puoi caricarne un altro.",
+        }
+      : false,
+  });
+  if (!esito.ok) logger.warn("artisti", "rimozione media non registrata:", esito.error);
+
+  revalidatePath(`/admin/artisti/${artistId}`);
+  revalidatePath("/artisti");
+  if (artista.slug) revalidatePath(`/artisti/${artista.slug}`);
+  return { ok: true as const, notified: esito.ok ? esito.notified : false };
 }

@@ -9,7 +9,7 @@ import {
   type ChatMessageInput,
   type ChatOfferInput,
 } from "@/lib/validators/schemas";
-import { sendBookingAcceptedEmail, sendBookingConfirmedEmail } from "@/lib/emails/send";
+import { sendBookingAcceptedEmail, sendBookingConfirmedEmail } from "@/lib/emails/booking-notify";
 import { logger } from "@/lib/logger";
 import { notifyNewChatMessage, notifyNewChatOffer } from "@/lib/chat/notify";
 import { getEntitlements } from "@/lib/billing/entitlements";

@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/Button";
 import { SospensioneAccount } from "@/components/admin/SospensioneAccount";
 import { leggiSospensione } from "@/lib/admin/sospensione";
 import { isUtenteSospeso } from "@/lib/auth/sospeso";
+import { personaleDaJson } from "@/lib/admin/personnel";
 
 type SocialLinks = {
   instagram?: string | null;
@@ -118,6 +119,7 @@ export default async function AdminArtistDetailPage({
             url: artist.cover_image,
             label: "Foto profilo",
             title: null,
+            removable: { tipo: "cover" as const, ref: artist.cover_image },
           },
         ]
       : []),
@@ -127,6 +129,7 @@ export default async function AdminArtistDetailPage({
       url,
       label: "Galleria",
       title: null,
+      removable: { tipo: "gallery" as const, ref: url },
     })),
     ...((Array.isArray(artist.audio_files) ? artist.audio_files : []) as {
       url: string;
@@ -137,6 +140,7 @@ export default async function AdminArtistDetailPage({
       url: t.url,
       label: "Audio",
       title: t.title ?? null,
+      removable: { tipo: "audio" as const, ref: t.url },
     })),
     ...(videoRows ?? []).map((v) => ({
       id: v.id as string,
@@ -154,6 +158,12 @@ export default async function AdminArtistDetailPage({
             ? ("rejected" as const)
             : null,
       moderationNote: v.moderation_note as string | null,
+      // Si rimuovono i video pubblicati (approvati); quelli in attesa o
+      // respinti si gestiscono dalla coda di moderazione.
+      removable:
+        v.moderation_state === "approved"
+          ? { tipo: "video" as const, ref: v.id as string }
+          : undefined,
     })),
     ...(submissionRows ?? []).map((r) => ({
       id: r.id as string,
@@ -280,7 +290,7 @@ export default async function AdminArtistDetailPage({
           <CardTitle className="text-base">Contenuti caricati</CardTitle>
         </CardHeader>
         <CardContent className="pt-2">
-          <ArtistMediaPanel artistName={artist.stage_name} items={mediaItems} />
+          <ArtistMediaPanel artistId={artist.id} artistName={artist.stage_name} items={mediaItems} />
         </CardContent>
       </Card>
 
@@ -393,8 +403,12 @@ export default async function AdminArtistDetailPage({
         </CardHeader>
         <CardContent>
           <ArtistEditForm
+            // Si rimonta quando i componenti salvati cambiano: le posizioni
+            // originali (origine) devono riferirsi sempre all'array corrente.
+            key={JSON.stringify(personaleDaJson(artist.personnel))}
             artistId={artist.id}
             genreOptions={genreOptions}
+            personnel={personaleDaJson(artist.personnel)}
             defaults={{
               stage_name: artist.stage_name,
               city: artist.city ?? "",

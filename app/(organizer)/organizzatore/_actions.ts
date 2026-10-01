@@ -11,10 +11,10 @@ import {
 } from "@/lib/validators/schemas";
 import {
   sendBookingAcceptedEmail,
+  sendBookingCancelledByOrganizerEmail,
   sendBookingConfirmedEmail,
   sendBookingDeclinedEmail,
-} from "@/lib/emails/send";
-import { sendBookingCancelledByOrganizerEmail } from "@/lib/emails/booking-notify";
+} from "@/lib/emails/booking-notify";
 
 function slugify(s: string) {
   return s
@@ -121,6 +121,14 @@ export async function updateVenue(venueId: string, input: VenueInput) {
   if (!existing || existing.organizer_id !== organizer.id) {
     return { ok: false as const, error: "Non autorizzato" };
   }
+  // Una struttura nascosta dal team non si modifica né si elimina da qui:
+  // la decisione si contesta, non si aggira (doc. 06).
+  if (await strutturaNascosta(admin, venueId)) {
+    return {
+      ok: false as const,
+      error: "Questa struttura è stata nascosta dal team N'arte: per modificarla o contestare la decisione scrivi a info@narteofficial.it.",
+    };
+  }
 
   const { error } = await admin
     .from("venues")
@@ -159,6 +167,14 @@ export async function deleteVenue(venueId: string) {
     .maybeSingle();
   if (!existing || existing.organizer_id !== organizer.id) {
     return { ok: false as const, error: "Non autorizzato" };
+  }
+  // Una struttura nascosta dal team non si modifica né si elimina da qui:
+  // la decisione si contesta, non si aggira (doc. 06).
+  if (await strutturaNascosta(admin, venueId)) {
+    return {
+      ok: false as const,
+      error: "Questa struttura è stata nascosta dal team N'arte: per modificarla o contestare la decisione scrivi a info@narteofficial.it.",
+    };
   }
   const { error } = await admin.from("venues").delete().eq("id", venueId);
   if (error) return { ok: false as const, error: error.message };
@@ -400,4 +416,14 @@ export async function artistDeclineRequest(requestId: string) {
   revalidatePath("/dashboard/leads");
   revalidatePath("/organizzatore/richieste");
   return { ok: true as const };
+}
+
+/** La struttura è nascosta dal team? Prima della 0070 (colonna assente) no. */
+async function strutturaNascosta(
+  admin: ReturnType<typeof createAdminClient>,
+  venueId: string,
+): Promise<boolean> {
+  const { data, error } = await admin.from("venues").select("hidden_at").eq("id", venueId).maybeSingle();
+  if (error) return false;
+  return Boolean((data as { hidden_at?: string | null } | null)?.hidden_at);
 }

@@ -22,13 +22,13 @@ type Props = {
 
 const COPY: Record<Props["kind"], { heading: string; body: string; preview: string }> = {
   accepted: {
-    heading: "L'artista ha aperto la trattativa",
-    body: "L'artista è interessato e ha aperto la trattativa. Concorda gli ultimi dettagli e conferma la data dal tuo pannello organizzatore per bloccare definitivamente l'agenda.",
-    preview: "L'artista ha aperto la trattativa",
+    heading: "L'artista ha accettato: conferma la data",
+    body: "L'artista ha accettato la tua richiesta. La data non è ancora bloccata: per confermarla devi farlo tu, dalla tua area organizzatore.",
+    preview: "L'artista ha accettato: conferma la data",
   },
   confirmed: {
     heading: "Data confermata",
-    body: "La data è ufficialmente bloccata in agenda. La prenotazione apparirà nel calendario pubblico dell'artista.",
+    body: "Artista e organizzatore hanno entrambi accettato: la data è ufficialmente bloccata in agenda. La prenotazione apparirà nel calendario pubblico dell'artista.",
     preview: "Data confermata",
   },
   declined: {

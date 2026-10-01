@@ -211,9 +211,9 @@ const bookingConfirmed = defineTemplate({
     preheader: "La data è confermata: qui trovi il recap completo dell'evento.",
     body: [
       eyebrow("Data confermata"),
-      title(`${param("artistName")} ha accettato<br />la tua ${em("richiesta.")}`),
+      title(`Data con ${param("artistName")}<br />${em("confermata.")}`),
       paragraph(
-        `L'artista ha accettato la tua richiesta tramite chat e la data è ora confermata.<br />
+        `Artista e organizzatore hanno entrambi accettato: la data è ora confermata.<br />
               Qui sotto trovi il recap completo con tutti i dettagli confermati dell'evento.`
       ),
       card(

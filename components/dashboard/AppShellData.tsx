@@ -751,7 +751,7 @@ async function loadOrganizerShell(userId: string): Promise<{
           .from("booking_requests")
           .select("id", { count: "exact", head: true })
           .eq("organizer_id", organizer.id)
-          .eq("status", "in_trattativa")
+          .in("status", ["in_trattativa", "accettata"])
       ),
       safe(
         admin

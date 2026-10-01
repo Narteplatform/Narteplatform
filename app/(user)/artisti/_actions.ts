@@ -11,7 +11,8 @@ import {
   registraProvaSuIubendaInBackground,
   TESTO_CASELLA,
 } from "@/lib/legal/iubenda-consent";
-import { sendEmail } from "@/lib/emails/send";
+import { dispatchEmail } from "@/lib/emails/dispatch";
+import { buildConsultationParams } from "@/lib/emails/consultation-params";
 import ConsultationRequestEmail from "@/lib/emails/templates/ConsultationRequestEmail";
 import { createElement } from "react";
 import { TITOLARE } from "@/lib/legal/titolare";
@@ -59,7 +60,7 @@ export async function requestConsultation(input: ConsultationInput) {
   // Verifica slot disponibile
   const { data: slot } = await admin
     .from("consultant_slots")
-    .select("id, slot_at, is_active")
+    .select("id, slot_at, duration_min, consultant_id, is_active")
     .eq("id", data.slotId)
     .maybeSingle();
   if (!slot || !slot.is_active) {
@@ -105,30 +106,49 @@ export async function requestConsultation(input: ConsultationInput) {
   });
 
   // Email al richiedente + admin
+  const mailParams = await buildConsultationParams(admin, {
+    slotAt: slot.slot_at,
+    durationMin: slot.duration_min,
+    consultantId: slot.consultant_id,
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    notes: data.needs,
+    statusLabel: "In attesa di conferma",
+    panelPath: "/",
+  });
   await Promise.all([
-    sendEmail({
+    dispatchEmail({
+      key: "consultation_request_user",
       to: data.email,
-      subject: `Richiesta chiamata gratuita con N'arte · ${slotAt}`,
-      template: "ConsultationRequestUser",
-      react: createElement(ConsultationRequestEmail, {
-        toRole: "user",
-        name: data.name,
-        slotAt,
-        needs: data.needs,
-      }),
+      params: mailParams,
+      fallback: {
+        subject: `Richiesta chiamata gratuita con N'arte · ${slotAt}`,
+        template: "ConsultationRequestUser",
+        react: createElement(ConsultationRequestEmail, {
+          toRole: "user",
+          name: data.name,
+          slotAt,
+          needs: data.needs,
+        }),
+      },
     }).catch((e) => console.error("[email] consultation user:", e)),
-    sendEmail({
+    dispatchEmail({
+      key: "consultation_request_admin",
       to: ADMIN_EMAIL,
-      subject: `Nuova richiesta consulenza · ${data.name}`,
-      template: "ConsultationRequestAdmin",
-      react: createElement(ConsultationRequestEmail, {
-        toRole: "admin",
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        slotAt,
-        needs: data.needs,
-      }),
+      params: mailParams,
+      fallback: {
+        subject: `Nuova richiesta consulenza · ${data.name}`,
+        template: "ConsultationRequestAdmin",
+        react: createElement(ConsultationRequestEmail, {
+          toRole: "admin",
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          slotAt,
+          needs: data.needs,
+        }),
+      },
     }).catch((e) => console.error("[email] consultation admin:", e)),
   ]);
 

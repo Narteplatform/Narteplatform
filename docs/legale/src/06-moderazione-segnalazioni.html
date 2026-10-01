@@ -6,7 +6,7 @@
 
 <dl class="intestazione">
   <dt>Documento</dt><dd>Politica di moderazione, segnalazioni e reclami</dd>
-  <dt>Versione</dt><dd>0.96 — bozza per revisione legale</dd>
+  <dt>Versione</dt><dd>0.97 — bozza per revisione legale</dd>
   <dt>In vigore dal</dt><dd><span class="seg">[DATA DI ENTRATA IN VIGORE]</span></dd>
   <dt>Pagina del sito</dt><dd>/segnalazioni (con il modulo di segnalazione)</dd>
   <dt>Destinatari</dt><dd>Tutti gli Utenti, i terzi che segnalano contenuti, le autorità</dd>
@@ -82,6 +82,7 @@
   <li>il <strong>nome e l'indirizzo email</strong> del Segnalante, salvo che la segnalazione riguardi uno dei reati di abuso e sfruttamento sessuale dei minori e di pornografia minorile previsti dagli artt. 3–7 della direttiva 2011/93/UE, che può essere inviata anche in forma anonima;</li>
   <li>la <strong>dichiarazione</strong> con cui il Segnalante afferma di essere in buona fede e che le informazioni e le affermazioni contenute nella segnalazione sono esatte e complete.</li>
 </ol>
+<p><span class="art">5.3-bis</span> <strong>Allegati.</strong> La segnalazione può essere accompagnata da un massimo di tre allegati (immagini o PDF, fino a 5 MB ciascuno), conservati in un archivio privato accessibile solo al Team e cancellati insieme alla segnalazione. N'arte verifica il tipo reale dei file e scarta quelli non conformi.</p>
 <p><span class="art">5.4</span> Una segnalazione che contiene questi elementi e consente di individuare l'illiceità del Contenuto senza un esame giuridico approfondito fa sorgere in capo a N'arte la conoscenza effettiva del Contenuto (art. 16, par. 3 DSA). Le segnalazioni incomplete sono comunque esaminate; se non consentono di decidere, N'arte chiede al Segnalante di integrarle.</p>
 <p><span class="art">5.5</span> <strong>Conferma di ricevimento.</strong> N'arte conferma la ricezione della segnalazione senza ritardo, all'indirizzo email indicato: in modo automatico quando la segnalazione è inviata con il modulo; entro <span class="seg">[2 GIORNI LAVORATIVI]</span> quando è inviata via email.</p>
 <p><span class="art">5.6</span> <strong>Tempi di esame.</strong> N'arte esamina le segnalazioni in modo tempestivo, diligente, non arbitrario e obiettivo. Di regola:</p>
@@ -149,9 +150,8 @@
 <p><span class="art">7.3</span> Le misure che riguardano l'Abbonamento sono disciplinate dal doc. 02, art. 14. La sospensione o la chiusura dell'account di un Artista con Abbonamento attivo ne producono gli effetti previsti in quell'articolo.</p>
 
 <div class="nota-legale">
-  <strong class="etichetta">Nota per il legale — poteri effettivi del Team oggi</strong>
-  <p>Verificato nel codice. Il Team oggi <strong>può</strong>: approvare e rifiutare candidature e media in coda (nota di rifiuto facoltativa); cambiare lo stato di un Profilo artista (approvato / in attesa / rifiutato, che lo nasconde); modificare nome d'arte, città, generi, strumenti, biografia, copertina e social di qualunque Artista; cancellare un Profilo artista; oscurare e cancellare Recensioni; bloccare e sbloccare una parte in una singola conversazione, con motivazione di 3–500 caratteri pubblicata in chat come messaggio di sistema (<em>lib/chat/moderation.ts</em>); annullare una Data confermata con motivazione di almeno 10 caratteri, notificata via email e in chat (<em>superadmin_cancel_booking</em>, migration 0014).</p>
-  <p>Il Team oggi <strong>non può</strong>, dagli strumenti di amministrazione: sospendere o chiudere un account (esiste solo il blocco d'accesso applicato automaticamente dopo la richiesta di cancellazione, <em>lib/legal/cancellazione.ts</em>); rimuovere un singolo media già approvato dalla galleria di un Artista, un componente della formazione o un singolo messaggio o allegato di chat; modificare o nascondere una Struttura o i suoi recapiti; richiamare formalmente un Utente. Le misure h) e i) e parte della c) sono quindi oggi eseguibili solo con interventi diretti sul database: prima della pubblicazione servono strumenti dedicati, con motivazione obbligatoria e registro. Il cambio di stato del Profilo e la sua cancellazione non inviano oggi alcuna comunicazione all'Artista.</p>
+  <strong class="etichetta">Nota per il legale — poteri effettivi del Team (aggiornata v0.97)</strong>
+  <p>Dalla v0.97 ogni misura del catalogo dell'art. 7 ha uno strumento dedicato nel pannello, con motivazione obbligatoria (regola applicata e fatti), registrazione nel registro unico delle azioni (consultabile ed esportabile) e comunicazione all'interessato con il link di reclamo: rifiuto e rimozione di singoli media già pubblicati, modifica e rimozione dei componenti della formazione, rimozione di singoli messaggi o allegati di chat (solo con accesso motivato), modifica e oscuramento delle Strutture, sospensione e riattivazione dell'account, chiusura dell'account con cancellazione dopo 30 giorni, oscuramento delle recensioni, annullamento delle date. Le segnalazioni sono assegnate a una persona del Team; per i reclami il sistema avvisa se decide la stessa persona della decisione contestata.</p>
 </div>
 
 <h2>8. Come vengono applicate le misure</h2>

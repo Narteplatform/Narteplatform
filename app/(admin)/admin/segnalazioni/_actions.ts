@@ -5,11 +5,13 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
-import { registraDecisione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
+import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { conflittoNelReclamo } from "@/lib/admin/reclami";
 
 // Come per i lead: una Server Action è un endpoint raggiungibile direttamente,
 // quindi il permesso per-pagina si controlla qui e non solo nella pagina.
@@ -42,16 +44,27 @@ const TESTO_ESITO = {
 } as const;
 
 export async function takeReportInCharge(id: string): Promise<Esito> {
-  await requireAdminPageAccess("segnalazioni");
+  const user = await requireAdminPageAccess("segnalazioni");
   if (!idSchema.safeParse(id).success) return { ok: false, error: "Identificativo non valido." };
 
   const admin = createAdminClient();
-  const { data, error } = await admin
+  const adesso = new Date().toISOString();
+  let { data, error } = await admin
     .from("content_reports")
-    .update({ status: "in_esame", updated_at: new Date().toISOString() })
+    .update({ status: "in_esame", assigned_to: user.id, updated_at: adesso })
     .eq("id", id)
     .eq("status", "ricevuta")
     .select("id");
+  if (error && colonnaAssente(error, "assigned_to")) {
+    // Migration 0070 non ancora applicata: si prende in carico senza assegnatario.
+    logger.warn("admin/segnalazioni", "colonna assigned_to assente (migration 0070): presa in carico senza assegnatario");
+    ({ data, error } = await admin
+      .from("content_reports")
+      .update({ status: "in_esame", updated_at: adesso })
+      .eq("id", id)
+      .eq("status", "ricevuta")
+      .select("id"));
+  }
   if (error) {
     logger.error("admin/segnalazioni", "presa in carico fallita", error.message);
     return { ok: false, error: error.message };
@@ -59,6 +72,13 @@ export async function takeReportInCharge(id: string): Promise<Esito> {
   if (!data || data.length === 0) {
     return { ok: false, error: "La segnalazione non è più in stato «ricevuta»." };
   }
+  await registraAzione({
+    actorId: user.id,
+    targetType: "segnalazione",
+    targetId: id,
+    action: "segnalazione_presa_in_carico",
+    descrizione: `Segnalazione ${id} presa in carico.`,
+  });
   revalidatePath("/admin/segnalazioni");
   return { ok: true };
 }
@@ -66,7 +86,8 @@ export async function takeReportInCharge(id: string): Promise<Esito> {
 export async function decideReport(
   id: string,
   outcome: "accolta" | "respinta" | "archiviata",
-  note: string
+  note: string,
+  confermaConflitto = false
 ): Promise<Esito> {
   const user = await requireAdminPageAccess("segnalazioni");
   const parsed = decisionSchema.safeParse({ id, outcome, note });
@@ -80,7 +101,7 @@ export async function decideReport(
   // Lettura con errore controllato: senza la riga non si decide niente.
   const { data: report, error: readErr } = await admin
     .from("content_reports")
-    .select("id, reference, kind, status, reporter_name, reporter_email")
+    .select("id, reference, kind, status, reporter_name, reporter_email, contested_reference")
     .eq("id", parsed.data.id)
     .maybeSingle();
   if (readErr) {
@@ -90,6 +111,17 @@ export async function decideReport(
   if (!report) return { ok: false, error: "Segnalazione non trovata." };
   if (report.status !== "ricevuta" && report.status !== "in_esame") {
     return { ok: false, error: "Questa segnalazione ha già un esito." };
+  }
+
+  // Reclamo contro una decisione presa dallo stesso operatore: serve la conferma.
+  if (!confermaConflitto) {
+    const conflitto = await conflittoNelReclamo(report, user.id);
+    if (conflitto.ok && conflitto.conflitto) {
+      return { ok: false, error: `${conflitto.descrizione ?? ""} Conferma per decidere comunque.`.trim() };
+    }
+    if (!conflitto.ok) {
+      logger.warn("admin/segnalazioni", "verifica del conflitto non riuscita: si procede");
+    }
   }
 
   const now = new Date().toISOString();

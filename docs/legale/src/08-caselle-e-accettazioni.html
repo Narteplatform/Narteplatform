@@ -6,7 +6,7 @@
 
 <dl class="intestazione">
   <dt>Documento</dt><dd>Caselle di consenso e punti di accettazione</dd>
-  <dt>Versione</dt><dd>0.96 — bozza per revisione legale</dd>
+  <dt>Versione</dt><dd>0.97 — bozza per revisione legale</dd>
   <dt>In vigore dal</dt><dd>Contestualmente ai documenti 01–07</dd>
   <dt>Destinazione</dt><dd>Documento tecnico-legale interno: non si pubblica. Guida l'implementazione dei moduli.</dd>
   <dt>Destinatari</dt><dd>Legale (approvazione dei testi) e sviluppo (implementazione)</dd>
@@ -15,7 +15,7 @@
 <h2>1. Principi</h2>
 <p><span class="art">1.1</span> <strong>Accettare un contratto e prendere visione di un'informativa sono atti diversi.</strong> I Termini si <em>accettano</em>. L'informativa privacy si <em>legge</em>, e non va «accettata» né «consentita» quando il trattamento si basa sul contratto (art. 6, par. 1, lett. b GDPR) o sull'interesse legittimo (lett. f). Il consenso (lett. a) serve solo per ciò che è davvero facoltativo, come il marketing e i cookie non tecnici.</p>
 <p><span class="art">1.2</span> <strong>Ogni casella ha uno scopo solo.</strong> Nessuna casella preselezionata. Le caselle facoltative non condizionano l'invio del modulo.</p>
-<p><span class="art">1.3</span> <strong>Ogni accettazione lascia una prova:</strong> chi, cosa, quale versione, quando, da quale modulo. Per chi ha un account la prova va nella tabella <code>user_consents</code>; per chi non ce l'ha, sulla riga del dato raccolto (<code>consent_version</code>, <code>consent_at</code>). In entrambi i casi è inviata anche al Consent Database di iubenda.</p>
+<p><span class="art">1.3</span> <strong>Ogni accettazione lascia una prova:</strong> chi, con quale ruolo, cosa, quale versione, quando, da quale modulo, con quale browser e da quale indirizzo IP (conservato solo come impronta). Per chi ha un account la prova va nella tabella <code>user_consents</code>; per chi non ce l'ha, sulla riga del dato raccolto (<code>consent_version</code>, <code>consent_at</code>). In entrambi i casi è inviata anche al Consent Database di iubenda.</p>
 <p><span class="art">1.4</span> <strong>Consumatore o Professionista.</strong> Dove la disciplina diverge — approvazione specifica ex art. 1341 c.c., recesso, esecuzione immediata — il modulo chiede all'Utente se agisce per un'attività professionale o con partita IVA, e mostra le caselle pertinenti.</p>
 
 <div class="nota-legale">
@@ -116,8 +116,8 @@
 
 <h3>H · Contenuti e componenti della band</h3>
 <div class="evidenza">
-<p><strong>H1 (obbligatoria, al primo caricamento e a ogni nuova versione del doc. 03)</strong> — «Pubblico solo contenuti di cui ho i diritti: brani miei o autorizzati, registrazioni di cui ho i diritti, foto e video di cui ho il permesso dell'autore e delle persone riconoscibili.»</p>
-<p><strong>H2 (obbligatoria quando si aggiunge un componente)</strong> — «Ho informato questa persona che il suo nome e il suo ruolo compariranno sul profilo pubblico e ho il suo consenso.»</p>
+<p><strong>H1 (obbligatoria, una volta per ogni versione del doc. 03; il server rifiuta i caricamenti senza la dichiarazione registrata)</strong> — «Pubblico solo contenuti di cui ho i diritti: brani miei o autorizzati, registrazioni di cui ho i diritti, foto e video di cui ho il permesso dell'autore e delle persone riconoscibili.»</p>
+<p><strong>H2 (obbligatoria quando si aggiunge un componente; data della dichiarazione registrata sul componente)</strong> — «Ho informato questa persona che il suo nome e il suo ruolo compariranno sul profilo pubblico e ho il suo consenso.»</p>
 </div>
 
 <h3>I · Recensione</h3>

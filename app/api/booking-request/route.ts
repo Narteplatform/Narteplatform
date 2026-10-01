@@ -4,7 +4,9 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { bookingRequestPublicSchema } from "@/app/(user)/artisti/[slug]/_schema";
-import { sendEmail } from "@/lib/emails/send";
+import { dispatchEmail } from "@/lib/emails/dispatch";
+import { buildBookingRequestParams } from "@/lib/emails/booking-request-params";
+import { getSiteUrl } from "@/lib/site-url";
 import BookingRequestEmail from "@/lib/emails/templates/BookingRequestEmail";
 import type { Database } from "@/lib/supabase/types";
 import {
@@ -275,42 +277,65 @@ export async function POST(req: Request) {
       }
       const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
       const requesterEmail = currentUser?.email ?? "";
+      const eventLocation = data.venueName ?? data.venueCity ?? "Da definire";
+      const requestParams = buildBookingRequestParams({
+        artistName: artist.stage_name,
+        organizerName: data.venueName ?? organizer.display_name,
+        contactName: organizer.display_name,
+        roleLabel: "Organizzatore",
+        eventDate: data.date,
+        eventTime: data.timeSlot ?? null,
+        location: eventLocation,
+        budget: data.budgetOffer ?? null,
+        message: composedMessage,
+        contactEmail: requesterEmail,
+        contactPhone: data.phone ?? null,
+        baseUrl: getSiteUrl(),
+      });
       await Promise.allSettled([
         artistEmail
-          ? sendEmail({
+          ? dispatchEmail({
+              key: "booking_request_artist",
               to: artistEmail,
-              subject: `Nuova richiesta booking — ${data.date}`,
+              params: requestParams,
               replyTo: requesterEmail || undefined,
-              template: "BookingRequestArtist",
-              react: BookingRequestEmail({
-                artistName: artist.stage_name,
-                requesterName: organizer.display_name,
-                eventDate: data.date,
-                eventLocation: data.venueName ?? data.venueCity ?? "Da definire",
-                budget: data.budgetOffer ?? null,
-                message: composedMessage,
-                contactEmail: requesterEmail,
-                contactPhone: data.phone ?? null,
-              }),
+              fallback: {
+                subject: `Nuova richiesta booking — ${data.date}`,
+                template: "BookingRequestArtist",
+                react: BookingRequestEmail({
+                  artistName: artist.stage_name,
+                  requesterName: organizer.display_name,
+                  eventDate: data.date,
+                  eventLocation,
+                  budget: data.budgetOffer ?? null,
+                  message: composedMessage,
+                  contactEmail: requesterEmail,
+                  contactPhone: data.phone ?? null,
+                }),
+              },
             })
           : Promise.resolve(),
         adminEmail
-          ? sendEmail({
+          ? dispatchEmail({
+              key: "booking_request_admin",
               to: adminEmail,
-              subject: `[N'arte] Nuova richiesta per ${artist.stage_name}`,
+              params: requestParams,
               replyTo: requesterEmail || undefined,
-              template: "BookingRequestAdmin",
-              react: BookingRequestEmail({
-                artistName: artist.stage_name,
-                requesterName: organizer.display_name,
-                eventDate: data.date,
-                eventLocation: data.venueName ?? data.venueCity ?? "Da definire",
-                budget: data.budgetOffer ?? null,
-                message: composedMessage,
-                contactEmail: requesterEmail,
-                contactPhone: data.phone ?? null,
-                isAdminCopy: true,
-              }),
+              fallback: {
+                subject: `[N'arte] Nuova richiesta per ${artist.stage_name}`,
+                template: "BookingRequestAdmin",
+                react: BookingRequestEmail({
+                  artistName: artist.stage_name,
+                  requesterName: organizer.display_name,
+                  eventDate: data.date,
+                  eventLocation,
+                  budget: data.budgetOffer ?? null,
+                  message: composedMessage,
+                  contactEmail: requesterEmail,
+                  contactPhone: data.phone ?? null,
+                  isAdminCopy: true,
+                }),
+              },
             })
           : Promise.resolve(),
       ]);

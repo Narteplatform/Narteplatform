@@ -282,11 +282,17 @@ export default async function ArtistDetailPage({
       .eq("user_id", viewer.id)
       .maybeSingle();
     if (org) {
-      const { data: vs } = await supabase
+      // Le strutture nascoste dal team non si propongono. Prima della 0070 la
+      // colonna non esiste: si ripiega sull'elenco completo.
+      const conFiltro = await supabase
         .from("venues")
         .select("id, name")
         .eq("organizer_id", org.id)
+        .is("hidden_at", null)
         .order("name");
+      const vs = conFiltro.error
+        ? (await supabase.from("venues").select("id, name").eq("organizer_id", org.id).order("name")).data
+        : conFiltro.data;
       organizerVenues = vs ?? [];
     }
   }

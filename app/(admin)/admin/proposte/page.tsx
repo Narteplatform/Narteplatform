@@ -127,6 +127,7 @@ export default async function AdminPropostePage({
         .select("id, name, city, email")
         .ilike("name", `%${q}%`)
         .not("email", "is", null)
+        .is("hidden_at", null)
         .order("name")
         .limit(10),
       admin.from("organizers").select("id, user_id, display_name").ilike("display_name", `%${q}%`).order("display_name").limit(10),

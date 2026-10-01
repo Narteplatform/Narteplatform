@@ -119,33 +119,36 @@ const bookingRequestAdmin = defineTemplate({
   }),
 });
 
-/** L'artista ha aperto la trattativa: la data NON è ancora confermata. */
+/**
+ * L'artista ha accettato (richiesta o offerta in chat): la data NON è ancora
+ * confermata. Con la doppia conferma serve il passaggio dell'organizzatore.
+ */
 const bookingAccepted = defineTemplate({
   key: "booking_accepted",
   name: "N'arte · Trattativa aperta [booking_accepted]",
-  subject: "{{params.artistName}} ha risposto alla tua richiesta",
-  sample: STATUS_SAMPLE,
+  subject: "{{params.artistName}} ha accettato: conferma la data",
+  sample: { ...STATUS_SAMPLE, statusLabel: "Accettata dall'artista, in attesa di conferma" },
   html: layout({
     key: "booking_accepted",
-    preheader: "L'artista ha aperto la trattativa: la data non è ancora confermata.",
+    preheader: "L'artista ha accettato: per bloccare la data devi confermarla dalla tua area.",
     body: [
-      eyebrow("Trattativa aperta"),
-      title(`${param("artistName")} ha aperto la ${em("trattativa.")}`),
+      eyebrow("Da confermare"),
+      title(`${param("artistName")} ha ${em("accettato.")}`),
       paragraph(
-        `L'artista ha risposto alla tua richiesta ed è interessato alla data.<br />
-              La data non è ancora bloccata: si conferma quando trovate l'accordo in chat.`
+        `L'artista ha accettato la tua richiesta.<br />
+              La data non è ancora bloccata: per confermarla devi farlo tu, dalla tua area organizzatore.`
       ),
-      card([sectionTitle("Dettagli della richiesta"), dataTable(statusRows("Budget indicato"))].join("\n")),
+      card([sectionTitle("Dettagli della richiesta"), dataTable(statusRows("Compenso annotato dalle parti"))].join("\n")),
       ifParam(
         "message",
         callout({ heading: "Note dall'artista", text: param("message") })
       ),
       buttonPair(
-        { href: param("chatUrl"), label: "Continua in chat" },
-        { href: param("bookingUrl"), label: "Visualizza la richiesta" }
+        { href: param("bookingUrl"), label: "Conferma la data" },
+        { href: param("chatUrl"), label: "Continua in chat" }
       ),
       callout({
-        text: "La data si libera se non confermate: chiudete l'accordo<br />prima che l'artista riceva un'altra proposta.",
+        text: "Finché non confermi la data resta libera:<br />confermala appena avete chiuso l'accordo.",
       }),
     ].join("\n"),
   }),

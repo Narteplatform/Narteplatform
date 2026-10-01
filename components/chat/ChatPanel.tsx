@@ -24,6 +24,7 @@ export function ChatPanel({
   compact = false,
   backHref,
   block,
+  canModerate = false,
 }: {
   meta: ChatPartyMeta;
   initialMessages: ChatMessage[];
@@ -40,6 +41,8 @@ export function ChatPanel({
    * spegne/riaccende senza refresh anche senza che il chiamante lo passi.
    */
   block?: ActiveBlock | null;
+  /** Solo il Team con accesso motivato valido: mostra «Rimuovi» su ogni messaggio. */
+  canModerate?: boolean;
 }) {
   const router = useRouter();
   const { messages } = useChatChannel(
@@ -153,6 +156,7 @@ export function ChatPanel({
         currentUserId={currentUserId}
         viewerRole={viewerRole}
         readOnly={readOnly || viewerRole === "superadmin"}
+        moderazione={canModerate && viewerRole === "superadmin" ? { conversationId: meta.conversationId } : undefined}
       />
       {isBlocked && (
         <div className="flex items-start gap-2 border-t border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700">

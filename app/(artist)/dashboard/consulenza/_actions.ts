@@ -5,6 +5,8 @@ import { z } from "zod";
 import { createElement } from "react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/emails/send";
+import { dispatchEmail } from "@/lib/emails/dispatch";
+import { buildConsultationParams } from "@/lib/emails/consultation-params";
 import ConsultationRequestEmail from "@/lib/emails/templates/ConsultationRequestEmail";
 import { checkMonthlyQuota, getEntitlementsForUser } from "@/lib/billing/entitlements";
 import { resolveActiveArtist } from "@/lib/artist/current";
@@ -62,7 +64,7 @@ export async function bookConsultationAsArtist(input: {
 
   const { data: slot } = await admin
     .from("consultant_slots")
-    .select("id, slot_at, consultant_id, is_active")
+    .select("id, slot_at, duration_min, consultant_id, is_active")
     .eq("id", parsed.data.slotId)
     .maybeSingle();
   if (!slot || !slot.is_active) {
@@ -104,31 +106,51 @@ export async function bookConsultationAsArtist(input: {
     dateStyle: "full",
     timeStyle: "short",
   });
+  const needsText = parsed.data.needs ?? "Prenotazione artista (auto-confermata).";
+  const mailParams = await buildConsultationParams(admin, {
+    slotAt: slot.slot_at,
+    durationMin: slot.duration_min,
+    consultantId: slot.consultant_id,
+    name: displayName ?? "Artista",
+    email: user.email ?? "",
+    phone: "",
+    notes: needsText,
+    statusLabel: "Confermato",
+    panelPath: "/dashboard/consulenza",
+  });
   await Promise.all([
     user.email
-      ? sendEmail({
+      ? dispatchEmail({
+          key: "consultation_confirmed_artist",
           to: user.email,
-          subject: `Appuntamento confermato con N'arte · ${slotAt}`,
-          template: "ConsultationConfirmedArtist",
-          react: createElement(ConsultationRequestEmail, {
-            toRole: "user",
-            name: displayName ?? "Artista",
-            slotAt,
-            needs: parsed.data.needs ?? "Prenotazione artista (auto-confermata).",
-          }),
+          params: mailParams,
+          fallback: {
+            subject: `Appuntamento confermato con N'arte · ${slotAt}`,
+            template: "ConsultationConfirmedArtist",
+            react: createElement(ConsultationRequestEmail, {
+              toRole: "user",
+              name: displayName ?? "Artista",
+              slotAt,
+              needs: needsText,
+            }),
+          },
         }).catch((e) => console.error("[email] artist book:", e))
       : Promise.resolve(),
-    sendEmail({
+    dispatchEmail({
+      key: "consultation_confirmed_admin",
       to: ADMIN_EMAIL,
-      subject: `Artista ha prenotato consulenza · ${displayName}`,
-      template: "ConsultationConfirmedAdmin",
-      react: createElement(ConsultationRequestEmail, {
-        toRole: "admin",
-        name: displayName ?? "Artista",
-        email: user.email ?? undefined,
-        slotAt,
-        needs: parsed.data.needs ?? "Prenotazione artista (auto-confermata).",
-      }),
+      params: mailParams,
+      fallback: {
+        subject: `Artista ha prenotato consulenza · ${displayName}`,
+        template: "ConsultationConfirmedAdmin",
+        react: createElement(ConsultationRequestEmail, {
+          toRole: "admin",
+          name: displayName ?? "Artista",
+          email: user.email ?? undefined,
+          slotAt,
+          needs: needsText,
+        }),
+      },
     }).catch((e) => console.error("[email] artist book admin:", e)),
   ]);
 
@@ -193,6 +215,8 @@ export async function cancelConsultationAsArtist(consultationId: string) {
   const quando = slot
     ? new Date(slot.slot_at).toLocaleString("it-IT", { dateStyle: "full", timeStyle: "short", timeZone: "Europe/Rome" })
     : "data da definire";
+  // Nessuna chiave Brevo adatta (consultation_confirmed_admin annuncerebbe
+  // una conferma): resta su Resend finché non si crea una chiave dedicata.
   await sendEmail({
     to: ADMIN_EMAIL,
     subject: `Consulenza disdetta dall'artista · ${c.name ?? "Artista"} · ${quando}`,
