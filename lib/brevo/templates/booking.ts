@@ -74,7 +74,7 @@ const bookingRequestArtist = defineTemplate({
     message:
       "Ci piacerebbe averti nel nostro palinsesto per una serata live. Scrivici in chat per confermare disponibilità e dettagli.",
     chatUrl: "https://narteofficial.it/dashboard/chat",
-    requestUrl: "https://narteofficial.it/dashboard/richieste",
+    requestUrl: "https://narteofficial.it/dashboard/leads",
     contactEmail: "marco.esposito@example.com",
     contactPhone: "+39 333 000 0000",
     adminUrl: "https://narteofficial.it/admin/leads",

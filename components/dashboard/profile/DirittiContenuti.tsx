@@ -105,6 +105,25 @@ function DirittiContenutiModal({
   const [checked, setChecked] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [pending, startTransition] = React.useTransition();
+  const checkboxRef = React.useRef<HTMLInputElement>(null);
+
+  // Esc chiude, il focus va sulla casella all'apertura e torna dove era alla
+  // chiusura. onClose/pending passano da un ref: l'effetto dipende solo da `open`.
+  const chiudiRef = React.useRef({ onClose, pending });
+  chiudiRef.current = { onClose, pending };
+  React.useEffect(() => {
+    if (!open) return;
+    const prima = document.activeElement as HTMLElement | null;
+    checkboxRef.current?.focus();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && !chiudiRef.current.pending) chiudiRef.current.onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      prima?.focus?.();
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -138,6 +157,7 @@ function DirittiContenutiModal({
         </h2>
         <label className="flex items-start gap-2 text-sm">
           <input
+            ref={checkboxRef}
             type="checkbox"
             checked={checked}
             onChange={(e) => setChecked(e.target.checked)}
@@ -148,12 +168,14 @@ function DirittiContenutiModal({
         <p className="text-xs text-muted-foreground">
           Le regole complete sono nelle{" "}
           <Link
-            href="/condizioni-artisti"
+            href={process.env.NEXT_PUBLIC_LEGAL_V2_PUBBLICATO === "1" ? "/condizioni-artisti" : "/termini"}
             target="_blank"
             rel="noreferrer"
             className="underline underline-offset-2"
           >
-            condizioni per gli artisti
+            {process.env.NEXT_PUBLIC_LEGAL_V2_PUBBLICATO === "1"
+              ? "condizioni per gli artisti"
+              : "condizioni d'uso"}
           </Link>
           .
         </p>

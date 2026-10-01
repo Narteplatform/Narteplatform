@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/server";
 import { deleteObject } from "@/lib/storage/bunny/storage";
-import { isBunnyStorageUrl } from "@/lib/storage/bunny/urls";
+import { isBunnyStorageUrl, isSupabasePublicUrl } from "@/lib/storage/bunny/urls";
 import { logger } from "@/lib/logger";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -24,7 +24,7 @@ export type FileDaPulire = {
 };
 
 /**
- * Toglie da Bunny Storage un file, ma SOLO se nessuna parte dei profili
+ * Toglie un file da Bunny Storage o dai bucket media di Supabase, ma SOLO se nessuna parte dei profili
  * dell'account lo usa (gallery, cover_image, audio_files) e nessuna altra
  * richiesta di moderazione lo riguarda.
  *
@@ -33,11 +33,29 @@ export type FileDaPulire = {
  * app/(admin)/admin/moderazione/_actions.ts per usarla anche nella rimozione
  * di un media già pubblicato.
  */
-export async function rimuoviFileSeNonUsato(admin: AdminClient, file: FileDaPulire): Promise<void> {
-  // Solo la NOSTRA pull zone Bunny: chiavi Supabase o URL esterni non si toccano.
-  if (!file.artistId || !isBunnyStorageUrl(file.url)) return;
+/** Bucket pubblici dei media artista su Supabase che questa funzione può toccare. */
+const BUCKET_SUPABASE = new Set(["artist-images", "artist-audio"]);
 
-  let key = file.storageKey?.trim() || null;
+/** `{ bucket, path }` di un URL pubblico Supabase di questo progetto, o null. */
+function oggettoSupabase(url: string): { bucket: string; path: string } | null {
+  if (!isSupabasePublicUrl(url)) return null;
+  const m = /\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/.exec(url.split("?")[0]);
+  if (!m || !BUCKET_SUPABASE.has(m[1])) return null;
+  try {
+    return { bucket: m[1], path: decodeURIComponent(m[2]) };
+  } catch {
+    return null;
+  }
+}
+
+export async function rimuoviFileSeNonUsato(admin: AdminClient, file: FileDaPulire): Promise<void> {
+  // Solo la NOSTRA pull zone Bunny o i bucket media del NOSTRO Supabase: URL
+  // esterni non si toccano.
+  if (!file.artistId) return;
+  const supa = isBunnyStorageUrl(file.url) ? null : oggettoSupabase(file.url);
+  if (!supa && !isBunnyStorageUrl(file.url)) return;
+
+  let key = supa ? supa.path : file.storageKey?.trim() || null;
   if (!key) {
     try {
       key = decodeURIComponent(new URL(file.url).pathname).replace(/^\/+/, "") || null;
@@ -84,17 +102,38 @@ export async function rimuoviFileSeNonUsato(admin: AdminClient, file: FileDaPuli
     }
     if ((altreEsito.count ?? 0) > 0) return;
 
-    const inUso = JSON.stringify(profili.data.map((p) => [p.gallery, p.cover_image, p.audio_files]));
+    // Anche l'avatar dell'account può puntare allo stesso file.
+    let avatar: string | null = null;
+    if (profilo.user_id) {
+      const { data: acc, error: accErr } = await admin
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", profilo.user_id)
+        .maybeSingle();
+      if (accErr) {
+        logger.warn(file.contesto, "avatar non leggibile: file NON cancellato", { error: accErr.message });
+        return;
+      }
+      avatar = acc?.avatar_url ?? null;
+    }
+
+    const inUso = JSON.stringify([avatar, ...profili.data.map((p) => [p.gallery, p.cover_image, p.audio_files])]);
     const varianti = [file.url, key, encodeURI(key)];
     if (varianti.some((v) => inUso.includes(v))) {
       logger.debug(file.contesto, "file ancora usato: non cancellato");
       return;
     }
 
+    if (supa) {
+      const { error: rmErr } = await admin.storage.from(supa.bucket).remove([supa.path]);
+      if (rmErr) throw new Error(rmErr.message);
+      logger.debug(file.contesto, "file rimosso da Supabase Storage");
+      return;
+    }
     const esito = await deleteObject(key);
     logger.debug(file.contesto, "file rimosso da Bunny", { esito });
   } catch (e) {
-    logger.error(file.contesto, "rimozione da Bunny Storage fallita", {
+    logger.error(file.contesto, "rimozione del file fallita", {
       error: e instanceof Error ? e.message : String(e),
     });
   }

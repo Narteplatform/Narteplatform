@@ -50,6 +50,8 @@ export async function inviaPromemoriaRinnovi(): Promise<{ inviati: number; salta
         .from("email_log")
         .select("id", { count: "exact", head: true })
         .eq("template", "renewal_reminder")
+        // Solo gli invii riusciti: un tentativo fallito si riprova la notte dopo.
+        .eq("status", "sent")
         .contains("meta", { subscription: sub.stripe_subscription_id, periodo });
       if (logErr) {
         logger.warn("rinnovi", "email_log non leggibile, promemoria rinviato:", logErr.message);

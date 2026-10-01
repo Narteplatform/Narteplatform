@@ -67,18 +67,20 @@ function estraiEventi(corpo: unknown): Array<{ evento: string; email: string }> 
   return out;
 }
 
-/** Id dell'utente con quell'email, `null` se non c'è, `"errore"` se la lettura è fallita. */
-async function trovaUtentePerEmail(
-  admin: ReturnType<typeof createAdminClient>,
-  email: string
-): Promise<string | null | "errore"> {
+/**
+ * Indice email → id utente, letto UNA volta per richiesta (Brevo manda gli
+ * eventi anche a lotti): `null` se la lettura è fallita o incompleta.
+ */
+async function indiceUtenti(admin: ReturnType<typeof createAdminClient>): Promise<Map<string, string> | null> {
+  const mappa = new Map<string, string>();
   for (let page = 1; page <= PAGINE_MAX; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: PER_PAGINA });
-    if (error || !data) return "errore";
-    const trovato = data.users.find((u) => u.email?.toLowerCase() === email);
-    if (trovato) return trovato.id;
-    if (data.users.length < PER_PAGINA) return null;
+    if (error || !data) return null;
+    for (const u of data.users) if (u.email) mappa.set(u.email.toLowerCase(), u.id);
+    if (data.users.length < PER_PAGINA) return mappa;
   }
+  // Più utenti di quanti se ne leggono: meglio un errore (e un nuovo tentativo
+  // di Brevo) che un «non trovato» falso.
   return null;
 }
 
@@ -117,7 +119,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  // Da qui in poi: sempre 200.
+  // Da qui in poi: 200, salvo errori di lettura o scrittura (500 → Brevo riprova).
   try {
     const testo = await request.text();
     let corpo: unknown = null;
@@ -134,12 +136,13 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const esiti = { scritto: 0, giaRitirato: 0, nonTrovato: 0, errore: 0 };
 
+    const indice = await indiceUtenti(admin);
     for (const { email } of eventi) {
-      const utente = await trovaUtentePerEmail(admin, email);
-      if (utente === "errore") {
+      if (!indice) {
         esiti.errore++;
         continue;
       }
+      const utente = indice.get(email) ?? null;
       if (utente === null) {
         esiti.nonTrovato++;
         continue;
@@ -154,8 +157,12 @@ export async function POST(request: Request) {
       "brevo/webhook",
       `disiscrizioni: scritte=${esiti.scritto} già-ritirate=${esiti.giaRitirato} non-trovate=${esiti.nonTrovato} errori=${esiti.errore}`
     );
+    // Un ritiro del consenso non registrato non va perso: 500 fa riprovare
+    // Brevo, e la scrittura è idempotente (un ritiro già presente non si ripete).
+    if (esiti.errore > 0) return NextResponse.json({ ok: false }, { status: 500 });
   } catch (e) {
     logger.warn("brevo/webhook", `elaborazione fallita: ${e instanceof Error ? e.name : "errore"}`);
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

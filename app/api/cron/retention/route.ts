@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 import { inviaPromemoriaRinnovi } from "@/lib/billing/promemoria-rinnovo";
+import { deleteStreamVideo } from "@/lib/storage/bunny/stream";
+import { REPORT_BUCKET } from "@/lib/security/report-attachments";
 import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
@@ -117,12 +119,6 @@ const REGOLE: Regola[] = [
     colonnaData: "created_at",
     giorni: 1826,
     motivo: "registro degli accessi del team alle chat: 5 anni",
-  },
-  {
-    tabella: "content_reports",
-    colonnaData: "created_at",
-    giorni: 1826,
-    motivo: "segnalazioni e reclami (DSA): 5 anni; gli allegati si cancellano con la riga",
   },
   {
     tabella: "subscription_withdrawals",
@@ -256,6 +252,7 @@ export async function GET(req: Request) {
   // ── Casi che non sono una semplice regola per data ──
   esiti.push(...(await conversazioniInattive(admin, cancella)));
   esiti.push(...(await fileCandidatureScadute(admin, cancella)));
+  esiti.push(...(await segnalazioniScadute(admin, cancella)));
 
   // Promemoria dei rinnovi annuali (doc. 02, art. 5.2): non è conservazione,
   // ma è un lavoro notturno e il piano Vercel ammette pochi cron.
@@ -291,6 +288,7 @@ export async function GET(req: Request) {
 
 type Admin = ReturnType<typeof createAdminClient>;
 const GIORNO = 86_400_000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Conversazioni senza attività da 36 mesi, con i loro allegati.
@@ -325,7 +323,19 @@ async function conversazioniInattive(admin: Admin, cancella: boolean): Promise<A
       logger.warn("retention", `conversazione ${c.id}: richieste non leggibili, saltata`);
       continue;
     }
-    if ((count ?? 0) === 0) candidati.push(c.id);
+    if ((count ?? 0) > 0) continue;
+    // Il registro degli accessi del team cade a cascata con la conversazione,
+    // ma va tenuto 5 anni: finché c'è un accesso più recente, la conversazione resta.
+    const { count: accessi, error: aErr } = await admin
+      .from("chat_access_log")
+      .select("id", { count: "exact", head: true })
+      .eq("conversation_id", c.id)
+      .gte("created_at", new Date(Date.now() - 1826 * GIORNO).toISOString());
+    if (aErr) {
+      logger.warn("retention", `conversazione ${c.id}: registro accessi non leggibile, saltata`);
+      continue;
+    }
+    if ((accessi ?? 0) === 0) candidati.push(c.id);
   }
   if (!cancella) {
     return [{
@@ -337,18 +347,25 @@ async function conversazioniInattive(admin: Admin, cancella: boolean): Promise<A
   }
   let rimosse = 0;
   for (const id of candidati) {
-    const { data: files, error: lErr } = await admin.storage.from("chat-attachments").list(id, { limit: 1000 });
-    if (lErr) {
-      logger.error("retention", `allegati di ${id} non elencabili: conversazione NON rimossa`);
-      continue;
-    }
-    if (files && files.length > 0) {
+    // Si svuota la cartella a pagine finché la lista non torna vuota: una
+    // conversazione non si rimuove mai con file ancora presenti.
+    let allegatiOk = true;
+    for (let giro = 0; giro < 50; giro++) {
+      const { data: files, error: lErr } = await admin.storage.from("chat-attachments").list(id, { limit: 1000 });
+      if (lErr) {
+        logger.error("retention", `allegati di ${id} non elencabili: conversazione NON rimossa`);
+        allegatiOk = false;
+        break;
+      }
+      if (!files || files.length === 0) break;
       const { error: rErr } = await admin.storage.from("chat-attachments").remove(files.map((f) => `${id}/${f.name}`));
       if (rErr) {
         logger.error("retention", `allegati di ${id} non rimossi: conversazione NON rimossa`);
-        continue;
+        allegatiOk = false;
+        break;
       }
     }
+    if (!allegatiOk) continue;
     const { error: dErr } = await admin.from("conversations").delete().eq("id", id);
     if (dErr) logger.error("retention", `conversazione ${id} non rimossa: ${dErr.message}`);
     else rimosse++;
@@ -386,14 +403,103 @@ async function fileCandidatureScadute(admin: Admin, cancella: boolean): Promise<
   }
   let rimossi = 0;
   for (const r of elenco) {
-    const { error: rErr } = await admin.storage.from("application-videos").remove([r.video_path as string]);
-    if (rErr) {
-      logger.error("retention", `video candidatura ${r.id} non rimosso`);
-      continue;
+    const percorso = r.video_path as string;
+    if (UUID_RE.test(percorso)) {
+      // Video su Bunny Stream: il percorso è il GUID.
+      try {
+        await deleteStreamVideo(percorso);
+      } catch (e) {
+        logger.error("retention", `video candidatura ${r.id} non rimosso da Bunny: ${e instanceof Error ? e.message : String(e)}`);
+        continue;
+      }
+    } else {
+      const { error: rErr } = await admin.storage.from("application-videos").remove([percorso]);
+      if (rErr) {
+        logger.error("retention", `video candidatura ${r.id} non rimosso`);
+        continue;
+      }
     }
     const { error: uErr } = await admin.from("artist_applications").update({ video_path: null }).eq("id", r.id);
     if (uErr) logger.error("retention", `video_path di ${r.id} non azzerato: ${uErr.message}`);
     else rimossi++;
   }
   return [{ lavoro: "video_candidature", rimossi }];
+}
+
+/**
+ * Segnalazioni e reclami oltre 5 anni, con i loro allegati (bucket privato
+ * report-attachments, cartella `<reference>/`), più i caricamenti mai collegati
+ * a una segnalazione (`pending/` più vecchi di 2 giorni).
+ *
+ * Come per le chat: prima i file, poi la riga. Un errore sui file ferma quella
+ * segnalazione, mai righe cancellate con allegati rimasti orfani.
+ */
+async function segnalazioniScadute(admin: Admin, cancella: boolean): Promise<Array<Record<string, unknown>>> {
+  const soglia = new Date(Date.now() - 1826 * GIORNO).toISOString();
+  const { data: righe, error } = await admin
+    .from("content_reports")
+    .select("id, reference")
+    .lt("created_at", soglia)
+    .limit(500);
+  if (error) {
+    logger.error("retention", `content_reports: ${error.message}`);
+    return [{ tabella: "content_reports", errore: error.message }];
+  }
+  const bucket = admin.storage.from(REPORT_BUCKET);
+
+  // Caricamenti abbandonati: firmati ma mai inviati con il modulo.
+  const { data: pendenti, error: pErr } = await bucket.list("pending", { limit: 1000 });
+  const limitePendenti = Date.now() - 2 * GIORNO;
+  const vecchi = pErr
+    ? []
+    : (pendenti ?? []).filter((f) => f.created_at && Date.parse(f.created_at) < limitePendenti);
+  if (pErr) logger.warn("retention", `report-attachments/pending non elencabile: ${pErr.message}`);
+
+  if (!cancella) {
+    return [
+      {
+        tabella: "content_reports",
+        oltre: "5 anni",
+        righeCheSarebberoRimosse: (righe ?? []).length,
+        motivo: "segnalazioni e reclami (DSA): 5 anni, con i loro allegati",
+      },
+      {
+        lavoro: "allegati_segnalazioni_abbandonati",
+        righeCheSarebberoRimosse: vecchi.length,
+        motivo: "allegati caricati ma mai collegati a una segnalazione, oltre 2 giorni",
+      },
+    ];
+  }
+
+  let rimosse = 0;
+  for (const r of righe ?? []) {
+    if (r.reference) {
+      const { data: files, error: lErr } = await bucket.list(r.reference, { limit: 100 });
+      if (lErr) {
+        logger.error("retention", `allegati di ${r.reference} non elencabili: segnalazione NON rimossa`);
+        continue;
+      }
+      if (files && files.length > 0) {
+        const { error: rErr } = await bucket.remove(files.map((f) => `${r.reference}/${f.name}`));
+        if (rErr) {
+          logger.error("retention", `allegati di ${r.reference} non rimossi: segnalazione NON rimossa`);
+          continue;
+        }
+      }
+    }
+    const { error: dErr } = await admin.from("content_reports").delete().eq("id", r.id);
+    if (dErr) logger.error("retention", `segnalazione ${r.id} non rimossa: ${dErr.message}`);
+    else rimosse++;
+  }
+
+  let pendentiRimossi = 0;
+  if (vecchi.length > 0) {
+    const { error: rErr } = await bucket.remove(vecchi.map((f) => `pending/${f.name}`));
+    if (rErr) logger.error("retention", `allegati abbandonati non rimossi: ${rErr.message}`);
+    else pendentiRimossi = vecchi.length;
+  }
+  return [
+    { tabella: "content_reports", rimosse },
+    { lavoro: "allegati_segnalazioni_abbandonati", rimosse: pendentiRimossi },
+  ];
 }

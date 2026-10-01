@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  if (!(await allowByIp(LIMITI.segnalazione))) {
+  if (!(await allowByIp(LIMITI.segnalazioneAllegato))) {
     return NextResponse.json({ ok: false, error: "Troppi tentativi. Riprova fra un'ora." }, { status: 429 });
   }
 

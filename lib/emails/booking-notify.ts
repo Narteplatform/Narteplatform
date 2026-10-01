@@ -144,7 +144,7 @@ export async function sendBookingCancelledByOrganizerEmail(requestId: string) {
       ...ctx.params,
       message: ctx.cancellationReason,
       chatUrl: `${ctx.base}/dashboard/chat`,
-      bookingUrl: `${ctx.base}/dashboard/richieste`,
+      bookingUrl: `${ctx.base}/dashboard/leads`,
     },
     subjectPreview: `Richiesta annullata: ${ctx.params.organizerName} · ${ctx.params.eventDate}`,
   });
@@ -156,7 +156,7 @@ type StatusKind = "accepted" | "confirmed" | "declined" | "cancelled_by_admin";
 /** Link per ruolo del destinatario: l'artista e l'organizzatore hanno aree diverse. */
 function linksFor(base: string, role: "artist" | "organizer") {
   return role === "artist"
-    ? { chatUrl: `${base}/dashboard/chat`, bookingUrl: `${base}/dashboard/richieste` }
+    ? { chatUrl: `${base}/dashboard/chat`, bookingUrl: `${base}/dashboard/leads` }
     : { chatUrl: `${base}/organizzatore/chat`, bookingUrl: `${base}/organizzatore/richieste` };
 }
 

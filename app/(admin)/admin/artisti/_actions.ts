@@ -652,6 +652,11 @@ export async function createArtistManual(input: {
   return { ok: true as const };
 }
 
+/** Letterale di array Postgres (`{"a","b"}`) per confrontare una colonna text[]. */
+function arrayLetterale(valori: string[]): string {
+  return `{${valori.map((v) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`).join(",")}}`;
+}
+
 const rimuoviMediaSchema = z.object({
   artistId: z.string().uuid(),
   tipo: z.enum(["gallery", "cover", "audio", "video"]),
@@ -740,8 +745,26 @@ export async function rimuoviMediaPubblicato(input: RimuoviMediaInput, motivo: s
     if (artista.cover_image !== ref) {
       return { ok: false as const, error: "La foto profilo è cambiata nel frattempo: ricarica la pagina." };
     }
-    const { error } = await admin.from("artists").update({ cover_image: null }).eq("id", artistId);
+    const { data: scritte, error } = await admin
+      .from("artists")
+      .update({ cover_image: null })
+      .eq("id", artistId)
+      .eq("cover_image", ref)
+      .select("id");
     if (error) return { ok: false as const, error: error.message };
+    if (!scritte || scritte.length === 0) {
+      return { ok: false as const, error: "La foto profilo è cambiata nel frattempo: ricarica la pagina." };
+    }
+    // La stessa immagine può essere anche l'avatar dell'account: va tolta anche lì,
+    // altrimenti resterebbe visibile. Solo se coincide esattamente.
+    if (artista.user_id) {
+      const { error: avErr } = await admin
+        .from("profiles")
+        .update({ avatar_url: null })
+        .eq("id", artista.user_id)
+        .eq("avatar_url", ref);
+      if (avErr) logger.error("artisti", "avatar non azzerato dopo la rimozione della copertina", { error: avErr.message });
+    }
     etichetta = "la tua foto profilo";
   } else if (tipo === "gallery") {
     if (!Array.isArray(artista.gallery)) {
@@ -752,8 +775,18 @@ export async function rimuoviMediaPubblicato(input: RimuoviMediaInput, motivo: s
       return { ok: false as const, error: "La foto non è più nella galleria: ricarica la pagina." };
     }
     const nuova = artista.gallery.filter((_, i) => i !== idx);
-    const { error } = await admin.from("artists").update({ gallery: nuova }).eq("id", artistId);
+    // Scrittura condizionata: si aggiorna solo se la galleria è ancora quella
+    // letta. Un'approvazione arrivata nel frattempo non viene persa.
+    const { data: scritte, error } = await admin
+      .from("artists")
+      .update({ gallery: nuova })
+      .eq("id", artistId)
+      .filter("gallery", "eq", arrayLetterale(artista.gallery))
+      .select("id");
     if (error) return { ok: false as const, error: error.message };
+    if (!scritte || scritte.length === 0) {
+      return { ok: false as const, error: "La galleria è cambiata nel frattempo: ricarica la pagina e riprova." };
+    }
     etichetta = "una foto della galleria";
   } else {
     if (!Array.isArray(artista.audio_files)) {
@@ -767,8 +800,16 @@ export async function rimuoviMediaPubblicato(input: RimuoviMediaInput, motivo: s
       return { ok: false as const, error: "La traccia non è più tra quelle pubblicate: ricarica la pagina." };
     }
     const nuova = elenco.filter((_, i) => i !== idx);
-    const { error } = await admin.from("artists").update({ audio_files: nuova }).eq("id", artistId);
+    const { data: scritte, error } = await admin
+      .from("artists")
+      .update({ audio_files: nuova })
+      .eq("id", artistId)
+      .filter("audio_files", "eq", JSON.stringify(elenco))
+      .select("id");
     if (error) return { ok: false as const, error: error.message };
+    if (!scritte || scritte.length === 0) {
+      return { ok: false as const, error: "Le tracce sono cambiate nel frattempo: ricarica la pagina e riprova." };
+    }
     etichetta = "una traccia audio";
   }
 

@@ -20,7 +20,7 @@ export function buildBookingRequestParams(o: {
   contactEmail: string;
   contactPhone?: string | null;
   baseUrl: string;
-  /** Rotta della richiesta lato artista, es. `/dashboard/richieste`. */
+  /** Rotta della richiesta lato artista, es. `/dashboard/leads`. */
   requestPath?: string;
 }): BookingRequestParams {
   const name = o.organizerName ?? o.contactName ?? "";
@@ -41,7 +41,7 @@ export function buildBookingRequestParams(o: {
     statusLabel: "In attesa di risposta",
     message: toPlainText(o.message),
     chatUrl: `${o.baseUrl}/dashboard/chat`,
-    requestUrl: `${o.baseUrl}${o.requestPath ?? "/dashboard/richieste"}`,
+    requestUrl: `${o.baseUrl}${o.requestPath ?? "/dashboard/leads"}`,
     contactEmail: o.contactEmail,
     contactPhone: o.contactPhone ?? "",
     adminUrl: `${o.baseUrl}/admin/leads`,

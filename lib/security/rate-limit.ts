@@ -125,6 +125,8 @@ export const LIMITI = {
   booking: { scope: "booking", windowSeconds: 3600, max: 10 },
   /** Segnalazioni e reclami (DSA): pubblici, ma chi ne ha bisogno non va frenato troppo. */
   segnalazione: { scope: "segnalazione", windowSeconds: 3600, max: 5 },
+  /** Firma degli allegati di una segnalazione (fino a 3 per invio): soglia a parte. */
+  segnalazioneAllegato: { scope: "segnalazione-allegato", windowSeconds: 3600, max: 15 },
   /** Caricamento video di candidatura: pubblico, quindi il più esposto. */
   uploadPubblico: { scope: "upload-pubblico", windowSeconds: 3600, max: 3 },
   /** Copia della prova di consenso presso iubenda (registrazione). */

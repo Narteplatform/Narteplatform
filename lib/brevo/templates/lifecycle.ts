@@ -39,7 +39,7 @@ const eventReminder = defineTemplate({
     city: "Napoli",
     address: "Via Placeholder 25, Napoli",
     priceLabel: "€450",
-    bookingUrl: "https://narteofficial.it/dashboard/richieste",
+    bookingUrl: "https://narteofficial.it/dashboard/leads",
     chatUrl: "https://narteofficial.it/dashboard/chat",
   },
   html: layout({
