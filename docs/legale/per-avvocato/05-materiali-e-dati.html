@@ -1,0 +1,80 @@
+<h1>Trattamento dei materiali e dei dati degli utenti</h1>
+<div class="data">Documento 5 di 6 · aggiornato al 1° ottobre 2026</div>
+
+<p class="lead"><strong>La piattaforma raccoglie solo ciò che serve a far incontrare artisti e organizzatori: account, profili, contenuti multimediali, richieste, chat e abbonamenti.</strong> I contenuti degli artisti passano da un controllo prima della pubblicazione. Le comunicazioni private restano tra le parti, e ogni accettazione e consenso viene registrato come prova.</p>
+
+<h2>Quali dati, di chi, a cosa servono</h2>
+<table><thead><tr><th>Dati</th><th>Di chi</th><th>A cosa servono</th><th>Chi li vede</th></tr></thead><tbody>
+<tr><td class="k">Account: nome, email, password cifrata</td><td>Tutti i registrati</td><td>Accesso e comunicazioni di servizio</td><td>L'utente e il team</td></tr>
+<tr><td class="k">Profilo artista: nome d'arte, città, biografia, generi, social, calendario</td><td>Artisti</td><td>Farsi trovare dagli organizzatori</td><td>Utenti registrati; ai visitatori solo genere e formazione, senza nome</td></tr>
+<tr><td class="k">Foto, video, audio</td><td>Artisti</td><td>Presentazione dell'artista</td><td>Utenti registrati, dopo l'approvazione del team</td></tr>
+<tr><td class="k">Componenti della band: nome e ruolo</td><td>Terzi indicati dall'artista</td><td>Presentare la formazione</td><td>Utenti registrati</td></tr>
+<tr><td class="k">Strutture: nome, tipo, indirizzo, recapiti, foto</td><td>Organizzatori (anche privati)</td><td>Dire all'artista dove e per chi suonerebbe</td><td>Solo l'artista coinvolto; al pubblico al massimo nome e città, oppure «Evento privato — città»</td></tr>
+<tr><td class="k">Richieste di booking e date</td><td>Artista e organizzatore</td><td>Gestire il contatto</td><td>Le due parti; le date confermate compaiono sul profilo</td></tr>
+<tr><td class="k">Chat: messaggi, allegati, note vocali</td><td>Artista e organizzatore</td><td>Trattativa fra le parti</td><td>Le due parti; il team solo nei casi eccezionali del documento 3</td></tr>
+<tr><td class="k">Recensioni: voto e testo</td><td>Organizzatori</td><td>Informare chi cerca un artista</td><td>Utenti registrati, sui profili Pro e Max</td></tr>
+<tr><td class="k">Candidature, con video</td><td>Aspiranti artisti</td><td>Valutare l'ammissione</td><td>Solo il team</td></tr>
+<tr><td class="k">Consulenze: nome, recapiti, esigenze</td><td>Artisti</td><td>Organizzare la sessione</td><td>Il consulente assegnato e il team</td></tr>
+<tr><td class="k">Abbonamento: piano, date, stato</td><td>Artisti paganti</td><td>Erogare il servizio e tenere la contabilità</td><td>L'artista e il team (la carta la vede solo Stripe)</td></tr>
+<tr><td class="k">Segnalazioni e reclami, con allegati</td><td>Chiunque segnali</td><td>Gestire contenuti illeciti e contestazioni</td><td>Solo il team</td></tr>
+<tr><td class="k">Statistiche delle visite</td><td>Visitatori dei profili</td><td>Statistiche per gli artisti Max</td><td>Solo in forma aggregata, con un codice che cambia ogni giorno e senza cookie</td></tr>
+</tbody></table>
+
+<h2>I contenuti degli artisti</h2>
+<ul>
+<li><strong>Dichiarazione dei diritti:</strong> al primo caricamento l'artista dichiara di avere i diritti su foto, video e musica, compreso il consenso delle persone ritratte. Senza dichiarazione il caricamento è bloccato. La dichiarazione è registrata e va rinnovata quando cambiano le condizioni.</li>
+<li><strong>Controllo prima della pubblicazione:</strong> ogni contenuto resta in attesa finché il team non lo approva. Se il team lo rifiuta, l'artista riceve la motivazione e il file viene cancellato.</li>
+<li><strong>Licenza a N'arte:</strong> l'artista concede a N'arte di mostrare i contenuti sulla piattaforma e di usarli per promuovere l'artista e la piattaforma. La licenza cessa quando il contenuto viene tolto.</li>
+<li><strong>Rimozione:</strong> l'artista toglie i propri contenuti quando vuole. Il team può rimuoverne uno, con motivazione, se viola le regole.</li>
+<li><strong>Componenti della band:</strong> l'artista dichiara di averli informati e di avere il loro consenso. Ciascuno può ottenere la rimozione del proprio nome in qualsiasi momento.</li>
+<li><strong>Musica di terzi (cover):</strong> la responsabilità dei diritti d'autore resta dell'artista.</li>
+</ul>
+
+<h2>Prove di accettazione e consenso</h2>
+<p>Ogni volta che un utente accetta un documento o dà un consenso (termini, condizioni, newsletter, dichiarazione dei diritti) si registrano:</p>
+<ul>
+<li>tipo di documento, versione, data e ora;</li>
+<li>ruolo dell'utente;</li>
+<li>browser usato e indirizzo IP cifrato in modo irreversibile (non conservato in chiaro).</li>
+</ul>
+<p>Se l'account viene cancellato, la prova resta, ma non è più riconducibile alla persona senza conoscerne l'email.</p>
+
+<h2>Fornitori che trattano i dati per conto di N'arte</h2>
+<table><thead><tr><th>Fornitore</th><th>Cosa fa</th><th>Sede</th></tr></thead><tbody>
+<tr><td class="k">Supabase</td><td>Banca dati, accessi, file privati: chat, candidature, allegati delle segnalazioni</td><td>USA, infrastruttura Amazon Web Services</td></tr>
+<tr><td class="k">Vercel</td><td>Esecuzione del sito</td><td>USA, elaborazione in UE (Francoforte)</td></tr>
+<tr><td class="k">bunny.net (BunnyWay d.o.o.)</td><td>Archivio e distribuzione di foto, audio e video dei profili</td><td>Slovenia (UE)</td></tr>
+<tr><td class="k">Stripe Payments Europe</td><td>Pagamenti degli abbonamenti</td><td>Irlanda (UE)</td></tr>
+<tr><td class="k">Brevo</td><td>Invio delle email e lista newsletter</td><td>Francia (UE)</td></tr>
+<tr><td class="k">Resend</td><td>Invio delle email di riserva</td><td>USA</td></tr>
+<tr><td class="k">iubenda</td><td>Informativa privacy, banner cookie, registro dei consensi</td><td>Italia</td></tr>
+<tr><td class="k">Google Analytics, Meta</td><td>Statistiche e misurazione, solo con il consenso cookie dell'utente e solo se attivati</td><td>USA / Irlanda</td></tr>
+</tbody></table>
+
+<h2>Email</h2>
+<ul>
+<li><strong>Email di servizio:</strong> conferme, notifiche di richieste, decisioni del team, abbonamento. Ogni invio è registrato per 12 mesi come prova.</li>
+<li><strong>Newsletter:</strong> solo con consenso esplicito, revocabile dall'area personale o dal link nell'email. I due canali sono sincronizzati.</li>
+<li><strong>Segnalazioni Max alle strutture:</strong> email a indirizzi professionali di locali e organizzatori, con un link per non riceverne più.</li>
+</ul>
+
+<h2>Per quanto tempo si conservano i dati (proposta)</h2>
+<table><thead><tr><th>Dato</th><th>Periodo</th></tr></thead><tbody>
+<tr><td class="k">Account e profili</td><td>Finché l'account esiste; dopo la cancellazione, rimozione entro 30 giorni, file compresi</td></tr>
+<tr><td class="k">Chat, allegati, note vocali; richieste chiuse</td><td>36 mesi dall'ultima attività (mai con richieste aperte o date future)</td></tr>
+<tr><td class="k">Registro delle azioni del team e degli accessi alle chat</td><td>5 anni</td></tr>
+<tr><td class="k">Segnalazioni e reclami</td><td>5 anni</td></tr>
+<tr><td class="k">Recessi e documenti contabili</td><td>10 anni</td></tr>
+<tr><td class="k">Candidature non accolte</td><td>12 mesi</td></tr>
+<tr><td class="k">Consulenze, contatti dal sito</td><td>24 mesi</td></tr>
+<tr><td class="k">Registro delle email</td><td>12 mesi</td></tr>
+<tr><td class="k">Statistiche</td><td>Circa 14 mesi</td></tr>
+</tbody></table>
+<p class="nota">La cancellazione automatica è pronta ma per ora conta soltanto i dati scaduti, senza cancellarli: si attiva dopo la vostra approvazione dei periodi.</p>
+
+<h2>Diritti degli utenti, in pratica</h2>
+<ul>
+<li><strong>Accesso e copia:</strong> dall'area personale l'utente scarica un file con tutti i suoi dati (account, profili, richieste, messaggi, strutture, consulenze, consensi).</li>
+<li><strong>Cancellazione:</strong> la chiede dall'area personale e la conferma via email. Ha 30 giorni di ripensamento.</li>
+<li><strong>Altre richieste:</strong> rettifica, opposizione e reclami a info@narteofficial.it.</li>
+</ul>

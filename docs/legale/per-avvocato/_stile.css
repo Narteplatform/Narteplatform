@@ -1,0 +1,28 @@
+@page { size: A4; margin: 17mm 17mm 18mm; }
+* { box-sizing: border-box; }
+body { font-family: "Open Sans", Helvetica, Arial, sans-serif; color: #0B0B0B; font-size: 10pt; line-height: 1.55; margin: 0; }
+.brand { font-family: "Space Grotesk", Helvetica, sans-serif; font-weight: 700; color: #FF5722; font-size: 11pt; letter-spacing: -0.02em; }
+.brand span { color: #777; font-weight: 400; font-family: "Open Sans", sans-serif; font-size: 9pt; margin-left: 2mm; }
+h1 { font-family: "Space Grotesk", Helvetica, sans-serif; font-weight: 700; letter-spacing: -0.03em; font-size: 21pt; line-height: 1.15; margin: 4mm 0 1.5mm; }
+h2 { font-family: "Space Grotesk", Helvetica, sans-serif; font-weight: 700; letter-spacing: -0.02em; font-size: 13pt; margin: 7mm 0 2.5mm; padding-bottom: 1.3mm; border-bottom: 2px solid #FF5722; break-after: avoid; }
+h3 { font-family: "Space Grotesk", Helvetica, sans-serif; font-weight: 700; font-size: 10.8pt; margin: 4.5mm 0 1.5mm; break-after: avoid; }
+.data { color: #555; font-size: 9pt; margin-bottom: 4mm; }
+.lead { background: #F4F4F4; border-left: 4px solid #FF5722; padding: 3.5mm 5mm; margin: 0 0 3mm; }
+.attenzione { border: 1.5px solid #FF5722; border-radius: 2mm; padding: 3mm 4.5mm; margin: 3mm 0; break-inside: avoid; }
+.attenzione strong:first-child { color: #FF5722; }
+p { margin: 0 0 2.4mm; }
+ul, ol { margin: 0 0 2.4mm; padding-left: 5.5mm; }
+li { margin-bottom: 1.1mm; }
+table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 1mm 0 3mm; }
+thead { display: table-header-group; }
+th { text-align: left; background: #0B0B0B; color: #fff; font-weight: 600; padding: 1.8mm 2.4mm; }
+td { padding: 2mm 2.4mm; border-bottom: 1px solid #E2E2E2; vertical-align: top; }
+tr { break-inside: avoid; }
+tbody tr:nth-child(even) td { background: #FAFAFA; }
+td.k { font-weight: 600; width: 34%; }
+.c { text-align: center; }
+.nota { color: #555; font-size: 8.8pt; }
+.flusso { display: flex; flex-wrap: wrap; gap: 1.5mm; align-items: center; margin: 2mm 0 3mm; font-size: 8.8pt; }
+.flusso span.p { background: #0B0B0B; color: #fff; padding: 1.2mm 2.5mm; border-radius: 1.5mm; }
+.flusso span.p.a { background: #FF5722; }
+.flusso span.f { color: #FF5722; font-weight: 700; }
