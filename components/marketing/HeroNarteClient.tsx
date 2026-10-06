@@ -14,17 +14,19 @@ import type { SearchHit } from "@/app/api/search/route";
 const easing = [0.22, 1, 0.36, 1] as const;
 
 /**
- * Foto di N'arte, non più uno stock da Unsplash.
+ * Foto di N'arte: il palco visto dal fondo della sala, folla in controluce.
  *
- * ⚠️ L'originale è verticale (1639×2048): su desktop la hero è larga più del
- * doppio della sua altezza, quindi `object-cover` ne mostra solo una fascia
- * orizzontale. La posizione è tarata al 45% dell'altezza — non al centro —
- * perché è lì che cadono la testa del cantante e la parte alta della chitarra;
- * al 50% la fascia tagliava la fronte. Se un giorno arriva una versione
- * orizzontale della stessa foto, va sostituita: sopra i 1639px di larghezza
- * questa non ha più pixel da dare e su un monitor grande si ammorbidisce.
+ * Orizzontale (originale 5954×3969, servita a 2560px): a differenza della
+ * vecchia foto verticale della terrazza non c'è più una fascia da scegliere,
+ * `object-cover` taglia poco su desktop. La posizione al 40% tiene in quadro
+ * le luci del palco anche sui telefoni, dove la hero è verticale e si vede solo
+ * una colonna centrale dell'immagine.
+ *
+ * L'opacità è più alta di prima (70 contro 45) perché la foto è già scura di
+ * suo: al 45% sopra il fondo nero e il gradiente diventava una macchia. Il
+ * contrasto del titolo lo garantisce il gradiente, non l'opacità.
  */
-const HERO_BG = "/hero-terrazza.webp";
+const HERO_BG = "/hero-concerto.webp";
 
 // La prima voce si chiama per esteso e non "Tutti": i due select stanno
 // affiancati e mostravano entrambi la stessa parola, senza far capire quale
@@ -172,7 +174,7 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[center_45%] opacity-45"
+          className="object-cover object-[center_40%] opacity-70"
         />
         {/* Il gradiente resta carico in alto e in basso (header e fondo sezione)
             e si alleggerisce al centro, dove passa il titolo. */}
