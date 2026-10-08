@@ -27,7 +27,9 @@ type ArtistRow = {
  * Catalogo per chi non ha una sessione. Legge SOLO le colonne che anche la
  * migration 0070 concede al ruolo anonimo (id, genre, instruments, tier,
  * is_public): niente nome d'arte, slug, città, copertina, prezzi, voti. Quello
- * che non viene letto non può finire nel payload RSC/HTML.
+ * che non viene letto non può finire nel payload RSC/HTML. L'`id` serve solo a
+ * chiedere /api/anteprima-artista, che restituisce una copertina ridotta e
+ * sfocata dal server.
  *
  * Nessun fallback "minimal": se la query fallisce il catalogo ospite è vuoto,
  * e si registra l'errore.
@@ -117,7 +119,7 @@ export default async function ArtistiPage() {
         description={
           isGuest ? (
             <>
-              Il roster di artisti emergenti N&apos;arte. Nomi, copertine e contatti sono
+              Il roster di artisti emergenti N&apos;arte. Nomi, foto e contatti sono
               riservati a chi è registrato: l&apos;iscrizione è gratuita.
             </>
           ) : (
@@ -134,10 +136,10 @@ export default async function ArtistiPage() {
           {isGuest && (
             <div className="mb-8 flex flex-col items-start justify-between gap-4 rounded-2xl bg-notte px-6 py-6 text-palco md:flex-row md:items-center">
               <p className="font-display text-xl md:text-2xl">
-                Registrati gratis per scoprire chi sono
+                Accedi o iscriviti gratis per vedere nomi, foto e profili completi.
               </p>
               <Button asChild variant="accent" size="md">
-                <Link href="/register">Registrati gratis</Link>
+                <Link href="/login?next=/artisti">Accedi per visualizzare</Link>
               </Button>
             </div>
           )}

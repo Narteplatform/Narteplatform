@@ -5,7 +5,6 @@ import { StaggerList, Reveal } from "@/components/animations/Reveal";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { logger } from "@/lib/logger";
-import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
 
 /**
  * Vetrina per chi ha una sessione: schede complete.
@@ -46,15 +45,15 @@ async function getStars(limit = 8): Promise<ArtistCardProps[]> {
 /**
  * Vetrina per gli ospiti. Legge SOLO le colonne concesse al ruolo anonimo dalla
  * migration 0070 (id, genre, instruments, tier, is_public): nessun nome, slug,
- * città o copertina esce dal server. `id` serve solo come chiave React e NON
- * viene passato alla scheda.
+ * città o copertina esce dal server. `id` serve a richiedere l'anteprima
+ * sfocata (/api/anteprima-artista), già ridotta e sfocata dal server.
  */
 async function getAnonymousStars(limit = 8): Promise<ArtistCardProps[]> {
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("artists")
-      .select("id, genre, instruments, tier")
+      .select("id, genre, tier")
       .eq("is_public", true)
       .order("tier", { ascending: false })
       .limit(limit);
@@ -63,8 +62,8 @@ async function getAnonymousStars(limit = 8): Promise<ArtistCardProps[]> {
       return [];
     }
     return (data ?? []).map((a) => ({
+      id: a.id,
       genres: a.genre ?? [],
-      instruments: a.instruments ?? [],
       tier: a.tier,
     }));
   } catch {
@@ -89,7 +88,7 @@ export async function StarsSection() {
           <Reveal>
             <p className="accent-label mb-3">il roster</p>
           </Reveal>
-          <div className="mb-4 flex flex-col items-center gap-6 md:flex-row md:items-end md:justify-between">
+          <div className={`${isGuest ? "mb-10" : "mb-4"} flex flex-col items-center gap-6 md:flex-row md:items-end md:justify-between`}>
             <Reveal delay={0.1}>
               <h2 className="display-xl text-balance text-4xl text-notte md:text-6xl">
                 Sfoglia gli artisti e scegli il più adatto a te
@@ -97,29 +96,21 @@ export async function StarsSection() {
             </Reveal>
             <Reveal delay={0.2}>
               <Button asChild variant="accent" size="md">
-                <Link href="/artisti">Vedi tutti gli artisti</Link>
+                {isGuest ? (
+                  <Link href="/login?next=/artisti">Accedi per visualizzare</Link>
+                ) : (
+                  <Link href="/artisti">Vedi tutti gli artisti</Link>
+                )}
               </Button>
             </Reveal>
           </div>
-          <Reveal delay={0.25}>
-            <p className="mx-auto mb-4 max-w-xl text-pretty text-sm text-notte/70 md:mx-0 md:text-base">
-              {isGuest
-                ? "Nomi, copertine e contatti degli artisti sono riservati a chi è registrato. L'iscrizione è gratuita."
-                : "Scopri i dettagli degli artisti e fai una richiesta di booking."}
-            </p>
-          </Reveal>
-          <Reveal delay={0.3}>
-            <p className="mx-auto mb-10 max-w-xl text-pretty text-xs text-notte/70 md:mx-0">
-              Selezione automatica: prima gli artisti con piano Max e Pro, a pagamento, poi i
-              più recenti.{" "}
-              <Link
-                href={urlCriteriPosizionamento()}
-                className="font-medium text-notte underline underline-offset-4 hover:text-accent"
-              >
-                Come funziona
-              </Link>
-            </p>
-          </Reveal>
+          {!isGuest && (
+            <Reveal delay={0.25}>
+              <p className="mx-auto mb-10 max-w-xl text-pretty text-sm text-notte/70 md:mx-0 md:text-base">
+                Scopri i dettagli degli artisti e fai una richiesta di booking.
+              </p>
+            </Reveal>
+          )}
         </div>
 
         {artists.length === 0 ? (
@@ -142,10 +133,10 @@ export async function StarsSection() {
           <Reveal delay={0.1}>
             <div className="mt-10 flex flex-col items-center gap-4 rounded-2xl bg-notte px-6 py-10 text-center text-palco">
               <p className="font-display text-2xl text-balance md:text-4xl">
-                Registrati gratis per scoprire chi sono
+                Accedi o iscriviti gratis per vedere nomi, foto e profili completi.
               </p>
               <Button asChild variant="accent" size="lg">
-                <Link href="/register">Registrati gratis</Link>
+                <Link href="/login?next=/artisti">Accedi per visualizzare</Link>
               </Button>
             </div>
           </Reveal>

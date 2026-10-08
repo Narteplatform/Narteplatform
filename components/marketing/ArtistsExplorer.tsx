@@ -277,19 +277,9 @@ export function ArtistsExplorer({
   }
 
   function renderCard(a: ExplorerArtist) {
-    const category =
-      ROLE_GROUPS.find((g) => (a.instruments ?? []).some((i) => g.match(i)))?.label ?? null;
     if (isGuest) {
-      // Variante anonima: solo ciò che il server ha mandato (genere, strumenti, piano).
-      return (
-        <ArtistCard
-          key={a.id}
-          isGuest
-          genres={a.genre}
-          instruments={a.instruments}
-          category={category}
-          tier={a.tier}
-        />
+      // Variante anonima: id (per l'anteprima sfocata dal server), genere e piano.
+      return <ArtistCard key={a.id} isGuest id={a.id} genres={a.genre} tier={a.tier} />;
       );
     }
     return (
@@ -302,7 +292,6 @@ export function ArtistsExplorer({
         genres={a.genre}
         priceBand={a.price_band}
         canSeePrice={canSeePrice}
-        category={category}
         tier={a.tier}
         artistId={a.id}
         rating={a.rating}
