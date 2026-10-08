@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Input, Label } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
+import { OAuthButtons, SeparatoreOppure } from "@/components/forms/OAuthButtons";
 
 export function LoginForm() {
   const router = useRouter();
@@ -44,6 +45,9 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+      <OAuthButtons next={next} />
+      <SeparatoreOppure />
+
       <div>
         <Label htmlFor="login-email">Email</Label>
         <Input

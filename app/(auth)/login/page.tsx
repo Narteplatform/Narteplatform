@@ -20,12 +20,13 @@ function safeNext(value?: string | string[]) {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string | string[]; sospeso?: string | string[]; chiuso?: string | string[] }>;
+  searchParams: Promise<{ next?: string | string[]; sospeso?: string | string[]; chiuso?: string | string[]; errore?: string | string[] }>;
 }) {
   const params = await searchParams;
   const next = safeNext(params.next);
   const sospeso = params.sospeso === "1";
   const chiuso = params.chiuso === "1" && !sospeso;
+  const erroreOauth = params.errore === "oauth";
 
   return (
     <AuthSplit
@@ -53,6 +54,14 @@ export default async function LoginPage({
           className="mb-5 rounded-xl border border-corallo/30 bg-corallo/10 px-4 py-3 text-sm"
         >
           {chiuso ? MESSAGGIO_ACCOUNT_CHIUSO : MESSAGGIO_ACCOUNT_SOSPESO}
+        </p>
+      )}
+      {erroreOauth && !sospeso && !chiuso && (
+        <p
+          role="alert"
+          className="mb-5 rounded-xl border border-corallo/30 bg-corallo/10 px-4 py-3 text-sm"
+        >
+          Accesso con Google non riuscito. Riprova o usa email e password.
         </p>
       )}
       {/* useSearchParams dentro al form richiede un confine di Suspense. */}

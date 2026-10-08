@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, CalendarCheck, MailCheck, Ticket } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, CalendarCheck, MailCheck, Mic2 } from "lucide-react";
 import { authSchema, type AuthInput } from "@/lib/validators/schemas";
 import { authErrorMessage } from "@/lib/auth/error-messages";
 import { createClient } from "@/lib/supabase/client";
@@ -14,18 +15,21 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { TermsConsent } from "@/components/forms/PrivacyConsent";
 import { LEGAL_VERSION } from "@/lib/legal/content";
-import { registraProvaRegistrazione } from "@/app/(auth)/register/_actions";
+import { OAuthButtons, SeparatoreOppure } from "@/components/forms/OAuthButtons";
+import { datiOrganizzatoreSchema } from "@/lib/validators/organizzatore";
+import { PERCORSO_IN_ATTESA } from "@/lib/organizers/stato";
+import {
+  notificaRegistrazioneOrganizzatore,
+  registraProvaRegistrazione,
+} from "@/app/(auth)/register/_actions";
 
-type AccountKind = "user" | "organizer";
+type AccountKind = "artist" | "organizer";
 
 /**
- * Le descrizioni dicono cosa si sblocca davvero, non cosa "sei": è la domanda
- * a cui la persona sta rispondendo mentre sceglie.
- *
- * Nota vera e utile da sapere: chi si iscrive come utente e poi manda la prima
- * richiesta di booking viene promosso a organizzatore in automatico
- * (`promote_user_to_organizer` in app/api/booking-request). Quindi la scelta
- * non è una porta che si chiude, ed è giusto dirlo invece di farla pesare.
+ * Le descrizioni dicono cosa succede davvero, non cosa "sei". Il profilo
+ * artista NON si crea da qui (passa da una candidatura valutata dal team) e
+ * l'account organizzatore nasce "in attesa" finché il team non lo approva:
+ * dirlo prima evita di far credere che bastino email e password.
  */
 const KINDS: {
   key: AccountKind;
@@ -34,15 +38,15 @@ const KINDS: {
   icon: React.ReactNode;
 }[] = [
   {
-    key: "user",
-    label: "Utente",
-    hint: "Sblocchi i profili e salvi i preferiti",
-    icon: <Ticket className="size-4" />,
+    key: "artist",
+    label: "Sono un artista",
+    hint: "Candidati per entrare nel roster: il team valuta il tuo profilo",
+    icon: <Mic2 className="size-4" />,
   },
   {
     key: "organizer",
-    label: "Organizzatore",
-    hint: "In più: richieste, chat e calendario",
+    label: "Ho bisogno di un artista",
+    hint: "Per locali, eventi e privati: richieste, chat e calendario, dopo l'approvazione del team",
     icon: <CalendarCheck className="size-4" />,
   },
 ];
@@ -51,7 +55,11 @@ export function RegisterForm({ next }: { next?: string | null }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-  const [kind, setKind] = useState<AccountKind>("user");
+  // Nessuna preselezione: è una scelta che cambia il percorso, va fatta di proposito.
+  const [kind, setKind] = useState<AccountKind | null>(null);
+  const [organizerName, setOrganizerName] = useState("");
+  const [city, setCity] = useState("");
+  const [orgErrors, setOrgErrors] = useState<{ organizerName?: string; city?: string }>({});
   const {
     register,
     handleSubmit,
@@ -61,6 +69,19 @@ export function RegisterForm({ next }: { next?: string | null }) {
   async function onSubmit(values: AuthInput) {
     setError(null);
     setInfo(null);
+    if (kind !== "organizer") return;
+    // Locale e città: obbligatori, validati qui con lo stesso schema usato in /benvenuto.
+    const org = datiOrganizzatoreSchema.safeParse({ organizerName, city });
+    if (!org.success) {
+      const fe: { organizerName?: string; city?: string } = {};
+      for (const issue of org.error.issues) {
+        const k = issue.path[0];
+        if ((k === "organizerName" || k === "city") && !fe[k]) fe[k] = issue.message;
+      }
+      setOrgErrors(fe);
+      return;
+    }
+    setOrgErrors({});
     const supabase = createClient();
     // La destinazione sopravvive al giro di conferma via email: senza, chi si
     // iscrive da un profilo bloccato torna in home e deve ricercarlo.
@@ -71,10 +92,12 @@ export function RegisterForm({ next }: { next?: string | null }) {
       options: {
         data: {
           full_name: values.fullName ?? null,
-          // Letto dalla trigger handle_new_user per impostare il ruolo
-          // del profilo. Solo "organizer" è auto-assegnabile dal client;
-          // qualunque altro valore ricade su default 'user'.
-          role: kind === "organizer" ? "organizer" : "user",
+          // Letti dalla trigger handle_new_user: ruolo del profilo e riga
+          // `organizers` (in attesa di approvazione). Solo "organizer" è
+          // auto-assegnabile dal client; qualunque altro valore ricade su 'user'.
+          role: "organizer",
+          organizer_name: org.data.organizerName,
+          organizer_city: org.data.city,
           // Letti dalla trigger `record_signup_consents` (0049) che scrive le
           // righe in `user_consents`. Passarli qui invece di fare una seconda
           // chiamata dal client è deliberato: una chiamata separata potrebbe
@@ -95,57 +118,107 @@ export function RegisterForm({ next }: { next?: string | null }) {
     // prova. Non si attende l'esito e gli errori si ignorano.
     if (data.user && (data.user.identities?.length ?? 0) > 0) {
       void registraProvaRegistrazione(data.user.id).catch(() => {});
+      void notificaRegistrazioneOrganizzatore(data.user.id).catch(() => {});
     }
     if (data.user && !data.session) {
       setInfo(
-        "Ci siamo quasi: ti abbiamo mandato un'email di conferma. Aprila per attivare l'account — controlla anche nello spam.",
+        "Ci siamo quasi: ti abbiamo mandato un'email di conferma. Aprila per attivare l'account — controlla anche nello spam. Dopo la conferma il team verificherà il tuo account e ti scriveremo appena sarà approvato.",
       );
       return;
     }
-    router.push(next ?? "/");
+    router.push(PERCORSO_IN_ATTESA);
     router.refresh();
+  }
+
+  const selettore = (
+    <div>
+      <Label id="kind-label">Come vuoi usare N&rsquo;arte?</Label>
+      <div role="radiogroup" aria-labelledby="kind-label" className="grid grid-cols-2 gap-2">
+        {KINDS.map((k) => {
+          const selected = kind === k.key;
+          return (
+            <button
+              key={k.key}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => setKind(k.key)}
+              className={`rounded-xl border-[1.5px] p-3 text-left transition-colors ${
+                selected
+                  ? "border-azzurro bg-azzurro/10"
+                  : "border-border bg-surface hover:border-foreground/40"
+              }`}
+            >
+              <span
+                className={`inline-flex size-8 items-center justify-center rounded-lg ${
+                  selected ? "bg-azzurro text-white" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {k.icon}
+              </span>
+              <span className="mt-2 block text-sm font-semibold">{k.label}</span>
+              <span className="block text-xs text-muted-foreground">{k.hint}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // Artista: il profilo non si crea da qui, passa da una candidatura.
+  if (kind !== "organizer") {
+    return (
+      <div className="space-y-5">
+        {selettore}
+        {kind === "artist" && (
+          <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-4 text-sm">
+            <p>
+              Gli artisti non si registrano da qui: invii una candidatura e il team valuta il tuo profilo
+              prima di pubblicarlo. Se approvata, ricevi l&rsquo;invito per accedere.
+            </p>
+            <Button asChild size="lg" className="w-full">
+              <Link href="/candidatura-artista">Vai alla candidatura</Link>
+            </Button>
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-      {/* TIPO DI ACCOUNT. `radiogroup` e non due bottoni sciolti: sono
-          alternative esclusive, e senza il ruolo uno screen reader le annuncia
-          come azioni indipendenti senza dire quale è attiva. */}
+      {selettore}
+
+      <OAuthButtons next={next} intent="organizer" />
+      <SeparatoreOppure />
+
       <div>
-        <Label id="kind-label">Come vuoi usare N&rsquo;arte?</Label>
-        <div role="radiogroup" aria-labelledby="kind-label" className="grid grid-cols-2 gap-2">
-          {KINDS.map((k) => {
-            const selected = kind === k.key;
-            return (
-              <button
-                key={k.key}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => setKind(k.key)}
-                className={`rounded-xl border-[1.5px] p-3 text-left transition-colors ${
-                  selected
-                    ? "border-azzurro bg-azzurro/10"
-                    : "border-border bg-surface hover:border-foreground/40"
-                }`}
-              >
-                <span
-                  className={`inline-flex size-8 items-center justify-center rounded-lg ${
-                    selected ? "bg-azzurro text-white" : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {k.icon}
-                </span>
-                <span className="mt-2 block text-sm font-semibold">{k.label}</span>
-                <span className="block text-xs text-muted-foreground">{k.hint}</span>
-              </button>
-            );
-          })}
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Non è una scelta definitiva: alla prima richiesta di booking un account utente
-          diventa da organizzatore in automatico.
-        </p>
+        <Label htmlFor="reg-org">Locale o realtà che rappresenti</Label>
+        <Input
+          id="reg-org"
+          maxLength={120}
+          placeholder="Es. Duel Club"
+          aria-invalid={!!orgErrors.organizerName}
+          value={organizerName}
+          onChange={(e) => setOrganizerName(e.target.value)}
+        />
+        {orgErrors.organizerName && (
+          <p className="mt-1.5 text-xs text-corallo">{orgErrors.organizerName}</p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="reg-city">Città</Label>
+        <Input
+          id="reg-city"
+          maxLength={80}
+          autoComplete="address-level2"
+          placeholder="Es. Napoli"
+          aria-invalid={!!orgErrors.city}
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+        />
+        {orgErrors.city && <p className="mt-1.5 text-xs text-corallo">{orgErrors.city}</p>}
       </div>
 
       <div>
@@ -240,7 +313,7 @@ export function RegisterForm({ next }: { next?: string | null }) {
           non vede mai l'email e resta convinto di essersi iscritto. */}
       <p className="text-center text-xs text-muted-foreground">
         Dopo l&rsquo;invio ti arriva un&rsquo;email di conferma: serve ad attivare
-        l&rsquo;account.
+        l&rsquo;account. Poi il team verifica i dati e ti scrive appena sei approvato.
       </p>
     </form>
   );

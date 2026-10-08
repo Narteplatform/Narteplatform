@@ -1,5 +1,6 @@
 "use server";
 
+import { leggiStatoOrganizzatore } from "@/lib/organizers/approvazione";
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { resolveMediaUrl } from "@/lib/storage/signed";
@@ -136,6 +137,13 @@ export async function openOrCreateConversation(
       .maybeSingle();
     if (!o) return { ok: false, error: "Profilo organizzatore non trovato" };
     orgId = o.id;
+  }
+
+  // Un organizzatore non ancora approvato dal team (migration 0071) non può
+  // aprire conversazioni. Stato tollerante: senza colonna o senza riga vale
+  // «approved», come prima. Per un artista (nessuna riga organizers) non cambia nulla.
+  if ((await leggiStatoOrganizzatore(user.id)) !== "approved") {
+    return { ok: false, error: "Il tuo account organizzatore è in attesa di approvazione." };
   }
 
   // Verifica esistenza artista

@@ -19,6 +19,16 @@ import { logger } from "@/lib/logger";
 import { LEGAL_VERSION } from "@/lib/legal/content";
 import { registraConsensoConContesto } from "@/lib/legal/consents";
 import { registraProvaSuIubendaInBackground } from "@/lib/legal/iubenda-consent";
+import {
+  leggiStatoOrganizzatore,
+  richiediAccessoOrganizzatore,
+  type EsitoRichiesta,
+} from "@/lib/organizers/approvazione";
+
+const MESSAGGIO_ORGANIZZATORE_IN_ATTESA =
+  "Il tuo account organizzatore è in attesa di approvazione: ti scriviamo appena il team lo ha verificato, poi potrai inviare le richieste.";
+const MESSAGGIO_ORGANIZZATORE_RIFIUTATO =
+  "Il tuo account organizzatore non è stato approvato, quindi non puoi inviare richieste. Per chiarimenti scrivi a info@narteofficial.it.";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -131,17 +141,25 @@ export async function POST(req: Request) {
     if (role === "artist") {
       return fail(rid, "role-artist", "Il profilo artista non può inviare richieste", 403);
     }
+    let richiestaAccesso: EsitoRichiesta = { ok: true, stato: "approved", creata: false };
     if (role === "user") {
       // Diventare organizzatore significa assumere gli adempimenti dell'evento
       // (doc. 04): serve un'accettazione esplicita, e va registrata.
       if (data.acceptedOrganizerTerms !== true) {
         return fail(rid, "organizer-terms", "Devi accettare le Condizioni per gli organizzatori.");
       }
-      const { error: promErr } = await admin.rpc("promote_user_to_organizer", {
-        uid: currentUser.id,
+      // Dalla migration 0071 diventare organizzatore richiede l'approvazione del
+      // team: la richiesta di accesso la crea (con la service role) questa
+      // funzione, non più la RPC `promote_user_to_organizer`, ormai revocata
+      // agli utenti. Prima della migration restituisce «approved» e il flusso
+      // prosegue come sempre.
+      richiestaAccesso = await richiediAccessoOrganizzatore({
+        userId: currentUser.id,
+        citta: data.venueCity ?? null,
       });
-      if (promErr) {
-        logger.error("booking-request", rid, "promote-fail", promErr.message);
+      if (!richiestaAccesso.ok) {
+        logger.error("booking-request", rid, "richiesta-accesso-fail", richiestaAccesso.error);
+        return fail(rid, "organizer-request", richiestaAccesso.error, 500);
       }
       // Con il client dell'utente: record_consent usa auth.uid().
       const consErr = await registraConsensoConContesto(supabaseSrv, {
@@ -162,6 +180,32 @@ export async function POST(req: Request) {
         testoCasella:
           "Inviando la richiesta diventi organizzatore su N'arte. Ho letto e accetto le Condizioni per gli organizzatori, in particolare gli obblighi su SIAE, agibilità, permessi e sicurezza dell'evento, che restano a mio carico.",
       });
+
+      if (richiestaAccesso.stato === "pending") {
+        // La booking request NON si crea: l'organizzatore potrà inviarla
+        // quando il team lo avrà approvato.
+        return NextResponse.json(
+          {
+            ok: true,
+            pending: true,
+            rid,
+            message:
+              "Richiesta inviata al team: ti avvisiamo appena il tuo account è approvato, poi potrai inviare la richiesta.",
+          },
+          { status: 202 }
+        );
+      }
+      if (richiestaAccesso.stato === "rejected") {
+        return fail(rid, "organizer-rejected", MESSAGGIO_ORGANIZZATORE_RIFIUTATO, 403);
+      }
+    } else if (role === "organizer") {
+      const stato = await leggiStatoOrganizzatore(currentUser.id);
+      if (stato === "pending") {
+        return fail(rid, "organizer-pending", MESSAGGIO_ORGANIZZATORE_IN_ATTESA, 403);
+      }
+      if (stato === "rejected") {
+        return fail(rid, "organizer-rejected", MESSAGGIO_ORGANIZZATORE_RIFIUTATO, 403);
+      }
     }
 
     if (!userId) return fail(rid, "no-user", "Sessione non valida", 401);

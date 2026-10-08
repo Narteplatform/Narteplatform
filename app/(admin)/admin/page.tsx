@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarDays, Image as ImageIcon, Inbox, UserPlus, Users } from "lucide-react";
+import { CalendarDays, Image as ImageIcon, Inbox, UserCheck, UserPlus, Users } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { HeroGreeting } from "@/components/dashboard/HeroGreeting";
@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/ScrollArea";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { formatEventDate } from "@/lib/utils";
+import { contaOrganizzatoriInAttesa } from "@/lib/organizers/approvazione";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,8 @@ export default async function AdminOverviewPage() {
         .limit(8),
     ]);
 
+  // Query tollerante: errore o migration 0071 non applicata = 0, la card si nasconde.
+  const pendingOrganizers = await contaOrganizzatoriInAttesa();
   const newLeads = leadsRes.count ?? 0;
   const pendingApps = applicationsRes.count ?? 0;
   const recentEvents = recentEventsRes.data ?? [];
@@ -96,6 +99,15 @@ export default async function AdminOverviewPage() {
           href="/admin/artisti?filter=pending"
           sublabel={pendingApps > 0 ? "Da revisionare" : "Tutto evaso"}
         />
+        {pendingOrganizers > 0 && (
+          <KpiCard
+            label="Organizzatori in attesa"
+            value={pendingOrganizers}
+            icon={<UserCheck className="size-4" />}
+            href="/admin/utenti?filtro=organizzatori-in-attesa"
+            sublabel="Da approvare"
+          />
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

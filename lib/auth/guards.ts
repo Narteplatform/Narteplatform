@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import type { Role } from "@/lib/supabase/types";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { normalizzaStato, PERCORSO_IN_ATTESA } from "@/lib/organizers/stato";
 import { isUtenteSospeso, queryLoginBloccato } from "@/lib/auth/sospeso";
 
 export async function getCurrentUser() {
@@ -66,20 +68,66 @@ export async function getOrganizerForUser(userId: string) {
   return data;
 }
 
+/**
+ * Guardia delle pagine e delle azioni dell'organizzatore.
+ *
+ * APPROVAZIONE (migration 0071). Un organizzatore `pending` o `rejected`
+ * viene mandato alla pagina di attesa; il superadmin non è mai bloccato. Lo
+ * stato si legge dalla stessa riga già caricata (`select *`): se la colonna non
+ * esiste ancora il campo è `undefined` e vale «approved», come prima.
+ *
+ * CREAZIONE LAZY DELLA RIGA. Capita solo per un superadmin che apre l'area, o
+ * per un organizzatore la cui riga non è stata creata dalla trigger. Per il
+ * superadmin la riga nasce `approved`. Per un organizzatore NON si imposta lo
+ * stato: vale il default della colonna, cioè `pending` dopo la migration
+ * (corretto: nessuno l'ha approvato) e nessuna colonna prima (comportamento di
+ * prima). Gli organizzatori esistenti hanno già la riga: la migration la crea
+ * con il backfill, approvata. Se la lettura della riga fallisce NON si prova a
+ * crearla: sarebbe una scrittura derivata da una lettura non riuscita.
+ */
 export async function requireOrganizer() {
   const user = await requireRole(["organizer", "superadmin"]);
-  let organizer = await getOrganizerForUser(user.id);
-  // Auto-bootstrap: se è superadmin senza riga organizer, creala
+  const isSuper = user.profile?.role === "superadmin";
+  const admin = createAdminClient();
+
+  const { data: esistente, error: letturaErr } = await admin
+    .from("organizers")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (letturaErr) {
+    throw new Error(`[guards] lettura organizzatore fallita: ${letturaErr.message}`);
+  }
+
+  let organizer = esistente;
   if (!organizer) {
-    const admin = createAdminClient();
     const display =
       user.profile?.full_name || user.email?.split("@")[0] || "Organizzatore";
-    const { data: created } = await admin
+    let creato = await admin
       .from("organizers")
-      .insert({ user_id: user.id, display_name: display })
+      .insert(
+        isSuper
+          ? { user_id: user.id, display_name: display, approval_status: "approved" }
+          : { user_id: user.id, display_name: display }
+      )
       .select()
       .single();
-    organizer = created ?? null;
+    if (creato.error && isSuper && colonnaAssente(creato.error)) {
+      // Migration non ancora applicata: la colonna non c'è, si crea come prima.
+      creato = await admin
+        .from("organizers")
+        .insert({ user_id: user.id, display_name: display })
+        .select()
+        .single();
+    }
+    if (creato.error || !creato.data) {
+      throw new Error(`[guards] creazione organizzatore fallita: ${creato.error?.message ?? "vuota"}`);
+    }
+    organizer = creato.data;
   }
-  return { user, organizer: organizer! };
+
+  if (!isSuper && normalizzaStato(organizer.approval_status) !== "approved") {
+    redirect(PERCORSO_IN_ATTESA);
+  }
+  return { user, organizer };
 }

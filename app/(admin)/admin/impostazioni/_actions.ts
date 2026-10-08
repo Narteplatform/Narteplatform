@@ -284,11 +284,15 @@ export async function generateConsultantCredentials(input: {
   }
   const userId = createdUser.user.id;
 
-  // Imposta esplicitamente il ruolo e collega il consulente.
-  await admin
+  // Imposta il ruolo (dalla 0071 il trigger non lo prende più dal metadata)
+  // e collega il consulente.
+  const { error: roleErr } = await admin
     .from("profiles")
     .update({ role: "consultant", full_name: consultantName })
     .eq("id", userId);
+  if (roleErr) {
+    return { ok: false, error: `Account creato ma ruolo consulente non assegnato: ${roleErr.message}` };
+  }
 
   const { error: linkErr } = await admin
     .from("consultants")

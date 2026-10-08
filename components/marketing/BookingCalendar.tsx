@@ -115,6 +115,8 @@ export function BookingCalendar({
   const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  // Account organizzatore in attesa di approvazione: la richiesta non è stata creata.
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -216,12 +218,24 @@ export function BookingCalendar({
         error?: string;
         requestId?: string;
         sessionCreated?: boolean;
+        pending?: boolean;
+        message?: string;
       } = await r.json().catch(() => ({ ok: false, error: "Risposta non valida dal server" }));
       if (!json.ok) {
         const msg = json.error ?? "Errore durante l'invio";
         const full = json.rid ? `${msg} [${json.rid}]` : msg;
         setError(full);
         toast.error(full);
+        return;
+      }
+      if (json.pending) {
+        // 202: il team deve approvare l'account, la richiesta di booking non è partita.
+        const msg =
+          json.message ??
+          "Richiesta inviata al team: ti avvisiamo appena il tuo account è approvato, poi potrai inviare la richiesta.";
+        setPendingMessage(msg);
+        toast.success(msg);
+        setSubmitted(true);
         return;
       }
       toast.success("Richiesta inviata. L'artista la valuterà entro 48h.");
@@ -243,6 +257,7 @@ export function BookingCalendar({
   function closeForm() {
     setFormOpen(false);
     setError(null);
+    setPendingMessage(null);
     setSubmitted(false);
   }
 
@@ -434,14 +449,24 @@ export function BookingCalendar({
                 <div className="flex size-16 items-center justify-center rounded-full bg-accent/15 text-accent">
                   <CheckCircle2 className="size-9" />
                 </div>
-                <p className="accent-label mt-6">richiesta inviata</p>
+                <p className="accent-label mt-6">
+                  {pendingMessage ? "account in verifica" : "richiesta inviata"}
+                </p>
                 <h3 className="mt-2 font-display text-2xl md:text-3xl">
-                  Richiesta d&rsquo;interesse inviata correttamente
+                  {pendingMessage
+                    ? "Prima verifichiamo il tuo account"
+                    : "Richiesta d’interesse inviata correttamente"}
                 </h3>
                 <p className="mt-3 max-w-md text-sm text-muted-foreground">
-                  Abbiamo ricevuto la tua richiesta per <strong>{artistName}</strong> il{" "}
-                  {formatHuman(selectedISO)}. L&rsquo;artista e il nostro team la valutano e ti
-                  rispondono via email entro 48h.
+                  {pendingMessage ? (
+                    pendingMessage
+                  ) : (
+                    <>
+                      Abbiamo ricevuto la tua richiesta per <strong>{artistName}</strong> il{" "}
+                      {formatHuman(selectedISO)}. L&rsquo;artista e il nostro team la valutano e ti
+                      rispondono via email entro 48h.
+                    </>
+                  )}
                 </p>
                 <Button
                   type="button"

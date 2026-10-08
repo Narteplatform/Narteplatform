@@ -5,6 +5,7 @@ import { Instagram, Globe, Facebook, Youtube, MapPin, MessageCircle, Lock, LogIn
 import { Button } from "@/components/ui/Button";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import { openChatAndRedirect } from "@/lib/chat/open";
+import { leggiStatoOrganizzatore, type StatoOrganizzatore } from "@/lib/organizers/approvazione";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { Reveal } from "@/components/animations/Reveal";
@@ -275,6 +276,11 @@ export default async function ArtistDetailPage({
   const viewerRole: ViewerRole =
     (viewer?.profile?.role as ViewerRole | undefined) ?? "anon";
   let organizerVenues: { id: string; name: string }[] = [];
+  // Approvazione del team (0071): un organizzatore in attesa o rifiutato vede un
+  // avviso al posto di form e chat. Lettura tollerante: in dubbio, «approved».
+  const statoOrganizzatore: StatoOrganizzatore =
+    viewer && viewerRole === "organizer" ? await leggiStatoOrganizzatore(viewer.id) : "approved";
+  const organizzatoreBloccato = statoOrganizzatore !== "approved";
   if (viewer && (viewerRole === "organizer" || viewerRole === "superadmin")) {
     const { data: org } = await supabase
       .from("organizers")
@@ -572,7 +578,7 @@ export default async function ArtistDetailPage({
                   variant="hero"
                   label="Aggiungi ai preferiti"
                 />
-                {viewerRole === "organizer" && (
+                {viewerRole === "organizer" && !organizzatoreBloccato && (
                   <form action={openChatAndRedirect} className="inline-flex">
                     <input type="hidden" name="artist_id" value={artist.id} />
                     <input type="hidden" name="base_path" value="/organizzatore/chat" />
@@ -616,6 +622,15 @@ export default async function ArtistDetailPage({
                         status: "busy" as const,
                       }))}
                     />
+                  ) : organizzatoreBloccato ? (
+                    <p
+                      role="status"
+                      className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground"
+                    >
+                      {statoOrganizzatore === "pending"
+                        ? "Il tuo account organizzatore è in attesa di approvazione del team: potrai inviare richieste e scrivere agli artisti appena sarà verificato. Ti avvisiamo via email."
+                        : "Il tuo account organizzatore non è stato approvato, quindi non puoi inviare richieste. Per chiarimenti scrivi a info@narteofficial.it."}
+                    </p>
                   ) : (
                     <BookingCalendar
                       artistId={artist.id}

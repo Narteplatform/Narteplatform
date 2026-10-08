@@ -10,6 +10,10 @@ import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { logger } from "@/lib/logger";
 import { venueTypeEnum } from "@/lib/validators/schemas";
 import { chiudiAccountDalTeam } from "@/lib/admin/chiusura";
+import { createElement } from "react";
+import { dispatchEmail } from "@/lib/emails/dispatch";
+import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
+import { getSiteUrl } from "@/lib/site-url";
 
 // Una Server Action è un endpoint raggiungibile direttamente: il permesso della
 // sezione si controlla qui, non solo nella pagina.
@@ -293,5 +297,147 @@ export async function nascondiStrutturaAction(
   revalidatePath("/organizzatore/strutture");
   revalidatePath("/organizzatore/calendario");
   revalidatePath("/artisti");
+  return { ok: true, notified: esito.ok ? esito.notified : false };
+}
+
+// =========================================
+// Approvazione degli organizzatori (migration 0071)
+// =========================================
+
+export type EsitoOrganizzatore = { ok: true; notified: boolean } | { ok: false; error: string };
+
+const MSG_MIGRATION_0071 = "L'approvazione degli organizzatori richiede la migration 0071: applicala dal SQL editor.";
+
+type RigaOrganizzatore = { id: string; display_name: string; approval_status: string };
+
+/** Legge la riga dell'organizzatore con errore controllato. Mai un default al posto di una lettura fallita. */
+async function leggiRiga(userId: string): Promise<{ ok: true; riga: RigaOrganizzatore } | { ok: false; error: string }> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("organizers")
+    .select("id, display_name, approval_status")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    if (colonnaAssente(error)) return { ok: false, error: MSG_MIGRATION_0071 };
+    logger.error("admin/utenti", `riga organizzatore non letta: ${error.message}`);
+    return { ok: false, error: "Non riesco a leggere l'organizzatore. Riprova." };
+  }
+  if (!data) return { ok: false, error: "Organizzatore non trovato." };
+  return { ok: true, riga: data };
+}
+
+export async function approvaOrganizzatoreAction(userId: string): Promise<EsitoOrganizzatore> {
+  const attore = await requireAdminPageAccess("utenti");
+  const id = z.string().uuid().safeParse(userId);
+  if (!id.success) return { ok: false, error: "Dati non validi." };
+
+  const letto = await leggiRiga(id.data);
+  if (!letto.ok) return letto;
+  if (letto.riga.approval_status === "approved") return { ok: false, error: "Questo organizzatore è già approvato." };
+
+  const admin = createAdminClient();
+  const { data: aggiornate, error: updErr } = await admin
+    .from("organizers")
+    .update({
+      approval_status: "approved",
+      approval_decided_at: new Date().toISOString(),
+      approval_decided_by: attore.id,
+      approval_note: null,
+    })
+    .eq("id", letto.riga.id)
+    .select("id");
+  if (updErr || !aggiornate || aggiornate.length === 0) {
+    logger.error("admin/utenti", `approvazione organizzatore non salvata: ${updErr?.message ?? "nessuna riga"}`);
+    return { ok: false, error: "Non sono riuscito a salvare l'approvazione. Riprova." };
+  }
+
+  await registraAzione({
+    actorId: attore.id,
+    targetType: "account",
+    targetId: id.data,
+    action: "approvazione_organizzatore",
+    descrizione: `Approvato l'account organizzatore "${letto.riga.display_name}"`,
+    affectedUserId: id.data,
+  });
+
+  // L'email è un'ulteriore cortesia: se non parte l'approvazione resta valida.
+  let notified = false;
+  const { data: u, error: uErr } = await admin.auth.admin.getUserById(id.data);
+  if (uErr) logger.warn("admin/utenti", `email organizzatore non letta: ${uErr.message}`);
+  const email = u?.user?.email ?? null;
+  if (email) {
+    const base = getSiteUrl();
+    const actionUrl = `${base}/login?next=${encodeURIComponent("/organizzatore")}`;
+    const profileUrl = `${base}/organizzatore/profilo`;
+    const res = await dispatchEmail({
+      key: "organizer_approved",
+      to: email,
+      params: { organizerName: letto.riga.display_name, actionUrl, profileUrl },
+      fallback: {
+        subject: "Il tuo account è stato approvato — N'arte",
+        template: "OrganizerApproved",
+        react: createElement(NoticeEmail, {
+          preview: "Il team ha approvato il tuo account: puoi inviare richieste agli artisti.",
+          heading: "Account approvato",
+          paragraphs: [
+            `Ciao ${letto.riga.display_name}, il team di N'arte ha verificato il tuo account.`,
+            "Ora puoi inviare richieste agli artisti, usare la chat e il calendario.",
+          ],
+          button: { label: "Accedi", href: actionUrl },
+        }),
+      },
+    });
+    notified = res.ok;
+  }
+
+  revalidatePath("/admin/utenti");
+  revalidatePath("/admin");
+  return { ok: true, notified };
+}
+
+export async function rifiutaOrganizzatoreAction(userId: string, motivo: string): Promise<EsitoOrganizzatore> {
+  const attore = await requireAdminPageAccess("utenti");
+  const parsed = schema.safeParse({ userId, motivo });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dati non validi." };
+  }
+
+  const letto = await leggiRiga(parsed.data.userId);
+  if (!letto.ok) return letto;
+  if (letto.riga.approval_status === "rejected") return { ok: false, error: "Questo organizzatore è già stato rifiutato." };
+
+  const admin = createAdminClient();
+  const { data: aggiornate, error: updErr } = await admin
+    .from("organizers")
+    .update({
+      approval_status: "rejected",
+      approval_decided_at: new Date().toISOString(),
+      approval_decided_by: attore.id,
+      approval_note: parsed.data.motivo,
+    })
+    .eq("id", letto.riga.id)
+    .select("id");
+  if (updErr || !aggiornate || aggiornate.length === 0) {
+    logger.error("admin/utenti", `rifiuto organizzatore non salvato: ${updErr?.message ?? "nessuna riga"}`);
+    return { ok: false, error: "Non sono riuscito a salvare il rifiuto. Riprova." };
+  }
+
+  const esito = await registraDecisione({
+    actorId: attore.id,
+    targetType: "account",
+    targetId: parsed.data.userId,
+    action: "rifiuto_organizzatore",
+    reason: parsed.data.motivo,
+    affectedUserId: parsed.data.userId,
+    notify: {
+      decision: "Non abbiamo approvato il tuo account organizzatore.",
+      target: `Account organizzatore "${letto.riga.display_name}"`,
+      consequences: "Non potrai inviare richieste agli artisti né usare chat e calendario.",
+    },
+  });
+
+  revalidatePath("/admin/utenti");
+  revalidatePath("/admin");
   return { ok: true, notified: esito.ok ? esito.notified : false };
 }

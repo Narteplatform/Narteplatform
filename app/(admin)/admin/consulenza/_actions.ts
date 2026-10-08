@@ -260,9 +260,15 @@ export async function createConsultant(input: z.infer<typeof consultantSchema>) 
       return { ok: false as const, error: authErr?.message ?? "Errore creazione account" };
     }
     userId = created.user.id;
-    // Trigger handle_new_user crea già il profilo con role=consultant.
-    // Aggiorna esplicitamente per sicurezza.
-    await admin.from("profiles").update({ role: "consultant", full_name: parsed.data.name }).eq("id", userId);
+    // Dalla 0071 il trigger handle_new_user non accetta più 'consultant' dal
+    // metadata: il ruolo lo imposta solo questo update (service role).
+    const { error: roleErr } = await admin
+      .from("profiles")
+      .update({ role: "consultant", full_name: parsed.data.name })
+      .eq("id", userId);
+    if (roleErr) {
+      return { ok: false as const, error: `Account creato ma ruolo consulente non assegnato: ${roleErr.message}` };
+    }
   }
 
   const { data, error } = await admin
@@ -326,7 +332,14 @@ export async function linkConsultantAccount(input: {
     return { ok: false as const, error: authErr?.message ?? "Errore creazione account" };
   }
   const userId = created.user.id;
-  await admin.from("profiles").update({ role: "consultant", full_name: row.name }).eq("id", userId);
+  // Dalla 0071 il ruolo consulente lo imposta solo questo update.
+  const { error: roleErr } = await admin
+    .from("profiles")
+    .update({ role: "consultant", full_name: row.name })
+    .eq("id", userId);
+  if (roleErr) {
+    return { ok: false as const, error: `Account creato ma ruolo consulente non assegnato: ${roleErr.message}` };
+  }
   const { error: linkErr } = await admin
     .from("consultants")
     .update({ user_id: userId, email: input.email, updated_at: new Date().toISOString() })

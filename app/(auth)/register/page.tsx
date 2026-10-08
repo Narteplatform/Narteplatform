@@ -23,7 +23,7 @@ export default async function RegisterPage({
       next={next}
       eyebrow="iscrizione"
       title="Crea il tuo account"
-      subtitle="Bastano un'email e una password. In due minuti hai accesso a tutto il roster."
+      subtitle="Scegli come vuoi usare N'arte. Gli account degli organizzatori vengono verificati dal team prima dell'attivazione."
       footer={
         <p className="text-sm text-muted-foreground">
           Sei un artista?{" "}

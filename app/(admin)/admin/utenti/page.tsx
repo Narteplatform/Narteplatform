@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { SospensioneAccount } from "@/components/admin/SospensioneAccount";
 import { ChiusuraAccount } from "@/components/admin/ChiusuraAccount";
+import { ApprovazioneOrganizzatore } from "@/components/admin/ApprovazioneOrganizzatore";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { contaOrganizzatoriInAttesa } from "@/lib/organizers/approvazione";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Utenti — N'arte Admin" };
@@ -27,7 +30,7 @@ const RUOLO: Record<string, string> = {
   user: "Utente",
 };
 
-function data(iso: string | null | undefined): string {
+function dataIt(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
@@ -95,13 +98,118 @@ async function carica(q: string, pagina: number): Promise<Caricamento> {
   return { ok: true, utenti: trovati, pagina: 1, ultima: null, ricerca: true };
 }
 
+const FILTRO_IN_ATTESA = "organizzatori-in-attesa";
+
+function Schede({ attivo, inAttesa }: { attivo: boolean; inAttesa: number }) {
+  const base = "rounded-full border px-3 py-1 text-sm";
+  const on = "border-azzurro bg-azzurro/10 font-semibold";
+  const off = "border-border text-muted-foreground hover:text-foreground";
+  return (
+    <nav aria-label="Filtri utenti" className="flex flex-wrap gap-2">
+      <Link href="/admin/utenti" className={`${base} ${attivo ? off : on}`}>
+        Tutti
+      </Link>
+      <Link href={`/admin/utenti?filtro=${FILTRO_IN_ATTESA}`} className={`${base} ${attivo ? on : off}`}>
+        Organizzatori in attesa{inAttesa > 0 ? ` (${inAttesa})` : ""}
+      </Link>
+    </nav>
+  );
+}
+
+/** Elenco degli organizzatori in attesa di approvazione (migration 0071). */
+async function ElencoOrganizzatoriInAttesa({ inAttesa }: { inAttesa: number }) {
+  const admin = createAdminClient();
+  const { data: lette, error } = await admin
+    .from("organizers")
+    .select("user_id, display_name, city, created_at")
+    .eq("approval_status", "pending")
+    .order("created_at", { ascending: true })
+    .limit(100);
+
+  const intestazione = (
+    <div>
+      <h1 className="font-display text-3xl">Utenti</h1>
+      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+        Organizzatori che attendono la verifica del team. Finché non li approvi non possono inviare richieste, usare chat e calendario.
+      </p>
+    </div>
+  );
+
+  if (error) {
+    logger.error("admin/utenti", `organizzatori in attesa non letti: ${error.message}`);
+    return (
+      <div className="space-y-6">
+        {intestazione}
+        <Schede attivo inAttesa={inAttesa} />
+        <p role="alert" className="text-sm text-corallo">
+          {colonnaAssente(error)
+            ? "L'approvazione degli organizzatori richiede la migration 0071: applicala dal SQL editor."
+            : "Non riesco a leggere l'elenco. Riprova."}
+        </p>
+      </div>
+    );
+  }
+
+  const righe = lette ?? [];
+  const emails = new Map<string, string>();
+  await Promise.all(
+    righe.map(async (r) => {
+      if (!r.user_id) return;
+      const { data: u, error: uErr } = await admin.auth.admin.getUserById(r.user_id);
+      if (uErr) logger.warn("admin/utenti", `email non letta: ${uErr.message}`);
+      if (u?.user?.email) emails.set(r.user_id, u.user.email);
+    })
+  );
+
+  return (
+    <div className="space-y-6">
+      {intestazione}
+      <Schede attivo inAttesa={inAttesa} />
+      <Card>
+        <CardContent className="overflow-x-auto pt-4">
+          {righe.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nessun organizzatore in attesa.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th className="px-2 py-2">Locale o realtà</th>
+                  <th className="px-2 py-2">Città</th>
+                  <th className="px-2 py-2">Email</th>
+                  <th className="px-2 py-2">Richiesta del</th>
+                  <th className="px-2 py-2">Azioni</th>
+                </tr>
+              </thead>
+              <tbody>
+                {righe.map((r) => (
+                  <tr key={r.user_id} className="border-t border-border align-top">
+                    <td className="px-2 py-2 font-medium">{r.display_name}</td>
+                    <td className="px-2 py-2">{r.city || "—"}</td>
+                    <td className="px-2 py-2">{(r.user_id && emails.get(r.user_id)) || "—"}</td>
+                    <td className="px-2 py-2 text-muted-foreground">{dataIt(r.created_at)}</td>
+                    <td className="px-2 py-2">
+                      {r.user_id ? <ApprovazioneOrganizzatore userId={r.user_id} /> : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default async function AdminUtentiPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; filtro?: string }>;
 }) {
   const attore = await requireAdminPageAccess("utenti");
   const sp = await searchParams;
+  const inAttesa = await contaOrganizzatoriInAttesa();
+  if (sp.filtro === FILTRO_IN_ATTESA) return <ElencoOrganizzatoriInAttesa inAttesa={inAttesa} />;
   const q = (sp.q ?? "").trim().slice(0, 100);
   const pagina = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
 
@@ -116,6 +224,8 @@ export default async function AdminUtentiPage({
       </p>
     </div>
   );
+
+  const schede = <Schede attivo={false} inAttesa={inAttesa} />;
 
   const ricerca = (
     <form method="get" className="flex max-w-md gap-2">
@@ -185,6 +295,7 @@ export default async function AdminUtentiPage({
   return (
     <div className="space-y-6">
       {intestazione}
+      {schede}
       {ricerca}
 
       {esito.ricerca && (
@@ -244,13 +355,13 @@ export default async function AdminUtentiPage({
                         {org && <div className="text-xs text-muted-foreground">Organizzatore: {org}</div>}
                       </td>
                       <td className="px-2 py-2">{profilo ? (RUOLO[profilo.role] ?? profilo.role) : "—"}</td>
-                      <td className="px-2 py-2 text-muted-foreground">{data(u.created_at)}</td>
-                      <td className="px-2 py-2 text-muted-foreground">{data(u.last_sign_in_at)}</td>
+                      <td className="px-2 py-2 text-muted-foreground">{dataIt(u.created_at)}</td>
+                      <td className="px-2 py-2 text-muted-foreground">{dataIt(u.last_sign_in_at)}</td>
                       <td className="px-2 py-2">
                         <div className="flex flex-col items-start gap-1">
                           {bloccato ? (
                             <Badge variant="danger" dot>
-                              {sospensione ? `Sospeso dal ${data(sospensione.sospeso_il)}` : "Accesso bloccato"}
+                              {sospensione ? `Sospeso dal ${dataIt(sospensione.sospeso_il)}` : "Accesso bloccato"}
                             </Badge>
                           ) : (
                             <Badge variant="success" dot>

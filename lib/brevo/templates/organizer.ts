@@ -2,12 +2,15 @@
  * Registrazione organizzatore: ricevuta e attivazione.
  * Design: "ISCRIZIONE ORGANIZZATORE RICEVUTA.png", "BENVENUTO ORGANIZZATORE.png".
  *
- * ATTENZIONE — entrambi i design promettono una revisione ("il nostro team
- * esaminerà il tuo profilo entro 24 ore", "il team di N'Arte ha approvato il
- * tuo account locale") che oggi NON esiste: la tabella `organizers` non ha
- * alcuna colonna di stato e chi si registra è operativo subito. Finché non si
- * decide se introdurre davvero l'approvazione o riscrivere il copy, queste
- * due email non vanno abilitate: racconterebbero il falso.
+ * APPROVAZIONE. Dalla migration 0071 la revisione promessa da questi design
+ * esiste davvero: `organizers.approval_status` parte da `pending` e il team
+ * approva da /admin/utenti. Le due email sono quindi veritiere e si possono
+ * abilitare aggiungendo le chiavi a BREVO_ENABLED_KEYS. Il codice le invia già
+ * (con fallback Resend finché la chiave non è abilitata):
+ *   - organizer_registration_received → lib/organizers/approvazione.ts
+ *   - organizer_approved              → app/(admin)/admin/utenti/_actions.ts
+ * Il testo «entro 24 ore» è un impegno operativo del team: va rispettato o
+ * ammorbidito nel template prima di pubblicarlo.
  */
 
 import {

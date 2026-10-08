@@ -46,6 +46,7 @@ import {
 } from "@/lib/artist/profile-completion";
 import type { AdminPageKey } from "@/lib/validators/schemas";
 import { getBookingsAwaitingFeedback } from "@/lib/feedback/queries";
+import { contaOrganizzatoriInAttesa } from "@/lib/organizers/approvazione";
 
 /**
  * Logo + area di appartenenza, senza separatore: il suffisso è dimensionato per
@@ -160,6 +161,9 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       .select("id", { count: "exact", head: true })
       .in("status", ["requested", "confirmed"])
   ).then((v) => v?.count ?? 0);
+
+  // Organizzatori in attesa di approvazione (0071). Errore o colonna assente = 0.
+  const pendingOrganizers = await contaOrganizzatoriInAttesa();
 
   const sectionsByKey: Record<AdminPageKey, NavSection | null> = {
     overview: {
@@ -281,6 +285,18 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       href: "/admin/utenti",
       label: "Utenti",
       icon: <UserX className="size-4" />,
+      badge: pendingOrganizers > 0 ? { label: String(pendingOrganizers), variant: "accent" } : undefined,
+      children:
+        pendingOrganizers > 0
+          ? [
+              { href: "/admin/utenti", label: "Tutti" },
+              {
+                href: "/admin/utenti?filtro=organizzatori-in-attesa",
+                label: "Organizzatori in attesa",
+                count: pendingOrganizers,
+              },
+            ]
+          : undefined,
     },
     registro: {
       href: "/admin/registro",

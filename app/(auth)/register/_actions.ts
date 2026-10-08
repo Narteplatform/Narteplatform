@@ -10,6 +10,8 @@ import {
 import { logger } from "@/lib/logger";
 import { contestoRichiesta } from "@/lib/legal/consents";
 import { iscriviNewsletter } from "@/lib/brevo/contacts";
+import { avvisaRichiestaOrganizzatore } from "@/lib/organizers/approvazione";
+import { normalizzaStato } from "@/lib/organizers/stato";
 
 const uuidSchema = z.string().uuid();
 
@@ -84,6 +86,52 @@ export async function registraProvaRegistrazione(userId: string): Promise<void> 
     });
   } catch (e) {
     logger.warn("register/iubenda", "prova non inviata:", e instanceof Error ? e.message : String(e));
+  }
+}
+
+/**
+ * Avvisi dopo l'iscrizione di un organizzatore: «richiesta ricevuta» all'utente
+ * e segnalazione al team. Il signUp avviene dal browser, quindi parte da qui.
+ *
+ * Stesse cautele di `registraProvaRegistrazione`: la action è raggiungibile da
+ * chiunque, quindi si agisce solo per un utente creato da meno di 10 minuti,
+ * con ruolo organizer e una riga `organizers` in attesa (che esiste solo dopo
+ * la migration 0071: prima, nessuna riga = nessun avviso, perché l'email
+ * promette una verifica che ancora non c'è). Limitata per IP. Non solleva.
+ */
+export async function notificaRegistrazioneOrganizzatore(userId: string): Promise<void> {
+  try {
+    const id = uuidSchema.safeParse(userId);
+    if (!id.success) return;
+    if (!(await allowByIp(LIMITI.provaIubenda))) return;
+
+    const admin = createAdminClient();
+    const { data: lettura, error: userErr } = await admin.auth.admin.getUserById(id.data);
+    if (userErr || !lettura?.user?.email) return;
+    const user = lettura.user;
+
+    const creato = Date.parse(user.created_at);
+    if (!Number.isFinite(creato) || Date.now() - creato > ETA_MAX_MS) return;
+
+    const { data: riga, error } = await admin
+      .from("organizers")
+      .select("display_name, city, approval_status")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (error) {
+      // Colonna assente (0071 non applicata) o altro: nessun avviso, solo log.
+      logger.warn("register/organizzatore", "riga non letta:", error.message);
+      return;
+    }
+    if (!riga || normalizzaStato(riga.approval_status) !== "pending") return;
+
+    await avvisaRichiestaOrganizzatore({
+      email: user.email!,
+      nome: riga.display_name,
+      citta: riga.city,
+    });
+  } catch (e) {
+    logger.warn("register/organizzatore", "avviso non inviato:", e instanceof Error ? e.message : String(e));
   }
 }
 

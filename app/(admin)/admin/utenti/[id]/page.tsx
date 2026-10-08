@@ -4,6 +4,8 @@ import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { ApprovazioneOrganizzatore } from "@/components/admin/ApprovazioneOrganizzatore";
+import { Badge } from "@/components/ui/Badge";
 import { AdminVenueEditor, type AdminVenue } from "@/components/admin/AdminVenueEditor";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +29,24 @@ export default async function AdminUtenteSchedaPage({ params }: { params: Promis
   ]);
   const errore = profiloRes.error?.message ?? orgRes.error?.message ?? null;
   if (errore) logger.warn("admin/utenti", "scheda utente: lettura fallita:", errore);
+
+  // Stato di approvazione (migration 0071). Lettura a parte e tollerante: se la
+  // colonna non esiste ancora la scheda funziona come prima, senza questa sezione.
+  let approvazione: {
+    approval_status: string;
+    approval_note: string | null;
+    approval_decided_at: string | null;
+    city: string | null;
+  } | null = null;
+  if (orgRes.data) {
+    const { data: ap, error: apErr } = await admin
+      .from("organizers")
+      .select("approval_status, approval_note, approval_decided_at, city")
+      .eq("id", orgRes.data.id)
+      .maybeSingle();
+    if (apErr) logger.warn("admin/utenti", "stato di approvazione non leggibile:", apErr.message);
+    else approvazione = ap;
+  }
 
   let strutture: AdminVenue[] = [];
   let erroreStrutture: string | null = null;
@@ -76,6 +96,49 @@ export default async function AdminUtenteSchedaPage({ params }: { params: Promis
         <p role="alert" className="text-sm text-corallo">
           Alcuni dati non sono leggibili: {errore}
         </p>
+      )}
+
+      {approvazione && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Approvazione organizzatore</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant={
+                  approvazione.approval_status === "approved"
+                    ? "success"
+                    : approvazione.approval_status === "rejected"
+                      ? "danger"
+                      : "warning"
+                }
+                dot
+              >
+                {approvazione.approval_status === "approved"
+                  ? "Approvato"
+                  : approvazione.approval_status === "rejected"
+                    ? "Rifiutato"
+                    : "In attesa"}
+              </Badge>
+              {approvazione.city && <span className="text-muted-foreground">{approvazione.city}</span>}
+              {approvazione.approval_decided_at && (
+                <span className="text-muted-foreground">
+                  decisione del {new Date(approvazione.approval_decided_at).toLocaleDateString("it-IT")}
+                </span>
+              )}
+            </div>
+            {approvazione.approval_status === "rejected" && approvazione.approval_note && (
+              <p className="text-muted-foreground">Motivazione: {approvazione.approval_note}</p>
+            )}
+            {approvazione.approval_status !== "approved" && (
+              <ApprovazioneOrganizzatore
+                userId={id}
+                rifiutabile={approvazione.approval_status === "pending"}
+              />
+            )}
+          </CardContent>
+        </Card>
       )}
 
       <Card>
