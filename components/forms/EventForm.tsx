@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { ImageUpload } from "@/components/forms/ImageUpload";
+import { EventCoverEditor } from "@/components/forms/EventCoverEditor";
 import { GalleryUpload } from "@/components/forms/GalleryUpload";
 import { EventVideoUpload } from "@/components/forms/EventVideoUpload";
 import {
@@ -27,6 +27,7 @@ type Values = {
   venue: string;
   price: string;
   coverImage: string;
+  coverImageHome: string;
   ticketUrl: string;
   description: string;
   featured: boolean;
@@ -53,6 +54,7 @@ export function EventForm({
       venue: "",
       price: "",
       coverImage: "",
+      coverImageHome: "",
       ticketUrl: "",
       description: "",
       featured: false,
@@ -73,6 +75,7 @@ export function EventForm({
       venue: values.venue || undefined,
       price: values.price ? Number(values.price) : undefined,
       coverImage: values.coverImage || undefined,
+      coverImageHome: values.coverImageHome || undefined,
       ticketUrl: values.ticketUrl || undefined,
       description: values.description || undefined,
       featured: values.featured,
@@ -120,19 +123,22 @@ export function EventForm({
         </legend>
         <Controller
           control={control}
-          name="coverImage"
-          render={({ field }) => (
-            <ImageUpload
-              label="Immagine evento (3:4 portrait)"
-              value={field.value ?? ""}
-              onChange={field.onChange}
-              kind="event"
+          name="coverImageHome"
+          render={({ field: home }) => (
+            <Controller
+              control={control}
+              name="coverImage"
+              render={({ field: hero }) => (
+                <EventCoverEditor
+                  homeValue={home.value ?? ""}
+                  onHomeChange={home.onChange}
+                  heroValue={hero.value ?? ""}
+                  onHeroChange={hero.onChange}
+                />
+              )}
             />
           )}
         />
-        <p className="px-1 text-xs text-muted-foreground">
-          L&apos;immagine viene usata sia per la card nella lista che per l&apos;hero della pagina singola.
-        </p>
       </fieldset>
 
       <Field label="Descrizione"><Textarea rows={6} {...register("description")} /></Field>

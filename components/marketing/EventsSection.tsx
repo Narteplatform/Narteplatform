@@ -13,7 +13,7 @@ async function getEvents(limit = 8): Promise<EventCardProps[]> {
     const supabase = createAdminClient();
     const { data } = await supabase
       .from("events")
-      .select("slug, title, city, date, price, cover_image")
+      .select("slug, title, city, date, price, cover_image, cover_image_home")
       .gte("date", new Date().toISOString())
       .order("date", { ascending: true })
       .limit(limit);
@@ -23,7 +23,8 @@ async function getEvents(limit = 8): Promise<EventCardProps[]> {
       city: e.city,
       date: e.date,
       price: e.price,
-      coverImage: e.cover_image,
+      // Card 3:4: ritaglio verticale se c'è, altrimenti quello 16:9.
+      coverImage: e.cover_image_home ?? e.cover_image,
     }));
   } catch {
     return [];

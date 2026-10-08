@@ -87,7 +87,7 @@ export default async function EventDetailPage({
   // Eventi correlati: stessa categoria, escluso l'evento corrente, i più recenti.
   const { data: relatedData, error: relatedError } = await supabase
     .from("events")
-    .select("slug, title, city, date, price, cover_image")
+    .select("slug, title, city, date, price, cover_image, cover_image_home")
     .eq("category", event.category)
     .neq("id", event.id)
     .order("date", { ascending: false })
@@ -100,7 +100,7 @@ export default async function EventDetailPage({
         city: e.city,
         date: e.date,
         price: e.price,
-        coverImage: e.cover_image,
+        coverImage: e.cover_image_home ?? e.cover_image,
       }));
 
   return (

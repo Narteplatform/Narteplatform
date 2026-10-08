@@ -119,7 +119,7 @@ export async function drawCropToBlob(p: CropParams & { quality?: number }): Prom
  * `imageOrientation: "from-image"` applica la rotazione; dove non è disponibile
  * (Safari più vecchi) si ricade su `<img>`, che i browser orientano da soli.
  */
-async function decodeOriented(file: File): Promise<ImageBitmap | HTMLImageElement> {
+export async function decodeOriented(file: File): Promise<ImageBitmap | HTMLImageElement> {
   if (typeof createImageBitmap === "function") {
     try {
       return await createImageBitmap(file, { imageOrientation: "from-image" });

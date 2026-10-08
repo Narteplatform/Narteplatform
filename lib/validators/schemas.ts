@@ -225,6 +225,8 @@ export const eventSchema = z.object({
   venue: z.string().max(160).optional(),
   price: z.coerce.number().nonnegative().optional(),
   coverImage: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  /** Ritaglio 3:4 per home e liste (events.cover_image_home). */
+  coverImageHome: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   ticketUrl: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   description: z.string().max(4000).optional(),
   featured: z.boolean().optional(),

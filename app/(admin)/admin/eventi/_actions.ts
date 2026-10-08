@@ -68,6 +68,7 @@ export async function createEvent(input: EventInput) {
     venue: data.venue ?? null,
     price: data.price ?? null,
     cover_image: data.coverImage ?? null,
+    cover_image_home: data.coverImageHome ?? null,
     gallery: data.gallery ?? [],
     videos: data.videos ?? [],
     ticket_url: data.ticketUrl ?? null,
@@ -104,6 +105,9 @@ export async function updateEvent(id: string, input: EventInput) {
       venue: data.venue ?? null,
       price: data.price ?? null,
       cover_image: data.coverImage ?? null,
+      // Il modulo invia sempre entrambi i ritagli (precaricati dal DB): vuoto
+      // significa che l'admin li ha rimossi, come per cover_image.
+      cover_image_home: data.coverImageHome ?? null,
       // Regola 3 di CLAUDE.md: in un aggiornamento, galleria e video si
       // scrivono solo se il modulo li ha inviati; `?? []` li svuoterebbe.
       ...(data.gallery !== undefined ? { gallery: data.gallery } : {}),

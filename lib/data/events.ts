@@ -31,7 +31,7 @@ export async function getPublicEvents(opts: {
 
     let q = supabase
       .from("events")
-      .select("slug, title, city, date, price, cover_image");
+      .select("slug, title, city, date, price, cover_image, cover_image_home");
 
     if (category && category !== "all") {
       q = q.eq("category", category as never);
@@ -55,7 +55,8 @@ export async function getPublicEvents(opts: {
       city: e.city,
       date: e.date,
       price: e.price,
-      coverImage: e.cover_image,
+      // Card 3:4: ritaglio verticale se c'è, altrimenti quello 16:9.
+      coverImage: e.cover_image_home ?? e.cover_image,
     }));
   } catch {
     return null;
