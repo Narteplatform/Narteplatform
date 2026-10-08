@@ -175,6 +175,12 @@ policy e pubblicazioni realtime — che PostgREST non espone — le query sono i
   `id, genre, instruments, tier, is_public, status, percorso_artistico`; nessuna lettura anon
   su `artist_videos`, calendario e `consultants`. Il codice per gli ospiti usa già solo
   quelle colonne.
+- `0071_approvazione_organizzatori.sql` — approvazione degli organizzatori: `organizers.approval_status`
+  (pending/approved/rejected), i nuovi organizzatori nascono «in attesa» e il team li approva da
+  `/admin/utenti?filtro=organizzatori-in-attesa`. **Indipendente da 0069/0070**, in qualunque ordine.
+  Il codice è già online e tollera la colonna mancante (= «approved»). Gli organizzatori esistenti
+  restano approvati. Chiude anche `consultant` dal metadata di signup e la RPC
+  `promote_user_to_organizer` per gli utenti.
 
 ## Comandi
 

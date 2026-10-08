@@ -6,6 +6,8 @@ import { Reveal } from "@/components/animations/Reveal";
 import { EventMediaGallery } from "@/components/marketing/EventMediaGallery";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 import { FormatInterestForm } from "@/components/marketing/FormatInterestForm";
+import { formatCover, formatPrezzo } from "@/lib/content/format-covers";
+import { getSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,7 @@ type FormatRow = {
   videos: string[] | null;
   seo_title: string | null;
   seo_description: string | null;
+  details: unknown;
 };
 
 async function getFormat(slug: string): Promise<FormatRow | null> {
@@ -27,7 +30,7 @@ async function getFormat(slug: string): Promise<FormatRow | null> {
   const { data } = await admin
     .from("formats")
     .select(
-      "id, slug, title, tagline, description, cover_image, gallery, videos, seo_title, seo_description"
+      "id, slug, title, tagline, description, cover_image, gallery, videos, seo_title, seo_description, details"
     )
     .eq("slug", slug)
     .eq("published", true)
@@ -45,6 +48,9 @@ export async function generateMetadata({
   if (!format) return { title: "Format non trovato — N'arte" };
   const title = format.seo_title || `${format.title} | N'arte`;
   const description = format.seo_description || format.tagline || undefined;
+  // L'immagine di ripiego è un percorso relativo: l'anteprima social vuole un URL assoluto.
+  const cover = formatCover(format.slug, format.cover_image);
+  const ogImage = cover ? (cover.startsWith("/") ? `${getSiteUrl()}${cover}` : cover) : null;
   return {
     title,
     description,
@@ -53,7 +59,7 @@ export async function generateMetadata({
       title,
       description,
       type: "website",
-      images: format.cover_image ? [{ url: format.cover_image }] : undefined,
+      images: ogImage ? [{ url: ogImage }] : undefined,
     },
   };
 }
@@ -69,6 +75,8 @@ export default async function FormatDetailPage({
 
   const gallery = Array.isArray(format.gallery) ? format.gallery : [];
   const videos = Array.isArray(format.videos) ? format.videos : [];
+  const cover = formatCover(format.slug, format.cover_image);
+  const prezzo = formatPrezzo(format.details);
 
   return (
     <article>
@@ -83,10 +91,10 @@ export default async function FormatDetailPage({
           <div className="md:h-full">
             <Reveal className="md:h-full">
               <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border bg-notte md:aspect-auto md:h-full md:min-h-[520px]">
-                {format.cover_image ? (
+                {cover ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
-                    src={format.cover_image}
+                    src={cover}
                     alt={format.title}
                     className="h-full w-full object-cover"
                   />
@@ -114,9 +122,19 @@ export default async function FormatDetailPage({
                 {format.title}
               </h1>
             </Reveal>
+            {prezzo && (
+              <Reveal delay={0.15}>
+                <p className="mt-4">
+                  <span className="inline-flex rounded-full bg-accent px-4 py-1.5 font-display text-base font-bold text-white md:text-lg">
+                    {prezzo}
+                  </span>
+                </p>
+              </Reveal>
+            )}
             {format.tagline && (
               <Reveal delay={0.2}>
                 <p className="mx-auto mt-6 max-w-prose text-lg text-muted-foreground md:mx-0 md:text-xl">
+                  <span className="accent-label mr-2 align-middle">segmento</span>
                   {format.tagline}
                 </p>
               </Reveal>

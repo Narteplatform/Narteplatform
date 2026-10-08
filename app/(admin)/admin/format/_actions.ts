@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/server";
 import { formatSchema, type FormatInput } from "@/lib/validators/schemas";
+import type { Json } from "@/lib/supabase/types";
 import { slugify } from "@/lib/utils";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { registraAzione } from "@/lib/moderation/decisioni";
@@ -39,7 +40,7 @@ export async function createFormat(input: FormatInput) {
     videos: data.videos ?? [],
     icon: data.icon ?? null,
     order_index: data.order_index ?? 0,
-    details: data.details ?? {},
+    details: { ...(data.details ?? {}), ...(data.prezzo ? { prezzo: data.prezzo } : {}) },
     seo_title: data.seo_title ?? null,
     seo_description: data.seo_description ?? null,
     published: data.published ?? true,
@@ -62,6 +63,23 @@ export async function updateFormat(id: string, input: FormatInput) {
   const data = parsed.data;
 
   const admin = createAdminClient();
+
+  // `details` non si sovrascrive mai con `{}`: si rilegge il valore attuale e
+  // si cambia solo `prezzo`. Se la lettura fallisce ci si ferma qui.
+  const { data: attuale, error: letturaErr } = await admin
+    .from("formats")
+    .select("details")
+    .eq("id", id)
+    .maybeSingle();
+  if (letturaErr) return { ok: false as const, error: letturaErr.message };
+  if (!attuale) return { ok: false as const, error: "Format non trovato" };
+  const base =
+    attuale.details && typeof attuale.details === "object" && !Array.isArray(attuale.details)
+      ? { ...(attuale.details as Record<string, Json>) }
+      : {};
+  if (data.prezzo) base.prezzo = data.prezzo;
+  else delete base.prezzo;
+
   const { error } = await admin
     .from("formats")
     .update({
@@ -74,7 +92,7 @@ export async function updateFormat(id: string, input: FormatInput) {
       ...(data.videos !== undefined ? { videos: data.videos } : {}),
       icon: data.icon ?? null,
       order_index: data.order_index ?? 0,
-      details: data.details ?? {},
+      details: base,
       seo_title: data.seo_title ?? null,
       seo_description: data.seo_description ?? null,
       published: data.published ?? true,

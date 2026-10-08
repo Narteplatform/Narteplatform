@@ -7,6 +7,7 @@ import { DeleteFormatButton } from "@/components/forms/DeleteFormatButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { formatPrezzo } from "@/lib/content/format-covers";
 
 export default async function EditFormatPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -77,6 +78,7 @@ export default async function EditFormatPage({ params }: { params: Promise<{ id:
             defaultValues={{
               title: fmt.title,
               tagline: fmt.tagline ?? "",
+              prezzo: formatPrezzo(fmt.details) ?? "",
               description: fmt.description ?? "",
               icon: fmt.icon ?? "",
               order_index: fmt.order_index?.toString() ?? "0",

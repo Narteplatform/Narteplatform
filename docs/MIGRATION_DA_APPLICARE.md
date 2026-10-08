@@ -386,3 +386,21 @@ Verifica dopo l'esecuzione: `npm run db:check-migrations` e le query in fondo a
 | Strutture | `hidden_at` | — |
 | Recessi | tabella `subscription_withdrawals` | — |
 | Visitatori | anon legge di `artists` solo 7 colonne non identificative; niente video, calendario, consulenti | **verificare subito dopo** con le query in fondo a `docs/VERIFICA_MIGRATION.sql` che il catalogo da non loggati si veda (schede anonime) |
+
+## Approvazione degli organizzatori — `0071` (08/10/2026)
+
+**`0071_approvazione_organizzatori.sql`** — indipendente da 0069 e 0070, si può eseguire in
+qualunque ordine. Il codice è già online e funziona anche prima: finché la colonna manca, ogni
+organizzatore risulta «approved» (comportamento di prima). Eseguire la migration accende
+l'approvazione.
+
+| Parte | Effetto | Attenzione |
+|---|---|---|
+| `organizers` | `approval_status` (pending/approved/rejected), `approval_decided_at/by`, `approval_note`, `city` | gli organizzatori già presenti restano **approvati**; il default delle righe nuove diventa `pending` |
+| Backfill | crea la riga `organizers` (approvata) per chi ha ruolo organizer ma non ce l'ha | — |
+| `handle_new_user` | niente più `consultant` dal metadata; per `organizer` crea la riga in attesa | se l'insert dell'organizzatore fallisce l'iscrizione non fallisce |
+| `promote_user_to_organizer` | revocata a `authenticated`/`anon` | l'unico chiamante (booking-request) ora usa la service role |
+| Privilegi | `organizers` resta senza insert/update/delete per anon e authenticated | è ciò che impedisce l'auto-approvazione via PostgREST |
+
+Verifica dopo l'esecuzione: `npm run db:check-migrations` e le query in fondo al file della
+migration (tutti gli organizzatori esistenti `approved`; nessun ruolo organizer senza riga).

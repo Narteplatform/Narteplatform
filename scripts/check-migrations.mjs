@@ -352,6 +352,15 @@ const MIGRATION = [
       ["consultants: anon senza privilegi", () => privilegioAnonRevocato("consultants")],
     ],
   },
+  {
+    file: "0071_approvazione_organizzatori.sql",
+    cosa: "Approvazione degli organizzatori (stato in attesa/approvato/rifiutato), chiusura di consultant e promote_user_to_organizer",
+    controlli: [
+      ["colonna organizers.approval_status", () => colonna("organizers", "approval_status")],
+      ["colonna organizers.approval_decided_at", () => colonna("organizers", "approval_decided_at")],
+      ["colonna organizers.city", () => colonna("organizers", "city")],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };

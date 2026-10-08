@@ -17,6 +17,7 @@ import {
 type Values = {
   title: string;
   tagline: string;
+  prezzo: string;
   description: string;
   icon: string;
   order_index: string;
@@ -46,6 +47,7 @@ export function FormatForm({
     defaultValues: {
       title: "",
       tagline: "",
+      prezzo: "",
       description: "",
       icon: "",
       order_index: "0",
@@ -64,6 +66,7 @@ export function FormatForm({
     const payload = {
       title: values.title,
       tagline: values.tagline || undefined,
+      prezzo: values.prezzo.trim() || undefined,
       description: values.description || undefined,
       icon: values.icon || undefined,
       order_index: Number(values.order_index) || 0,
@@ -96,9 +99,18 @@ export function FormatForm({
         </Field>
       </div>
 
-      <Field label="Tagline">
-        <Input placeholder="Sottotitolo breve del format" {...register("tagline")} />
-      </Field>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Segmento">
+          <Input placeholder="es. Solo o duo · Serate intime e aperitivi" {...register("tagline")} />
+        </Field>
+        <Field label="Prezzo / etichetta">
+          <Input
+            placeholder="es. a partire da 200€ oppure Candidature aperte"
+            maxLength={80}
+            {...register("prezzo")}
+          />
+        </Field>
+      </div>
 
       <Field label="Ordine (intero, crescente)">
         <Input type="number" min="0" step="1" {...register("order_index")} />

@@ -4,6 +4,7 @@ import { NarteLogo } from "@/components/layout/NarteLogo";
 import { CookiePreferencesLink } from "@/components/legal/CookiePreferencesLink";
 import { titolareInLinea } from "@/lib/legal/titolare";
 import { LEGAL_V2_ROTTE, legalV2Pubblicato } from "@/lib/legal/v2";
+import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
 
 export function Footer() {
   return (
@@ -121,6 +122,19 @@ export function Footer() {
                     </Link>
                   </li>
                 ))}
+              {/* Con le pagine v2 spente i criteri restano raggiungibili dal
+                  centro assistenza; accese, li elenca già LEGAL_V2_ROTTE. */}
+              {!legalV2Pubblicato() && (
+                <li className="contents">
+                  <span aria-hidden="true">·</span>
+                  <Link
+                    href={urlCriteriPosizionamento()}
+                    className="transition-opacity hover:opacity-75"
+                  >
+                    Criteri di posizionamento
+                  </Link>
+                </li>
+              )}
               <li aria-hidden="true">·</li>
               <li>
                 {/* Il posto dove si esercitano i diritti va accanto ai documenti

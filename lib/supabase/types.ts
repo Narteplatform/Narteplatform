@@ -944,6 +944,11 @@ export interface Database {
           instagram: string | null;
           created_at: string;
           updated_at: string;
+          approval_status: string;
+          approval_decided_at: string | null;
+          approval_decided_by: string | null;
+          approval_note: string | null;
+          city: string | null;
         };
         Insert: {
           id?: string;
@@ -958,6 +963,11 @@ export interface Database {
           instagram?: string | null;
           created_at?: string;
           updated_at?: string;
+          approval_status?: string;
+          approval_decided_at?: string | null;
+          approval_decided_by?: string | null;
+          approval_note?: string | null;
+          city?: string | null;
         };
         Update: {
           id?: string;
@@ -972,6 +982,11 @@ export interface Database {
           instagram?: string | null;
           created_at?: string;
           updated_at?: string;
+          approval_status?: string;
+          approval_decided_at?: string | null;
+          approval_decided_by?: string | null;
+          approval_note?: string | null;
+          city?: string | null;
         };
         Relationships: [];
       };

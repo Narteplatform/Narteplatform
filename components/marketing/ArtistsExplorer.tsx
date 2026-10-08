@@ -280,7 +280,6 @@ export function ArtistsExplorer({
     if (isGuest) {
       // Variante anonima: id (per l'anteprima sfocata dal server), genere e piano.
       return <ArtistCard key={a.id} isGuest id={a.id} genres={a.genre} tier={a.tier} />;
-      );
     }
     return (
       <ArtistCard

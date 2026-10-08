@@ -247,6 +247,8 @@ export const formatSchema = z.object({
   icon: z.string().max(60).optional().or(z.literal("").transform(() => undefined)),
   order_index: z.coerce.number().int().nonnegative().default(0),
   details: z.record(jsonValueSchema).optional(),
+  /** Prezzo o etichetta mostrati sulle card (es. «a partire da 200€»). Vive in `details.prezzo`. */
+  prezzo: z.string().max(80).optional().or(z.literal("").transform(() => undefined)),
   seo_title: z.string().max(120).optional().or(z.literal("").transform(() => undefined)),
   seo_description: z.string().max(300).optional().or(z.literal("").transform(() => undefined)),
   published: z.boolean().default(true),

@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { NarteLogo } from "@/components/layout/NarteLogo";
-import { NARTE_STATS } from "@/lib/content/stats";
 
 /**
- * Guscio comune dei pannelli di autenticazione: foto e argomenti a sinistra,
+ * Guscio comune dei pannelli di autenticazione: foto e messaggio a sinistra,
  * campi a destra. Lo usano /login, /register, /recupero-password e
  * /reset-password.
  *
@@ -20,12 +19,9 @@ import { NARTE_STATS } from "@/lib/content/stats";
  * è lì che si decide se vale la pena iscriversi.
  */
 
-/** Vantaggi reali della piattaforma, non promesse: ognuno corrisponde a una funzione che esiste. */
-const POINTS = [
-  "Profili completi: video, generi, formazione e disponibilità",
-  "Richieste di booking dirette all'artista",
-  "I tuoi preferiti salvati, da qualunque dispositivo",
-];
+/** Messaggio di presentazione, identico nel pannello grande e nel riquadro mobile. */
+const INTRO =
+  "Dal 2018 artisti, locali e appassionati che fanno vivere la musica dal vivo. Il cuore è Napoli, il palco è ovunque.";
 
 export function AuthSplit({
   active,
@@ -84,33 +80,13 @@ export function AuthSplit({
 
         <div className="relative z-10">
           <h2 className="display-xl max-w-md text-balance text-4xl xl:text-5xl">
-            Il palco che cercavi è a una richiesta di distanza.
+            Entra nel cuore della musica.
           </h2>
-          <ul className="mt-8 space-y-3.5">
-            {POINTS.map((p) => (
-              <li key={p} className="flex items-start gap-3 text-sm text-palco/85 xl:text-base">
-                <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-azzurro-light/20 text-azzurro-light">
-                  <Check className="size-3" strokeWidth={3} />
-                </span>
-                <span className="text-pretty">{p}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="mt-6 max-w-md text-pretty text-sm leading-relaxed text-palco/85 xl:text-base">
+            {INTRO}
+          </p>
         </div>
 
-        {/* I numeri arrivano da lib/content/stats: cambiano lì e si propagano. */}
-        <dl className="relative z-10 grid grid-cols-3 gap-4 border-t border-palco/15 pt-6">
-          {NARTE_STATS.map((s) => (
-            <div key={s.label}>
-              <dt className="font-display text-2xl font-bold tabular-nums xl:text-3xl">
-                {s.value}
-              </dt>
-              <dd className="mt-1 text-[11px] uppercase tracking-wider text-palco/60">
-                {s.label}
-              </dd>
-            </div>
-          ))}
-        </dl>
       </aside>
 
       {/* COLONNA DESTRA — il modulo */}
@@ -162,14 +138,9 @@ export function AuthSplit({
               l'unico posto in cui quel contenuto esiste, visto che la colonna
               con la foto lì non c'è. */}
           {isSignup && (
-            <ul className="mt-6 space-y-2 rounded-xl border border-border bg-muted/60 p-4 lg:hidden">
-              {POINTS.map((p) => (
-                <li key={p} className="flex items-start gap-2.5 text-[13px] leading-snug">
-                  <Check className="mt-0.5 size-3.5 shrink-0 text-azzurro" strokeWidth={3} />
-                  <span className="text-pretty text-foreground/80">{p}</span>
-                </li>
-              ))}
-            </ul>
+            <p className="mt-6 text-pretty rounded-xl border border-border bg-muted/60 p-4 text-[13px] leading-snug text-foreground/80 lg:hidden">
+              {INTRO}
+            </p>
           )}
 
           <div className="mt-7">{children}</div>

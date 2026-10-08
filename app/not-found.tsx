@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 const DESTINAZIONI = [
   { href: "/eventi", label: "Eventi", desc: "Le date in arrivo e quelle passate" },
   { href: "/artisti", label: "Artisti", desc: "Il catalogo degli artisti N'arte" },
-  { href: "/format", label: "Format", desc: "NaJam, NuLive, NaBand, NaCena" },
+  { href: "/format", label: "Format", desc: "NuLive, NaJam, NaBand, NaCena" },
   { href: "/help", label: "Centro assistenza", desc: "Le risposte alle domande frequenti" },
 ];
 
