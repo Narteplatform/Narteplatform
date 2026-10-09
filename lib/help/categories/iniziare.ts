@@ -1,6 +1,6 @@
 import type { HelpCategory } from "@/lib/help/types";
 
-const UPDATED = "2026-09-07";
+const UPDATED = "2026-10-09";
 
 export const INIZIARE: HelpCategory = {
   slug: "iniziare",
@@ -19,13 +19,13 @@ export const INIZIARE: HelpCategory = {
       related: ["cosa-fa-e-non-fa-narte", "differenze-ruoli", "come-creare-account"],
       content: `
 <h2>Una piattaforma per la musica dal vivo emergente</h2>
-<p>N'arte è una <strong>piattaforma promozionale</strong>: dà visibilità agli <strong>artisti emergenti</strong> e li mette in contatto con <strong>chi cerca musica dal vivo</strong>: locali, festival, brand, wedding planner, privati. Nasce nel 2018 come realtà che organizza serate a Napoli e nel 2026 diventa una piattaforma: otto anni di agenda, telefonate e passaparola trasformati in uno strumento che chiunque può usare.</p>
+<p>N'arte è una <strong>piattaforma promozionale</strong> che dà visibilità agli <strong>artisti emergenti</strong> e li mette in contatto con <strong>chi cerca musica dal vivo</strong>, cioè locali, festival, brand, wedding planner e privati. Nasce a Napoli nel 2018 come realtà che organizza serate e nel 2026 passa online: otto anni di agenda, telefonate e passaparola sono diventati uno strumento che chiunque può usare.</p>
 
 <h2>Cosa puoi fare</h2>
 <ul>
   <li><strong>Sfogliare il roster</strong> degli artisti approvati dal team, cercando per nome o città e filtrando per categoria e genere su <a href="/artisti">/artisti</a>.</li>
   <li><strong>Inviare una richiesta di booking</strong> direttamente all'artista, indicando data, fascia oraria, budget e che tipo di serata hai in mente.</li>
-  <li><strong>Scrivere in chat</strong> con l'artista e scambiarvi offerte tracciate. Per scrivere in chat l'artista deve avere il piano Pro o Max; con il piano Free ricevi comunque la richiesta e la email. La trattativa resta fra voi due: N'arte non vi partecipa.</li>
+  <li><strong>Scrivere in chat</strong> con l'artista e scambiarvi offerte tracciate. La chat è disponibile se l'artista ha il piano Pro o Max; con il piano Free la richiesta e l'email gli arrivano comunque. La trattativa resta fra voi due e N'arte non vi partecipa.</li>
   <li><strong>Candidarti come artista</strong> da <a href="/candidatura-artista">/candidatura-artista</a> per entrare nel roster pubblico.</li>
   <li><strong>Scoprire gli eventi</strong> in programma e quelli passati su <a href="/eventi">/eventi</a>, e i <a href="/format">format N'arte</a> già pronti per il tuo locale.</li>
 </ul>
@@ -60,7 +60,7 @@ export const INIZIARE: HelpCategory = {
       ],
       content: `
 <h2>Due percorsi, non uno</h2>
-<p>Su N'arte l'account si crea in due modi diversi, a seconda di cosa vuoi fare. È la distinzione che genera più confusione, quindi vale la pena leggerla per intero.</p>
+<p>Su N'arte l'account si crea in due modi, a seconda di cosa vuoi fare. È il punto su cui ci si confonde più spesso, quindi ti consigliamo di leggere tutto.</p>
 
 <h3>1. Registrazione standard — utente o organizzatore</h3>
 <p>Vai su <a href="/register">/register</a>. Servono nome, email e una password di <strong>almeno 8 caratteri</strong>. Nel modulo scegli come vuoi usare la piattaforma:</p>
@@ -68,15 +68,15 @@ export const INIZIARE: HelpCategory = {
   <li><strong>Utente</strong> — sblocchi i profili completi degli artisti e salvi i preferiti.</li>
   <li><strong>Organizzatore</strong> — in più puoi inviare richieste di booking, chattare e gestire il calendario delle date confermate.</li>
 </ul>
-<p><strong>Non è una scelta definitiva.</strong> Un account registrato come "utente" diventa organizzatore in automatico alla prima richiesta di booking che invia: non devi rifare nulla.</p>
+<p><strong>La scelta non è definitiva.</strong> Un account registrato come "utente" diventa organizzatore in automatico quando invia la prima richiesta di booking, senza che tu debba rifare nulla.</p>
 
 <h3>2. Candidatura artista</h3>
 <p>Se sei un musicista e vuoi entrare nel roster, <strong>non usare il modulo di registrazione</strong>: passa da <a href="/candidatura-artista">/candidatura-artista</a>.</p>
-<p>Il motivo è che il profilo artista non si crea da soli. La candidatura viene letta dal team N'arte e, <strong>solo se approvata</strong>, genera il tuo account e il profilo pubblico. Trovi il dettaglio in <a href="/help/artisti/candidatura-artista">come candidarsi come artista</a>.</p>
+<p>Il profilo artista, infatti, non si crea in autonomia: la candidatura viene letta dal team N'arte e, <strong>solo se approvata</strong>, genera il tuo account e il profilo pubblico. Trovi il dettaglio in <a href="/help/artisti/candidatura-artista">come candidarsi come artista</a>.</p>
 
 <h2>La conferma via email è obbligatoria</h2>
 <p>Dopo la registrazione standard ricevi un'<strong>email di conferma</strong>: finché non apri il link contenuto in quel messaggio, l'account non è attivo. Se non la trovi, controlla nella cartella spam o promozioni.</p>
-<p>Fa eccezione un caso solo: se crei l'account <em>contestualmente</em> all'invio di una richiesta di booking dal profilo di un artista, l'accesso è immediato e non serve confermare nulla.</p>
+<p>C'è una sola eccezione: se crei l'account <em>contestualmente</em> all'invio di una richiesta di booking dal profilo di un artista, l'accesso è immediato e non serve confermare nulla.</p>
 
 <h2>Dove finisci dopo l'accesso</h2>
 <p>Al login la piattaforma ti porta nell'area giusta in base al tuo ruolo: gli artisti in <strong>/dashboard</strong>, gli organizzatori in <strong>/organizzatore</strong>, gli utenti sulla home.</p>
@@ -114,12 +114,12 @@ export const INIZIARE: HelpCategory = {
 <p>Professionista del team che tiene le sessioni di <a href="/help/consulenza/prenotare-chiamata">consulenza</a> con gli artisti. Ha un accesso limitato ai soli appuntamenti e al proprio profilo.</p>
 
 <h3>Team N'arte</h3>
-<p>Approva le candidature, cura eventi, format e blog, modera le recensioni e può annullare una data confermata — ma solo indicando una motivazione. Ha visibilità sulle conversazioni per poter intervenire in caso di contestazione: lo trovi scritto anche nella <a href="/privacy">informativa privacy</a>.</p>
+<p>Approva le candidature, cura eventi, format e blog, modera le recensioni e può annullare una data confermata, ma solo indicando una motivazione. Ha visibilità sulle conversazioni per poter intervenire in caso di contestazione: lo trovi scritto anche nella <a href="/privacy">informativa privacy</a>.</p>
 
 <h2>Si può cambiare ruolo?</h2>
 <ul>
   <li><strong>Utente → organizzatore</strong>: automatico, alla prima richiesta di booking.</li>
-  <li><strong>Verso artista</strong>: solo tramite <a href="/candidatura-artista">candidatura</a> e approvazione del team. Non è una conversione che puoi fare da solo.</li>
+  <li><strong>Verso artista</strong>: solo tramite <a href="/candidatura-artista">candidatura</a> e approvazione del team. Non puoi farlo da solo.</li>
 </ul>
 `,
     },
@@ -159,7 +159,7 @@ export const INIZIARE: HelpCategory = {
 <p>Si raggiunge da <strong>/organizzatore</strong>. Contiene overview, <strong>Richieste inviate</strong>, <strong>Strutture</strong>, <strong>Calendario</strong> delle date confermate, <strong>Recensioni</strong>, <strong>Chat</strong> e <strong>Profilo</strong>.</p>
 
 <h2>Cosa vedi solo dopo l'accesso</h2>
-<p>Tutto ciò che identifica un artista — nome d'arte, copertina nitida, città, biografia, galleria, tracce audio, video, formazione, requisiti tecnici e calendario — è visibile solo agli utenti registrati. Da visitatore vedi per ogni scheda solo un'anteprima sfocata della copertina, i generi e il piano, e un invito ad accedere. Nome, città e tutto il resto restano nascosti. L'iscrizione è gratuita.</p>
+<p>Nome d'arte, copertina nitida, città, biografia, galleria, tracce audio, video, formazione, requisiti tecnici e calendario, cioè tutto ciò che identifica un artista, sono riservati agli utenti registrati. Da visitatore, di ogni scheda vedi soltanto un'anteprima sfocata della copertina, i generi e il piano, insieme a un invito ad accedere; nome, città e tutto il resto restano nascosti. L'iscrizione è gratuita.</p>
 `,
     },
 
@@ -176,7 +176,7 @@ export const INIZIARE: HelpCategory = {
       ],
       content: `
 <h2>Perché questo articolo esiste</h2>
-<p>Quasi tutti i malintesi nascono da un'aspettativa sbagliata su cosa faccia la piattaforma. Meglio metterlo nero su bianco.</p>
+<p>Quasi tutti i malintesi nascono da un'idea sbagliata di cosa faccia la piattaforma, per questo l'abbiamo messo nero su bianco.</p>
 
 <h2>Cosa fa N'arte</h2>
 <ul>
@@ -191,8 +191,8 @@ export const INIZIARE: HelpCategory = {
 
 <h2>Cosa non fa N'arte</h2>
 <ul>
-  <li><strong>Non incassa il compenso dell'ingaggio.</strong> Il denaro non passa mai dalla piattaforma: non lo riceviamo, non lo anticipiamo, non lo tratteniamo.</li>
-  <li><strong>Non trattiene percentuali</strong> sul compenso. Quello che concordi è quello che prendi.</li>
+  <li><strong>Non incassa il compenso dell'ingaggio.</strong> Il denaro non passa mai dalla piattaforma: non lo riceviamo, non lo anticipiamo e non lo tratteniamo.</li>
+  <li><strong>Non trattiene percentuali</strong> sul compenso: quello che concordi lo ricevi per intero.</li>
   <li><strong>Non è parte di trattative né contratti</strong> fra artista e organizzatore, non fa da agente e non promette ingaggi. L'accordo è fra voi due; noi non lo firmiamo e non lo garantiamo.</li>
   <li><strong>Non genera contratti</strong> né fatture per l'esibizione, e non fornisce un modello con valore legale.</li>
   <li><strong>Non si occupa degli adempimenti SIAE</strong> né dei permessi dell'evento. Vedi <a href="/help/pagamenti/siae">chi paga la SIAE</a>.</li>
@@ -202,10 +202,10 @@ export const INIZIARE: HelpCategory = {
 </ul>
 
 <h2>E quando qualcosa va storto?</h2>
-<p>Non essendo parte dell'accordo, N'arte non può obbligare nessuno a pagare o a esibirsi. Quello che può fare è <strong>leggere la conversazione</strong>, che resta tracciata, e intervenire sul comportamento di chi usa la piattaforma — fino ad annullare una data o sospendere un account. Il percorso è descritto in <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
+<p>Non essendo parte dell'accordo, N'arte non può obbligare nessuno a pagare o a esibirsi. Quello che può fare è <strong>leggere la conversazione</strong>, che resta tracciata, e intervenire sul comportamento di chi usa la piattaforma, fino ad annullare una data o sospendere un account. Il percorso è descritto in <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
 
 <h2>L'unica cosa che paghi a noi</h2>
-<p>L'abbonamento dell'artista, che è facoltativo. Tutto il resto della piattaforma non genera alcun addebito. Dettagli in <a href="/help/pagamenti/abbonamento-artista">l'abbonamento artista</a>.</p>
+<p>L'abbonamento dell'artista, che è facoltativo. Per tutto il resto non c'è alcun addebito. Dettagli in <a href="/help/pagamenti/abbonamento-artista">l'abbonamento artista</a>.</p>
 `,
     },
 
