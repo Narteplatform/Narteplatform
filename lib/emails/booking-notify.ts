@@ -144,7 +144,7 @@ export async function sendBookingCancelledByOrganizerEmail(requestId: string) {
       ...ctx.params,
       message: ctx.cancellationReason,
       chatUrl: `${ctx.base}/dashboard/chat`,
-      bookingUrl: `${ctx.base}/dashboard/leads`,
+      bookingUrl: `${ctx.base}/dashboard/leads?highlight=${encodeURIComponent(ctx.requestId)}`,
     },
     subjectPreview: `Richiesta annullata: ${ctx.params.organizerName} · ${ctx.params.eventDate}`,
   });
@@ -154,10 +154,13 @@ type BookingContext = NonNullable<Awaited<ReturnType<typeof loadContext>>>;
 type StatusKind = "accepted" | "confirmed" | "declined" | "cancelled_by_admin";
 
 /** Link per ruolo del destinatario: l'artista e l'organizzatore hanno aree diverse. */
-function linksFor(base: string, role: "artist" | "organizer") {
+function linksFor(base: string, role: "artist" | "organizer", requestId: string) {
+  // Link alla richiesta specifica: lato artista la lista evidenzia la riga
+  // (`?highlight=`), lato organizzatore esiste il dettaglio `/richieste/[id]`.
+  const id = encodeURIComponent(requestId);
   return role === "artist"
-    ? { chatUrl: `${base}/dashboard/chat`, bookingUrl: `${base}/dashboard/leads` }
-    : { chatUrl: `${base}/organizzatore/chat`, bookingUrl: `${base}/organizzatore/richieste` };
+    ? { chatUrl: `${base}/dashboard/chat`, bookingUrl: `${base}/dashboard/leads?highlight=${id}` }
+    : { chatUrl: `${base}/organizzatore/chat`, bookingUrl: `${base}/organizzatore/richieste/${id}` };
 }
 
 /**
@@ -183,7 +186,7 @@ async function notifyStatus(
       dispatchEmail({
         key: opts.key,
         to: r.email,
-        params: { ...ctx.params, message: opts.message, ...linksFor(ctx.base, r.role) },
+        params: { ...ctx.params, message: opts.message, ...linksFor(ctx.base, r.role, ctx.requestId) },
         meta: opts.meta,
         fallback: {
           subject: opts.subject,

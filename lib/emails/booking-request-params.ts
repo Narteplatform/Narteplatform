@@ -22,6 +22,8 @@ export function buildBookingRequestParams(o: {
   baseUrl: string;
   /** Rotta della richiesta lato artista, es. `/dashboard/leads`. */
   requestPath?: string;
+  /** Rotta della richiesta lato admin, es. `/admin/richieste?highlight=…`. Default: `/admin/leads`. */
+  adminPath?: string;
 }): BookingRequestParams {
   const name = o.organizerName ?? o.contactName ?? "";
   return {
@@ -44,6 +46,6 @@ export function buildBookingRequestParams(o: {
     requestUrl: `${o.baseUrl}${o.requestPath ?? "/dashboard/leads"}`,
     contactEmail: o.contactEmail,
     contactPhone: o.contactPhone ?? "",
-    adminUrl: `${o.baseUrl}/admin/leads`,
+    adminUrl: `${o.baseUrl}${o.adminPath ?? "/admin/leads"}`,
   };
 }

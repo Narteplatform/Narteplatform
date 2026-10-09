@@ -94,11 +94,18 @@ export const ASSETS = process.env.BREVO_ASSET_BASE_URL || "https://narteplatform
 const FOOTER_EMAIL = "info@narteofficial.it";
 const FOOTER_SITE = "narteofficial.it";
 const FOOTER_SITE_URL = "https://narteofficial.it";
-const SOCIAL: readonly { label: string; glyph: string; href: string }[] = [
-  { label: "Facebook", glyph: "f", href: "https://facebook.com/narteofficiall" },
-  { label: "Instagram", glyph: "IG", href: "https://instagram.com/narte.official" },
+/**
+ * Icone social del footer: i loghi ufficiali dei tre marchi, nei loro colori,
+ * tutte alla stessa misura. PNG in public/email/social/ a 3x (120px per 40px a
+ * schermo): gli SVG vengono rimossi da molti client. Hanno colori propri e
+ * leggibili su fondo chiaro e scuro, quindi non cambiano con la dark mode.
+ */
+const SOCIAL_SIZE = 36;
+const SOCIAL: readonly { label: string; icon: string; href: string }[] = [
+  { label: "Facebook", icon: "facebook", href: "https://facebook.com/narteofficiall" },
+  { label: "Instagram", icon: "instagram", href: "https://instagram.com/narte.official" },
   // TODO: URL TikTok non ancora configurato nel sito, rimanda alla home.
-  { label: "TikTok", glyph: "&#9834;", href: FOOTER_SITE_URL },
+  { label: "TikTok", icon: "tiktok", href: FOOTER_SITE_URL },
 ];
 
 // ---------------------------------------------------------------------------
@@ -555,22 +562,21 @@ function footer(): string {
             </table>`;
 
   const social = SOCIAL.map(
-    (s) => `                <td style="padding:0 6px;">
+    (s) => `                <td style="padding:0 8px;">
                   <a href="${s.href}" target="_blank" style="text-decoration:none;">
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="34" style="width:34px;height:34px;border:1px solid ${C.navy};border-radius:17px;">
-                      <tr><td align="center" valign="middle" height="32" style="height:32px;font-family:${SANS};font-size:14px;font-weight:700;color:${C.navy};">${s.glyph}</td></tr>
-                    </table>
+                    <img src="${ASSETS}/email/social/${s.icon}.png" width="${SOCIAL_SIZE}" height="${SOCIAL_SIZE}" alt="${s.label}"
+                         style="display:block;width:${SOCIAL_SIZE}px;height:${SOCIAL_SIZE}px;border:0;outline:none;text-decoration:none;" />
                   </a>
                 </td>`
   ).join("\n");
 
-  // Stesso marchio dell'header, in versione scura per il fondo avorio.
-  // `narte-logo-dark.png` è generato da `narte-logo.png` con
-  // `scripts/recolor-png.mjs`: l'ufficiale esiste solo in bianco, e su questo
-  // sfondo sarebbe invisibile.
+  // Logo bianco su un'etichetta blu notte disegnata DENTRO l'immagine
+  // (public/email/footer-logo.png). Il logo scuro di prima spariva quando il
+  // client scuriva lo sfondo (Gmail app, Outlook in dark mode): un'immagine non
+  // viene mai invertita, quindi così resta leggibile in chiaro e in scuro.
   return `${row(
-    `            <img src="${ASSETS}/brand/narte-logo-dark.png" width="160" alt="N'arte"
-                 style="display:block;width:160px;max-width:50%;height:auto;border:0;outline:none;text-decoration:none;" />`,
+    `            <img src="${ASSETS}/email/footer-logo.png" width="180" alt="N'arte"
+                 style="display:block;width:180px;max-width:50%;height:auto;border:0;outline:none;text-decoration:none;" />`,
     "32px 40px 0 40px"
   )}
 ${row(contacts, "20px 40px 0 40px")}
@@ -579,6 +585,107 @@ ${row(`            <table role="presentation" cellpadding="0" cellspacing="0" bo
 ${social}
               </tr>
             </table>`, "22px 40px 44px 40px")}`;
+}
+
+// ---------------------------------------------------------------------------
+// Dark mode
+// ---------------------------------------------------------------------------
+
+/**
+ * Palette scura. Si attiva da sola nei client che rispettano
+ * `prefers-color-scheme` (Apple Mail su iPhone, iPad e Mac, Outlook per Mac e
+ * iOS, Outlook.com con i selettori [data-ogsc]/[data-ogsb]).
+ *
+ * Gmail (app e web) ignora queste regole e scurisce l'email per conto suo:
+ * lì il testo resta leggibile perché lo inverte Gmail, e i loghi reggono
+ * perché testata ed etichetta del footer hanno il fondo dentro l'immagine.
+ */
+const D = {
+  page: "#0b1622",
+  card: "#13263a",
+  tile: "#1b3550",
+  border: "#263b52",
+  text: "#f1ede7",
+  muted: "#a7b3bf",
+  accent: "#6fb1ea",
+  successBg: "#14302a",
+  warningBg: "#3a2d14",
+  dangerBg: "#3a1a16",
+} as const;
+
+/** Classe aggiunta a ogni elemento in base al colore inline che porta. */
+const DARK_RULES: readonly { cls: string; prop: "bg" | "fg" | "bd"; light: string; dark: string }[] = [
+  { cls: "nb-bg-page", prop: "bg", light: C.page, dark: D.page },
+  { cls: "nb-bg-card", prop: "bg", light: C.card, dark: D.card },
+  { cls: "nb-bg-tile", prop: "bg", light: C.accentTile, dark: D.tile },
+  { cls: "nb-bg-ok", prop: "bg", light: C.successBg, dark: D.successBg },
+  { cls: "nb-bg-warn", prop: "bg", light: C.warningBg, dark: D.warningBg },
+  { cls: "nb-bg-ko", prop: "bg", light: C.dangerBg, dark: D.dangerBg },
+  { cls: "nb-fg-text", prop: "fg", light: C.navy, dark: D.text },
+  { cls: "nb-fg-muted", prop: "fg", light: C.muted, dark: D.muted },
+  { cls: "nb-fg-accent", prop: "fg", light: C.accent, dark: D.accent },
+  { cls: "nb-bd", prop: "bd", light: C.cardBorder, dark: D.border },
+  { cls: "nb-bd", prop: "bd", light: C.rule, dark: D.border },
+  { cls: "nb-bd", prop: "bd", light: C.divider, dark: D.border },
+  { cls: "nb-bd-dot", prop: "bd", light: C.accentDotted, dark: D.border },
+];
+
+function darkDecl(prop: "bg" | "fg" | "bd", value: string): string {
+  if (prop === "bg") return `background-color:${value} !important;`;
+  if (prop === "fg") return `color:${value} !important;`;
+  return `border-color:${value} !important;`;
+}
+
+const DARK_CSS = (() => {
+  const seen = new Set<string>();
+  const rules: string[] = [];
+  for (const r of DARK_RULES) {
+    if (seen.has(r.cls)) continue;
+    seen.add(r.cls);
+    rules.push(`.${r.cls}{${darkDecl(r.prop, r.dark)}}`);
+  }
+  // Il bottone primario non riceve classi (fondo accento, testo bianco):
+  // resta identico in chiaro e in scuro.
+  const base = rules.join("");
+  const ogsc = [...seen]
+    .map((cls) => {
+      const r = DARK_RULES.find((x) => x.cls === cls)!;
+      const sel = r.prop === "bg" ? "[data-ogsb]" : "[data-ogsc]";
+      return `${sel} .${cls}{${darkDecl(r.prop, r.dark)}}`;
+    })
+    .join("");
+  return `:root{color-scheme:light dark;supported-color-schemes:light dark;}@media (prefers-color-scheme:dark){${base}}${ogsc}`;
+})();
+
+/**
+ * Aggiunge a ogni tag con stile inline le classi della palette scura, in base
+ * ai colori che porta. Così i blocchi restano scritti con un solo colore e la
+ * dark mode non si può dimenticare in un template nuovo.
+ */
+function withDarkClasses(html: string): string {
+  return html.replace(/<([a-z][a-z0-9]*)\b([^>]*?)\sstyle="([^"]*)"/gi, (full, tag: string, attrs: string, style: string) => {
+    const decls = style
+      .split(";")
+      .map((d) => d.trim().toLowerCase())
+      .filter(Boolean);
+    const classes = new Set<string>();
+    for (const d of decls) {
+      const [name, ...rest] = d.split(":");
+      const value = rest.join(":").trim();
+      for (const r of DARK_RULES) {
+        const light = r.light.toLowerCase();
+        if (r.prop === "bg" && name === "background-color" && value === light) classes.add(r.cls);
+        if (r.prop === "fg" && name === "color" && value === light) classes.add(r.cls);
+        if (r.prop === "bd" && name.startsWith("border") && value.includes(light)) classes.add(r.cls);
+      }
+    }
+    if (classes.size === 0) return full;
+    const list = [...classes].join(" ");
+    if (/\sclass="/i.test(attrs)) {
+      return `<${tag}${attrs.replace(/\sclass="([^"]*)"/i, (_m, c: string) => ` class="${c} ${list}"`)} style="${style}"`;
+    }
+    return `<${tag}${attrs} class="${list}" style="${style}"`;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -604,23 +711,28 @@ export function layout(o: LayoutOpts): string {
   // le entità finali servono a impedire che Gmail vi accodi il testo del corpo.
   const preheader = `      <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:${C.page};">${o.preheader}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>`;
 
+  // Testata come immagine unica con il fondo blu notte incorporato
+  // (public/email/header.png). Gmail sul telefono, in dark mode, inverte i
+  // colori di sfondo ma non le immagini: con il fondo nella cella il blu
+  // diventava chiaro e il logo bianco spariva.
   const header = `        <tr>
-          <td align="center" bgcolor="${C.navy}" style="background-color:${C.navy};padding:34px 24px;">
-            <img src="${ASSETS}/brand/narte-logo.png" width="190" alt="N'arte"
-                 style="display:block;width:190px;max-width:60%;height:auto;border:0;outline:none;text-decoration:none;" />
+          <td align="center" bgcolor="${C.navy}" style="background-color:${C.navy};padding:0;">
+            <img src="${ASSETS}/email/header.png" width="${WIDTH}" alt="N'arte"
+                 style="display:block;width:${WIDTH}px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;" />
           </td>
         </tr>`;
 
-  return `<!-- narte:key=${o.key} -->
+  return withDarkClasses(`<!-- narte:key=${o.key} -->
 <!doctype html>
 <html lang="it">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="x-apple-disable-message-reformatting" />
-  <meta name="color-scheme" content="light" />
-  <meta name="supported-color-schemes" content="light" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
   <title>N'arte</title>
+  <style>${DARK_CSS}</style>
 </head>
 <body style="margin:0;padding:0;background-color:${C.page};">
 ${preheader}
@@ -645,5 +757,5 @@ ${footer()}
     </table>
 </body>
 </html>
-`;
+`);
 }

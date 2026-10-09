@@ -138,7 +138,7 @@ export async function approveApplication(applicationId: string) {
     .single();
   if (appErr || !app) return { ok: false as const, error: "Candidatura non trovata" };
 
-  const redirectTo = `${getSiteUrl()}/login`;
+  const redirectTo = `${getSiteUrl()}/reset-password`;
   const { data: invite, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(app.email, {
     redirectTo,
     data: { full_name: app.name },
@@ -193,7 +193,7 @@ export async function approveApplication(applicationId: string) {
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: "invite",
       email: app.email,
-      options: { redirectTo: `${siteUrl}/login` },
+      options: { redirectTo: `${siteUrl}/reset-password` },
     });
     if (!linkErr && linkData?.properties?.action_link) {
       actionLink = linkData.properties.action_link;
@@ -202,7 +202,7 @@ export async function approveApplication(applicationId: string) {
       const { data: recoveryData } = await admin.auth.admin.generateLink({
         type: "recovery",
         email: app.email,
-        options: { redirectTo: `${siteUrl}/login` },
+        options: { redirectTo: `${siteUrl}/reset-password` },
       });
       if (recoveryData?.properties?.action_link) {
         actionLink = recoveryData.properties.action_link;
@@ -220,7 +220,7 @@ export async function approveApplication(applicationId: string) {
         applicantName: app.name,
         stageName: app.stage_name,
         actionUrl: actionLink,
-        profileUrl: `${siteUrl}/artisti/${slug}`,
+        profileUrl: `${siteUrl}/dashboard/profili`,
       },
       fallback: {
         subject: "Candidatura approvata — N'arte",
@@ -614,7 +614,7 @@ export async function createArtistManual(input: {
 
   let userId: string | null = null;
   if (input.email) {
-    const redirectTo = `${getSiteUrl()}/login`;
+    const redirectTo = `${getSiteUrl()}/reset-password`;
     const { data: invite } = await admin.auth.admin.inviteUserByEmail(input.email, {
       redirectTo,
       data: { full_name: input.stage_name },

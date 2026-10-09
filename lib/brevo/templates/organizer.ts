@@ -102,14 +102,14 @@ const organizerApproved = defineTemplate({
               e iniziare a creare il tuo Profilo Locale.`
       ),
       buttonPair(
-        { href: param("actionUrl"), label: "Accedi al lato admin" },
+        { href: param("actionUrl"), label: "Accedi alla tua area" },
         { href: param("profileUrl"), label: "Crea il Profilo Locale" }
       ),
       card(
         [
           cardTitle("Cosa succede ora"),
           timeline([
-            { icon: "check", tone: "done", text: "Accedi al tuo account<br />dall'area admin." },
+            { icon: "check", tone: "done", text: "Accedi al tuo account<br />dalla tua area riservata." },
             { icon: "store", text: "Completa il tuo Profilo Locale<br />con foto, descrizione e dettagli." },
             { icon: "send", text: "Dopo la pubblicazione,<br />potrai iniziare a trovare artisti." },
           ]),

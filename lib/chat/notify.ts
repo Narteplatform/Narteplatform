@@ -78,7 +78,8 @@ async function resolveCounterpart(
     email: account.user.email,
     name: name ?? "",
     senderName: senderName ?? "N'arte",
-    chatUrl: toArtist ? `${base}/dashboard/chat` : `${base}/organizzatore/chat`,
+    // Conversazione specifica: le rotte `/chat/[id]` esistono in entrambe le aree.
+    chatUrl: `${base}${toArtist ? "/dashboard/chat" : "/organizzatore/chat"}/${encodeURIComponent(conversationId)}`,
   };
 }
 

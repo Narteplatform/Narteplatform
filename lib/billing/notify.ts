@@ -8,6 +8,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
 import { formatPrice } from "@/lib/billing/plans";
 import { TITOLARE } from "@/lib/legal/titolare";
+import { getStripe } from "@/lib/stripe/client";
 
 /**
  * Email dell'abbonamento, inviate dal webhook di Stripe.
@@ -36,6 +37,24 @@ function dataIt(unix: number | null | undefined): string {
     year: "numeric",
     timeZone: "Europe/Rome",
   });
+}
+
+/**
+ * Pagina Stripe della fattura dell'ultimo pagamento (lettura sola).
+ * Se non è raggiungibile ricade su `fallback`, così il bottone «Scarica la
+ * fattura» non resta mai senza destinazione.
+ */
+async function urlFattura(sub: Stripe.Subscription, fallback: string): Promise<string> {
+  try {
+    const ultima = sub.latest_invoice;
+    const id = typeof ultima === "string" ? ultima : ultima?.id;
+    if (!id) return fallback;
+    const inv = await getStripe().invoices.retrieve(id);
+    return inv.hosted_invoice_url || inv.invoice_pdf || fallback;
+  } catch (e) {
+    logger.warn("billing/notify", "fattura non raggiungibile:", e instanceof Error ? e.message : String(e));
+    return fallback;
+  }
 }
 
 async function destinatario(userId: string | undefined) {
@@ -90,7 +109,7 @@ export async function notificaEventoAbbonamento(
             priceLabel: importo,
             periodLabel: intervallo,
             renewalDate: dataIt(item?.current_period_end),
-            invoiceUrl: billingUrl,
+            invoiceUrl: await urlFattura(sub, billingUrl),
             billingUrl,
           },
           meta: { subscription: sub.id, condizioni: sub.metadata?.condizioni_versione ?? null },

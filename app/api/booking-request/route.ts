@@ -335,6 +335,9 @@ export async function POST(req: Request) {
         contactEmail: requesterEmail,
         contactPhone: data.phone ?? null,
         baseUrl: getSiteUrl(),
+        // Richiesta vera (booking_requests): link alla riga, non alla lista generica.
+        requestPath: `/dashboard/leads?highlight=${encodeURIComponent(bookingReq.id)}`,
+        adminPath: `/admin/richieste?highlight=${encodeURIComponent(bookingReq.id)}`,
       });
       await Promise.allSettled([
         artistEmail

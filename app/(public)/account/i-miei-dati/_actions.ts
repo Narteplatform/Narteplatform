@@ -169,7 +169,7 @@ export async function richiediCancellazioneAccount(input: unknown) {
     "Procedura in docs/REGISTRO_TRATTAMENTI.md §6.",
   ].join("\n");
 
-  // Si annota dove il team guarda già: /admin/messaggi. Una tabella dedicata
+  // Si annota dove il team guarda già: contact_messages (la notifica email punta a /admin/impostazioni/cancellazioni: /admin/messaggi non esiste). Una tabella dedicata
   // sarebbe più ordinata, ma una richiesta registrata in un posto che nessuno
   // apre non è registrata.
   const { error } = await admin.from("contact_messages").insert({
@@ -200,7 +200,7 @@ export async function richiediCancellazioneAccount(input: unknown) {
         email: utente.email ?? "",
         subject: "RICHIESTA CANCELLAZIONE ACCOUNT",
         message: corpo,
-        adminUrl: `${getSiteUrl()}/admin/messaggi`,
+        adminUrl: `${getSiteUrl()}/admin/impostazioni/cancellazioni`,
       },
       subjectPreview: `Cancellazione account: ${nome}`,
     }).catch((e) =>

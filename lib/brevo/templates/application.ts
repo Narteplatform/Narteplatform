@@ -158,14 +158,14 @@ const artistApproved = defineTemplate({
               e iniziare a creare il tuo Profilo Artista.`
       ),
       buttonPair(
-        { href: param("actionUrl"), label: "Accedi al lato admin" },
+        { href: param("actionUrl"), label: "Imposta la password e accedi" },
         { href: param("profileUrl"), label: "Crea il Profilo Artista" }
       ),
       card(
         [
           cardTitle("Cosa succede ora"),
           timeline([
-            { icon: "check", tone: "done", text: "Accedi al tuo account<br />dall'area admin." },
+            { icon: "check", tone: "done", text: "Imposta la password<br />e accedi alla tua area." },
             { icon: "user", text: "Completa il tuo Profilo Artista<br />con bio, foto e dettagli." },
             { icon: "send", text: "Dopo la pubblicazione,<br />potrai iniziare a ricevere richieste." },
           ]),
