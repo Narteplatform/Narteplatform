@@ -63,7 +63,7 @@ const COSA_FACCIAMO = [
 const FONDATORE_CHIPS = [
   "8+ anni nel settore",
   "Direzione artistica",
-  "Eventi in tutta Italia",
+  "Grandi eventi",
 ];
 
 /**
@@ -132,7 +132,7 @@ export default function ChiSiamoPage() {
                 Giovane visionario fondatore di N&rsquo;arte e presente nel settore della musica
                 da oltre 8 anni. Eduardo ha dato la possibilità a tantissimi giovani emergenti
                 di crescere ed esprimersi su migliaia di palchi, gestendo anche la direzione
-                artistica di grandi eventi in tutta Italia.
+                artistica di grandi eventi.
               </p>
               <ul className="mt-8 flex flex-wrap justify-center gap-2 md:justify-start">
                 {FONDATORE_CHIPS.map((chip) => (

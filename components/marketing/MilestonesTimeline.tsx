@@ -109,7 +109,7 @@ export function MilestonesTimeline({
                         aria-hidden="true"
                         className="font-display text-[11px] font-bold tabular-nums text-muted-foreground lg:text-sm"
                       >
-                        {m.year}
+                        {m.year || "•"}
                       </span>
                     }
                   />
@@ -134,14 +134,16 @@ export function MilestonesTimeline({
                 </span>
 
                 <span className="min-w-0 lg:mt-4">
-                  <span
-                    className={cn(
-                      "narte-label block transition-colors",
-                      isActive ? "text-accent" : "text-muted-foreground"
-                    )}
-                  >
-                    {m.year}
-                  </span>
+                  {m.year && (
+                    <span
+                      className={cn(
+                        "narte-label block transition-colors",
+                        isActive ? "text-accent" : "text-muted-foreground"
+                      )}
+                    >
+                      {m.year}
+                    </span>
+                  )}
                   <span className="mt-1 block text-balance font-display text-base font-bold leading-tight lg:text-[15px] xl:text-base">
                     {m.title}
                   </span>
@@ -173,8 +175,8 @@ export function MilestonesTimeline({
                 reduce ? { duration: 0 } : { duration: 0.24, ease: [0.16, 1, 0.3, 1] }
               }
             >
-              <p className="narte-label text-accent">{m.date}</p>
-              <h3 className="mt-2 text-balance font-display text-2xl font-bold md:text-3xl">
+              {m.date && <p className="narte-label text-accent">{m.date}</p>}
+              <h3 className={cn("text-balance font-display text-2xl font-bold md:text-3xl", m.date && "mt-2")}>
                 {m.title}
               </h3>
               <p className="mt-4 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground">

@@ -10,16 +10,15 @@
  * in tipografia display e la pagina resta integra (vedi MilestonesTimeline).
  * Formato consigliato: quadrato, almeno 400×400, soggetto centrato.
  *
- * ⚠️ Titoli ed eventi sono reali (dal calendario N’arte). Le date di alcune
- * tappe vanno confermate da Eduardo prima della pubblicazione: sono segnate
- * con TODO qui sotto.
+ * Le tappe senza data hanno `year` e `date` vuoti: la linea non mostra
+ * l’anno e, senza foto, il pallino mostra un punto.
  */
 export type Milestone = {
   /** Slug stabile: alimenta gli id di aria-controls / aria-labelledby. */
   id: string;
-  /** Etichetta corta sull’asse della linea. */
+  /** Etichetta corta sull’asse della linea. Vuota per le tappe senza data. */
   year: string;
-  /** Etichetta estesa mostrata nel pannello. */
+  /** Etichetta estesa mostrata nel pannello. Vuota per le tappe senza data. */
   date: string;
   title: string;
   description: string;
@@ -28,56 +27,60 @@ export type Milestone = {
   photoAlt: string;
 };
 
+// Tappe concordate con Luigi il 09/10/2026. Le quattro centrali sono
+// volutamente senza data: raccontano cosa fa N’arte, non un singolo evento.
+// La foto del 2018 è Marechiaro (Unsplash, Valerio Filoso, licenza Unsplash);
+// le altre sono ancora quelle segnaposto di public/milestones/.
 export const MILESTONES: Milestone[] = [
   {
     id: "nasce-narte",
     year: "2018",
-    date: "Settembre 2018", // TODO: confermare il mese esatto
+    date: "2018",
     title: "Nasce N’arte",
     description:
-      "Eduardo Castronuovo mette insieme la prima serata con quattro musicisti che nessuno aveva ancora messo su un palco. Non c’era un piano industriale: c’era una città piena di talento e nessuno che lo facesse suonare. Da lì in poi, una data dopo l’altra.",
-    photo: "/milestones/2018-nasce-narte.jpg",
-    photoAlt: "La prima serata N’arte a Napoli nel 2018",
+      "Eduardo Castronuovo organizza la prima serata a Napoli con un gruppo di musicisti che nessuno aveva ancora fatto salire su un palco. La città era piena di talento e mancava chi lo facesse suonare. Da lì in poi, una data dopo l’altra.",
+    photo: "/milestones/2018-marechiaro.jpg",
+    photoAlt: "Il mare di Marechiaro, a Napoli, al tramonto",
   },
   {
-    id: "capodanno-plebiscito",
-    year: "2024",
-    date: "31 dicembre 2024",
-    title: "Capodanno in Piazza del Plebiscito",
+    id: "evento-narte",
+    year: "",
+    date: "",
+    title: "L’evento N’arte!",
     description:
-      "Il salto di scala. Dal palco di un locale alla piazza più grande di Napoli, con un concertone gratuito di fine anno e una line-up scelta tutta dal roster N’arte. Gli stessi artisti che sei anni prima suonavano davanti a quaranta persone.",
-    photo: "/milestones/2024-capodanno-plebiscito.jpg",
-    photoAlt: "Il concertone di Capodanno in Piazza del Plebiscito a Napoli",
-  },
-  {
-    id: "capri-music-awards",
-    year: "2025",
-    date: "16 luglio 2025",
-    title: "Capri Music Awards",
-    description:
-      "Tre serate di concerti e premiazioni nella Piazzetta di Capri, con il patrocinio del Comune. Un premio dedicato alla scena emergente italiana, nato per dare a questi artisti una cosa che di solito non ricevono mai: un riconoscimento ufficiale.",
-    photo: "/milestones/2025-capri-music-awards.jpg",
-    photoAlt: "La premiazione dei Capri Music Awards nella Piazzetta di Capri",
-  },
-  {
-    id: "oktoberland-edenlandia",
-    year: "2025",
-    date: "9 ottobre 2025",
-    title: "Oktoberland all’Edenlandia",
-    description:
-      "Tre giorni di musica e birra dentro il parco divertimenti storico di Napoli, con la line-up curata da noi. La prova che un format può funzionare fuori dai club: pubblico diverso, orari diversi, stessa qualità sul palco.",
-    photo: "/milestones/2025-oktoberland-edenlandia.jpg",
-    photoAlt: "Il palco di Oktoberland al parco Edenlandia di Napoli",
-  },
-  {
-    id: "sunday-narte-brusco",
-    year: "2025",
-    date: "Dal 2025, ogni domenica", // TODO: confermare da quando è partita la rassegna
-    title: "Sunday N’arte al Brusco",
-    description:
-      "Il primo appuntamento fisso: ogni domenica musica dal vivo e brunch al Brusco Restaurant, un artista diverso a settimana. Per chi suona è la differenza fra una serata all’anno e una data sicura in calendario.",
+      "Le serate firmate N’arte, dal format alla scelta degli artisti. Sono l’occasione in cui la community si ritrova e il pubblico scopre gli artisti del roster dal vivo.",
     photo: "/milestones/2025-sunday-narte-brusco.jpg",
-    photoAlt: "Un artista N’arte durante il brunch domenicale al Brusco Restaurant",
+    photoAlt: "Un artista N’arte sul palco durante una serata N’arte",
+  },
+  {
+    id: "festival",
+    year: "",
+    date: "",
+    title: "Festival",
+    description:
+      "Dai locali ai festival, con line-up curate da N’arte per eventi più grandi, come i Capri Music Awards nella Piazzetta di Capri e Oktoberland all’Edenlandia.",
+    photo: "/milestones/2025-capri-music-awards.jpg",
+    photoAlt: "Il palco di un festival con artisti del roster N’arte",
+  },
+  {
+    id: "aperture-concerti",
+    year: "",
+    date: "",
+    title: "Aperture concerti",
+    description:
+      "Gli artisti del roster aprono i concerti di altri artisti. Per un emergente vuol dire suonare su un palco importante, davanti a un pubblico che altrimenti non incontrerebbe.",
+    photo: "/milestones/2024-capodanno-plebiscito.jpg",
+    photoAlt: "Il pubblico davanti al palco di un concerto",
+  },
+  {
+    id: "partner-artistico",
+    year: "",
+    date: "",
+    title: "Partner artistico",
+    description:
+      "Locali e realtà che affidano a N’arte la loro programmazione musicale. Come la rassegna Sunday N’arte al Brusco: ogni domenica un artista diverso, e per chi suona una data fissa in calendario.",
+    photo: "/milestones/2025-oktoberland-edenlandia.jpg",
+    photoAlt: "Musica dal vivo in un locale partner di N’arte",
   },
   {
     id: "piattaforma-narte",
