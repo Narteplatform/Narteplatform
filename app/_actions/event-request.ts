@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
+import { logger } from "@/lib/logger";
 import { LIMITI } from "@/lib/security/rate-limit";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import { honeypotShape } from "@/lib/validators/schemas";
@@ -56,15 +57,33 @@ export async function submitEventRequest(input: EventRequestInput) {
     .join("\n");
 
   const admin = createAdminClient();
+  const consenso = publicFormConsent();
+  const oggetto = `Richiesta evento — ${data.eventType}`;
   const { error } = await admin.from("contact_messages").insert({
     name: data.name,
     email: data.email,
-    subject: `Richiesta evento — ${data.eventType}`,
+    subject: oggetto,
     message: lines,
-    ...publicFormConsent(),
+    ...consenso,
   });
 
   if (error) return { ok: false as const, error: error.message };
+
+  // Copia in `leads` (source='contatti'), come fa il modulo contatti: è la
+  // tabella che /admin/leads mostra, mentre contact_messages non ha nessuna
+  // pagina. Non blocca la risposta se fallisce: il messaggio è già salvato.
+  const { error: leadError } = await admin.from("leads").insert({
+    artist_id: null,
+    contact_name: data.name,
+    contact_email: data.email,
+    message: `${oggetto}\n\n${lines}`,
+    source: "contatti",
+    status: "new",
+    ...consenso,
+  });
+  if (leadError) {
+    logger.error("event-request", "lead non salvato:", leadError.message);
+  }
 
   registraProvaSuIubendaInBackground({
     email: data.email,

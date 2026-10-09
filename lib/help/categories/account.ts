@@ -52,7 +52,7 @@ export const ACCOUNT: HelpCategory = {
       slug: "notifiche-email",
       title: "Quali email invia N'arte",
       excerpt:
-        "L'elenco esatto delle email automatiche, quando partono e perché non esiste un promemoria prima dell'evento.",
+        "L'elenco delle email automatiche di N'arte e del momento in cui partono.",
       updatedAt: UPDATED,
       related: ["booking/tempi-di-risposta", "recupero-password", "privacy-dati"],
       content: `
@@ -65,20 +65,31 @@ export const ACCOUNT: HelpCategory = {
   <li><strong>Recupero password</strong> — quando lo richiedi. Vedi <a href="/help/account/recupero-password">come recuperare la password</a>.</li>
 </ul>
 
-<h3>Candidatura artista</h3>
+<ul>
+  <li><strong>Password cambiata</strong> — ogni volta che la password viene modificata, così ti accorgi subito di un cambio che non hai fatto tu.</li>
+</ul>
+
+<h3>Candidatura artista e account organizzatore</h3>
 <ul>
   <li><strong>Candidatura ricevuta</strong> — al candidato, subito dopo l'invio.</li>
   <li><strong>Candidatura approvata</strong> — all'artista, con il link per impostare la password e accedere.</li>
+  <li><strong>Candidatura non accolta</strong> — al candidato, con la motivazione e il modo per contestare la decisione.</li>
+  <li><strong>Richiesta di account organizzatore ricevuta</strong> — quando ti iscrivi come organizzatore.</li>
+  <li><strong>Account organizzatore approvato</strong> — quando il team attiva il tuo account.</li>
 </ul>
 
 <h3>Booking</h3>
 <ul>
   <li><strong>Nuova richiesta di booking</strong> — all'artista.</li>
+  <li><strong>Richiesta inviata</strong> — all'organizzatore, come ricevuta.</li>
   <li><strong>L'artista ha accettato</strong> — all'organizzatore, quando la richiesta passa in trattativa.</li>
   <li><strong>L'artista non è disponibile</strong> — all'organizzatore, in caso di rifiuto.</li>
   <li><strong>Data confermata</strong> — a entrambi.</li>
   <li><strong>Richiesta annullata dall'organizzatore</strong> — all'artista.</li>
   <li><strong>Data annullata da N'arte</strong> — a entrambi, con la motivazione.</li>
+  <li><strong>Compenso proposto</strong> e <strong>compenso confermato</strong> — quando una delle due parti propone o conferma la cifra finale.</li>
+  <li><strong>Promemoria della data</strong> — il giorno prima della serata, a entrambi.</li>
+  <li><strong>Invito a lasciare una recensione</strong> — all'organizzatore, il giorno dopo la serata.</li>
 </ul>
 
 <h3>Chat</h3>
@@ -88,21 +99,21 @@ export const ACCOUNT: HelpCategory = {
 </ul>
 <p>Per riservatezza <strong>l'email non riporta mai il testo del messaggio</strong>: lo leggi entrando in piattaforma.</p>
 
-<h3>Consulenza e contatti</h3>
+<h3>Abbonamento artista</h3>
 <ul>
-  <li><strong>Appuntamento confermato</strong> — a chi prenota una consulenza.</li>
-  <li><strong>Conferma di ricezione</strong> — a chi scrive dal modulo contatti.</li>
+  <li><strong>Abbonamento attivato</strong>, <strong>pagamento non riuscito</strong> e <strong>abbonamento disdetto</strong> — quando succede.</li>
+  <li><strong>Promemoria del rinnovo</strong> — prima del rinnovo dell'abbonamento annuale.</li>
+</ul>
+<p>Ricevute e fatture arrivano da Stripe, e lo stato del piano è sempre visibile in <strong>/dashboard/abbonamento</strong>.</p>
+
+<h3>Consulenza, contatti e segnalazioni</h3>
+<ul>
+  <li><strong>Appuntamento confermato</strong> — a chi prenota una consulenza, e un <strong>promemoria</strong> il giorno prima.</li>
+  <li><strong>Conferma di ricezione</strong> — a chi scrive dal modulo contatti o invia una segnalazione, e poi l'<strong>esito</strong> della segnalazione.</li>
+  <li><strong>Decisioni del team</strong> — se un tuo contenuto o il tuo account viene limitato, con la motivazione e il link per contestare.</li>
 </ul>
 
-<h2>Cosa NON riceverai</h2>
-<p>Così non resti ad aspettare messaggi che non partiranno:</p>
-<ul>
-  <li><strong>Nessun promemoria prima dell'evento.</strong> Segnati la data in agenda.</li>
-  <li><strong>Nessun invito automatico a lasciare una recensione</strong> dopo la serata.</li>
-  <li><strong>Nessuna email quando l'abbonamento si attiva, si rinnova o viene disdetto.</strong> Le ricevute e le fatture arrivano invece da Stripe, e lo stato del piano è sempre visibile in <strong>/dashboard/abbonamento</strong>.</li>
-  <li><strong>Nessuna email se una candidatura non viene accolta.</strong> Vedi <a href="/help/artisti/candidatura-artista">come candidarsi</a>.</li>
-  <li><strong>Nessuna newsletter periodica</strong> al momento.</li>
-</ul>
+<p>Al momento non inviamo newsletter periodiche.</p>
 
 <h2>Si possono disattivare?</h2>
 <p>Le email <strong>di servizio non si disattivano</strong>, perché fanno parte del funzionamento della piattaforma: senza l'avviso di una nuova richiesta di booking rischieresti di perderla.</p>
