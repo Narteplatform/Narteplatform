@@ -1,4 +1,5 @@
 import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { createElement } from "react";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
@@ -8,6 +9,7 @@ import { dispatchEmail } from "@/lib/emails/dispatch";
 import { buildBookingRequestParams } from "@/lib/emails/booking-request-params";
 import { getSiteUrl } from "@/lib/site-url";
 import BookingRequestEmail from "@/lib/emails/templates/BookingRequestEmail";
+import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import type { Database } from "@/lib/supabase/types";
 import {
   allowByIp,
@@ -339,7 +341,45 @@ export async function POST(req: Request) {
         requestPath: `/dashboard/leads?highlight=${encodeURIComponent(bookingReq.id)}`,
         adminPath: `/admin/richieste?highlight=${encodeURIComponent(bookingReq.id)}`,
       });
+      // Ricevuta all'organizzatore: stessi dati, ma i link portano alla sua area.
+      const receiptParams = {
+        ...requestParams,
+        requestUrl: `${getSiteUrl()}/organizzatore/richieste/${encodeURIComponent(bookingReq.id)}`,
+        chatUrl: `${getSiteUrl()}/organizzatore/chat`,
+        // La ricevuta va a chi ha scritto: la copia interna resta alla copia interna.
+        contactEmail: "",
+        contactPhone: "",
+        adminUrl: "",
+      };
       await Promise.allSettled([
+        requesterEmail
+          ? dispatchEmail({
+              key: "booking_request_receipt",
+              to: requesterEmail,
+              params: receiptParams,
+              fallback: {
+                subject: `La tua richiesta è stata inviata — ${artist.stage_name}`,
+                template: "BookingRequestReceipt",
+                react: createElement(NoticeEmail, {
+                  preview: "Abbiamo inoltrato la tua richiesta all'artista.",
+                  heading: "La tua richiesta è stata inviata",
+                  paragraphs: [
+                    `La tua richiesta a ${artist.stage_name} è stata inviata correttamente. Puoi scrivere subito in chat oppure attendere la risposta dell'artista.`,
+                  ],
+                  rows: [
+                    { label: "Artista contattato", value: artist.stage_name },
+                    { label: "Data evento", value: requestParams.eventDate },
+                    { label: "Luogo", value: eventLocation },
+                    { label: "Budget indicato", value: requestParams.budgetLabel },
+                  ],
+                  button: {
+                    label: "Visualizza la richiesta",
+                    href: receiptParams.requestUrl,
+                  },
+                }),
+              },
+            })
+          : Promise.resolve(),
         artistEmail
           ? dispatchEmail({
               key: "booking_request_artist",

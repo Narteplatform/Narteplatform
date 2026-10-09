@@ -167,6 +167,8 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
       contactEmail: data.email,
       contactPhone: data.phone ?? null,
       baseUrl: getSiteUrl(),
+      // Visitatore senza chat: niente bottone «Avvia la chat».
+      chatPath: "",
     });
     const results = await Promise.allSettled([
       artistEmail
@@ -282,6 +284,8 @@ export async function submitLead(input: LeadInput) {
     contactEmail: data.contactEmail,
     contactPhone: data.contactPhone,
     baseUrl: getSiteUrl(),
+    // Visitatore senza chat: niente bottone «Avvia la chat».
+    chatPath: "",
   });
 
   await Promise.all([

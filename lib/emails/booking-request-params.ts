@@ -24,6 +24,12 @@ export function buildBookingRequestParams(o: {
   requestPath?: string;
   /** Rotta della richiesta lato admin, es. `/admin/richieste?highlight=…`. Default: `/admin/leads`. */
   adminPath?: string;
+  /**
+   * Rotta della chat. Default `/dashboard/chat` (artista). Passare `""` quando
+   * non esiste una chat per chi legge (lead di un visitatore): il template
+   * nasconde il bottone se `chatUrl` è vuoto.
+   */
+  chatPath?: string;
 }): BookingRequestParams {
   const name = o.organizerName ?? o.contactName ?? "";
   return {
@@ -42,7 +48,7 @@ export function buildBookingRequestParams(o: {
     technicalNotes: "",
     statusLabel: "In attesa di risposta",
     message: toPlainText(o.message),
-    chatUrl: `${o.baseUrl}/dashboard/chat`,
+    chatUrl: o.chatPath === "" ? "" : `${o.baseUrl}${o.chatPath ?? "/dashboard/chat"}`,
     requestUrl: `${o.baseUrl}${o.requestPath ?? "/dashboard/leads"}`,
     contactEmail: o.contactEmail,
     contactPhone: o.contactPhone ?? "",

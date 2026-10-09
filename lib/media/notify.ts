@@ -1,7 +1,9 @@
 import "server-only";
 
+import { createElement } from "react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { dispatchEmail } from "@/lib/emails/dispatch";
+import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
 
@@ -60,20 +62,39 @@ export async function notifyMediaSubmission(
   if (await recentlyNotified(to)) return;
 
   const admin = createAdminClient();
-  const { data: artist } = await admin
+  const { data: artist, error: artistErr } = await admin
     .from("artists")
     .select("stage_name")
     .eq("id", artistId)
     .maybeSingle();
+  // Il nome serve solo all'etichetta: se la lettura fallisce l'avviso parte
+  // comunque, con un nome generico.
+  if (artistErr) {
+    logger.warn("media/notify", "nome artista non letto:", artistErr.message);
+  }
+
+  const artistName = artist?.stage_name ?? "Un artista";
+  const moderationUrl = `${getSiteUrl()}/admin/moderazione`;
 
   await dispatchEmail({
     key: "media_pending_admin",
     to,
-    params: {
-      artistName: artist?.stage_name ?? "Un artista",
-      count,
-      moderationUrl: `${getSiteUrl()}/admin/moderazione`,
+    params: { artistName, count, moderationUrl },
+    fallback: {
+      subject: `[N'arte] Contenuti da approvare — ${artistName}`,
+      template: TEMPLATE,
+      react: createElement(NoticeEmail, {
+        preview: "Un artista ha caricato contenuti in attesa di approvazione.",
+        heading: "Contenuti da approvare",
+        paragraphs: [
+          `${artistName} ha caricato nuovi contenuti: restano nascosti dal profilo pubblico finché non li approvi.`,
+        ],
+        rows: [
+          { label: "Artista", value: artistName },
+          { label: "Contenuti da approvare", value: String(count) },
+        ],
+        button: { label: "Apri la coda di moderazione", href: moderationUrl },
+      }),
     },
-    subjectPreview: "Contenuti da approvare su N'arte",
   });
 }

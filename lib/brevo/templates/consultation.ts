@@ -189,8 +189,9 @@ const consultationConfirmedAdmin = defineTemplate({
 });
 
 /**
- * Promemoria 24 ore prima. Come i promemoria evento richiede un cron: il
- * template esiste già così che, quando ci sarà, resti solo da chiamarlo.
+ * Promemoria il giorno prima (cron /api/cron/promemoria, mattina del giorno
+ * precedente: per una consulenza di pomeriggio è ~30 ore prima, per una del
+ * mattino ~24). Il bottone «Collegati» c'è solo se `meetingUrl` è valorizzato.
  */
 const consultationReminder = defineTemplate({
   key: "consultation_reminder",
@@ -199,7 +200,7 @@ const consultationReminder = defineTemplate({
   sample: CONSULTATION_SAMPLE,
   html: layout({
     key: "consultation_reminder",
-    preheader: "La tua consulenza è domani: ecco il link per collegarti.",
+    preheader: "La tua consulenza è domani: ecco il riepilogo.",
     body: [
       eyebrow("Promemoria"),
       title(`La consulenza è ${em("domani.")}`),
@@ -209,13 +210,15 @@ const consultationReminder = defineTemplate({
       ),
       highlight("Domani alle", param("timeLabel")),
       card([sectionTitle("Dettagli"), dataTable(appointmentRows)].join("\n")),
-      buttonPair(
+      // Il link di collegamento non ha ancora una colonna: senza, il bottone
+      // «Collegati» non compare e resta solo quello verso il pannello.
+      `{% if params.meetingUrl %}${buttonPair(
         { href: param("meetingUrl"), label: "Collegati alla consulenza" },
         { href: param("panelUrl"), label: "Vai al pannello cliente" }
-      ),
+      )}{% else %}${buttonPair({ href: param("panelUrl"), label: "Vai al pannello cliente" })}{% endif %}`,
       callout({
         heading: "N'Arte Tips",
-        text: "Collegati 5 minuti prima e tieni pronti dubbi,<br />obiettivi e materiali da condividere.",
+        text: "Arriva 5 minuti prima e tieni pronti dubbi,<br />obiettivi e materiali da condividere.",
       }),
     ].join("\n"),
   }),

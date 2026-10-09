@@ -9,6 +9,7 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { passwordChangeSchema, type PasswordChangeInput } from "@/lib/validators/schemas";
 import { authErrorMessage } from "@/lib/auth/error-messages";
 import { createClient } from "@/lib/supabase/client";
+import { notificaPasswordCambiata } from "@/app/account/_actions";
 import { Label } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
@@ -56,6 +57,9 @@ export function ResetPasswordForm() {
       return;
     }
     setPhase("done");
+    // Avviso di sicurezza: serve la sessione di recupero, quindi PRIMA del signOut.
+    // Best effort: l'errore non deve toccare l'esito per l'utente.
+    await notificaPasswordCambiata().catch(() => {});
     // Fuori dalla sessione di recupero: da qui si rientra con la password nuova.
     await supabase.auth.signOut();
     setTimeout(() => router.push("/login"), 2500);

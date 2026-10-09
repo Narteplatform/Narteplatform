@@ -152,3 +152,107 @@ export async function notifyNewChatOffer(
     subjectPreview: `Nuova offerta da ${to.senderName}`,
   });
 }
+
+/**
+ * Notifica sul compenso annotato dalle parti (`price_proposed` / `price_confirmed`).
+ *
+ * - proposta  → solo alla controparte di chi ha proposto, che deve confermare;
+ * - conferma  → a entrambe le parti, come promemoria («conserva questa email»).
+ *
+ * I link seguono l'area del destinatario. L'importo si rilegge dal database:
+ * se la lettura fallisce non si invia nulla, invece di mandare un importo
+ * vuoto o inventato. Best effort: non solleva mai, un'email persa non deve far
+ * fallire l'azione dell'utente.
+ */
+export async function notifyFinalPrice(
+  bookingId: string,
+  kind: "proposed" | "confirmed",
+  actorUserId: string
+): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { data: req, error } = await admin
+      .from("booking_requests")
+      .select("id, event_date, final_price, artist_id, organizer_id")
+      .eq("id", bookingId)
+      .maybeSingle();
+    if (error || !req) {
+      console.error("[chat/notify] richiesta non leggibile per il compenso", error);
+      return;
+    }
+    if (req.final_price == null) return;
+
+    const [artistRes, organizerRes] = await Promise.all([
+      admin.from("artists").select("stage_name, user_id").eq("id", req.artist_id).maybeSingle(),
+      admin
+        .from("organizers")
+        .select("display_name, user_id")
+        .eq("id", req.organizer_id)
+        .maybeSingle(),
+    ]);
+    if (artistRes.error || organizerRes.error || !artistRes.data || !organizerRes.data) {
+      console.error("[chat/notify] parti non leggibili per il compenso", {
+        artist: artistRes.error,
+        organizer: organizerRes.error,
+      });
+      return;
+    }
+    const artist = artistRes.data;
+    const organizer = organizerRes.data;
+
+    const emailOf = async (userId: string | null): Promise<string | null> => {
+      if (!userId) return null;
+      const { data, error: accountError } = await admin.auth.admin.getUserById(userId);
+      if (accountError) {
+        console.error("[chat/notify] utente non leggibile per il compenso", accountError);
+        return null;
+      }
+      return data?.user?.email ?? null;
+    };
+    const [artistEmail, organizerEmail] = await Promise.all([
+      emailOf(artist.user_id),
+      emailOf(organizer.user_id),
+    ]);
+
+    const base = getSiteUrl();
+    const id = encodeURIComponent(bookingId);
+    const proposedBy = actorUserId === organizer.user_id ? organizer.display_name : artist.stage_name;
+
+    const common = {
+      artistName: artist.stage_name,
+      organizerName: organizer.display_name,
+      eventDate: formatDateIt(req.event_date),
+      priceLabel: formatEuro(req.final_price),
+      proposedBy,
+    };
+    const artistParams = {
+      ...common,
+      bookingUrl: `${base}/dashboard/leads?highlight=${id}`,
+      chatUrl: `${base}/dashboard/chat`,
+    };
+    const organizerParams = {
+      ...common,
+      bookingUrl: `${base}/organizzatore/richieste/${id}`,
+      chatUrl: `${base}/organizzatore/chat`,
+    };
+
+    const key = kind === "proposed" ? "price_proposed" : "price_confirmed";
+    const subjectPreview =
+      kind === "proposed"
+        ? `Compenso proposto da annotare: ${common.priceLabel}`
+        : `Compenso annotato dalle parti: ${common.priceLabel}`;
+
+    const proposedByArtist = actorUserId === artist.user_id;
+    const sends: Promise<unknown>[] = [];
+    // Proposta: solo la controparte. Conferma: entrambe.
+    if (artistEmail && (kind === "confirmed" || !proposedByArtist)) {
+      sends.push(dispatchEmail({ key, to: artistEmail, params: artistParams, subjectPreview }));
+    }
+    if (organizerEmail && (kind === "confirmed" || proposedByArtist)) {
+      sends.push(dispatchEmail({ key, to: organizerEmail, params: organizerParams, subjectPreview }));
+    }
+    await Promise.allSettled(sends);
+  } catch (e) {
+    console.error("[chat/notify] notifica compenso fallita", e);
+  }
+}

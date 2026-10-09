@@ -16,6 +16,7 @@
  */
 
 import {
+  button,
   buttonPair,
   callout,
   card,
@@ -23,6 +24,7 @@ import {
   dataTable,
   em,
   eyebrow,
+  ifParam,
   layout,
   paragraph,
   param,
@@ -50,6 +52,15 @@ function organizerRows(): DataRow[] {
     { icon: "user", label: "Referente", value: param("contactName") },
     { icon: "briefcase", label: "Ruolo", value: param("roleLabel") },
   ];
+}
+
+/** Riga della tabella esterna che contiene un bottone (stessa struttura di `buttonPair`). */
+function buttonRow(inner: string, padding: string): string {
+  return `<tr>
+          <td align="center" style="padding:${padding};">
+${inner}
+          </td>
+        </tr>`;
 }
 
 const bookingRequestArtist = defineTemplate({
@@ -103,10 +114,13 @@ const bookingRequestArtist = defineTemplate({
           ]),
         ].join("\n")
       ),
-      buttonPair(
-        { href: param("chatUrl"), label: "Avvia la chat con il locale" },
-        { href: param("requestUrl"), label: "Visualizza la richiesta" }
-      ),
+      // Il bottone della chat esiste solo se `chatUrl` è valorizzato: i lead dalla
+      // pagina pubblica arrivano da visitatori senza chat, quindi lì resta solo
+      // «Visualizza la richiesta» (primario). Righe composte a mano (buttonPair non sa
+      // rendere un bottone condizionale) e senza `{% else %}`, che la preview
+      // locale non risolve.
+      buttonRow(button({ href: param("requestUrl"), label: "Visualizza la richiesta" }), "30px 40px 0 40px"),
+      ifParam("chatUrl", buttonRow(button({ href: param("chatUrl"), label: "Avvia la chat con il locale" }, "secondary"), "12px 40px 0 40px")),
       callout({
         text: "Rispondi il prima possibile per aumentare<br />le possibilità di chiudere la collaborazione.",
       }),

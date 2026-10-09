@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { finalPriceProposeSchema } from "@/lib/validators/schemas";
+import { notifyFinalPrice } from "@/lib/chat/notify";
 
 type Result =
   | { ok: true; status: "proposed" | "confirmed" | "reset" }
@@ -76,6 +77,8 @@ export async function proposeFinalPrice(input: { booking_id: string; price: numb
   revalidatePath("/dashboard/leads");
   revalidatePath("/organizzatore/richieste");
   revalidatePath("/organizzatore");
+  // Best effort: notifyFinalPrice non solleva.
+  await notifyFinalPrice(parsed.data.booking_id, "proposed", ctx.user.id);
   return { ok: true, status: "proposed" };
 }
 
@@ -105,6 +108,7 @@ export async function confirmFinalPrice(input: { booking_id: string }): Promise<
   revalidatePath("/dashboard/leads");
   revalidatePath("/organizzatore/richieste");
   revalidatePath("/organizzatore");
+  await notifyFinalPrice(input.booking_id, "confirmed", ctx.user.id);
   return { ok: true, status: "confirmed" };
 }
 

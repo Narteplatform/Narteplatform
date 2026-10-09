@@ -2,9 +2,10 @@
  * Promemoria pre-evento e invito a recensire.
  *
  * A differenza di tutte le altre, queste due non partono da un'azione
- * dell'utente ma dal passare del tempo: servono un cron (Vercel Cron) che
- * interroghi `booking_requests` e le faccia partire. I template esistono
- * già così che, quando il cron ci sarà, resti solo da chiamarlo.
+ * dell'utente ma dal passare del tempo: le fa partire il cron
+ * /api/cron/promemoria (lib/reminders/promemoria.ts), il giorno prima
+ * dell'evento (`whenLabel` = «domani», a entrambe le parti, con i link del
+ * proprio ruolo) e il giorno dopo (solo l'organizzatore).
  *
  * Archetipo "promemoria": la data in evidenza al posto dell'immagine, perché
  * è l'unica informazione che conta davvero in una email letta di fretta.
@@ -33,13 +34,14 @@ const eventReminder = defineTemplate({
   sample: {
     recipientName: "Marina Blu",
     counterpartName: "Duel Club",
-    whenLabel: "fra 7 giorni",
+    whenLabel: "domani",
     eventDate: "Sabato 21 Settembre 2026",
     eventTime: "22:00 – 01:00",
     city: "Napoli",
     address: "Via Placeholder 25, Napoli",
     priceLabel: "€450",
-    bookingUrl: "https://narteofficial.it/dashboard/leads",
+    // Gli URL dipendono dal ruolo del destinatario: li passa il cron.
+    bookingUrl: "https://narteofficial.it/dashboard/leads?highlight=00000000",
     chatUrl: "https://narteofficial.it/dashboard/chat",
   },
   html: layout({
@@ -90,7 +92,7 @@ const feedbackRequest = defineTemplate({
     organizerName: "Duel Club",
     artistName: "Marina Blu",
     eventDate: "Sabato 21 Settembre 2026",
-    feedbackUrl: "https://narteofficial.it/organizzatore/richieste",
+    feedbackUrl: "https://narteofficial.it/organizzatore/feedback",
   },
   html: layout({
     key: "feedback_request",
