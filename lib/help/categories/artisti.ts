@@ -3,6 +3,7 @@ import {
   ENTITLEMENTS,
   PLAN_LABELS,
   PLAN_PRICES_CENTS,
+  PLAN_FEATURES,
   formatPrice,
 } from "@/lib/billing/plans";
 import {
@@ -14,6 +15,21 @@ const UPDATED = "2026-09-07";
 
 /** Megabyte leggibili a partire dai byte della fonte unica. */
 const MB = (bytes: number) => `${Math.round(bytes / 1024 / 1024)} MB`;
+
+/**
+ * Righe della tabella «Cosa include ogni piano»: le stesse di /prezzi e di
+ * /dashboard/abbonamento (PLAN_FEATURES in lib/billing/plans.ts), così il
+ * Centro Assistenza non può dire una cosa diversa dal listino. Si mostrano le
+ * richieste di booking e le righe che distinguono i piani (`primary`).
+ */
+const PLAN_TABLE_ROWS = PLAN_FEATURES.filter(
+  (r) => r.primary || r.label === "Richieste di booking"
+)
+  .map((r) => {
+    const cella = (v: string | boolean) => (v === true ? "sì" : v === false ? "—" : v);
+    return `    <tr><td>${r.label}</td><td>${cella(r.values.free)}</td><td>${cella(r.values.pro)}</td><td>${cella(r.values.max)}</td></tr>`;
+  })
+  .join("\n");
 
 export const ARTISTI: HelpCategory = {
   slug: "artisti",
@@ -405,27 +421,16 @@ export const ARTISTI: HelpCategory = {
 </ul>
 <p>Il confronto completo, sempre aggiornato, è su <a href="/prezzi">/prezzi</a>.</p>
 
-<h2>Cosa cambia davvero</h2>
+<h2>Cosa include ogni piano</h2>
 <table>
   <thead>
     <tr><th></th><th>${PLAN_LABELS.free}</th><th>${PLAN_LABELS.pro}</th><th>${PLAN_LABELS.max}</th></tr>
   </thead>
   <tbody>
-    <tr><td>Profilo pubblico e calendario</td><td>sì</td><td>sì</td><td>sì</td></tr>
-    <tr><td>Richieste di booking</td><td>illimitate</td><td>illimitate</td><td>illimitate</td></tr>
-    <tr><td>Foto in galleria</td><td>${ENTITLEMENTS.free.galleryMax}</td><td>${ENTITLEMENTS.pro.galleryMax}</td><td>${ENTITLEMENTS.max.galleryMax}</td></tr>
-    <tr><td>Video</td><td>${ENTITLEMENTS.free.videoMax}</td><td>${ENTITLEMENTS.pro.videoMax}</td><td>${ENTITLEMENTS.max.videoMax}</td></tr>
-    <tr><td>Tracce audio</td><td>—</td><td>${ENTITLEMENTS.pro.audioMax}</td><td>${ENTITLEMENTS.max.audioMax}</td></tr>
-    <tr><td>Chat con gli organizzatori</td><td>—</td><td>sì</td><td>sì</td></tr>
-    <tr><td>Recensioni visibili</td><td>—</td><td>sì</td><td>sì</td></tr>
-    <tr><td>Badge Artista Pro</td><td>—</td><td>sì</td><td>sì</td></tr>
-    <tr><td>TOP Artist in evidenza</td><td>—</td><td>—</td><td>sì</td></tr>
-    <tr><td>Profili artista</td><td>${ENTITLEMENTS.free.artistProfilesMax}</td><td>${ENTITLEMENTS.pro.artistProfilesMax}</td><td>${ENTITLEMENTS.max.artistProfilesMax}</td></tr>
-    <tr><td>Statistiche</td><td>—</td><td>—</td><td>ultimo anno</td></tr>
-    <tr><td>Consulenza professionale</td><td>—</td><td>1 al mese</td><td>senza limite mensile, in base agli slot</td></tr>
-    <tr><td>Segnalazione del profilo alle strutture</td><td>—</td><td>—</td><td>almeno 2 al mese</td></tr>
+${PLAN_TABLE_ROWS}
   </tbody>
 </table>
+<p>La tabella riassume le differenze principali. Per l'elenco completo vedi <a href="/prezzi">/prezzi</a>.</p>
 
 <h2>Le richieste non sono mai limitate</h2>
 <p>Su nessun piano, nemmeno quello gratuito. Bloccare una richiesta significherebbe punire l'organizzatore che ti sta cercando, e non ha senso per nessuno. <strong>Il limite scatta sulla chat</strong>: con ${PLAN_LABELS.free} ricevi la richiesta e l'email, per scrivere in chat serve ${PLAN_LABELS.pro} o ${PLAN_LABELS.max}.</p>

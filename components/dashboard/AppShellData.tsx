@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Mail,
+  Megaphone,
   MessageCircle,
   CreditCard,
   Phone,
@@ -540,11 +541,18 @@ async function loadArtistShell(userId: string): Promise<{
 
   // Dalle aree riservate il Centro Assistenza non era raggiungibile: si usciva
   // sul sito pubblico e lo si cercava a mano.
-  navSections.push({
-    href: "/help",
-    label: "Aiuto",
-    icon: <LifeBuoy className="size-4" />,
-  });
+  navSections.push(
+    {
+      href: "/dashboard/brand",
+      label: "Kit brand",
+      icon: <Megaphone className="size-4" />,
+    },
+    {
+      href: "/help",
+      label: "Aiuto",
+      icon: <LifeBuoy className="size-4" />,
+    }
+  );
 
   let storage: AppShellStorage | undefined;
   if (artist) {
@@ -842,6 +850,11 @@ async function loadOrganizerShell(userId: string): Promise<{
       href: "/organizzatore/profilo",
       label: "Profilo",
       icon: <UserCog className="size-4" />,
+    },
+    {
+      href: "/organizzatore/brand",
+      label: "Kit brand",
+      icon: <Megaphone className="size-4" />,
     },
     {
       href: "/help",

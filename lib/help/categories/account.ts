@@ -36,7 +36,7 @@ export const ACCOUNT: HelpCategory = {
 <ul>
   <li>Controlla <strong>spam</strong> e <strong>promozioni</strong>: è lì che finisce nella maggior parte dei casi.</li>
   <li>Verifica di aver scritto <strong>l'indirizzo esatto</strong> della registrazione. Se sei un artista, è quello che hai indicato nella candidatura.</li>
-  <li>Aggiungi il mittente ai contatti: le email di N'arte arrivano da un indirizzo <em>noreply</em> del dominio narte.it.</li>
+  <li>Aggiungi N'arte ai tuoi contatti, così le prossime email non finiranno nello spam.</li>
 </ul>
 <p>Una cosa da sapere: <strong>il messaggio che vedi a schermo è sempre lo stesso</strong>, che l'indirizzo esista o no. È voluto — altrimenti il modulo diventerebbe un modo per scoprire chi è iscritto a N'arte. Quindi la schermata di conferma non è la prova che l'account esista.</p>
 
@@ -103,9 +103,6 @@ export const ACCOUNT: HelpCategory = {
   <li><strong>Nessuna email se una candidatura non viene accolta.</strong> Vedi <a href="/help/artisti/candidatura-artista">come candidarsi</a>.</li>
   <li><strong>Nessuna newsletter periodica</strong> al momento.</li>
 </ul>
-
-<h2>Chi le invia</h2>
-<p>Le email partono da un indirizzo <em>noreply</em> del dominio narte.it, tramite due fornitori usati uno come riserva dell'altro: se il primo non riesce a consegnare, il secondo ci riprova. È il motivo per cui, molto raramente, la stessa notifica può arrivare con un aspetto leggermente diverso.</p>
 
 <h2>Si possono disattivare?</h2>
 <p>Le email <strong>di servizio non si disattivano</strong>: sono parte del funzionamento della piattaforma. Se non ricevessi l'avviso di una richiesta di booking, la perderesti.</p>
