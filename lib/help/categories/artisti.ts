@@ -11,7 +11,7 @@ import {
   MAX_VIDEO_PER_ARTIST,
 } from "@/lib/upload/video-limits";
 
-const UPDATED = "2026-09-07";
+const UPDATED = "2026-10-09";
 
 /** Megabyte leggibili a partire dai byte della fonte unica. */
 const MB = (bytes: number) => `${Math.round(bytes / 1024 / 1024)} MB`;
@@ -43,43 +43,43 @@ export const ARTISTI: HelpCategory = {
       slug: "candidatura-artista",
       title: "Come candidarsi come artista",
       excerpt:
-        "Cosa preparare, come si compila il modulo, quanto si attende e cosa succede davvero dopo l'invio.",
+        "Cosa preparare, come si compila il modulo, quanto si attende e cosa succede dopo l'invio.",
       updatedAt: UPDATED,
       related: ["ottimizza-profilo", "tier-pro-max", "iniziare/come-creare-account"],
       content: `
 <h2>Prima di iniziare</h2>
-<p>La candidatura richiede pochi minuti. Conviene però avere già sottomano:</p>
+<p>La candidatura richiede pochi minuti, ma conviene avere già sottomano:</p>
 <ul>
-  <li><strong>Nome e cognome</strong> e un <strong>indirizzo email</strong> che controlli davvero: è lì che arriverà la risposta.</li>
-  <li><strong>Nome d'arte</strong>, anche provvisorio: si cambia in seguito dalla dashboard.</li>
-  <li><strong>Generi musicali</strong>, da 1 a un massimo di 3. Sono il filtro principale con cui ti cercano: meglio due etichette precise che cinque generiche.</li>
+  <li><strong>Nome e cognome</strong> e un <strong>indirizzo email</strong> che controlli spesso: la risposta arriverà lì.</li>
+  <li><strong>Nome d'arte</strong>, anche provvisorio: potrai cambiarlo in seguito dalla dashboard.</li>
+  <li><strong>Generi musicali</strong>, da 1 a un massimo di 3. Sono il filtro principale con cui ti cercano, quindi meglio due etichette precise che cinque generiche.</li>
   <li><strong>Strumenti</strong> che porti sul palco (facoltativo, massimo 3).</li>
   <li><strong>Una biografia</strong> che racconti il progetto: da quanto suoni, che tipo di serate fai, cosa ti distingue.</li>
   <li><strong>Almeno un link attivo</strong> fra Instagram, Spotify e sito.</li>
-  <li>Un <strong>video di riferimento</strong>, facoltativo ma molto utile: una performance vale più di tre paragrafi.</li>
+  <li>Un <strong>video di riferimento</strong>: è facoltativo, ma aiuta molto, perché una performance dice più di tre paragrafi.</li>
 </ul>
 
 <h2>Cosa succede quando invii</h2>
-<p>Qui c'è il punto che sorprende più spesso, quindi lo diciamo chiaramente: <strong>la candidatura non crea un account.</strong> Non riceverai credenziali e non potrai accedere subito.</p>
+<p>Questo è il punto che sorprende più spesso: <strong>la candidatura non crea un account.</strong> Non riceverai credenziali e per il momento non potrai accedere.</p>
 <ol>
   <li>La candidatura viene registrata ed entra in stato <strong>in attesa</strong>.</li>
-  <li>Ricevi un'email di conferma di avvenuta ricezione.</li>
-  <li>Il team la legge e decide.</li>
-  <li><strong>Solo se viene approvata</strong> vengono creati il tuo account e il tuo profilo artista. Ricevi allora un'email con un link per impostare la password e accedere a <a href="/login">/login</a>.</li>
+  <li>Ricevi un'email che ne conferma la ricezione.</li>
+  <li>Il team la legge e prende una decisione.</li>
+  <li><strong>Solo se viene approvata</strong> creiamo il tuo account e il tuo profilo artista. A quel punto ti arriva un'email con un link per impostare la password e accedere da <a href="/login">/login</a>.</li>
 </ol>
 
 <h2>Quanto si attende</h2>
-<p>Indicativamente <strong>2-5 giorni lavorativi</strong>. La valutazione è fatta a mano da una persona, non da un automatismo: nei periodi di molte candidature può servire qualche giorno in più.</p>
+<p>Indicativamente <strong>2-5 giorni lavorativi</strong>. Ogni candidatura viene valutata a mano da una persona del team, quindi nei periodi più affollati può servire qualche giorno in più.</p>
 
 <h2>Se la candidatura non viene accolta</h2>
 <p>Può succedere se mancano informazioni essenziali, se i link non funzionano o se il progetto non rientra negli standard editoriali del roster.</p>
-<p><strong>Al momento il rifiuto non genera un'email automatica</strong>: se sono passate più di due settimane e non hai ricevuto nulla, <a href="/contatti">scrivici</a> indicando il nome d'arte con cui ti sei candidato e ti diciamo a che punto siamo. Puoi ricandidarti dopo aver sistemato i punti deboli.</p>
+<p><strong>Al momento il rifiuto non genera un'email automatica</strong>: se sono passate più di due settimane senza notizie, <a href="/contatti">scrivici</a> con il nome d'arte con cui ti sei candidato e ti diciamo a che punto siamo. Una volta sistemati i punti deboli, puoi ricandidarti.</p>
 
 <h2>Serve un account a testa se siamo una band?</h2>
-<p>No. Una band si candida come <strong>un solo progetto</strong>, con un nome d'arte e un referente. I nomi dei componenti si aggiungono poi nel profilo, nel campo formazione.</p>
+<p>No. Una band si candida come <strong>un solo progetto</strong>, con un nome d'arte e un referente. I nomi dei componenti li aggiungi poi nel profilo, nel campo formazione.</p>
 
 <h2>Quanto costa</h2>
-<p>La candidatura è gratuita e il profilo ${PLAN_LABELS.free} non scade. I piani a pagamento sono facoltativi e servono a sbloccare chat, recensioni e visibilità: vedi <a href="/help/artisti/tier-pro-max">le differenze tra i piani</a>.</p>
+<p>La candidatura è gratuita e il profilo ${PLAN_LABELS.free} non scade. I piani a pagamento sono facoltativi e sbloccano chat, recensioni e visibilità: trovi tutto in <a href="/help/artisti/tier-pro-max">le differenze tra i piani</a>.</p>
 `,
     },
 
@@ -92,23 +92,23 @@ export const ARTISTI: HelpCategory = {
       related: ["foto-video-audio", "badge-e-visibilita", "video-promo"],
       content: `
 <h2>Dove si modifica</h2>
-<p>Tutto si gestisce da <strong>/dashboard/profilo-artista</strong>. L'editor è diviso in blocchi che si aprono e si salvano singolarmente: puoi compilare una sezione oggi e un'altra domani. Ogni salvataggio aggiorna subito la tua pagina pubblica.</p>
-<p>In fondo alla barra laterale trovi l'indicatore <strong>"Profilo completo"</strong> su sette voci, che ti dice cosa manca ancora.</p>
+<p>Tutto si gestisce da <strong>/dashboard/profilo-artista</strong>. L'editor è diviso in blocchi che apri e salvi uno alla volta, così puoi compilare una sezione oggi e un'altra domani. Ogni salvataggio aggiorna subito la tua pagina pubblica.</p>
+<p>In fondo alla barra laterale c'è l'indicatore <strong>"Profilo completo"</strong>: controlla sette voci e ti mostra quali mancano ancora.</p>
 
 <h2>Le sette voci che contano</h2>
-<p>Sono quelle che l'indicatore misura, e non a caso: sono ciò che un organizzatore guarda prima di scrivere.</p>
+<p>L'indicatore misura proprio le cose che un organizzatore guarda prima di scriverti.</p>
 <ol>
-  <li><strong>Foto di copertina</strong> — verticale, formato 3:4. È la prima immagine che compare in elenco. Evita screenshot dai social, foto sgranate o con loghi sopra.</li>
-  <li><strong>Biografia</strong> — serve almeno qualche riga vera. Racconta chi sei, che tipo di live porti, quanto dura di solito il tuo set.</li>
-  <li><strong>Galleria</strong> — almeno 3 foto, possibilmente diverse tra loro: un primo piano, una del palco, una del pubblico.</li>
-  <li><strong>Almeno un video</strong> — vale più di tutto il resto messo insieme. Vedi <a href="/help/artisti/video-promo">come registrare un video efficace</a>.</li>
+  <li><strong>Foto di copertina</strong> — verticale, formato 3:4. È la prima immagine che si vede in elenco, quindi evita screenshot dai social, foto sgranate o con loghi sopra.</li>
+  <li><strong>Biografia</strong> — servono almeno alcune righe sostanziose. Racconta chi sei, che tipo di live porti e quanto dura di solito il tuo set.</li>
+  <li><strong>Galleria</strong> — almeno 3 foto, meglio se diverse tra loro: un primo piano, una sul palco, una con il pubblico.</li>
+  <li><strong>Almeno un video</strong> — conta più di tutto il resto messo insieme. Vedi <a href="/help/artisti/video-promo">come registrare un video efficace</a>.</li>
   <li><strong>Almeno un genere</strong> — da 1 a 3, è il filtro con cui ti trovano.</li>
-  <li><strong>Fascia di prezzo</strong> — dichiararla non ti penalizza, ti fa arrivare richieste sensate.</li>
+  <li><strong>Fascia di prezzo</strong> — indicarla ti aiuta a ricevere richieste in linea con il tuo cachet.</li>
   <li><strong>Lingue</strong> — italiano, dialetto, inglese, francese, spagnolo.</li>
 </ol>
 
 <h2>Il blocco "Informazioni di booking"</h2>
-<p>È la sezione che gli organizzatori leggono davvero prima di decidere. Tutti i campi sono facoltativi, ma ognuno toglie una domanda dalla trattativa:</p>
+<p>È la sezione che gli organizzatori leggono con più attenzione prima di decidere. I campi sono tutti facoltativi, ma ognuno che compili è una domanda in meno durante la trattativa:</p>
 <ul>
   <li><strong>Durata minima e massima del set</strong>, da 30 a 180 minuti.</li>
   <li><strong>Cosa aspettarsi dal live</strong> — stile, atmosfera, i momenti migliori del set.</li>
@@ -116,15 +116,15 @@ export const ARTISTI: HelpCategory = {
   <li><strong>Formazione</strong> — nome e ruolo di chi sale sul palco.</li>
   <li><strong>Scaletta di esempio</strong>.</li>
   <li><strong>Influenze musicali</strong>, separate da virgola.</li>
-  <li><strong>Requisiti tecnici</strong> — impianto, palco, alimentazione. Compilarlo evita la sorpresa la sera stessa.</li>
+  <li><strong>Requisiti tecnici</strong> — impianto, palco, alimentazione. Se li indichi, la sera stessa non ci sono sorprese.</li>
 </ul>
 
 <h2>Strumenti e percorso artistico</h2>
-<p>Gli <strong>strumenti</strong> che indichi determinano la tipologia con cui compari nei filtri: cantante, chitarrista, batterista, dj. Indica quelli che porti davvero sul palco.</p>
-<p>Il <strong>percorso artistico</strong> — cover artist, tribute band o progetto inedito — è incluso nei piani ${PLAN_LABELS.pro} e ${PLAN_LABELS.max}. Aiuta gli organizzatori a capire subito che tipo di serata proponi.</p>
+<p>Gli <strong>strumenti</strong> che indichi decidono la tipologia con cui compari nei filtri (cantante, chitarrista, batterista, dj), quindi segna quelli che porti effettivamente sul palco.</p>
+<p>Il <strong>percorso artistico</strong> (cover artist, tribute band o progetto inedito) è incluso nei piani ${PLAN_LABELS.pro} e ${PLAN_LABELS.max} e aiuta gli organizzatori a capire al volo che tipo di serata proponi.</p>
 
 <h2>Social</h2>
-<p>Puoi collegare Instagram, Facebook, TikTok, YouTube, Spotify e il tuo sito. Compaiono sulla pagina pubblica: sono la prova più immediata che il progetto è vivo.</p>
+<p>Puoi collegare Instagram, Facebook, TikTok, YouTube, Spotify e il tuo sito. I link compaiono sulla pagina pubblica e sono il modo più immediato per mostrare che il progetto è attivo.</p>
 
 <h2>Quanto materiale puoi caricare</h2>
 <p>Dipende dal piano: ${ENTITLEMENTS.free.galleryMax} foto e ${ENTITLEMENTS.free.videoMax} video con ${PLAN_LABELS.free}, fino a ${ENTITLEMENTS.pro.galleryMax} foto con ${PLAN_LABELS.pro}, fino a ${ENTITLEMENTS.max.galleryMax} con ${PLAN_LABELS.max}. Il dettaglio, formati compresi, è in <a href="/help/artisti/foto-video-audio">foto, video e audio</a>.</p>
@@ -140,33 +140,33 @@ export const ARTISTI: HelpCategory = {
       related: ["chat-e-offerte", "booking/stati-richiesta", "booking/dopo-la-conferma"],
       content: `
 <h2>Dove arrivano</h2>
-<p>Le trovi in <strong>/dashboard/leads</strong>, divise in tre schede: <strong>Nuove</strong>, <strong>In trattativa</strong>, <strong>Confermate</strong>. Per ogni nuova richiesta ricevi anche un'email con il riepilogo.</p>
+<p>Le trovi in <strong>/dashboard/leads</strong>, divise in tre schede: <strong>Nuove</strong>, <strong>In trattativa</strong>, <strong>Confermate</strong>. Per ogni nuova richiesta ricevi anche un'email di riepilogo.</p>
 <p>Le richieste di booking arrivano <strong>su ogni piano, senza limiti</strong>: non blocchiamo mai un organizzatore che ti sta cercando.</p>
 
 <h2>Le tue due possibilità su una richiesta nuova</h2>
 
 <h3>Accettare la trattativa</h3>
-<p>Il primo click su <strong>"Accetta proposta"</strong> apre un campo facoltativo per una <strong>nota o controproposta</strong>: è il posto giusto per scrivere "disponibile ma alle 22, non alle 21" o "il cachet per quella distanza sarebbe più alto". Il secondo click conferma.</p>
-<p>Accettare significa <strong>"parliamone"</strong>, non "è fatta": la richiesta passa in trattativa, si apre la chat con l'organizzatore e la data non è ancora bloccata.</p>
+<p>Al primo click su <strong>"Accetta proposta"</strong> si apre un campo facoltativo per una <strong>nota o controproposta</strong>, dove puoi scrivere per esempio "disponibile ma alle 22, non alle 21" o "il cachet per quella distanza sarebbe più alto". Con il secondo click confermi.</p>
+<p>Accettare vuol dire <strong>"parliamone"</strong>, non ancora "è fatta": la richiesta passa in trattativa, si apre la chat con l'organizzatore e la data resta libera.</p>
 
 <h3>Rifiutare</h3>
-<p>Un click su <strong>"Rifiuta"</strong> e la richiesta si chiude. L'organizzatore riceve un'email che lo avvisa. Non serve motivazione, ma un rifiuto rapido è un favore reale: gli permette di cercare altrove mentre è ancora in tempo.</p>
+<p>Con un click su <strong>"Rifiuta"</strong> la richiesta si chiude e l'organizzatore riceve un'email di avviso. Non devi dare una motivazione, ma rispondere in fretta gli fa un vero favore: così può cercare altrove finché è in tempo.</p>
 
 <h2>La conferma finale non è tua</h2>
-<p>È il punto che genera più attese sbagliate. Dopo l'accordo in chat, <strong>è l'organizzatore a premere "Conferma data"</strong>. Finché non lo fa, la richiesta resta in trattativa anche se vi siete detti tutto.</p>
-<p>Se avete concluso e la conferma non arriva, sollecitalo in chat. Nel frattempo, sul tuo lato la scheda mostra <em>"In attesa della conferma definitiva dell'organizzatore"</em>.</p>
+<p>Qui nascono spesso aspettative sbagliate. Dopo l'accordo in chat <strong>è l'organizzatore a premere "Conferma data"</strong>, e finché non lo fa la richiesta resta in trattativa, anche se vi siete già detti tutto.</p>
+<p>Se avete chiuso l'accordo e la conferma non arriva, ricordaglielo in chat. Nel frattempo la tua scheda mostra <em>"In attesa della conferma definitiva dell'organizzatore"</em>.</p>
 
 <h2>La scorciatoia: accettare un'offerta</h2>
-<p>Se l'organizzatore ti manda un'<strong>offerta</strong> in chat — data, fascia oraria e budget insieme — e tu la accetti, la data è <strong>confermata immediatamente</strong>, senza passaggi ulteriori. È la via più rapida e la più chiara. Vedi <a href="/help/artisti/chat-e-offerte">chat e offerte</a>.</p>
+<p>Se l'organizzatore ti manda in chat un'<strong>offerta</strong> con data, fascia oraria e budget e tu la accetti, la data è <strong>confermata immediatamente</strong>, senza altri passaggi. È la strada più rapida e anche la più chiara. Vedi <a href="/help/artisti/chat-e-offerte">chat e offerte</a>.</p>
 
 <h2>Non ci sono scadenze automatiche</h2>
-<p>Una richiesta non scade da sola: resta lì finché tu rispondi o l'organizzatore la annulla. Questo però non vuol dire che convenga aspettare: gli organizzatori scrivono a più artisti in parallelo e chi risponde entro <strong>24-48 ore</strong> è quasi sempre chi chiude la data.</p>
+<p>Una richiesta non scade da sola: resta aperta finché rispondi o finché l'organizzatore la annulla. Aspettare però non conviene. Gli organizzatori scrivono a più artisti insieme, e la data la chiude quasi sempre chi risponde entro <strong>24-48 ore</strong>.</p>
 
 <h2>Tieni il calendario aggiornato</h2>
-<p>Il calendario in <strong>/dashboard/calendario</strong> è pubblico. Segnare le date occupate evita richieste impossibili e fa risparmiare tempo a entrambi. Le date confermate tramite N'arte si bloccano da sole.</p>
+<p>Il calendario in <strong>/dashboard/calendario</strong> è pubblico: segnando le date occupate eviti richieste impossibili e fate prima tutti e due. Le date confermate tramite N'arte si bloccano in automatico.</p>
 
 <h2>Se hai il piano ${PLAN_LABELS.free}</h2>
-<p>Ricevi tutte le richieste e tutte le email, e puoi accettarle o rifiutarle. <strong>Per rispondere in chat</strong> serve invece ${PLAN_LABELS.pro}: è lì che scatta il limite, non sulle richieste.</p>
+<p>Ricevi tutte le richieste e tutte le email, e puoi accettarle o rifiutarle. <strong>Per rispondere in chat</strong> serve invece ${PLAN_LABELS.pro}: il limite riguarda la chat, non le richieste.</p>
 `,
     },
 
@@ -191,8 +191,8 @@ export const ARTISTI: HelpCategory = {
 </table>
 
 <h2>Foto</h2>
-<p>Si caricano dal blocco <strong>Galleria foto</strong> del profilo, da computer o da telefono. Vengono compresse automaticamente nel browser prima dell'invio, quindi non serve ridimensionarle a mano: carica pure il file originale.</p>
-<p>Le foto diventano pubbliche <strong>solo dopo aver salvato il blocco</strong>.</p>
+<p>Si caricano dal blocco <strong>Galleria foto</strong> del profilo, da computer o da telefono. Prima dell'invio vengono compresse in automatico nel browser, quindi non serve ridimensionarle: carica pure il file originale.</p>
+<p>Le foto diventano pubbliche <strong>solo dopo che hai salvato il blocco</strong>.</p>
 
 <h2>Video</h2>
 <p>Si caricano dal blocco <strong>Galleria video</strong>. Massimo <strong>${MAX_VIDEO_PER_ARTIST} video</strong> per profilo sui piani a pagamento, ${ENTITLEMENTS.free.videoMax} con ${PLAN_LABELS.free}.</p>
@@ -203,18 +203,18 @@ export const ARTISTI: HelpCategory = {
 </ul>
 
 <h3>Perché il video resta "in elaborazione"</h3>
-<p>Un video caricato non è subito pronto: viene convertito nei formati che permettono la riproduzione fluida su ogni dispositivo e connessione. È normale che ci voglia qualche minuto, e più il file è lungo e pesante più il tempo cresce. Nel frattempo il resto del profilo funziona: puoi chiudere la pagina e tornare dopo.</p>
+<p>Appena caricato, un video non è ancora pronto: viene convertito nei formati che ne permettono la riproduzione fluida su qualsiasi dispositivo e connessione. Di solito servono alcuni minuti, di più se il file è lungo e pesante. Intanto il resto del profilo funziona normalmente e puoi chiudere la pagina e tornare più tardi.</p>
 <p>Se dopo diverse ore un video è ancora in elaborazione, <a href="/contatti">segnalacelo</a>.</p>
 
 <h3>Ho un link YouTube, posso incollarlo?</h3>
-<p>Non più: oggi i video si caricano come file. I link inseriti in passato <strong>restano visibili</strong> sul profilo pubblico e continuano a funzionare, ma per i nuovi video serve il caricamento diretto. Il risultato è migliore: nessuna pubblicità prima della tua performance e nessun rimando a video di altri alla fine.</p>
+<p>Non più: ora i video si caricano come file. I link inseriti in passato <strong>restano visibili</strong> sul profilo pubblico e continuano a funzionare, ma i nuovi video vanno caricati direttamente. Anche il risultato ci guadagna: niente pubblicità prima della tua performance e niente video di altri suggeriti alla fine.</p>
 
 <h2>Tracce audio</h2>
 <p>Incluse nei piani ${PLAN_LABELS.pro} e ${PLAN_LABELS.max}: <strong>${ENTITLEMENTS.pro.audioMax} traccia</strong> per profilo. Formati MP3, WAV e M4A, fino a <strong>25 MB</strong>.</p>
-<p>Con una traccia sola, scegli con criterio: meglio l'estratto live che rappresenta davvero cosa succede quando suoni, che il brano prodotto meglio in studio.</p>
+<p>Avendo una sola traccia, sceglila con cura: un estratto live che rappresenti quello che succede quando suoni funziona meglio del brano più curato in studio.</p>
 
 <h2>Se cambio piano perdo i contenuti?</h2>
-<p><strong>No, mai.</strong> Passando a un piano inferiore i contenuti in eccesso smettono di comparire sul profilo pubblico ma restano nel tuo editor, contrassegnati. Tornano visibili nel momento in cui risali di piano. Non cancelliamo nulla.</p>
+<p><strong>No.</strong> Se passi a un piano inferiore, i contenuti in eccesso spariscono dal profilo pubblico ma restano nel tuo editor, contrassegnati, e tornano visibili appena risali di piano. Non cancelliamo nulla.</p>
 `,
     },
 
@@ -227,7 +227,7 @@ export const ARTISTI: HelpCategory = {
       related: ["tier-pro-max", "pagamenti/abbonamento-artista", "ottimizza-profilo"],
       content: `
 <h2>A cosa servono</h2>
-<p>Molti musicisti hanno più progetti: il duo acustico, la tribute band, il set da dj. Sono proposte diverse, con generi e cachet diversi, e schiacciarle in un profilo solo confonde chi cerca. I profili multipli permettono di tenerli separati restando con <strong>un solo account e un solo accesso</strong>.</p>
+<p>Molti musicisti portano avanti più progetti: il duo acustico, la tribute band, il set da dj. Ognuno ha generi e cachet suoi, e metterli tutti in un solo profilo confonde chi cerca. Con i profili multipli li tieni separati, mantenendo <strong>un solo account e un solo accesso</strong>.</p>
 
 <h2>Quanti se ne possono avere</h2>
 <ul>
@@ -235,18 +235,18 @@ export const ARTISTI: HelpCategory = {
   <li><strong>${PLAN_LABELS.pro}</strong> — fino a ${ENTITLEMENTS.pro.artistProfilesMax} profili</li>
   <li><strong>${PLAN_LABELS.max}</strong> — fino a ${ENTITLEMENTS.max.artistProfilesMax} profili</li>
 </ul>
-<p><strong>L'abbonamento è dell'account, non del singolo profilo.</strong> Paghi una volta e ogni profilo che crei eredita i vantaggi del piano: non esiste un abbonamento per progetto.</p>
+<p><strong>L'abbonamento è dell'account, non del singolo profilo.</strong> Paghi una volta e ogni profilo che crei eredita i vantaggi del piano, senza abbonamenti separati per progetto.</p>
 
 <h2>Come si crea un profilo nuovo</h2>
-<p>Da <strong>/dashboard/profili</strong>, con nome d'arte e città. Il profilo nasce subito e ha già i vantaggi del tuo piano, ma resta <strong>in revisione</strong> finché il team non lo approva: solo allora è visibile agli organizzatori. È lo stesso controllo di qualità della prima candidatura.</p>
+<p>Lo crei da <strong>/dashboard/profili</strong> indicando nome d'arte e città. Il profilo nasce subito con i vantaggi del tuo piano, ma resta <strong>in revisione</strong> finché il team non lo approva, e solo allora diventa visibile agli organizzatori. Il controllo di qualità è lo stesso della prima candidatura.</p>
 <p>Gli stati possibili sono <strong>Pubblicato</strong>, <strong>In revisione</strong> e <strong>Non approvato</strong>.</p>
 
 <h2>Passare da un profilo all'altro</h2>
-<p>C'è un selettore in alto nella dashboard. Il profilo attivo determina <strong>tutto</strong> quello che vedi: calendario, richieste, chat, recensioni e statistiche sono separati per profilo. Se non trovi una richiesta che aspettavi, controlla di essere sul profilo giusto.</p>
+<p>In alto nella dashboard c'è un selettore. Il profilo attivo determina <strong>tutto</strong> quello che vedi: calendario, richieste, chat, recensioni e statistiche sono separati per ciascun profilo. Se non trovi una richiesta che aspettavi, controlla di essere sul profilo giusto.</p>
 
 <h2>Cosa succede se scendo di piano</h2>
-<p>I profili che eccedono il nuovo limite vengono <strong>sospesi, non cancellati</strong>. Spariscono dal sito ma restano interi nella tua area, e tornano online da soli appena risali di piano.</p>
-<p>Vengono sospesi i profili creati più di recente: <strong>il profilo principale non viene mai toccato</strong>.</p>
+<p>I profili oltre il nuovo limite vengono <strong>sospesi, non cancellati</strong>: spariscono dal sito ma restano intatti nella tua area, e tornano online da soli appena risali di piano.</p>
+<p>A essere sospesi sono i profili creati più di recente: <strong>il profilo principale non viene mai toccato</strong>.</p>
 `,
     },
 
@@ -259,35 +259,35 @@ export const ARTISTI: HelpCategory = {
       related: ["gestire-richieste", "tier-pro-max", "booking/dopo-la-conferma"],
       content: `
 <h2>Quando si apre la chat</h2>
-<p>La conversazione nasce quando accetti una richiesta di booking, oppure puoi aprirla manualmente dal pulsante <strong>"Apri chat con l'organizzatore"</strong>.</p>
-<p>La chat è <strong>una per ogni organizzatore</strong>, non una per richiesta: se lo stesso locale ti scrive per tre date diverse, la conversazione resta una sola e ci ritrovi tutto lo storico. È più comodo di quanto sembri.</p>
+<p>La conversazione si apre quando accetti una richiesta di booking, ma puoi anche avviarla tu dal pulsante <strong>"Apri chat con l'organizzatore"</strong>.</p>
+<p>C'è <strong>una chat per ogni organizzatore</strong>, non una per richiesta: se lo stesso locale ti scrive per tre date diverse, la conversazione resta una sola e ci trovi tutto lo storico.</p>
 
 <h2>Cosa puoi mandare</h2>
 <ul>
   <li><strong>Messaggi</strong> fino a 2.000 caratteri.</li>
   <li><strong>Foto</strong> e <strong>documenti</strong> (PDF, Word, Excel, testo, ZIP), fino a <strong>25 MB</strong> per file.</li>
   <li><strong>Messaggi vocali</strong>, registrati direttamente dalla chat.</li>
-  <li><strong>Offerte strutturate</strong>, che sono la parte interessante.</li>
+  <li><strong>Offerte strutturate</strong>, che spieghiamo qui sotto.</li>
 </ul>
 
 <h2>Le offerte</h2>
-<p>Un'offerta non è un messaggio: è una proposta formale con tre valori — <strong>data</strong>, <strong>fascia oraria</strong> e <strong>budget</strong> — più una descrizione facoltativa. Chi la riceve la accetta o la rifiuta con un pulsante.</p>
-<p>Gli stati sono quattro: <strong>In sospeso</strong>, <strong>Accettata</strong>, <strong>Rifiutata</strong> e <strong>Sostituita</strong>. Quest'ultimo è utile da conoscere: quando qualcuno manda una nuova offerta, quella ancora in sospeso viene automaticamente sostituita. Non restano mai due proposte valide contemporaneamente, e non si rischia di accettare la versione vecchia.</p>
+<p>Un'offerta è una proposta formale, diversa da un semplice messaggio: contiene <strong>data</strong>, <strong>fascia oraria</strong> e <strong>budget</strong>, più una descrizione facoltativa. Chi la riceve può accettarla o rifiutarla con un pulsante.</p>
+<p>Gli stati sono quattro: <strong>In sospeso</strong>, <strong>Accettata</strong>, <strong>Rifiutata</strong> e <strong>Sostituita</strong>. L'ultimo merita due parole: quando qualcuno manda una nuova offerta, quella ancora in sospeso viene sostituita in automatico. Così non ci sono mai due proposte valide nello stesso momento e non rischi di accettare quella vecchia.</p>
 
 <h3>Accettare un'offerta conferma la data</h3>
-<p>È il passaggio più importante. Nel momento in cui accetti un'offerta, <strong>la data è confermata</strong>: viene bloccata sul tuo calendario, l'organizzatore la vede nel suo, e partono le email a entrambi. Non c'è un ulteriore passaggio.</p>
-<p>Quindi accetta solo quando sei davvero d'accordo su tutto. Se un dettaglio non ti torna, rifiuta e manda tu una controproposta: sarà a sua volta un'offerta che l'altro può accettare.</p>
+<p>È il passaggio più importante. Quando accetti un'offerta <strong>la data è confermata</strong>: si blocca sul tuo calendario, compare in quello dell'organizzatore e partono le email a entrambi, senza altri passaggi.</p>
+<p>Per questo accetta solo quando sei d'accordo su tutto. Se un dettaglio non ti convince, rifiuta e manda tu una controproposta, che sarà a sua volta un'offerta da accettare o rifiutare.</p>
 
 <h2>Perché non riesco a scrivere?</h2>
-<p>La chat è inclusa nei piani <strong>${PLAN_LABELS.pro}</strong> e <strong>${PLAN_LABELS.max}</strong>. Con ${PLAN_LABELS.free} ricevi le richieste, le email e vedi la conversazione, ma per rispondere serve un piano a pagamento.</p>
-<p>È una scelta deliberata: le <strong>richieste di booking non sono mai limitate</strong>, su nessun piano, perché bloccarle punirebbe l'organizzatore che ti sta cercando. Il limite scatta un passo dopo, sulla trattativa.</p>
-<p>L'organizzatore non ha mai limitazioni: può sempre scrivere e fare offerte.</p>
+<p>La chat è inclusa nei piani <strong>${PLAN_LABELS.pro}</strong> e <strong>${PLAN_LABELS.max}</strong>. Con ${PLAN_LABELS.free} ricevi le richieste e le email e vedi la conversazione, ma per rispondere serve un piano a pagamento.</p>
+<p>L'abbiamo deciso apposta: le <strong>richieste di booking non sono mai limitate</strong>, su nessun piano, perché bloccarle penalizzerebbe l'organizzatore che ti sta cercando. Il limite arriva un passo dopo, sulla trattativa.</p>
+<p>L'organizzatore invece non ha limitazioni: può sempre scrivere e fare offerte.</p>
 
 <h2>Notifiche</h2>
-<p>Ricevi un'email quando arriva un messaggio che non hai ancora letto — non più di una ogni mezz'ora, per non intasarti la casella — e <strong>sempre</strong> quando arriva un'offerta. Per motivi di riservatezza il testo del messaggio non viene mai riportato nell'email: per leggerlo devi entrare in piattaforma.</p>
+<p>Ricevi un'email quando arriva un messaggio che non hai ancora letto (al massimo una ogni mezz'ora, per non riempirti la casella) e <strong>sempre</strong> quando arriva un'offerta. Per riservatezza l'email non riporta mai il testo del messaggio: per leggerlo devi entrare in piattaforma.</p>
 
 <h2>Restano tracciati?</h2>
-<p>Sì, e conviene a entrambi. Se nasce un disaccordo su cosa era stato pattuito, la conversazione è lì. È anche il motivo per cui è meglio concordare i dettagli in chat piuttosto che a voce o su WhatsApp.</p>
+<p>Sì, e conviene a entrambi: se nasce un disaccordo su cosa era stato pattuito, la conversazione è lì da rileggere. Per questo è meglio concordare i dettagli in chat anziché a voce o su WhatsApp.</p>
 `,
     },
 
@@ -300,26 +300,26 @@ export const ARTISTI: HelpCategory = {
       related: ["tier-pro-max", "badge-e-visibilita", "policy/contestazioni"],
       content: `
 <h2>Chi può recensirti</h2>
-<p>Solo un <strong>organizzatore con cui hai fatto una data confermata su N'arte</strong>, e solo <strong>dopo che la data è passata</strong>. Una recensione per evento, non ripetibile.</p>
-<p>Non esiste il verso opposto: gli artisti non recensiscono gli organizzatori.</p>
-<p>Questo esclude alla radice le recensioni di chi non ti ha mai visto suonare: se non c'è una data confermata in piattaforma, non c'è recensione possibile.</p>
+<p>Solo un <strong>organizzatore con cui hai fatto una data confermata su N'arte</strong>, e solo <strong>dopo che la data è passata</strong>. Si lascia una recensione per evento, una volta sola.</p>
+<p>Il contrario non è previsto: gli artisti non recensiscono gli organizzatori.</p>
+<p>In questo modo restano fuori in partenza le recensioni di chi non ti ha mai visto suonare: senza una data confermata in piattaforma non si può recensire.</p>
 
 <h2>Cosa contiene</h2>
 <p>Un voto da <strong>1 a 5 stelle</strong> e un commento scritto obbligatorio. Sul tuo profilo pubblico compaiono la media, il numero di recensioni e i singoli commenti con il nome dell'organizzatore.</p>
 
 <h2>Servono un piano ${PLAN_LABELS.pro} o ${PLAN_LABELS.max}</h2>
-<p>Le recensioni <strong>si raccolgono sempre</strong>, anche con ${PLAN_LABELS.free}: nulla va perso. Ma per <strong>leggerle e mostrarle</strong> sul profilo pubblico serve un piano a pagamento.</p>
-<p>Se hai ${PLAN_LABELS.free} e qualcuno ti ha recensito, in dashboard vedi quante recensioni sono in attesa senza il contenuto. Passando a ${PLAN_LABELS.pro} compaiono tutte insieme, comprese quelle ricevute prima.</p>
+<p>Le recensioni <strong>si raccolgono sempre</strong>, anche con ${PLAN_LABELS.free}, quindi non se ne perde nessuna. Per <strong>leggerle e mostrarle</strong> sul profilo pubblico, però, serve un piano a pagamento.</p>
+<p>Se hai ${PLAN_LABELS.free} e qualcuno ti ha recensito, in dashboard vedi quante recensioni ti aspettano, senza il contenuto. Passando a ${PLAN_LABELS.pro} compaiono tutte insieme, comprese quelle ricevute prima.</p>
 
 <h2>Dove le trovi</h2>
 <p>In <strong>/dashboard/feedback</strong>, con il totale, la media dei voti e l'ultima ricevuta.</p>
 
 <h2>Una recensione ingiusta</h2>
-<p>Non puoi cancellarla da solo, e non è un difetto: recensioni modificabili dal recensito non varrebbero nulla, per te per primo.</p>
-<p>Se una recensione è offensiva, falsa o riguarda fatti estranei alla serata, <a href="/segnalazioni?tipo=recensione">segnalala</a> spiegando cosa contesti. Il team può <strong>nasconderla</strong>: una recensione nascosta non compare più e <strong>non pesa sulla media</strong>. Vedi <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
+<p>Non puoi cancellarla da solo. Se chi viene recensito potesse farlo, le recensioni perderebbero valore, a cominciare dalle tue.</p>
+<p>Se una recensione è offensiva, falsa o parla di fatti estranei alla serata, <a href="/segnalazioni?tipo=recensione">segnalala</a> spiegando cosa contesti. Il team può <strong>nasconderla</strong>: a quel punto non compare più e <strong>non pesa sulla media</strong>. Vedi <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
 
 <h2>Come farne arrivare di buone</h2>
-<p>Le recensioni non partono da sole: è l'organizzatore che decide di scriverle. Un messaggio di ringraziamento in chat il giorno dopo la serata, con un invito a lasciare una valutazione, funziona meglio di qualunque automatismo.</p>
+<p>Le recensioni non partono in automatico: è l'organizzatore a decidere se scriverle. Un messaggio di ringraziamento in chat il giorno dopo la serata, con l'invito a lasciare una valutazione, funziona meglio di qualsiasi promemoria automatico.</p>
 `,
     },
 
@@ -327,12 +327,12 @@ export const ARTISTI: HelpCategory = {
       slug: "statistiche-profilo",
       title: "Le statistiche del profilo",
       excerpt:
-        "Cosa misuriamo, come leggere i numeri e perché le visite degli organizzatori contano più di tutte le altre.",
+        "Cosa misuriamo, come leggere i numeri e perché le visite degli organizzatori sono quelle che pesano di più.",
       updatedAt: UPDATED,
       related: ["tier-pro-max", "badge-e-visibilita", "ottimizza-profilo"],
       content: `
 <h2>Sono incluse nel piano ${PLAN_LABELS.max}</h2>
-<p>Le statistiche sono un'esclusiva del piano ${PLAN_LABELS.max} e coprono gli <strong>ultimi ${ENTITLEMENTS.max.statsWindowDays} giorni</strong>. Con gli altri piani la pagina resta visibile ma mostra cosa conterrebbe, non i dati.</p>
+<p>Le statistiche sono esclusive del piano ${PLAN_LABELS.max} e coprono gli <strong>ultimi ${ENTITLEMENTS.max.statsWindowDays} giorni</strong>. Con gli altri piani la pagina resta visibile e mostra cosa conterrebbe, ma senza i dati.</p>
 
 <h2>Cosa trovi in /dashboard/statistiche</h2>
 <ul>
@@ -343,22 +343,22 @@ export const ARTISTI: HelpCategory = {
   <li><strong>Andamento delle visite</strong> giorno per giorno.</li>
 </ul>
 
-<h2>Il numero che conta davvero</h2>
-<p>Non è il totale delle visite: è la quota che arriva da <strong>organizzatori registrati</strong>. Cento visite di curiosi non portano una serata; cinque visite di locali che stanno programmando la stagione, sì. Nel grafico sono evidenziate a parte proprio per questo.</p>
+<h2>Il numero da guardare</h2>
+<p>Più del totale delle visite conta la quota che arriva da <strong>organizzatori registrati</strong>. Cento visite di curiosi non portano una serata, cinque visite di locali che stanno programmando la stagione sì. Per questo nel grafico sono evidenziate a parte.</p>
 
-<h2>Come leggere i numeri senza illudersi</h2>
+<h2>Come leggere i numeri</h2>
 <ul>
-  <li>Si contano <strong>visitatori distinti al giorno</strong>, non le aperture di pagina: se la stessa persona torna tre volte in un pomeriggio, conta una volta.</li>
+  <li>Si contano i <strong>visitatori distinti al giorno</strong>, non le aperture di pagina: se la stessa persona torna tre volte nello stesso pomeriggio, conta una volta sola.</li>
   <li>Le <strong>tue visite al tuo profilo non vengono contate</strong>.</li>
   <li>I <strong>salvataggi</strong> contano solo gli utenti registrati.</li>
   <li>I dati si aggiornano in tempo reale.</li>
 </ul>
 
 <h2>Privacy</h2>
-<p>Non raccogliamo indirizzi IP e non usiamo cookie di tracciamento per queste statistiche. L'indirizzo di chi visita viene trasformato in un codice non riconducibile alla persona, che serve solo a non contare due volte la stessa visita nello stesso giorno. Non sappiamo <em>chi</em> ha visto il tuo profilo, solo <em>quanti</em>.</p>
+<p>Per queste statistiche non raccogliamo indirizzi IP e non usiamo cookie di tracciamento. L'indirizzo di chi visita viene trasformato in un codice non riconducibile alla persona, che serve solo a non contare due volte la stessa visita nello stesso giorno. Non sappiamo <em>chi</em> ha visto il tuo profilo, solo <em>quanti</em>.</p>
 
 <h2>Cosa farci</h2>
-<p>Guarda cosa succede <strong>dopo</strong> una modifica: se aggiungi un video e nelle due settimane successive le visite da organizzatori salgono, hai la risposta. È il modo più affidabile di capire cosa funziona sul tuo profilo.</p>
+<p>Osserva cosa succede <strong>dopo</strong> una modifica: se aggiungi un video e nelle due settimane successive salgono le visite da organizzatori, hai la tua risposta. È il modo più affidabile per capire cosa funziona sul tuo profilo.</p>
 `,
     },
 
@@ -371,33 +371,33 @@ export const ARTISTI: HelpCategory = {
       related: ["tier-pro-max", "ottimizza-profilo", "statistiche-profilo"],
       content: `
 <h2>Artista Pro</h2>
-<p>È il badge incluso nei piani <strong>${PLAN_LABELS.pro}</strong> e <strong>${PLAN_LABELS.max}</strong>. Compare sul profilo pubblico <strong>in automatico</strong>: non va richiesto, non c'è una pratica da avviare e non c'è un'approvazione da attendere.</p>
-<p>Diciamo con chiarezza cosa attesta, per non lasciare intendere altro: <strong>indica che l'abbonamento Pro o Max è attivo</strong>. Non è la verifica di un documento d'identità né un giudizio artistico.</p>
+<p>È il badge incluso nei piani <strong>${PLAN_LABELS.pro}</strong> e <strong>${PLAN_LABELS.max}</strong> e compare sul profilo pubblico <strong>in automatico</strong>: non devi richiederlo né aspettare un'approvazione.</p>
+<p>Per evitare equivoci: il badge <strong>indica che l'abbonamento Pro o Max è attivo</strong>. Non certifica un documento d'identità e non esprime un giudizio artistico.</p>
 
 <h2>TOP Artist</h2>
 <p>Esclusiva del piano <strong>${PLAN_LABELS.max}</strong>. Oltre all'etichetta sul profilo, dà accesso alla fascia in evidenza in cima alla pagina <a href="/artisti">/artisti</a>.</p>
 
 <h2>L'ordine nel roster</h2>
-<p>La pagina degli artisti non è in ordine casuale né alfabetico. L'ordine dipende dal piano:</p>
+<p>La pagina degli artisti non segue un ordine casuale né alfabetico: l'ordine dipende dal piano.</p>
 <ol>
   <li><strong>${PLAN_LABELS.max}</strong> — in evidenza, in cima</li>
   <li><strong>${PLAN_LABELS.pro}</strong> — in posizione prioritaria</li>
   <li><strong>${PLAN_LABELS.free}</strong> — posizione standard</li>
 </ol>
-<p>Preferiamo dirlo apertamente: <strong>il piano influisce sulla visibilità</strong>. Non è un algoritmo misterioso, è il modo in cui la piattaforma si sostiene.</p>
+<p>Lo diciamo apertamente: <strong>il piano influisce sulla visibilità</strong>, perché è così che la piattaforma si sostiene.</p>
 
 <h2>Cosa conta comunque, su ogni piano</h2>
-<p>L'ordine non è tutto. Un organizzatore che filtra per categoria e genere (per esempio "jazz") o cerca per testo un nome o una città vede prima di tutto <strong>chi corrisponde a quella ricerca</strong>. Non esiste un filtro dedicato alla città: la città si trova cercando il testo. Ed è lì che il profilo fa la differenza:</p>
+<p>L'ordine però non è tutto. Quando un organizzatore filtra per categoria e genere (per esempio "jazz") o cerca per testo un nome o una città, vede prima di tutto <strong>chi corrisponde a quella ricerca</strong>. Non c'è un filtro dedicato alla città: la si trova con la ricerca per testo. Ed è qui che il profilo fa la differenza:</p>
 <ul>
   <li><strong>Generi e strumenti precisi</strong> ti fanno comparire nelle ricerche giuste.</li>
   <li><strong>La città</strong> scritta nel profilo conta: molti la cercano per testo, per contenere i costi di trasferta.</li>
   <li><strong>Una copertina forte</strong> decide se la scheda viene aperta o scorsa.</li>
-  <li><strong>Un video</strong> decide se dalla scheda nasce una richiesta.</li>
+  <li><strong>Un video</strong> è spesso ciò che convince a mandarti una richiesta.</li>
 </ul>
-<p>Un profilo ${PLAN_LABELS.free} completo e curato batte un profilo ${PLAN_LABELS.max} vuoto. La posizione porta il visitatore sulla scheda; è la scheda che porta la richiesta.</p>
+<p>Un profilo ${PLAN_LABELS.free} completo e curato ottiene più di un profilo ${PLAN_LABELS.max} lasciato vuoto: la posizione porta il visitatore fino alla scheda, ma la richiesta arriva solo se la scheda convince.</p>
 
 <h2>Come si toglie il badge</h2>
-<p>Se l'abbonamento finisce, il badge sparisce e la posizione torna standard. Il profilo, i contenuti e le recensioni restano.</p>
+<p>Se l'abbonamento finisce, il badge sparisce e la posizione torna standard. Profilo, contenuti e recensioni restano.</p>
 `,
     },
 
@@ -419,7 +419,7 @@ export const ARTISTI: HelpCategory = {
   <li><strong>${PLAN_LABELS.pro}</strong> — ${formatPrice(PLAN_PRICES_CENTS.pro.month)} al mese oppure ${formatPrice(PLAN_PRICES_CENTS.pro.year)} all'anno.</li>
   <li><strong>${PLAN_LABELS.max}</strong> — ${formatPrice(PLAN_PRICES_CENTS.max.month)} al mese oppure ${formatPrice(PLAN_PRICES_CENTS.max.year)} all'anno.</li>
 </ul>
-<p>Il confronto completo, sempre aggiornato, è su <a href="/prezzi">/prezzi</a>.</p>
+<p>Il confronto completo e sempre aggiornato è su <a href="/prezzi">/prezzi</a>.</p>
 
 <h2>Cosa include ogni piano</h2>
 <table>
@@ -430,26 +430,26 @@ export const ARTISTI: HelpCategory = {
 ${PLAN_TABLE_ROWS}
   </tbody>
 </table>
-<p>La tabella riassume le differenze principali. Per l'elenco completo vedi <a href="/prezzi">/prezzi</a>.</p>
+<p>Qui trovi le differenze principali; l'elenco completo è su <a href="/prezzi">/prezzi</a>.</p>
 
 <h2>Le richieste non sono mai limitate</h2>
-<p>Su nessun piano, nemmeno quello gratuito. Bloccare una richiesta significherebbe punire l'organizzatore che ti sta cercando, e non ha senso per nessuno. <strong>Il limite scatta sulla chat</strong>: con ${PLAN_LABELS.free} ricevi la richiesta e l'email, per scrivere in chat serve ${PLAN_LABELS.pro} o ${PLAN_LABELS.max}.</p>
+<p>Non lo sono su nessun piano, nemmeno su quello gratuito: bloccare una richiesta vorrebbe dire penalizzare l'organizzatore che ti sta cercando, senza vantaggi per nessuno. <strong>Il limite riguarda la chat</strong>: con ${PLAN_LABELS.free} ricevi la richiesta e l'email, mentre per scrivere in chat serve ${PLAN_LABELS.pro} o ${PLAN_LABELS.max}.</p>
 
 <h2>Cosa giustifica il salto a ${PLAN_LABELS.max}</h2>
-<p>Tre cose: le <strong>statistiche</strong>, l'etichetta <strong>TOP Artist</strong> con la fascia in evidenza, e i <strong>${ENTITLEMENTS.max.artistProfilesMax} profili</strong>. Si aggiungono le consulenze senza limite mensile (in base agli slot disponibili), la segnalazione del tuo profilo ad almeno due strutture al mese, curata dal team (impegno di mezzi: N'arte non tratta per te e non garantisce ingaggi), e — sull'abbonamento annuale — uno <strong>shooting fotografico</strong> incluso una tantum.</p>
+<p>Soprattutto le <strong>statistiche</strong>, l'etichetta <strong>TOP Artist</strong> con la fascia in evidenza e i <strong>${ENTITLEMENTS.max.artistProfilesMax} profili</strong>. In più hai le consulenze senza limite mensile (in base agli slot disponibili), la segnalazione del tuo profilo ad almeno due strutture al mese, curata dal team (è un impegno di mezzi: N'arte non tratta per te e non garantisce ingaggi), e, con l'abbonamento annuale, uno <strong>shooting fotografico</strong> incluso una tantum.</p>
 
 <h2>Domande frequenti</h2>
 <h3>C'è un periodo di prova?</h3>
-<p><strong>No.</strong> Non esiste una prova gratuita a tempo. Esiste però il piano ${PLAN_LABELS.free}, che è gratuito e non scade: puoi restarci quanto vuoi.</p>
+<p><strong>No.</strong> Non c'è una prova a tempo, ma puoi usare il piano ${PLAN_LABELS.free}, che è gratuito e non scade, per tutto il tempo che vuoi.</p>
 
 <h3>L'abbonamento vale per un artista o per l'account?</h3>
-<p>Per l'<strong>account</strong>. Tutti i profili che crei ereditano i vantaggi del piano, senza pagare due volte.</p>
+<p>Per l'<strong>account</strong>: tutti i profili che crei ereditano i vantaggi del piano e non paghi due volte.</p>
 
 <h3>Posso cambiare piano quando voglio?</h3>
 <p>Sì, in qualunque momento da <strong>/dashboard/abbonamento</strong>. Vedi <a href="/help/pagamenti/abbonamento-artista">l'abbonamento artista</a>.</p>
 
 <h3>Se disdico perdo tutto?</h3>
-<p>No. Il profilo resta online e le richieste continuano ad arrivare. Perdi le funzioni del piano: chat, recensioni visibili, badge e posizione prioritaria. I contenuti oltre il limite <strong>non vengono cancellati</strong>, smettono solo di essere pubblici.</p>
+<p>No. Il profilo resta online e le richieste continuano ad arrivare. Perdi le funzioni del piano (chat, recensioni visibili, badge e posizione prioritaria), mentre i contenuti oltre il limite <strong>non vengono cancellati</strong>: smettono solo di essere pubblici.</p>
 `,
     },
 
@@ -462,45 +462,45 @@ ${PLAN_TABLE_ROWS}
       related: ["foto-video-audio", "ottimizza-profilo", "badge-e-visibilita"],
       content: `
 <h2>Perché è il contenuto più importante</h2>
-<p>Un organizzatore che deve affidarti una serata vuole sapere una cosa sola: <em>com'è quando suoni davvero</em>. La biografia non lo dice, le foto nemmeno. Il video sì.</p>
+<p>Un organizzatore che deve affidarti una serata vuole sapere soprattutto una cosa: <em>com'è quando suoni dal vivo</em>. La biografia e le foto non bastano a dirlo, il video sì.</p>
 
 <h2>L'audio conta più del video</h2>
-<p>È l'errore più comune: si cura l'immagine e si trascura il suono. Ma un video girato col telefono con un buon audio funziona; un video ripreso bene con l'audio saturo viene chiuso dopo dieci secondi.</p>
+<p>È l'errore più comune: si cura l'immagine e si trascura il suono. Eppure un video girato col telefono ma con un buon audio funziona, mentre uno ripreso bene con l'audio saturo viene chiuso dopo dieci secondi.</p>
 <ul>
-  <li>Non piazzare il telefono <strong>davanti alle casse</strong>: il microfono satura e resta un rumore indistinto.</li>
-  <li>Meglio da <strong>metà sala</strong>, leggermente di lato rispetto all'impianto.</li>
-  <li>Se puoi, chiedi al fonico una <strong>registrazione dal banco</strong> e sincronizzala con le immagini. È il salto di qualità più grande a costo zero.</li>
+  <li>Non mettere il telefono <strong>davanti alle casse</strong>: il microfono va in saturazione e resta solo un rumore indistinto.</li>
+  <li>Meglio da <strong>metà sala</strong>, un po' di lato rispetto all'impianto.</li>
+  <li>Se puoi, chiedi al fonico una <strong>registrazione dal banco</strong> e sincronizzala con le immagini: non costa nulla ed è il miglioramento più grande che puoi ottenere.</li>
 </ul>
 
 <h2>Inquadratura</h2>
 <ul>
   <li><strong>Orizzontale</strong>, non verticale.</li>
-  <li>Telefono <strong>appoggiato o su treppiede</strong>: le riprese a mano libera stancano in pochi secondi.</li>
-  <li>Inquadra <strong>tutta la formazione</strong>. Se siete una band, un primo piano del solo cantante non racconta il gruppo.</li>
-  <li>Un po' di <strong>pubblico nell'inquadratura</strong> aiuta: dimostra che la serata funzionava.</li>
+  <li>Telefono <strong>appoggiato o su treppiede</strong>: le riprese a mano libera stancano dopo pochi secondi.</li>
+  <li>Inquadra <strong>tutta la formazione</strong>: se siete una band, il primo piano del solo cantante non racconta il gruppo.</li>
+  <li>Un po' di <strong>pubblico nell'inquadratura</strong> aiuta, perché mostra che la serata funzionava.</li>
 </ul>
 
 <h2>Durata e scelta del brano</h2>
 <ul>
-  <li>Tra <strong>uno e tre minuti</strong>. Chi guarda decide nei primi quindici secondi.</li>
-  <li>Parti da un <strong>momento forte</strong>: niente accordatura, niente presentazioni, niente attesa.</li>
-  <li>Scegli il pezzo che <strong>rappresenta la serata tipo</strong>, non quello tecnicamente più difficile.</li>
-  <li>Se hai ${MAX_VIDEO_PER_ARTIST} video, differenziali: un brano energico, uno più intimo, uno che mostri un contesto diverso.</li>
+  <li>Tra <strong>uno e tre minuti</strong>: chi guarda decide nei primi quindici secondi.</li>
+  <li>Parti da un <strong>momento forte</strong>, senza accordature, presentazioni o tempi morti.</li>
+  <li>Scegli il pezzo che <strong>rappresenta la tua serata tipo</strong>, anche se non è il più difficile tecnicamente.</li>
+  <li>Se hai ${MAX_VIDEO_PER_ARTIST} video, differenziali: un brano energico, uno più intimo, uno in un contesto diverso.</li>
 </ul>
 
 <h2>Cosa evitare</h2>
 <ul>
   <li>Video con <strong>loghi o watermark</strong> di app di editing.</li>
-  <li><strong>Montaggi rapidissimi</strong> a ritmo di musica: nascondono come suoni, ed è esattamente ciò che si vuole vedere.</li>
-  <li>Riprese <strong>solo in prova</strong>: senza pubblico l'energia non si legge.</li>
-  <li>Registrazioni <strong>di anni fa</strong> con una formazione diversa da quella attuale.</li>
+  <li><strong>Montaggi rapidissimi</strong> a tempo di musica: nascondono proprio come suoni, cioè quello che chi guarda vuole vedere.</li>
+  <li>Riprese fatte <strong>solo in prova</strong>: senza pubblico l'energia non arriva.</li>
+  <li>Registrazioni <strong>di anni fa</strong>, con una formazione diversa da quella di oggi.</li>
 </ul>
 
 <h2>Aspetti pratici</h2>
-<p>Puoi caricare file fino a ${MB(MAX_VIDEO_BYTES_BUNNY)}, anche direttamente dal telefono. Dopo il caricamento il video viene elaborato per qualche minuto prima di comparire online: è normale. Dettagli in <a href="/help/artisti/foto-video-audio">foto, video e audio</a>.</p>
+<p>Puoi caricare file fino a ${MB(MAX_VIDEO_BYTES_BUNNY)}, anche direttamente dal telefono. Dopo il caricamento il video resta in elaborazione per qualche minuto prima di comparire online, ed è normale. I dettagli sono in <a href="/help/artisti/foto-video-audio">foto, video e audio</a>.</p>
 
 <h2>Attenzione ai diritti</h2>
-<p>Caricando un video dichiari di avere il diritto di usarlo: vale per le riprese, per l'eventuale montaggio e per la musica. Se il video è stato girato da un professionista, accordati con lui prima. Vedi <a href="/help/policy/contenuti-e-diritti">contenuti e diritti</a>.</p>
+<p>Quando carichi un video dichiari di avere il diritto di usarlo, sia per le riprese sia per l'eventuale montaggio e per la musica. Se l'ha girato un professionista, mettiti d'accordo con lui prima. Vedi <a href="/help/policy/contenuti-e-diritti">contenuti e diritti</a>.</p>
 `,
     },
 
@@ -517,22 +517,22 @@ ${PLAN_TABLE_ROWS}
       ],
       content: `
 <h2>Il cachet lo decidi tu</h2>
-<p>N'arte non stabilisce tariffe, non impone minimi e non suggerisce quanto dovresti chiedere. Il compenso lo concordi direttamente con l'organizzatore, serata per serata.</p>
+<p>N'arte non stabilisce tariffe, non impone minimi e non suggerisce quanto chiedere. Il compenso lo concordi direttamente con l'organizzatore, serata per serata.</p>
 
 <h2>N'arte non prende percentuali</h2>
-<p><strong>Sul tuo cachet non tratteniamo nulla.</strong> Il denaro dell'ingaggio non passa dalla piattaforma: non lo incassiamo, non lo anticipiamo, non lo tratteniamo. Quello che concordi è quello che ricevi.</p>
-<p>L'unica somma che N'arte incassa è l'<a href="/help/pagamenti/abbonamento-artista">abbonamento</a>, che è facoltativo e indipendente da quante date fai.</p>
+<p><strong>Sul tuo cachet non tratteniamo nulla.</strong> Il denaro dell'ingaggio non passa dalla piattaforma, che quindi non lo incassa e non lo anticipa: quello che concordi è quello che ricevi.</p>
+<p>L'unica somma che N'arte incassa è l'<a href="/help/pagamenti/abbonamento-artista">abbonamento</a>, facoltativo e indipendente dal numero di date che fai.</p>
 
 <h2>La fascia di prezzo sul profilo</h2>
-<p>Nel blocco "Informazioni di booking" puoi indicare una <strong>fascia</strong> anziché una cifra secca. Le opzioni vanno da "0 — 100 €" a "1.000 € e oltre".</p>
-<p>La fascia è visibile <strong>agli organizzatori</strong>, non a tutti i visitatori.</p>
+<p>Nel blocco "Informazioni di booking" puoi indicare una <strong>fascia</strong> invece di una cifra precisa. Le opzioni vanno da "0 — 100 €" a "1.000 € e oltre".</p>
+<p>La vedono solo gli <strong>organizzatori</strong>, non gli altri visitatori.</p>
 
 <h3>Conviene dichiararla?</h3>
-<p>Sì, quasi sempre. Una fascia non ti vincola — resta una trattativa — ma <strong>filtra le richieste</strong>: eviti di perdere tempo con chi ha un budget lontanissimo dal tuo, e vieni contattato da chi può permetterti. Un profilo senza fascia riceve più richieste, ma anche più richieste inutili.</p>
-<p>Se ti muovi su cifre molto diverse a seconda della formazione, è il caso di usare <a href="/help/artisti/profili-multipli">più profili</a>: il duo acustico e la band completa non hanno lo stesso cachet.</p>
+<p>Quasi sempre sì. La fascia non ti vincola, perché il compenso resta da trattare, ma <strong>filtra le richieste</strong>: non perdi tempo con chi ha un budget molto lontano dal tuo e ti contatta chi può permetterti. Senza fascia arrivano più richieste, ma anche più richieste inutili.</p>
+<p>Se le cifre cambiano molto a seconda della formazione, conviene usare <a href="/help/artisti/profili-multipli">più profili</a>: il duo acustico e la band completa non hanno lo stesso cachet.</p>
 
 <h2>Cosa considerare oltre al compenso</h2>
-<p>Il numero che vi scambiate dovrebbe essere netto di equivoci. Prima di dire sì, verifica:</p>
+<p>Perché sulla cifra non restino equivoci, prima di accettare verifica:</p>
 <ul>
   <li>Se il compenso è <strong>per il gruppo o a persona</strong>.</li>
   <li>Chi paga <strong>viaggio e trasferta</strong>.</li>
@@ -543,10 +543,10 @@ ${PLAN_TABLE_ROWS}
 <p>La lista completa da concordare è in <a href="/help/booking/contratto-modello">cosa mettere per iscritto prima di una data</a>.</p>
 
 <h2>Fatture e adempimenti fiscali</h2>
-<p>Riguardano te e l'organizzatore: N'arte non è parte del contratto e non emette documenti per l'esibizione. Per la tua posizione fiscale <strong>rivolgiti al tuo commercialista</strong> — vedi <a href="/help/pagamenti/fattura-artista">chi emette la fattura</a>.</p>
+<p>Riguardano te e l'organizzatore: N'arte non è parte del contratto e non emette documenti per l'esibizione. Per la tua posizione fiscale <strong>rivolgiti al tuo commercialista</strong> (vedi <a href="/help/pagamenti/fattura-artista">chi emette la fattura</a>).</p>
 
 <h2>Compenso concordato – promemoria</h2>
-<p>Sulle date confermate puoi annotare il <strong>compenso pattuito</strong>, con la conferma di entrambe le parti. È un'annotazione fra voi: N'arte non è parte dell'accordo e non gestisce pagamenti — quello avviene fuori. Lascia però una traccia condivisa di quanto era stato concordato. Vedi <a href="/help/organizzatori/prezzo-definitivo">compenso concordato – promemoria</a>.</p>
+<p>Sulle date confermate puoi annotare il <strong>compenso pattuito</strong>, con la conferma di entrambe le parti. È un'annotazione fra voi: N'arte non è parte dell'accordo e non gestisce pagamenti, che avvengono fuori dalla piattaforma. Serve però a lasciare una traccia condivisa di quanto avevate concordato. Vedi <a href="/help/organizzatori/prezzo-definitivo">compenso concordato – promemoria</a>.</p>
 `,
     },
   ],

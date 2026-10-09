@@ -62,13 +62,9 @@ export const INIZIARE: HelpCategory = {
 <h2>Due percorsi, non uno</h2>
 <p>Su N'arte l'account si crea in due modi, a seconda di cosa vuoi fare. È il punto su cui ci si confonde più spesso, quindi ti consigliamo di leggere tutto.</p>
 
-<h3>1. Registrazione standard — utente o organizzatore</h3>
-<p>Vai su <a href="/register">/register</a>. Servono nome, email e una password di <strong>almeno 8 caratteri</strong>. Nel modulo scegli come vuoi usare la piattaforma:</p>
-<ul>
-  <li><strong>Utente</strong> — sblocchi i profili completi degli artisti e salvi i preferiti.</li>
-  <li><strong>Organizzatore</strong> — in più puoi inviare richieste di booking, chattare e gestire il calendario delle date confermate.</li>
-</ul>
-<p><strong>La scelta non è definitiva.</strong> Un account registrato come "utente" diventa organizzatore in automatico quando invia la prima richiesta di booking, senza che tu debba rifare nulla.</p>
+<h3>1. Hai bisogno di un artista</h3>
+<p>Vai su <a href="/register">/register</a> e scegli <strong>«Ho bisogno di un artista»</strong>. Servono nome, email, una password di <strong>almeno 8 caratteri</strong>, il nome del locale o della realtà che rappresenti e la città. In alternativa puoi iscriverti con il tuo account Google.</p>
+<p>Il team N'arte verifica ogni nuovo account organizzatore: finché non è approvato puoi già sfogliare i profili, mentre richieste, chat e calendario si attivano dopo l'approvazione. Ti avvisiamo via email.</p>
 
 <h3>2. Candidatura artista</h3>
 <p>Se sei un musicista e vuoi entrare nel roster, <strong>non usare il modulo di registrazione</strong>: passa da <a href="/candidatura-artista">/candidatura-artista</a>.</p>
@@ -95,16 +91,16 @@ export const INIZIARE: HelpCategory = {
       related: ["come-creare-account", "cosa-fa-e-non-fa-narte", "glossario"],
       content: `
 <h2>Cinque ruoli</h2>
-<p>Ogni ruolo ha un'area dedicata e permessi diversi. Il tuo viene assegnato quando crei l'account e in un caso cambia da solo.</p>
+<p>Ogni ruolo ha un'area dedicata e permessi diversi. Il tuo viene assegnato quando crei l'account.</p>
 
 <h3>Visitatore — senza account</h3>
 <p>Può navigare eventi, format, blog, il catalogo degli artisti in forma anonima (anteprima sfocata della copertina, generi e piano), candidarsi come artista e scrivere dal modulo contatti. <strong>Non vede</strong> chi sono gli artisti: nome d'arte, copertina nitida, città, bio, galleria, audio, video, social e calendario sono riservati a chi ha un account. I preferiti restano salvati nel browser.</p>
 
 <h3>Utente registrato</h3>
-<p>Sblocca i profili completi degli artisti e salva i preferiti sul proprio account, ritrovandoli su qualunque dispositivo. Può inviare una richiesta di booking: nel momento in cui lo fa, <strong>diventa automaticamente organizzatore</strong>.</p>
+<p>Sblocca i profili completi degli artisti e salva i preferiti sul proprio account, ritrovandoli su qualunque dispositivo. Per inviare richieste di booking può chiedere di diventare organizzatore: la richiesta passa dall'approvazione del team.</p>
 
 <h3>Organizzatore</h3>
-<p>Locale, festival, brand, agenzia o privato che cerca artisti. Area: <strong>/organizzatore</strong>. Può registrare le proprie strutture, inviare richieste di booking, scrivere in chat con offerte tracciate (con gli artisti che hanno Pro o Max), confermare la data finale, vedere il calendario delle date confermate e recensire l'artista dopo l'evento. <strong>È tutto gratuito</strong>, non esistono abbonamenti per gli organizzatori.</p>
+<p>Locale, festival, brand, agenzia o privato che cerca artisti. Area: <strong>/organizzatore</strong>, attiva dopo l'approvazione del team. Può registrare le proprie strutture, inviare richieste di booking, scrivere in chat con offerte tracciate (con gli artisti che hanno Pro o Max), confermare la data finale, vedere il calendario delle date confermate e recensire l'artista dopo l'evento. <strong>È tutto gratuito</strong>, non esistono abbonamenti per gli organizzatori.</p>
 
 <h3>Artista</h3>
 <p>Musicista approvato dal team. Area: <strong>/dashboard</strong>. Gestisce profilo pubblico, galleria, video, audio, calendario delle disponibilità, richieste ricevute, chat, recensioni, consulenza e abbonamento. Con i piani superiori può gestire <a href="/help/artisti/profili-multipli">più profili artista</a> dallo stesso account.</p>

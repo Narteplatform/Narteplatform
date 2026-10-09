@@ -1,6 +1,6 @@
 import type { HelpCategory } from "@/lib/help/types";
 
-const UPDATED = "2026-09-07";
+const UPDATED = "2026-10-09";
 
 export const ORGANIZZATORI: HelpCategory = {
   slug: "organizzatori",
@@ -25,28 +25,28 @@ export const ORGANIZZATORI: HelpCategory = {
   <li><strong>Generi musicali</strong> — pop, rock, jazz, elettronica, cantautorato.</li>
   <li><strong>Ricerca testuale</strong> — per nome d'arte o città.</li>
 </ul>
-<p>Il contatore si aggiorna mentre filtri, e si azzera tutto da "Reset filtri".</p>
+<p>Il contatore si aggiorna mentre filtri; per ripartire da zero c'è "Reset filtri".</p>
 
 <h2>Serve l'accesso per vedere la scheda completa</h2>
 <p>Senza account vedi solo schede anonime, con genere, strumenti e piano: nome d'arte, copertina, città, biografia, galleria, tracce audio, video, formazione, requisiti tecnici e calendario sono riservati agli utenti registrati.</p>
-<p>L'<a href="/register">iscrizione è gratuita</a> e richiede meno di un minuto. Se non hai ancora un account, puoi anche crearlo direttamente mentre invii la prima richiesta.</p>
+<p>L'<a href="/register">iscrizione è gratuita</a> e richiede meno di un minuto: scegli «Ho bisogno di un artista». Il team verifica il tuo account e ti avvisa via email quando puoi iniziare a inviare richieste.</p>
 
 <h2>Cosa guardare nella scheda</h2>
 <ol>
-  <li><strong>Il video, per primo.</strong> Vale più di tutto il resto: in un minuto capisci se l'energia è quella che cerchi.</li>
-  <li><strong>La formazione</strong> — quante persone salgono sul palco. Cambia lo spazio necessario, il service e il compenso.</li>
-  <li><strong>La durata del set</strong> — minima e massima dichiarate. Se ti serve coprire quattro ore e l'artista fa set da 60 minuti, meglio saperlo prima.</li>
+  <li><strong>Il video, per primo.</strong> Dice più di tutto il resto: in un minuto capisci se l'energia è quella che cerchi.</li>
+  <li><strong>La formazione</strong> — quante persone salgono sul palco. Da qui dipendono spazio, service e compenso.</li>
+  <li><strong>La durata del set</strong> — minima e massima dichiarate. Se devi coprire quattro ore e l'artista fa set da 60 minuti, conviene saperlo prima di scrivergli.</li>
   <li><strong>I requisiti tecnici</strong> — cosa serve come impianto, palco, alimentazione. Vedi <a href="/help/organizzatori/guida-rider-tecnico">la guida al rider tecnico</a>.</li>
-  <li><strong>La fascia di prezzo</strong> — visibile agli organizzatori. È indicativa, non un listino.</li>
-  <li><strong>Il calendario</strong> — le date già occupate, così eviti di chiedere l'impossibile.</li>
+  <li><strong>La fascia di prezzo</strong> — visibile agli organizzatori e solo indicativa: non è un listino.</li>
+  <li><strong>Il calendario</strong> — le date già occupate, così non chiedi un giorno che l'artista ha già preso.</li>
   <li><strong>Le recensioni</strong> — lasciate da altri organizzatori dopo una data confermata su N'arte e passata. N'arte non verifica che l'evento si sia effettivamente svolto. Compaiono sul profilo solo se l'artista ha il piano Pro o Max.</li>
 </ol>
 
 <h2>Un consiglio pratico</h2>
-<p>Non fermarti al primo. Apri tre o quattro schede e confronta: profili molto simili nella descrizione possono essere lontanissimi dal vivo. E scrivi a più di un artista se la data è vicina — è normale e non è scorretto, purché tu risponda a tutti quando hai deciso.</p>
+<p>Non fermarti al primo profilo. Apri tre o quattro schede e confrontale: artisti che sulla carta si somigliano possono essere lontanissimi dal vivo. Se la data è vicina, scrivi pure a più di un artista: è normale, basta che poi rispondi a tutti quando hai deciso.</p>
 
 <h2>Se non sai da dove partire</h2>
-<p>Se hai un'idea di serata ma non un nome, <a href="/contatti">scrivici</a> descrivendo evento, spazio, pubblico atteso e budget: il team può indirizzarti sui profili adatti. Puoi anche guardare i <a href="/format">format N'arte</a>, che sono serate già strutturate.</p>
+<p>Se hai un'idea di serata ma non un nome, <a href="/contatti">scrivici</a> descrivendo evento, spazio, pubblico atteso e budget: il team può indirizzarti sui profili adatti. Puoi anche guardare i <a href="/format">format N'arte</a>, serate con una formula già definita.</p>
 `,
     },
 
@@ -59,15 +59,15 @@ export const ORGANIZZATORI: HelpCategory = {
       related: ["gestire-trattativa", "booking/stati-richiesta", "strutture-multiple"],
       content: `
 <h2>Da dove si invia</h2>
-<p>Dal calendario che trovi sulla scheda dell'artista: scegli la data e compili il modulo. Se non hai un account puoi crearlo lì, contestualmente all'invio, senza passare dalla registrazione.</p>
-<p>Se il tuo account è registrato come "utente", <strong>diventa organizzatore in automatico</strong> con la prima richiesta: non devi fare nulla.</p>
+<p>Dal calendario che trovi sulla scheda dell'artista: scegli la data e compili il modulo. Se non hai ancora un account, crealo da <a href="/register">/register</a> scegliendo «Ho bisogno di un artista».</p>
+<p>Per inviare richieste serve un account organizzatore approvato dal team. Se il tuo account è ancora da utente, alla prima richiesta parte la domanda di approvazione: ti avvisiamo via email appena è attivo e a quel punto puoi inviare la richiesta.</p>
 <p>Un account artista non può inviare richieste ad altri artisti.</p>
 
 <h2>Cosa contiene il modulo</h2>
 <ul>
-  <li><strong>Data dell'evento</strong> — obbligatoria. Le date che l'artista ha segnato occupate sono già evidenti sul calendario.</li>
+  <li><strong>Data dell'evento</strong> — obbligatoria. Le date che l'artista ha segnato come occupate si vedono già sul calendario.</li>
   <li><strong>Fascia oraria</strong> — mattina, pomeriggio, sera o notte.</li>
-  <li><strong>Budget</strong> — si sceglie una fascia, non una cifra esatta. Serve a capire subito se siete nello stesso ordine di grandezza.</li>
+  <li><strong>Budget</strong> — scegli una fascia anziché una cifra esatta, così capite subito se siete nello stesso ordine di grandezza.</li>
   <li><strong>Struttura</strong> — se ne hai già salvate, la selezioni; altrimenti indichi nome e città del locale.</li>
   <li><strong>Messaggio</strong> — obbligatorio, <strong>almeno 20 caratteri</strong>.</li>
 </ul>
@@ -81,7 +81,7 @@ export const ORGANIZZATORI: HelpCategory = {
   <li><strong>Quanto deve durare</strong> il set e a che ora si suona.</li>
   <li><strong>Cosa metti a disposizione</strong> — impianto, service, palco, backline.</li>
 </ul>
-<p>Cinque righe così valgono più di venti di presentazioni.</p>
+<p>Cinque righe così servono più di una lunga presentazione.</p>
 
 <h2>Cosa succede dopo l'invio</h2>
 <ol>
@@ -93,10 +93,10 @@ export const ORGANIZZATORI: HelpCategory = {
 </ol>
 
 <h2>Quanto si aspetta una risposta</h2>
-<p>Di norma 24-72 ore. <strong>Non esiste una scadenza automatica</strong>: una richiesta resta aperta finché l'artista risponde o tu la annulli. Se dopo qualche giorno non hai riscontro, puoi annullarla e scrivere a un altro artista — o sollecitare, se quello è il profilo che vuoi davvero.</p>
+<p>Di norma 24-72 ore. <strong>Non esiste una scadenza automatica</strong>: una richiesta resta aperta finché l'artista risponde o tu la annulli. Se dopo qualche giorno non hai riscontro, puoi annullarla e scrivere a un altro artista, oppure sollecitare se è proprio il profilo che cerchi.</p>
 
 <h2>Puoi scrivere a più artisti?</h2>
-<p>Sì, e per una data vicina è la cosa sensata. L'unico accorgimento è chiudere le richieste che non ti servono più: un annullamento è più rispettoso di un silenzio.</p>
+<p>Sì, e se la data è vicina è la scelta più sensata. Ricordati solo di chiudere le richieste che non ti servono più: annullarle è più rispettoso che lasciarle senza risposta.</p>
 `,
     },
 
@@ -110,7 +110,7 @@ export const ORGANIZZATORI: HelpCategory = {
       content: `
 <h2>Una chat per artista</h2>
 <p>La conversazione la trovi in <strong>/organizzatore/chat</strong>. È <strong>una per ogni artista</strong>, non una per richiesta: se lo stesso artista lavora con te più volte, lo storico resta in un unico posto.</p>
-<p>Come organizzatore <strong>non hai alcuna limitazione</strong>: puoi sempre scrivere e fare offerte. Se un artista non risponde in chat, può darsi che abbia il piano gratuito, che riceve i messaggi ma non consente di rispondere: in quel caso l'email che riceve resta il canale valido.</p>
+<p>Come organizzatore <strong>non hai alcuna limitazione</strong>: puoi sempre scrivere e fare offerte. Se un artista non ti risponde in chat, forse ha il piano gratuito, con cui riceve i messaggi ma non può rispondere. In quel caso il canale valido resta l'email che gli arriva.</p>
 
 <h2>Messaggi e allegati</h2>
 <p>Puoi mandare messaggi fino a 2.000 caratteri, foto, documenti (PDF, Word, Excel, testo, ZIP) fino a <strong>25 MB</strong> e note vocali. È il posto giusto per la piantina del locale, la scheda tecnica o l'accordo che avete scritto.</p>
@@ -120,12 +120,12 @@ export const ORGANIZZATORI: HelpCategory = {
 <p>Gli stati sono <strong>In sospeso</strong>, <strong>Accettata</strong>, <strong>Rifiutata</strong> e <strong>Sostituita</strong>. Se mandi una nuova offerta, quella precedente ancora in sospeso viene sostituita in automatico: non restano mai due proposte valide insieme.</p>
 
 <h3>Attenzione: un'offerta accettata conferma la data</h3>
-<p>Se l'artista accetta la tua offerta, <strong>la data è confermata all'istante</strong>: viene bloccata sul suo calendario, compare fra le tue date confermate e partono le email. Non c'è un ulteriore passaggio di conferma.</p>
-<p>Quindi manda un'offerta solo quando i termini sono quelli definitivi. Per sondare il terreno, usa un messaggio normale.</p>
+<p>Se l'artista accetta la tua offerta, <strong>la data è confermata all'istante</strong>: viene bloccata sul suo calendario, compare fra le tue date confermate e partono le email, senza altri passaggi.</p>
+<p>Per questo conviene mandarla solo quando i termini sono definitivi; per sondare il terreno basta un messaggio normale.</p>
 
 <h2>L'altra strada: il pulsante "Conferma data"</h2>
 <p>Se la trattativa è nata da una richiesta e l'artista ha accettato, la richiesta è <strong>in trattativa</strong>. Quando siete d'accordo vai in <strong>/organizzatore/richieste</strong>, apri la richiesta e premi <strong>"Conferma data"</strong>.</p>
-<p>È un passaggio che spetta <strong>solo a te</strong>: l'artista non può confermare al posto tuo. Se avete concluso e non confermi, per lui la data resta in sospeso.</p>
+<p>Questo passaggio spetta <strong>solo a te</strong>: l'artista non può confermare al posto tuo. Se vi siete accordati e non confermi, per lui la data resta in sospeso.</p>
 
 <h2>Cosa cambia alla conferma</h2>
 <ul>
@@ -140,7 +140,7 @@ export const ORGANIZZATORI: HelpCategory = {
 <p>Puoi annullare una richiesta finché è in attesa o in trattativa, con il pulsante <strong>"Annulla richiesta"</strong>. Per una data <em>già confermata</em> il percorso è diverso: vedi <a href="/help/organizzatori/annullare-data">annullare una data confermata</a>.</p>
 
 <h2>Perché conviene tenere tutto in chat</h2>
-<p>Spostare la trattativa su WhatsApp o al telefono sembra più rapido, ma se nasce un disaccordo su cosa era stato pattuito non resta nulla di consultabile. In chat resta tutto, e in caso di contestazione è la prima cosa che il team guarda.</p>
+<p>Passare a WhatsApp o al telefono sembra più rapido, ma se poi nasce un disaccordo su quanto pattuito non resta niente da rileggere. In chat invece è tutto scritto, ed è la prima cosa che il team guarda in caso di contestazione.</p>
 `,
     },
 
@@ -164,7 +164,7 @@ export const ORGANIZZATORI: HelpCategory = {
 </ul>
 
 <h2>Cosa puoi compilare</h2>
-<p>L'unico campo obbligatorio è il <strong>nome</strong>. Tutto il resto è facoltativo, ma ogni campo compilato è una domanda in meno:</p>
+<p>L'unico campo obbligatorio è il <strong>nome</strong>. Tutto il resto è facoltativo, ma ogni campo compilato risparmia una domanda all'artista:</p>
 <ul>
   <li><strong>Tipo</strong> — club, pub, festival, teatro, locale, privato o altro.</li>
   <li><strong>Indirizzo, città, regione e CAP</strong> — servono all'artista per valutare la trasferta.</li>
@@ -178,10 +178,10 @@ export const ORGANIZZATORI: HelpCategory = {
 <p>Se gestisci più locali o più rassegne, tienili separati anziché unirli: ogni struttura ha il suo indirizzo, la sua capienza e le sue foto. Quando invii una richiesta scegli a quale si riferisce, e il calendario si filtra di conseguenza.</p>
 
 <h2>Modificare o eliminare</h2>
-<p>Da <strong>/organizzatore/strutture</strong>, aprendo la struttura. La modifica è immediata. L'eliminazione si fa dalla stessa scheda: valutala con attenzione se la struttura è collegata a date già confermate.</p>
+<p>Apri la struttura da <strong>/organizzatore/strutture</strong>: le modifiche valgono subito. Dalla stessa scheda puoi anche eliminarla, ma pensaci bene se è collegata a date già confermate.</p>
 
 <h2>È obbligatoria?</h2>
-<p>No. Puoi inviare richieste indicando semplicemente nome e città del locale. Ma se organizzi con continuità, registrarla è il primo passo che ti fa risparmiare tempo davvero.</p>
+<p>No, puoi inviare richieste indicando solo nome e città del locale. Se però organizzi con continuità, registrarla ti fa risparmiare parecchio tempo.</p>
 `,
     },
 
@@ -198,31 +198,31 @@ export const ORGANIZZATORI: HelpCategory = {
       ],
       content: `
 <h2>Prima della conferma</h2>
-<p>Finché la richiesta è <strong>in attesa</strong> o <strong>in trattativa</strong>, la chiudi tu con il pulsante <strong>"Annulla richiesta"</strong> in <a href="/organizzatore/richieste">/organizzatore/richieste</a>. L'artista riceve un'email e la data resta libera. Nessuna conseguenza per nessuno.</p>
+<p>Finché la richiesta è <strong>in attesa</strong> o <strong>in trattativa</strong>, la chiudi tu con il pulsante <strong>"Annulla richiesta"</strong> in <a href="/organizzatore/richieste">/organizzatore/richieste</a>. L'artista riceve un'email, la data resta libera e non ci sono conseguenze per nessuno.</p>
 
 <h2>Dopo la conferma</h2>
-<p>Una data <strong>confermata</strong> non si annulla con un click, e non è una svista: quella data è bloccata sul calendario dell'artista, che ha rifiutato altre proposte per tenerla libera.</p>
+<p>Una data <strong>confermata</strong> non si annulla con un click, ed è una scelta precisa: quel giorno è bloccato sul calendario dell'artista, che ha rifiutato altre proposte per tenerlo libero.</p>
 <p>Se devi annullare:</p>
 <ol>
-  <li><strong>Scrivilo subito in chat</strong> all'artista, spiegando cosa è successo. È la cosa che conta di più, e va fatta prima di tutto il resto.</li>
+  <li><strong>Scrivilo subito in chat</strong> all'artista, spiegando cosa è successo. È la cosa più importante e va fatta per prima.</li>
   <li><strong>Accordatevi</strong> su come chiudere: spostare la data, sostituire l'artista, riconoscere un rimborso spese se aveva già sostenuto costi.</li>
-  <li><strong><a href="/contatti">Scrivi al team</a></strong> indicando artista e data: l'annullamento in piattaforma viene eseguito dal team, con una motivazione registrata, e libera la data sul calendario.</li>
+  <li><strong><a href="/contatti">Scrivi al team</a></strong> indicando artista e data: è il team ad annullare la data sulla piattaforma, registrando la motivazione, e così il calendario torna libero.</li>
 </ol>
 
 <h2>N'arte non impone penali</h2>
-<p>Non applichiamo penali, non tratteniamo caparre e non addebitiamo nulla in caso di annullamento: <strong>il denaro dell'ingaggio non passa mai dalla piattaforma</strong>, quindi non c'è niente che possiamo trattenere.</p>
-<p>Se voi due avevate concordato un acconto o una penale, quell'accordo vale fra voi ed è una questione vostra. Ragione in più per <a href="/help/booking/contratto-modello">metterlo per iscritto prima</a>.</p>
+<p>In caso di annullamento non applichiamo penali, non tratteniamo caparre e non addebitiamo nulla: <strong>il denaro dell'ingaggio non passa mai dalla piattaforma</strong>, quindi non avremmo niente da trattenere.</p>
+<p>Se fra voi avevate concordato un acconto o una penale, quell'accordo riguarda solo voi due. Anche per questo conviene <a href="/help/booking/contratto-modello">metterlo per iscritto prima</a>.</p>
 
 <h2>Le buone pratiche</h2>
 <ul>
   <li><strong>Avvisa il prima possibile.</strong> Un mese prima è un contrattempo; tre giorni prima è un danno concreto, perché quella sera l'artista non lavorerà più.</li>
-  <li><strong>Dai una ragione vera.</strong> Un locale chiuso, un evento rinviato, un imprevisto: si capiscono. Il silenzio no.</li>
+  <li><strong>Dai una ragione vera.</strong> Un locale chiuso, un evento rinviato, un imprevisto: sono cose che chiunque capisce, mentre il silenzio lascia l'artista senza risposte.</li>
   <li><strong>Proponi un'alternativa</strong>, se puoi. Spostare la data è quasi sempre meglio che annullarla.</li>
-  <li><strong>Riconosci le spese già sostenute.</strong> Se l'artista aveva prenotato un viaggio o ingaggiato un service, non è un dettaglio.</li>
+  <li><strong>Riconosci le spese già sostenute.</strong> Se l'artista aveva prenotato un viaggio o ingaggiato un service, sono costi veri.</li>
 </ul>
 
 <h2>Ha conseguenze sul mio account?</h2>
-<p>Un annullamento isolato e comunicato bene non ha alcuna conseguenza: capita, ed è normale. Diverso è un <strong>comportamento ripetuto</strong>: annullare sistematicamente date confermate danneggia gli artisti e la credibilità della piattaforma, e il team può intervenire fino a limitare l'account. Vedi il <a href="/help/policy/codice-condotta">codice di condotta</a>.</p>
+<p>Un annullamento isolato e comunicato bene non ha conseguenze: può capitare. Il discorso cambia con un <strong>comportamento ripetuto</strong>: chi annulla sistematicamente date confermate danneggia gli artisti e la credibilità della piattaforma, e il team può intervenire fino a limitarne l'account. Vedi il <a href="/help/policy/codice-condotta">codice di condotta</a>.</p>
 
 <h2>E se è l'artista ad annullare?</h2>
 <p>Vale lo stesso principio, a parti invertite. Se un artista si tira indietro su una data confermata e non trovate un accordo, <a href="/segnalazioni">segnalacelo</a>: il team interviene sulla data e valuta il comportamento.</p>
@@ -239,16 +239,16 @@ export const ORGANIZZATORI: HelpCategory = {
       content: `
 <h2>Cos'è</h2>
 <p>Il <strong>rider tecnico</strong> è l'elenco di ciò che serve all'artista per esibirsi: impianto audio, microfoni, monitor, prese di corrente, spazio sul palco. Il <strong>rider ospitalità</strong> riguarda invece camerino, pasti e viaggio.</p>
-<p>Non è una pretesa: è il modo per assicurarsi che la sera funzioni. La maggior parte dei problemi dell'ultimo minuto nasce da un rider mai scambiato.</p>
+<p>Chiederlo non è una pretesa, serve ad assicurarsi che la serata funzioni. Gran parte dei problemi dell'ultimo minuto nasce da un rider che nessuno si è scambiato.</p>
 
 <h2>Dove trovarlo su N'arte</h2>
-<p>Molti artisti compilano il campo <strong>requisiti tecnici</strong> nella scheda. Se è vuoto o generico, chiedilo in chat: è una domanda normale e nessuno se la prende.</p>
+<p>Molti artisti compilano il campo <strong>requisiti tecnici</strong> nella scheda. Se è vuoto o generico, chiedilo in chat: è una domanda normale, nessuno ci resta male.</p>
 
 <h2>Cosa serve, indicativamente</h2>
 <p>Un'idea di massima per capire se lo spazio è adatto, prima ancora di scrivere.</p>
 
 <h3>Solista o duo acustico</h3>
-<p>Impianto di piccole dimensioni, 2-4 canali, un paio di microfoni, uno o due monitor, un paio di prese. Bastano pochi metri quadri. È la formazione che sta praticamente ovunque.</p>
+<p>Impianto di piccole dimensioni, 2-4 canali, un paio di microfoni, uno o due monitor, un paio di prese. Bastano pochi metri quadri, per questo si adatta a quasi tutti gli spazi.</p>
 
 <h3>Trio</h3>
 <p>Impianto un po' più capiente, 6-8 canali, monitor separati, spazio per gli strumenti. Se c'è una batteria, servono anche i microfoni per riprenderla.</p>
@@ -272,8 +272,8 @@ export const ORGANIZZATORI: HelpCategory = {
 </ul>
 
 <h2>Il consiglio che fa la differenza</h2>
-<p>Scambiate il rider <strong>quando confermate la data</strong>, non la settimana prima. Se emerge che il tuo spazio non regge quella formazione, a un mese di distanza si trova una soluzione; a tre giorni si annulla.</p>
-<p>Vale anche per il limite di volume: se il locale ha un vincolo, dillo subito. Ci sono formazioni che si adattano senza problemi e altre per cui è un ostacolo insormontabile.</p>
+<p>Scambiatevi il rider <strong>quando confermate la data</strong>, senza aspettare la settimana prima. Se il tuo spazio non regge quella formazione, a un mese di distanza una soluzione si trova; a tre giorni resta solo l'annullamento.</p>
+<p>Lo stesso vale per il limite di volume: se il locale ha un vincolo, dillo subito. Alcune formazioni si adattano senza problemi, per altre è un ostacolo insormontabile.</p>
 `,
     },
 
@@ -287,16 +287,16 @@ export const ORGANIZZATORI: HelpCategory = {
       content: `
 <h2>Cosa mostra</h2>
 <p>Il calendario in <strong>/organizzatore/calendario</strong> mostra <strong>solo le date confermate</strong>. Trovi una vista mensile e l'elenco dei prossimi eventi.</p>
-<p>Le richieste in attesa o in trattativa <strong>non compaiono</strong>, ed è voluto: finché una data non è confermata non è un impegno, e mescolarla alle altre darebbe un'idea sbagliata della tua programmazione. Quelle le segui da <a href="/organizzatore/richieste">/organizzatore/richieste</a>.</p>
+<p>Le richieste in attesa o in trattativa <strong>non compaiono</strong>, ed è voluto: finché non è confermata, una data non è ancora un impegno, e mescolarla alle altre falserebbe la tua programmazione. Per seguirle c'è <a href="/organizzatore/richieste">/organizzatore/richieste</a>.</p>
 
 <h2>Come si popola</h2>
-<p>Da solo. Una data compare qui nel momento in cui viene confermata, che sia con il pulsante "Conferma data" o perché l'artista ha accettato una tua offerta in chat. Nello stesso istante la data viene bloccata sul calendario dell'artista.</p>
+<p>In automatico. Una data compare qui appena viene confermata, con il pulsante "Conferma data" oppure perché l'artista ha accettato una tua offerta in chat. Nello stesso momento viene bloccata anche sul calendario dell'artista.</p>
 
 <h2>Se gestisci più strutture</h2>
 <p>C'è un selettore che filtra il calendario per struttura: comodo se hai due locali con programmazioni distinte. Vedi <a href="/help/organizzatori/strutture-multiple">gestire le tue strutture</a>.</p>
 
 <h2>È un calendario in sola lettura</h2>
-<p>Non puoi aggiungere manualmente una data né modificarne una esistente: il calendario riflette lo stato delle richieste, non è un'agenda indipendente. Le disponibilità sono invece gestite dagli artisti sul proprio calendario.</p>
+<p>Non puoi aggiungere manualmente una data né modificarne una esistente: il calendario rispecchia lo stato delle richieste e non funziona come un'agenda separata. Le disponibilità, invece, le gestiscono gli artisti sul proprio calendario.</p>
 <p>Per togliere una data confermata serve un annullamento: vedi <a href="/help/organizzatori/annullare-data">annullare una data confermata</a>.</p>
 
 <h2>Dopo la serata</h2>
@@ -317,7 +317,7 @@ export const ORGANIZZATORI: HelpCategory = {
       ],
       content: `
 <h2>Quando puoi recensire</h2>
-<p>Servono due condizioni: la data dev'essere stata <strong>confermata su N'arte</strong> e dev'essere <strong>già passata</strong>. Prima non è possibile, e non per un limite tecnico: una valutazione scritta prima della serata non varrebbe nulla.</p>
+<p>Servono due condizioni: la data dev'essere stata <strong>confermata su N'arte</strong> e dev'essere <strong>già passata</strong>. Prima non si può, ed è una scelta voluta: una valutazione scritta prima della serata non varrebbe nulla.</p>
 <p>Le date recensibili compaiono in <strong>/organizzatore/feedback</strong>, nella sezione "Da recensire". Puoi lasciare <strong>una sola recensione per evento</strong>.</p>
 
 <h2>Cosa contiene</h2>
@@ -327,7 +327,7 @@ export const ORGANIZZATORI: HelpCategory = {
 <p>Sul <strong>profilo dell'artista</strong>, con il tuo nome, insieme alla media e al numero di recensioni. Compare sul profilo pubblico solo se l'artista ha il piano Pro o Max; tutti gli utenti registrati possono vederla.</p>
 
 <h2>Come scriverne una utile</h2>
-<p>Le recensioni generiche non aiutano nessuno. Quelle che servono davvero rispondono alle domande che si fa il prossimo organizzatore:</p>
+<p>Una recensione generica serve a poco. Quelle utili rispondono alle domande che si farà il prossimo organizzatore:</p>
 <ul>
   <li><strong>È arrivato in orario</strong> ed era pronto quando doveva?</li>
   <li><strong>Come ha reagito il pubblico?</strong> È il dato che conta più di tutti.</li>
@@ -335,13 +335,13 @@ export const ORGANIZZATORI: HelpCategory = {
   <li><strong>Com'è stato lavorarci</strong> prima e durante: comunicazione, flessibilità, professionalità.</li>
   <li>Ci sono stati <strong>imprevisti</strong>, e come sono stati gestiti?</li>
 </ul>
-<p>Tre righe concrete valgono più di un paragrafo di complimenti.</p>
+<p>Tre righe concrete aiutano più di un paragrafo di complimenti.</p>
 
 <h2>Se la serata è andata male</h2>
-<p>Una recensione negativa è legittima, e il sistema serve anche a quello. Due accortezze:</p>
+<p>Anche una recensione negativa è legittima: le recensioni servono pure a questo. Tieni conto di due cose:</p>
 <ul>
   <li><strong>Attieniti ai fatti</strong>: cosa è successo, non giudizi sulla persona.</li>
-  <li><strong>Parlane prima con l'artista</strong>, in chat. A volte c'è una spiegazione, o rimedia.</li>
+  <li><strong>Parlane prima con l'artista</strong>, in chat. A volte c'è una spiegazione, o un modo per rimediare.</li>
 </ul>
 <p>Le recensioni offensive o riferite a fatti estranei alla serata possono essere <strong>nascoste dal team</strong>. Vedi il <a href="/help/policy/codice-condotta">codice di condotta</a>.</p>
 
@@ -366,8 +366,8 @@ export const ORGANIZZATORI: HelpCategory = {
       ],
       content: `
 <h2>Cos'è</h2>
-<p>Sulle date <strong>confermate</strong> compare il riquadro <strong>«Compenso concordato – promemoria»</strong>, in cui annotare il compenso pattuito fra voi. È visibile a entrambe le parti, artista e organizzatore. È un'<strong>annotazione fra le parti</strong>: N'arte non è parte dell'accordo e non gestisce pagamenti.</p>
-<p>Serve perché il budget indicato nella richiesta iniziale è quasi sempre una fascia indicativa, e durante la trattativa cambia. Il promemoria mette per iscritto il numero su cui vi siete accordati.</p>
+<p>Sulle date <strong>confermate</strong> compare il riquadro <strong>«Compenso concordato – promemoria»</strong>, dove annotare il compenso pattuito. Lo vedete entrambi, artista e organizzatore. È un'<strong>annotazione fra le parti</strong>: N'arte non è parte dell'accordo e non gestisce pagamenti.</p>
+<p>Serve perché il budget della richiesta iniziale è quasi sempre una fascia indicativa, che poi cambia durante la trattativa. Qui mettete per iscritto la cifra su cui vi siete accordati.</p>
 
 <h2>Come funziona la doppia conferma</h2>
 <ol>
@@ -375,16 +375,16 @@ export const ORGANIZZATORI: HelpCategory = {
   <li>L'altra vede la proposta e preme <strong>"Conferma"</strong>.</li>
   <li>Da quel momento l'importo risulta <strong>confermato da entrambi</strong>.</li>
 </ol>
-<p><strong>Non puoi confermare la tua stessa proposta</strong>: serve per forza l'assenso dell'altro. È tutto il senso della funzione.</p>
+<p><strong>Non puoi confermare la tua stessa proposta</strong>: serve per forza l'assenso dell'altra parte, ed è proprio questo il senso della funzione.</p>
 <p>Una proposta non ancora confermata si può ritirare. Un importo confermato da entrambi <strong>non si cancella da soli</strong>: se cambiano gli accordi si può solo proporre un nuovo importo, che l'altra parte deve confermare.</p>
 
 <h2>Cosa NON è</h2>
-<p>Va detto chiaramente per evitare fraintendimenti: <strong>non è un pagamento</strong>. Annotare l'importo non trasferisce denaro, non attiva un addebito e non costituisce una garanzia.</p>
+<p>Per evitare fraintendimenti: <strong>non è un pagamento</strong>. Annotare l'importo non trasferisce denaro, non attiva un addebito e non costituisce una garanzia.</p>
 <p>Il compenso viene pagato direttamente dall'organizzatore all'artista, fuori dalla piattaforma, nei modi che avete concordato. N'arte non incassa e non intermedia nulla: vedi <a href="/help/pagamenti/modalita-pagamento">come viene pagato il compenso</a>.</p>
 
 <h2>Perché usarlo comunque</h2>
-<p>Perché è una <strong>traccia condivisa e datata</strong> di quanto era stato pattuito, che nessuna delle due parti può modificare da sola una volta confermata. Non è un contratto. Se mesi dopo nasce un disaccordo sulla cifra, è lì. Costa dieci secondi e toglie di mezzo la discussione più sgradevole che ci sia.</p>
-<p>Vale la pena compilarlo insieme al resto degli accordi: vedi <a href="/help/booking/contratto-modello">cosa mettere per iscritto prima di una data</a>.</p>
+<p>Perché lascia una <strong>traccia condivisa e datata</strong> di quanto pattuito, che una volta confermata nessuno dei due può modificare da solo. Non ha valore di contratto, ma se mesi dopo nasce un disaccordo sulla cifra, la trovate lì. Bastano dieci secondi per evitarvi una delle discussioni più sgradevoli.</p>
+<p>Conviene compilarlo insieme al resto degli accordi: vedi <a href="/help/booking/contratto-modello">cosa mettere per iscritto prima di una data</a>.</p>
 `,
     },
 
@@ -397,7 +397,7 @@ export const ORGANIZZATORI: HelpCategory = {
       related: ["strutture-multiple", "richiedere-booking", "account/preferiti"],
       content: `
 <h2>Dove si compila</h2>
-<p>In <strong>/organizzatore/profilo</strong>. Il sottotitolo della pagina dice esattamente a cosa serve: sono le informazioni che gli artisti vedono quando ricevono una tua richiesta.</p>
+<p>In <strong>/organizzatore/profilo</strong>. Come dice il sottotitolo della pagina, sono le informazioni che gli artisti vedono quando ricevono una tua richiesta.</p>
 
 <h2>I campi</h2>
 <ul>
@@ -410,16 +410,16 @@ export const ORGANIZZATORI: HelpCategory = {
 
 <h2>Perché conviene compilarlo</h2>
 <p>Un artista che riceve una richiesta da un profilo vuoto, senza foto né descrizione, non sa se dall'altra parte c'è un locale serio o qualcuno che scrive a caso. Nel dubbio risponde prima a chi si è presentato.</p>
-<p>Bastano una foto, tre righe di descrizione e un link a Instagram per cambiare completamente l'impressione. È il ritorno più alto per il tempo speso di tutta la piattaforma.</p>
+<p>Bastano una foto, tre righe di descrizione e un link a Instagram per dare tutt'altra impressione. Su tutta la piattaforma, è il tempo speso meglio.</p>
 
 <h2>L'indicatore "Profilo completo"</h2>
-<p>In fondo alla barra laterale c'è un contatore su cinque voci: <strong>foto profilo</strong>, <strong>bio</strong>, <strong>telefono</strong>, <strong>sito o Instagram</strong> e <strong>almeno una struttura</strong>. Sono le cinque cose che rendono credibile una richiesta.</p>
+<p>In fondo alla barra laterale c'è un contatore su cinque voci: <strong>foto profilo</strong>, <strong>bio</strong>, <strong>telefono</strong>, <strong>sito o Instagram</strong> e <strong>almeno una struttura</strong>. Sono proprio gli elementi che rendono credibile una richiesta.</p>
 
 <h2>Cosa gli artisti non vedono</h2>
-<p>Vedono il tuo profilo e i dati della struttura che colleghi alla richiesta. Le informazioni del tuo account restano riservate secondo quanto descritto nell'<a href="/privacy">informativa privacy</a>.</p>
+<p>Gli artisti vedono il tuo profilo e i dati della struttura collegata alla richiesta. Le informazioni del tuo account restano riservate, come descritto nell'<a href="/privacy">informativa privacy</a>.</p>
 
 <h2>E le strutture?</h2>
-<p>Sono una cosa diversa dal profilo: il profilo sei tu, le strutture sono i luoghi. Vedi <a href="/help/organizzatori/strutture-multiple">gestire le tue strutture</a>.</p>
+<p>Sono separate dal profilo: il profilo parla di te, le strutture dei luoghi in cui organizzi. Vedi <a href="/help/organizzatori/strutture-multiple">gestire le tue strutture</a>.</p>
 `,
     },
   ],
