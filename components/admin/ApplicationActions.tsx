@@ -13,7 +13,21 @@ export function ApplicationActions({ applicationId }: { applicationId: string })
   const [error, setError] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
+  // Approvata ma email non consegnata: la scheda resta finché l'admin non ha
+  // letto l'avviso, altrimenti il refresh la farebbe sparire insieme al messaggio.
+  const [avviso, setAvviso] = useState<string | null>(null);
   const router = useRouter();
+
+  if (avviso) {
+    return (
+      <div className="flex flex-col items-end gap-2">
+        <p className="text-right text-xs text-amber-700">{avviso}</p>
+        <Button size="sm" variant="outline" onClick={() => router.refresh()}>
+          Ho capito
+        </Button>
+      </div>
+    );
+  }
 
   if (rejecting) {
     return (
@@ -71,6 +85,8 @@ export function ApplicationActions({ applicationId }: { applicationId: string })
               setError(null);
               const res = await approveApplication(applicationId);
               if (!res.ok) setError(res.error ?? "Errore");
+              else if (!res.notified)
+                setAvviso("Candidatura approvata, ma l'email di benvenuto non è partita: avvisa l'artista a mano.");
               else router.refresh();
             })
           }

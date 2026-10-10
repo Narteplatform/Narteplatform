@@ -137,8 +137,18 @@ export async function dispatchEmail<K extends EmailKey>(
     : { ok: false, provider: "resend", skipped: sent.skipped };
 }
 
+/**
+ * Chiavi che passano da Brevo anche se non sono in BREVO_ENABLED_KEYS.
+ *
+ * L'approvazione di artisti e organizzatori deve arrivare col template N'arte:
+ * con la variabile vuota (com'è oggi in produzione) finiva su Resend, che senza
+ * chiave la saltava, e all'artista restava solo l'invito di Supabase. Se Brevo
+ * non consegna, la regola 3 qui sopra ricade comunque su Resend.
+ */
+const BREVO_SEMPRE: ReadonlySet<EmailKey> = new Set<EmailKey>(["artist_approved", "organizer_approved"]);
+
 function shouldUseBrevo(key: EmailKey): boolean {
-  return enabledKeys().has(key);
+  return BREVO_SEMPRE.has(key) || enabledKeys().has(key);
 }
 
 /**

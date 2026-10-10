@@ -558,8 +558,11 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_APPLICATION_RECEIVED_ADMIN),
     label: "Candidatura ricevuta — copia interna",
   },
+  // Id di ripiego = quelli pubblicati sull'account Brevo di N'arte: queste due
+  // email partono sempre da Brevo (vedi BREVO_SEMPRE in lib/emails/dispatch.ts)
+  // e non devono dipendere dall'aver copiato la variabile su Vercel.
   artist_approved: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ARTIST_APPROVED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ARTIST_APPROVED) ?? 3,
     label: "Benvenuto artista",
   },
   organizer_registration_received: {
@@ -567,7 +570,7 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
     label: "Registrazione organizzatore ricevuta",
   },
   organizer_approved: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ORGANIZER_APPROVED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ORGANIZER_APPROVED) ?? 5,
     label: "Benvenuto organizzatore",
   },
   booking_request_artist: {

@@ -4,14 +4,12 @@ import { isUrlAssoluto, resolveMediaUrls } from "@/lib/storage/signed";
 import { createAdminClient } from "@/lib/supabase/server";
 import { leggiSospensione } from "@/lib/auth/sospeso";
 import { logger } from "@/lib/logger";
-import { isBunnyEmbedUrl } from "@/lib/storage/bunny/urls";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Avatar } from "@/components/ui/Avatar";
-import { ScrollArea } from "@/components/ui/ScrollArea";
 import {
   Table,
   TableBody,
@@ -20,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
-import { ApplicationActions } from "@/components/admin/ApplicationActions";
+import { ApplicationReviewCard } from "@/components/admin/ApplicationReviewCard";
 import { DeleteArtistButton } from "@/components/admin/DeleteArtistButton";
 import { ArtistTierQuickAssign } from "@/components/admin/ArtistTierQuickAssign";
 import { AutoRefresh } from "@/components/admin/AutoRefresh";
@@ -141,59 +139,17 @@ export default async function AdminArtistsPage({
               <Badge variant="accent">{applications.length}</Badge>
             </div>
             <p className="hidden text-xs text-muted-foreground sm:block">
-              Approva o rifiuta dalle card.
+              Leggi tutto prima di decidere: approva o rifiuta da ogni scheda.
             </p>
           </CardHeader>
-          <CardContent className="pt-0">
-            <ScrollArea snap className="-mx-2 px-2">
-              <div className="flex gap-3 pb-2">
-                {applications.map((a) => (
-                  <article
-                    key={a.id}
-                    className="flex w-[320px] shrink-0 flex-col gap-3 rounded-2xl border border-border bg-background p-4 snap-start"
-                  >
-                    <div className="flex items-start gap-3">
-                      <Avatar name={a.stage_name} size="md" />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-display text-base leading-tight tracking-tight truncate">
-                          {a.stage_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {a.name} · {a.email}
-                        </p>
-                      </div>
-                    </div>
-                    {a.genre.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {a.genre.slice(0, 4).map((g) => (
-                          <Badge key={g} variant="muted">
-                            {g}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    {a.bio && (
-                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                        {a.bio}
-                      </p>
-                    )}
-                    {videoCandidature.get(a.id) && (
-                      <video
-                        controls
-                        preload="metadata"
-                        src={videoCandidature.get(a.id)}
-                        className="aspect-video w-full rounded-xl border border-border bg-black object-cover"
-                      >
-                        Il tuo browser non supporta la riproduzione video.
-                      </video>
-                    )}
-                    <div className="mt-auto pt-2 border-t border-border">
-                      <ApplicationActions applicationId={a.id} />
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </ScrollArea>
+          <CardContent className="flex flex-col gap-4 pt-0">
+            {applications.map((a) => (
+              <ApplicationReviewCard
+                key={a.id}
+                candidatura={a}
+                videoUrl={videoCandidature.get(a.id) ?? null}
+              />
+            ))}
           </CardContent>
         </Card>
       )}

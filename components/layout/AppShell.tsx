@@ -31,6 +31,7 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { Button } from "@/components/ui/Button";
 import { PlanBadge } from "@/components/billing/PlanBadge";
 import { cn } from "@/lib/utils";
+import { parseVisti, serializeVisti, VISTI_COOKIE, VISTI_MAX_AGE } from "@/lib/admin/visti";
 import type { ArtistTier } from "@/lib/supabase/types";
 
 export type NavSubItem = {
@@ -45,6 +46,11 @@ export type NavSection = {
   icon: React.ReactNode;
   exact?: boolean;
   badge?: { label: string; variant?: "accent" | "default" };
+  /**
+   * Chiave del «visto» (lib/admin/visti.ts). Se presente, aprire la voce
+   * spegne il badge e il server, da lì in poi, conta solo le novità.
+   */
+  seenKey?: string;
   children?: NavSubItem[];
   featured?: boolean;
 };
@@ -79,6 +85,8 @@ export interface AppShellProps {
    * cliente: artista e organizzatore restano col solo cassetto.
    */
   bottomNav?: NavSection[];
+  /** Istante (ms, orologio del server) in cui sono stati calcolati i badge. */
+  badgesAt?: number;
   storage?: AppShellStorage;
   whatsNewHref?: string;
   showSearch?: boolean;
@@ -111,6 +119,60 @@ function isSectionActive(pathname: string, section: NavSection): boolean {
 
 const numberFormatter = new Intl.NumberFormat("it-IT");
 
+function leggiCookie(nome: string): string | null {
+  const riga = document.cookie.split("; ").find((c) => c.startsWith(`${nome}=`));
+  return riga ? riga.slice(nome.length + 1) : null;
+}
+
+/**
+ * Badge che si spengono all'apertura della voce.
+ *
+ * Il layout non si ricalcola a ogni navigazione client, quindi il server non
+ * può accorgersi da solo che la sezione è stata aperta: lo segna qui. Si
+ * scrive l'istante nel cookie (il server, al prossimo calcolo, conterà solo
+ * ciò che arriva dopo) e si nasconde subito il badge. Il badge torna visibile
+ * solo con un calcolo del server successivo alla visita (`badgesAt` più
+ * recente), che quindi riporta soltanto le novità vere.
+ */
+function useBadgeVisti(
+  navSections: NavSection[],
+  bottomNav: NavSection[] | undefined,
+  badgesAt: number,
+  pathname: string
+) {
+  const [spenti, setSpenti] = React.useState<Record<string, number>>({});
+
+  const attive = React.useMemo(() => {
+    const chiavi = new Set<string>();
+    for (const s of [...navSections, ...(bottomNav ?? [])]) {
+      if (s.seenKey && isSectionActive(pathname, s)) chiavi.add(s.seenKey);
+    }
+    return Array.from(chiavi).sort().join(",");
+  }, [navSections, bottomNav, pathname]);
+
+  React.useEffect(() => {
+    if (!attive) return;
+    const chiavi = attive.split(",");
+    const visti = parseVisti(leggiCookie(VISTI_COOKIE));
+    const adesso = new Date().toISOString();
+    for (const k of chiavi) visti[k] = adesso;
+    document.cookie = `${VISTI_COOKIE}=${serializeVisti(visti)}; path=/; max-age=${VISTI_MAX_AGE}; samesite=lax`;
+    setSpenti((prev) => {
+      const next = { ...prev };
+      for (const k of chiavi) next[k] = badgesAt;
+      return next;
+    });
+  }, [attive, badgesAt]);
+
+  return React.useMemo(() => {
+    const filtra = (s: NavSection): NavSection =>
+      s.seenKey && s.badge && spenti[s.seenKey] !== undefined && spenti[s.seenKey] >= badgesAt
+        ? { ...s, badge: undefined }
+        : s;
+    return { navSections: navSections.map(filtra), bottomNav: bottomNav?.map(filtra) };
+  }, [navSections, bottomNav, spenti, badgesAt]);
+}
+
 export function AppShell(props: AppShellProps) {
   // Il provider avvolge la shell intera: le pagine figlie rendono
   // <BreadcrumbTitle /> e la topbar legge il nome dal contesto.
@@ -126,8 +188,9 @@ function AppShellInner({
   brandHref,
   user,
   planTier,
-  navSections,
-  bottomNav,
+  navSections: navSectionsProp,
+  bottomNav: bottomNavProp,
+  badgesAt = 0,
   storage,
   whatsNewHref,
   showSearch = false,
@@ -136,6 +199,7 @@ function AppShellInner({
   children,
 }: AppShellProps) {
   const pathname = usePathname() ?? "/";
+  const { navSections, bottomNav } = useBadgeVisti(navSectionsProp, bottomNavProp, badgesAt, pathname);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const hasBottomNav = (bottomNav?.length ?? 0) > 0;
   // La prop esplicita vince sul contesto: chi monta la shell sa quello che fa.

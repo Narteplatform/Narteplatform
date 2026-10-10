@@ -48,6 +48,8 @@ import {
 import type { AdminPageKey } from "@/lib/validators/schemas";
 import { getBookingsAwaitingFeedback } from "@/lib/feedback/queries";
 import { contaOrganizzatoriInAttesa } from "@/lib/organizers/approvazione";
+import { cookies } from "next/headers";
+import { parseVisti, VISTI_COOKIE } from "@/lib/admin/visti";
 
 /**
  * Logo + area di appartenenza, senza separatore: il suffisso è dimensionato per
@@ -117,6 +119,7 @@ const BOTTOM_NAV_LABELS: Partial<Record<AdminPageKey, string>> = {
 async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boolean }): Promise<{
   navSections: NavSection[];
   bottomNav: NavSection[];
+  badgesAt: number;
 }> {
   let admin;
   try {
@@ -124,9 +127,19 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
   } catch (err) {
     console.error("[AppShellData] createAdminClient failed:", err);
     const fallback = defaultAdminNav();
-    return { navSections: fallback, bottomNav: fallback.slice(0, 5) };
+    return { navSections: fallback, bottomNav: fallback.slice(0, 5), badgesAt: Date.now() };
   }
   const today = todayIso();
+  // Istante del calcolo dei badge: la sidebar lo confronta con il momento in
+  // cui l'admin ha aperto una voce per sapere se il numero tiene già conto
+  // della visita (vedi lib/admin/visti.ts).
+  const badgesAt = Date.now();
+
+  // Ultima apertura di ciascuna voce. I badge contano solo ciò che è arrivato
+  // dopo; senza cookie (primo accesso, altro dispositivo) contano tutto.
+  const visti = await safe(cookies()).then((c) => parseVisti(c?.get(VISTI_COOKIE)?.value));
+  const dopo = <Q extends { gt: (col: string, v: string) => Q }>(q: Q, col: string, chiave: AdminPageKey): Q =>
+    visti[chiave] ? q.gt(col, visti[chiave]) : q;
 
   const [
     upcomingEvents,
@@ -152,10 +165,32 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     safe(admin.from("artist_videos").select("id", { count: "exact", head: true }).eq("moderation_state", "pending")),
   ]);
 
+  // Badge «novità»: stessi filtri dei totali, limitati a dopo l'ultima apertura.
+  const [
+    nuoveCandidature,
+    nuoviLead,
+    nuoveChat,
+    nuoveConsulenze,
+    nuoveSubmission,
+    nuoviVideo,
+  ] = await Promise.all([
+    safe(dopo(admin.from("artist_applications").select("id", { count: "exact", head: true }).eq("status", "pending"), "created_at", "artisti")),
+    safe(dopo(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "new").in("source", ["format", "contatti"]), "created_at", "leads")),
+    visti.chat
+      ? safe(admin.from("conversations").select("id", { count: "exact", head: true }).gt("last_message_at", visti.chat))
+      : safe(getActiveConversationsCountSuperadmin()).then((n) => ({ count: n ?? 0 })),
+    safe(dopo(admin.from("consultations").select("id", { count: "exact", head: true }).in("status", ["requested", "confirmed"]), "created_at", "consulenza")),
+    safe(dopo(admin.from("artist_media_submissions").select("id", { count: "exact", head: true }).eq("status", "pending"), "created_at", "moderazione")),
+    safe(dopo(admin.from("artist_videos").select("id", { count: "exact", head: true }).eq("moderation_state", "pending"), "created_at", "moderazione")),
+  ]);
+
   const c = (n: { count: number | null } | null) => n?.count ?? 0;
   const newLeadsCount = c(newLeads);
-  const pendingModerationCount = c(pendingMediaSubmissions) + c(pendingModerationVideos);
-  const activeChats = await safe(getActiveConversationsCountSuperadmin()).then((v) => v ?? 0);
+  const badgeCandidature = c(nuoveCandidature);
+  const badgeLead = c(nuoviLead);
+  const badgeChat = c(nuoveChat);
+  const badgeConsulenze = c(nuoveConsulenze);
+  const badgeModerazione = c(nuoveSubmission) + c(nuoviVideo);
   const pendingConsultations = await safe(
     admin
       .from("consultations")
@@ -165,6 +200,9 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
 
   // Organizzatori in attesa di approvazione (0071). Errore o colonna assente = 0.
   const pendingOrganizers = await contaOrganizzatoriInAttesa();
+  const badgeOrganizzatori = visti.utenti ? await contaOrganizzatoriInAttesa(visti.utenti) : pendingOrganizers;
+  const badge = (n: number): NavSection["badge"] =>
+    n > 0 ? { label: String(n), variant: "accent" } : undefined;
 
   const sectionsByKey: Record<AdminPageKey, NavSection | null> = {
     overview: {
@@ -191,7 +229,8 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       href: "/admin/artisti",
       label: "Artisti",
       icon: <Users className="size-4" />,
-      badge: c(pendingApplications) > 0 ? { label: String(c(pendingApplications)), variant: "accent" } : undefined,
+      seenKey: "artisti",
+      badge: badge(badgeCandidature),
       children: [
         { href: "/admin/artisti?filter=pending", label: "In attesa", count: c(pendingApplications) },
         { href: "/admin/artisti?filter=approved", label: "Roster", count: c(approvedArtists) },
@@ -206,7 +245,8 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       href: "/admin/leads",
       label: "Lead",
       icon: <Inbox className="size-4" />,
-      badge: newLeadsCount > 0 ? { label: String(newLeadsCount), variant: "accent" } : undefined,
+      seenKey: "leads",
+      badge: badge(badgeLead),
       children: [
         { href: "/admin/leads?status=new", label: "Nuovi", count: newLeadsCount },
         { href: "/admin/leads?status=contacted", label: "Contattati", count: c(contactedLeads) },
@@ -222,15 +262,15 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       href: "/admin/chat",
       label: "Chat",
       icon: <MessageCircle className="size-4" />,
-      badge: activeChats > 0 ? { label: String(activeChats), variant: "accent" } : undefined,
+      seenKey: "chat",
+      badge: badge(badgeChat),
     },
     consulenza: {
       href: "/admin/consulenza",
       label: "Consulenza",
       icon: <Phone className="size-4" />,
-      badge: pendingConsultations > 0
-        ? { label: String(pendingConsultations), variant: "accent" }
-        : undefined,
+      seenKey: "consulenza",
+      badge: badge(badgeConsulenze),
       children: [
         { href: "/admin/consulenza", label: "Appuntamenti", count: pendingConsultations },
         { href: "/admin/consulenza/confermati", label: "Confermati" },
@@ -257,10 +297,8 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       href: "/admin/moderazione",
       label: "Moderazione",
       icon: <ShieldCheck className="size-4" />,
-      badge:
-        pendingModerationCount > 0
-          ? { label: String(pendingModerationCount), variant: "accent" }
-          : undefined,
+      seenKey: "moderazione",
+      badge: badge(badgeModerazione),
     },
     segnalazioni: {
       href: "/admin/segnalazioni",
@@ -286,7 +324,8 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       href: "/admin/utenti",
       label: "Utenti",
       icon: <UserX className="size-4" />,
-      badge: pendingOrganizers > 0 ? { label: String(pendingOrganizers), variant: "accent" } : undefined,
+      seenKey: "utenti",
+      badge: badge(badgeOrganizzatori),
       children:
         pendingOrganizers > 0
           ? [
@@ -362,7 +401,7 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     };
   });
 
-  return { navSections, bottomNav };
+  return { navSections, bottomNav, badgesAt };
 }
 
 /** Contesto del selettore di profilo reso nella topbar. */
@@ -698,6 +737,7 @@ export async function AdminAppShell({
   let navSections: NavSection[];
   let bottomNav: NavSection[] | undefined;
   let storage: AppShellStorage | undefined = undefined;
+  let badgesAt: number | undefined;
   try {
     if (isConsultant) {
       ({ navSections, storage } = await loadConsultantShell(user.id));
@@ -707,7 +747,7 @@ export async function AdminAppShell({
     } else {
       const isRoot = isRootSuperadminEmail(user.email);
       const allowed = await getAllowedAdminPages(user.id, user.email);
-      ({ navSections, bottomNav } = await loadAdminShell({ allowed, isRoot }));
+      ({ navSections, bottomNav, badgesAt } = await loadAdminShell({ allowed, isRoot }));
     }
   } catch (err) {
     console.error("[AppShellData] loadAdminShell crashed:", err);
@@ -727,6 +767,7 @@ export async function AdminAppShell({
       }}
       navSections={navSections}
       bottomNav={bottomNav}
+      badgesAt={badgesAt}
       storage={storage}
     >
       {children}

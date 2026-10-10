@@ -240,14 +240,19 @@ export async function avvisaRichiestaOrganizzatore(input: {
   ]);
 }
 
-/** Quanti organizzatori attendono. Errore (anche colonna assente) = 0: il badge si nasconde. */
-export async function contaOrganizzatoriInAttesa(): Promise<number> {
+/**
+ * Quanti organizzatori attendono. Errore (anche colonna assente) = 0: il badge si nasconde.
+ * Con `dopo` conta solo quelli registrati dopo quell'istante (badge «novità» della sidebar).
+ */
+export async function contaOrganizzatoriInAttesa(dopo?: string): Promise<number> {
   try {
     const admin = createAdminClient();
-    const { count, error } = await admin
+    let query = admin
       .from("organizers")
       .select("id", { count: "exact", head: true })
       .eq("approval_status", "pending");
+    if (dopo) query = query.gt("created_at", dopo);
+    const { count, error } = await query;
     if (error) return 0;
     return count ?? 0;
   } catch {

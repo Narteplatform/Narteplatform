@@ -5,11 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
-import { getSiteUrl } from "@/lib/site-url";
 import { artistSchema, type ArtistInput } from "@/lib/validators/schemas";
-import { dispatchEmail } from "@/lib/emails/dispatch";
 import { sendBookingCancelledByAdminEmail } from "@/lib/emails/booking-notify";
-import ArtistApprovedEmail from "@/lib/emails/templates/ArtistApprovedEmail";
+import { preparaAccessoArtista, inviaBenvenutoArtista } from "@/lib/admin/accesso-artista";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 import { notificaProfiloRiattivato } from "@/lib/moderation/approvazioni";
@@ -138,20 +136,11 @@ export async function approveApplication(applicationId: string) {
     .single();
   if (appErr || !app) return { ok: false as const, error: "Candidatura non trovata" };
 
-  const redirectTo = `${getSiteUrl()}/reset-password`;
-  const { data: invite, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(app.email, {
-    redirectTo,
-    data: { full_name: app.name },
-  });
-  if (inviteErr && !inviteErr.message.toLowerCase().includes("already")) {
-    return { ok: false as const, error: inviteErr.message };
-  }
-
-  let userId = invite?.user?.id ?? null;
-  if (!userId) {
-    const { data: list } = await admin.auth.admin.listUsers();
-    userId = list.users.find((u) => u.email?.toLowerCase() === app.email.toLowerCase())?.id ?? null;
-  }
+  // Account e link d'accesso, senza email di Supabase: l'unica email che
+  // parte è il benvenuto N'arte qui sotto (vedi lib/admin/accesso-artista.ts).
+  const accesso = await preparaAccessoArtista(app.email, app.name);
+  if (!accesso.ok) return { ok: false as const, error: accesso.error };
+  const userId = accesso.userId;
 
   // Un account sospeso non può avere profili approvati: si ferma prima di
   // scrivere qualsiasi cosa (profilo, ruolo, stato della candidatura).
@@ -186,57 +175,16 @@ export async function approveApplication(applicationId: string) {
     affectedUserId: userId,
   });
 
-  // Email brandizzata con magic link per impostare la password
-  const siteUrl = getSiteUrl();
-  let actionLink: string | null = null;
-  try {
-    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-      type: "invite",
-      email: app.email,
-      options: { redirectTo: `${siteUrl}/reset-password` },
-    });
-    if (!linkErr && linkData?.properties?.action_link) {
-      actionLink = linkData.properties.action_link;
-    } else {
-      // Fallback: recovery link se l'utente esiste già
-      const { data: recoveryData } = await admin.auth.admin.generateLink({
-        type: "recovery",
-        email: app.email,
-        options: { redirectTo: `${siteUrl}/reset-password` },
-      });
-      if (recoveryData?.properties?.action_link) {
-        actionLink = recoveryData.properties.action_link;
-      }
-    }
-  } catch (e) {
-    logger.error("artisti", "approveApplication generateLink:", e instanceof Error ? e.message : String(e));
-  }
-
-  if (actionLink) {
-    await dispatchEmail({
-      key: "artist_approved",
-      to: app.email,
-      params: {
-        applicantName: app.name,
-        stageName: app.stage_name,
-        actionUrl: actionLink,
-        profileUrl: `${siteUrl}/dashboard/profili`,
-      },
-      fallback: {
-        subject: "Candidatura approvata — N'arte",
-        template: "ArtistApproved",
-        react: ArtistApprovedEmail({
-          applicantName: app.name,
-          stageName: app.stage_name,
-          actionUrl: actionLink,
-        }),
-      },
-    });
-  }
+  const notified = await inviaBenvenutoArtista({
+    email: app.email,
+    nome: app.name,
+    nomeArte: app.stage_name,
+    actionLink: accesso.actionLink,
+  });
 
   revalidatePath("/admin/artisti");
   revalidatePath("/artisti");
-  return { ok: true as const };
+  return { ok: true as const, notified };
 }
 
 export async function rejectApplication(applicationId: string, reason: string) {
@@ -613,18 +561,14 @@ export async function createArtistManual(input: {
   const admin = createAdminClient();
 
   let userId: string | null = null;
+  let accesso: { email: string; actionLink: string } | null = null;
   if (input.email) {
-    const redirectTo = `${getSiteUrl()}/reset-password`;
-    const { data: invite } = await admin.auth.admin.inviteUserByEmail(input.email, {
-      redirectTo,
-      data: { full_name: input.stage_name },
-    });
-    userId = invite?.user?.id ?? null;
-    if (!userId) {
-      const { data: list } = await admin.auth.admin.listUsers();
-      userId = list.users.find((u) => u.email?.toLowerCase() === input.email!.toLowerCase())?.id ?? null;
-    }
-    if (userId) await admin.from("profiles").update({ role: "artist" }).eq("id", userId);
+    const email = input.email.trim();
+    const preparato = await preparaAccessoArtista(email, input.stage_name);
+    if (!preparato.ok) return { ok: false as const, error: preparato.error };
+    userId = preparato.userId;
+    accesso = { email, actionLink: preparato.actionLink };
+    await admin.from("profiles").update({ role: "artist" }).eq("id", userId);
   }
 
   const slug = `${slugify(input.stage_name)}-${Date.now().toString(36).slice(-4)}`;
@@ -647,6 +591,14 @@ export async function createArtistManual(input: {
     descrizione: `Profilo «${input.stage_name}» creato manualmente dal team e approvato.`,
     affectedUserId: userId,
   });
+  if (accesso) {
+    await inviaBenvenutoArtista({
+      email: accesso.email,
+      nome: input.stage_name,
+      nomeArte: input.stage_name,
+      actionLink: accesso.actionLink,
+    });
+  }
   revalidatePath("/admin/artisti");
   revalidatePath("/artisti");
   return { ok: true as const };
