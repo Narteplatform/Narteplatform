@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sendTransactional } from "@/lib/brevo/send";
 import { passwordResetRequestSchema } from "@/lib/validators/schemas";
 import { getSiteUrl } from "@/lib/site-url";
+import { linkImpostaPassword } from "@/lib/auth/link-password";
 
 /**
  * Invio del link di recupero password.
@@ -89,7 +90,7 @@ export async function requestPasswordReset(email: string): Promise<Result> {
 
   // Indirizzo sconosciuto: `generateLink` fallisce. Si esce come se fosse
   // andato tutto bene.
-  if (error || !data?.properties?.action_link) {
+  if (error || !data?.properties?.hashed_token) {
     return { ok: true };
   }
 
@@ -101,7 +102,9 @@ export async function requestPasswordReset(email: string): Promise<Result> {
     to: address,
     params: {
       name,
-      actionUrl: data.properties.action_link,
+      // Link diretto alla nostra pagina, non quello di Supabase: vedi
+      // lib/auth/link-password.ts.
+      actionUrl: linkImpostaPassword(data.properties.hashed_token, "recovery"),
       expiresLabel: EXPIRES_LABEL,
     },
     subjectPreview: "Reimposta la tua password",

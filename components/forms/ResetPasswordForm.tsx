@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -16,10 +16,29 @@ import { Button } from "@/components/ui/Button";
 
 type Phase = "checking" | "ready" | "invalid" | "done";
 
+/**
+ * Token arrivato nel link delle nostre email (lib/auth/link-password.ts).
+ * Si verifica solo all'invio della password, non all'apertura: i filtri
+ * antispam che aprono i link in anticipo non lo consumano.
+ */
+type TokenLink = { tokenHash: string; type: "invite" | "recovery" };
+
+function leggiTokenDaUrl(): TokenLink | null {
+  const qs = new URLSearchParams(window.location.search);
+  const tokenHash = qs.get("token_hash");
+  const type = qs.get("type");
+  if (!tokenHash || (type !== "invite" && type !== "recovery")) return null;
+  return { tokenHash, type };
+}
+
 export function ResetPasswordForm() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("checking");
   const [error, setError] = useState<string | null>(null);
+  const [token, setToken] = useState<TokenLink | null>(null);
+  // Il token vale una volta sola: se la password viene rifiutata dopo la
+  // verifica, al nuovo tentativo la sessione c'è già e non va riverificato.
+  const verificato = useRef(false);
   const {
     register,
     handleSubmit,
@@ -30,6 +49,12 @@ export function ResetPasswordForm() {
   // Se non c'è, la pagina è stata aperta a mano o il link è scaduto: mostrarle
   // comunque i campi significherebbe far scrivere una password a vuoto.
   useEffect(() => {
+    const daLink = leggiTokenDaUrl();
+    if (daLink) {
+      setToken(daLink);
+      setPhase("ready");
+      return;
+    }
     const supabase = createClient();
     let cancelled = false;
     supabase.auth.getSession().then(({ data }) => {
@@ -51,12 +76,30 @@ export function ResetPasswordForm() {
   async function onSubmit(values: PasswordChangeInput) {
     setError(null);
     const supabase = createClient();
+    if (token && !verificato.current) {
+      // Apre la sessione e, per un invito, conferma l'indirizzo email.
+      const { error: verifyErr } = await supabase.auth.verifyOtp({
+        token_hash: token.tokenHash,
+        type: token.type,
+      });
+      if (verifyErr) {
+        setPhase("invalid");
+        return;
+      }
+      verificato.current = true;
+    }
     const { error } = await supabase.auth.updateUser({ password: values.password });
     if (error) {
       setError(authErrorMessage(error.message));
       return;
     }
     setPhase("done");
+    if (token?.type === "invite") {
+      // Primo accesso di un account appena approvato: niente avviso di
+      // «password cambiata» e niente nuovo login, si entra nella propria area.
+      setTimeout(() => router.push("/post-login"), 1500);
+      return;
+    }
     // Avviso di sicurezza: serve la sessione di recupero, quindi PRIMA del signOut.
     // Best effort: l'errore non deve toccare l'esito per l'utente.
     await notificaPasswordCambiata().catch(() => {});
@@ -75,8 +118,8 @@ export function ResetPasswordForm() {
         <AlertCircle className="size-5 text-corallo" />
         <p className="mt-3 font-display text-lg">Link non valido o scaduto</p>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          I link di recupero valgono un&rsquo;ora e una volta sola. Richiedine uno nuovo e
-          aprilo dallo stesso dispositivo.
+          Il link vale per un tempo limitato e una volta sola. Richiedine uno nuovo con
+          la tua email: ti arriva subito e ti fa scegliere la password.
         </p>
         <Button asChild size="md" className="mt-4">
           <Link href="/recupero-password">Richiedi un nuovo link</Link>
@@ -89,9 +132,13 @@ export function ResetPasswordForm() {
     return (
       <div className="rounded-xl border border-azzurro/40 bg-azzurro/10 p-5">
         <CheckCircle2 className="size-5 text-azzurro" />
-        <p className="mt-3 font-display text-lg">Password aggiornata</p>
+        <p className="mt-3 font-display text-lg">
+          {token?.type === "invite" ? "Account attivato" : "Password aggiornata"}
+        </p>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Ti stiamo portando alla pagina di accesso: entra con la password appena scelta.
+          {token?.type === "invite"
+            ? "Password salvata. Ti stiamo portando nella tua area."
+            : "Ti stiamo portando alla pagina di accesso: entra con la password appena scelta."}
         </p>
       </div>
     );

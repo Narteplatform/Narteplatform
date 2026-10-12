@@ -5,6 +5,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import ArtistApprovedEmail from "@/lib/emails/templates/ArtistApprovedEmail";
 import { logger } from "@/lib/logger";
+import { linkImpostaPassword } from "@/lib/auth/link-password";
 
 /**
  * Account e link d'accesso per un artista appena approvato, SENZA email di
@@ -33,8 +34,13 @@ export async function preparaAccessoArtista(
     email,
     options: { redirectTo, data: { full_name: nomeCompleto } },
   });
-  if (!invito.error && invito.data?.user?.id && invito.data.properties?.action_link) {
-    return { ok: true, userId: invito.data.user.id, actionLink: invito.data.properties.action_link };
+  // Si usa `hashed_token`, non `action_link`: vedi lib/auth/link-password.ts.
+  if (!invito.error && invito.data?.user?.id && invito.data.properties?.hashed_token) {
+    return {
+      ok: true,
+      userId: invito.data.user.id,
+      actionLink: linkImpostaPassword(invito.data.properties.hashed_token, "invite"),
+    };
   }
 
   const recupero = await admin.auth.admin.generateLink({
@@ -42,8 +48,12 @@ export async function preparaAccessoArtista(
     email,
     options: { redirectTo },
   });
-  if (!recupero.error && recupero.data?.user?.id && recupero.data.properties?.action_link) {
-    return { ok: true, userId: recupero.data.user.id, actionLink: recupero.data.properties.action_link };
+  if (!recupero.error && recupero.data?.user?.id && recupero.data.properties?.hashed_token) {
+    return {
+      ok: true,
+      userId: recupero.data.user.id,
+      actionLink: linkImpostaPassword(recupero.data.properties.hashed_token, "recovery"),
+    };
   }
 
   const motivo = recupero.error?.message ?? invito.error?.message ?? "link non generato";
