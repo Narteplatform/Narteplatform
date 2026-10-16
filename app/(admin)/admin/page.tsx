@@ -22,12 +22,14 @@ export default async function AdminOverviewPage() {
   }
   const supabase = createAdminClient();
 
-  const [eventsRes, artistsRes, leadsRes, applicationsRes, recentEventsRes, recentLeadsRes] =
+  const [eventsRes, artistsRes, leadsRes, applicationsRes, pendingProfilesRes, recentEventsRes, recentLeadsRes] =
     await Promise.all([
       supabase.from("events").select("id", { count: "exact", head: true }),
       supabase.from("artists").select("id", { count: "exact", head: true }).eq("status", "approved"),
       supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "new"),
       supabase.from("artist_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      // Profili aggiuntivi creati dagli artisti: in attesa, ma non sono candidature.
+      supabase.from("artists").select("id", { count: "exact", head: true }).eq("status", "pending"),
       supabase
         .from("events")
         .select("id, slug, title, city, date, cover_image, category, featured")
@@ -43,7 +45,7 @@ export default async function AdminOverviewPage() {
   // Query tollerante: errore o migration 0071 non applicata = 0, la card si nasconde.
   const pendingOrganizers = await contaOrganizzatoriInAttesa();
   const newLeads = leadsRes.count ?? 0;
-  const pendingApps = applicationsRes.count ?? 0;
+  const pendingApps = (applicationsRes.count ?? 0) + (pendingProfilesRes.count ?? 0);
   const recentEvents = recentEventsRes.data ?? [];
 
   const activityItems = (recentLeadsRes.data ?? []).map((l) => ({
@@ -58,7 +60,7 @@ export default async function AdminOverviewPage() {
     const parts: string[] = [];
     if (newLeads > 0) parts.push(`${newLeads} nuov${newLeads === 1 ? "o lead" : "i lead"}`);
     if (pendingApps > 0)
-      parts.push(`${pendingApps} candidatur${pendingApps === 1 ? "a" : "e"} da revisionare`);
+      parts.push(`${pendingApps} ${pendingApps === 1 ? "candidatura o profilo" : "candidature e profili"} da revisionare`);
     if (parts.length === 0) return "Tutto in ordine: nessuna richiesta in coda.";
     return `Hai ${parts.join(" e ")}.`;
   })();
@@ -93,7 +95,7 @@ export default async function AdminOverviewPage() {
           sublabel={newLeads > 0 ? "Da contattare" : "Nessuno in attesa"}
         />
         <KpiCard
-          label="Candidature in attesa"
+          label="Candidature e profili in attesa"
           value={pendingApps}
           icon={<UserPlus className="size-4" />}
           href="/admin/artisti?filter=pending"

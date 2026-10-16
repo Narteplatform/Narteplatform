@@ -191,7 +191,7 @@ export async function getModerationQueue(): Promise<ModerationQueue> {
  */
 export async function getModerationPendingCount(): Promise<number> {
   const admin = createAdminClient();
-  const [subs, videos] = await Promise.all([
+  const [subs, videos, profili] = await Promise.all([
     admin
       .from("artist_media_submissions")
       .select("id", { count: "exact", head: true })
@@ -200,7 +200,14 @@ export async function getModerationPendingCount(): Promise<number> {
       .from("artist_videos")
       .select("id", { count: "exact", head: true })
       .eq("moderation_state", "pending"),
+    // Nuovi profili artista in attesa (sezione «Profili da approvare»).
+    admin.from("artists").select("id", { count: "exact", head: true }).eq("status", "pending"),
   ]);
+  if (profili.error) {
+    logger.warn("[media/moderation-queries] conteggio profili fallito", {
+      error: profili.error.message,
+    });
+  }
   if (subs.error) {
     logger.warn("[media/moderation-queries] conteggio submissions fallito", {
       error: subs.error.message,
@@ -211,7 +218,7 @@ export async function getModerationPendingCount(): Promise<number> {
       error: videos.error.message,
     });
   }
-  return (subs.count ?? 0) + (videos.count ?? 0);
+  return (subs.count ?? 0) + (videos.count ?? 0) + (profili.count ?? 0);
 }
 
 /** Submission pending/rifiutate di un artista, raggruppate per destinazione. */

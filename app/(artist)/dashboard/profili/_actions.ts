@@ -10,6 +10,7 @@ import { getAccountEntitlements } from "@/lib/billing/entitlements";
 import { formatLimit, isUnlimited, PLAN_LABELS } from "@/lib/billing/plans";
 import { registraDecisione } from "@/lib/moderation/decisioni";
 import { logger } from "@/lib/logger";
+import { avvisaNuovoProfilo } from "@/lib/artist/nuovo-profilo";
 
 /**
  * Gestione dei profili artista di un account.
@@ -106,6 +107,13 @@ export async function createArtistProfile(input: CreateArtistProfileInput) {
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
+    });
+    // Best effort: il profilo esiste già, l'avviso al team non può farlo fallire.
+    await avvisaNuovoProfilo({
+      artistId: newId,
+      stageName: parsed.data.stage_name,
+      ownerId: user.id,
+      ownerEmail: user.email ?? null,
     });
   }
 

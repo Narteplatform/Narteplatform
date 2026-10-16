@@ -44,6 +44,8 @@ function moderationRpc(admin: AdminClient): MediaModerationRpc {
 async function revalidateArtist(admin: AdminClient, artistId: string | null | undefined) {
   revalidatePath("/admin/moderazione");
   revalidatePath("/artisti");
+  // La home mostra copertine e profili: dopo una decisione va rigenerata.
+  revalidatePath("/");
   if (!artistId) return;
   try {
     const { data, error } = await admin.from("artists").select("slug").eq("id", artistId).maybeSingle();
@@ -124,6 +126,28 @@ async function rimuoviFileSubmissionRifiutata(
   });
 }
 
+/**
+ * Nome d'arte e proprietario di un profilo, per i testi del registro e per
+ * `affectedUserId`. A lettura fallita restituisce `null`: il chiamante scrive
+ * comunque la riga, senza nome, e non mette mai l'UUID nel testo.
+ */
+async function leggiProfilo(
+  admin: AdminClient,
+  artistId: string | null | undefined,
+): Promise<{ nome: string; userId: string | null } | null> {
+  if (!artistId) return null;
+  const { data, error } = await admin
+    .from("artists")
+    .select("stage_name, user_id")
+    .eq("id", artistId)
+    .maybeSingle();
+  if (error) {
+    logger.warn("admin/moderazione", "profilo non leggibile per il registro:", error.message);
+    return null;
+  }
+  return data ? { nome: data.stage_name, userId: data.user_id ?? null } : null;
+}
+
 function notaValida(note: string): { ok: true; note: string } | { ok: false; error: string } {
   const n = (note ?? "").trim();
   if (n.length < MOTIVAZIONE_MIN) {
@@ -153,12 +177,14 @@ export async function approveMediaSubmission(id: string): Promise<Result> {
   });
   if (error) return { ok: false, error: error.message };
 
+  const profiloMedia = await leggiProfilo(admin, submission.artist_id);
   await registraAzione({
     actorId: user.id,
     targetType: "media",
     targetId: id,
     action: "approvazione_contenuto",
-    descrizione: `Contenuto (${submission.media_kind}) approvato sul profilo ${submission.artist_id}.`,
+    descrizione: `Contenuto (${submission.media_kind}) approvato${profiloMedia ? ` sul profilo «${profiloMedia.nome}»` : " su un profilo"}.`,
+    affectedUserId: profiloMedia?.userId ?? null,
   });
   await notificaMediaApprovati(
     submission.artist_id,
@@ -234,12 +260,14 @@ export async function approveArtistVideo(id: string): Promise<Result> {
     .eq("id", id);
   if (error) return { ok: false, error: error.message };
 
+  const profiloVideo = await leggiProfilo(admin, video.artist_id);
   await registraAzione({
     actorId: user.id,
     targetType: "video",
     targetId: id,
     action: "approvazione_video",
-    descrizione: `Video approvato sul profilo ${video.artist_id}.`,
+    descrizione: `Video approvato${profiloVideo ? ` sul profilo «${profiloVideo.nome}»` : " su un profilo"}.`,
+    affectedUserId: profiloVideo?.userId ?? null,
   });
   await notificaMediaApprovati(video.artist_id, etichettaContenuti(0, 0, 1));
 
@@ -405,12 +433,14 @@ export async function approveAllForArtist(artistId: string): Promise<Result> {
   }
 
   if (foto + audio + video > 0) {
+    const profiloBlocco = await leggiProfilo(admin, artistId);
     await registraAzione({
       actorId: user.id,
       targetType: "profilo",
       targetId: artistId,
       action: "approvazione_in_blocco",
-      descrizione: `Approvati in blocco sul profilo ${artistId}: ${etichettaContenuti(foto, audio, video)}.`,
+      descrizione: `Approvati in blocco${profiloBlocco ? ` sul profilo «${profiloBlocco.nome}»` : " su un profilo"}: ${etichettaContenuti(foto, audio, video)}.`,
+      affectedUserId: profiloBlocco?.userId ?? null,
     });
     // Una sola email per l'azione, non una per elemento.
     await notificaMediaApprovati(artistId, etichettaContenuti(foto, audio, video));

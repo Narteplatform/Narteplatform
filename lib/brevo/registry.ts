@@ -72,6 +72,8 @@ export type EmailKey =
   | "moderation_decision"
   | "media_approved"
   | "profile_reactivated"
+  | "profile_approved_new"
+  | "artist_profile_pending_admin"
   | "report_receipt"
   | "report_admin"
   | "report_outcome"
@@ -361,6 +363,16 @@ export interface ProfileReactivatedParams {
   profileUrl: string;
 }
 
+/** Primo profilo approvato dopo la creazione: stessi dati del profilo riattivato. */
+export type ProfileApprovedNewParams = ProfileReactivatedParams;
+
+/** Avviso al team: un artista ha creato un nuovo profilo da approvare. */
+export interface ArtistProfilePendingAdminParams {
+  profileName: string;
+  ownerEmail: string;
+  adminUrl: string;
+}
+
 /** Ricevuta di una segnalazione o di un reclamo (art. 16, par. 4 DSA). */
 export interface ReportReceiptParams {
   name: string;
@@ -514,6 +526,8 @@ export interface EmailParamsMap {
   moderation_decision: ModerationDecisionParams;
   media_approved: MediaApprovedParams;
   profile_reactivated: ProfileReactivatedParams;
+  profile_approved_new: ProfileApprovedNewParams;
+  artist_profile_pending_admin: ArtistProfilePendingAdminParams;
   report_receipt: ReportReceiptParams;
   report_admin: ReportAdminParams;
   report_outcome: ReportOutcomeParams;
@@ -714,6 +728,16 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
   profile_reactivated: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILE_REACTIVATED),
     label: "Profilo di nuovo visibile",
+  },
+  // Nessun template Brevo: finché non ne esiste uno la mail parte da Resend
+  // (fallback in lib/moderation/approvazioni.ts e lib/artist/nuovo-profilo.ts).
+  profile_approved_new: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILE_APPROVED_NEW),
+    label: "Nuovo profilo approvato",
+  },
+  artist_profile_pending_admin: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ARTIST_PROFILE_PENDING_ADMIN),
+    label: "Nuovo profilo da approvare — copia interna",
   },
   report_receipt: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_REPORT_RECEIPT),

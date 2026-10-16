@@ -18,6 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
+import { PendingProfilesCard } from "@/components/admin/PendingProfilesCard";
+import { leggiProfiliInAttesa } from "@/lib/admin/profili-in-attesa";
 import { ApplicationReviewCard } from "@/components/admin/ApplicationReviewCard";
 import { DeleteArtistButton } from "@/components/admin/DeleteArtistButton";
 import { ArtistTierQuickAssign } from "@/components/admin/ArtistTierQuickAssign";
@@ -57,7 +59,7 @@ export default async function AdminArtistsPage({
   const q = (params.q ?? "").trim().toLowerCase();
 
   const supabase = createAdminClient();
-  const [{ data: applications }, { data: artists }] = await Promise.all([
+  const [{ data: applications }, { data: artists }, profiliInAttesa] = await Promise.all([
     supabase
       .from("artist_applications")
       .select("*")
@@ -67,6 +69,7 @@ export default async function AdminArtistsPage({
       .from("artists")
       .select("id, user_id, slug, stage_name, status, city, cover_image, genre, tier, tier_override")
       .order("stage_name"),
+    leggiProfiliInAttesa(),
   ]);
 
   // I video di candidatura stanno in un bucket privato: in colonna c'è il
@@ -153,6 +156,12 @@ export default async function AdminArtistsPage({
           </CardContent>
         </Card>
       )}
+
+      <PendingProfilesCard
+        esito={profiliInAttesa}
+        titolo="Nuovi profili in attesa"
+        descrizione="Profili aggiuntivi creati dagli artisti: restano nascosti finché non li approvi."
+      />
 
       <Card>
         <CardHeader className="flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">

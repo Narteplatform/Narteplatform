@@ -113,6 +113,72 @@ export async function notificaProfiloRiattivato(artistId: string): Promise<void>
   }
 }
 
+/**
+ * Il profilo non è mai stato nel catalogo? `pending` da solo non basta a dirlo:
+ * anche un profilo sospeso torna `pending`. Si guarda il registro: se esiste
+ * una sospensione o una precedente approvazione, era già stato pubblicato.
+ * Nel dubbio (lettura fallita) si risponde `false`, cioè il testo «di nuovo
+ * nel catalogo», che era il comportamento di sempre.
+ */
+export async function profiloMaiPubblicato(artistId: string, statoPrecedente: string): Promise<boolean> {
+  if (statoPrecedente !== "pending") return false;
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("moderation_actions")
+      .select("id")
+      .eq("target_type", "profilo")
+      .eq("target_id", artistId)
+      .in("action", ["profilo_sospeso", "profilo_approvato"])
+      .limit(1);
+    if (error) {
+      logger.warn("approvazioni", "storico del profilo non leggibile:", error.message);
+      return false;
+    }
+    return (data?.length ?? 0) === 0;
+  } catch (e) {
+    logger.warn("approvazioni", "storico del profilo non determinabile:", e instanceof Error ? e.message : String(e));
+    return false;
+  }
+}
+
+/**
+ * Profilo approvato dal team: «approvato» per il nuovo profilo mai pubblicato,
+ * «di nuovo nel catalogo» per uno sospeso o rifiutato che torna visibile.
+ * `nuovo` va calcolato con `profiloMaiPubblicato` PRIMA di scrivere la riga
+ * «profilo_approvato» nel registro, altrimenti il profilo risulterebbe già
+ * pubblicato.
+ */
+export async function notificaProfiloApprovato(artistId: string, nuovo: boolean): Promise<void> {
+  if (!nuovo) {
+    await notificaProfiloRiattivato(artistId);
+    return;
+  }
+  const d = await destinatarioDelProfilo(artistId);
+  if (!d) return;
+  try {
+    await dispatchEmail({
+      key: "profile_approved_new",
+      to: d.email,
+      params: { name: d.nome, profileName: d.profileName, profileUrl: d.profileUrl },
+      meta: { artist_id: artistId },
+      fallback: {
+        subject: "Il tuo nuovo profilo è stato approvato — N'arte",
+        template: "profile_approved_new",
+        react: createElement(NoticeEmail, {
+          preview: "Il tuo nuovo profilo è nel catalogo pubblico.",
+          heading: "Profilo approvato",
+          paragraphs: [`Ciao ${d.nome}, il tuo nuovo profilo è stato approvato ed è nel catalogo.`],
+          rows: [{ label: "Profilo", value: d.profileName }],
+          button: { label: "Guarda il tuo profilo", href: d.profileUrl },
+        }),
+      },
+    });
+  } catch (e) {
+    logger.warn("approvazioni", "email profilo approvato non inviata:", e instanceof Error ? e.message : String(e));
+  }
+}
+
 /** «2 foto, 1 traccia audio e 1 video», senza voci a zero. */
 export function etichettaContenuti(foto: number, audio: number, video: number): string {
   const parti: string[] = [];

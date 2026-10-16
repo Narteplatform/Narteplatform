@@ -2,6 +2,8 @@ import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { getModerationQueue } from "@/lib/media/moderation-queries";
 import { Card, CardContent } from "@/components/ui/Card";
+import { PendingProfilesCard } from "@/components/admin/PendingProfilesCard";
+import { leggiProfiliInAttesa } from "@/lib/admin/profili-in-attesa";
 import { MediaModerationCard } from "@/components/admin/MediaModerationCard";
 
 export const metadata = { title: "Moderazione — N'arte Admin" };
@@ -10,7 +12,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminModerazionePage() {
   await requireAdminPageAccess("moderazione");
 
-  const { groups, totalCount, errors } = await getModerationQueue();
+  const [{ groups, totalCount, errors }, profiliInAttesa] = await Promise.all([
+    getModerationQueue(),
+    leggiProfiliInAttesa(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -31,6 +36,12 @@ export default async function AdminModerazionePage() {
           )}
         </p>
       </header>
+
+      <PendingProfilesCard
+        esito={profiliInAttesa}
+        titolo="Profili da approvare"
+        descrizione="Nuovi profili creati dagli artisti: restano nascosti dal catalogo finché non li approvi."
+      />
 
       {errors.length > 0 && (
         <Card className="border-corallo/40 bg-corallo/10">

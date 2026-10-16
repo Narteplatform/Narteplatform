@@ -111,6 +111,203 @@ async function nomiAccount(ids: string[]): Promise<Map<string, string>> {
   return out;
 }
 
+
+const UUID_GLOBALE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
+const ETICHETTE_OGGETTO: Record<string, string> = {
+  profilo: "Profilo",
+  candidatura: "Candidatura",
+  media: "Contenuto",
+  video: "Video",
+  account: "Account",
+  conversazione: "Conversazione",
+  messaggio: "Messaggio",
+  struttura: "Struttura",
+  recensione: "Recensione",
+  segnalazione: "Segnalazione",
+  segnalazione_profilo: "Segnalazione profilo",
+  booking: "Richiesta di booking",
+  lead: "Lead",
+  evento: "Evento",
+  format: "Format",
+  blog: "Articolo",
+  genere: "Genere",
+  consulenza: "Consulenza",
+  consulente: "Consulente",
+};
+
+function etichettaOggetto(tipo: string): string {
+  return ETICHETTE_OGGETTO[tipo] ?? etichettaAzione(tipo);
+}
+
+function uuidNelTesto(t: string): string[] {
+  return (t.match(UUID_GLOBALE) ?? []).map((u) => u.toLowerCase());
+}
+
+type Bersaglio = { tipo: string; id: string };
+
+/**
+ * Risolve in batch gli UUID del registro in nomi leggibili: i `target_id` per
+ * tipo e gli UUID che compaiono nei testi (motivo, descrizione). Sola lettura.
+ *
+ * Ogni lettura è indipendente e a errore controllato: se una fallisce si
+ * registra un avviso e quegli UUID restano com'erano. Non lancia mai.
+ * Chiave della mappa: UUID in minuscolo.
+ */
+async function risolviNomi(bersagli: Bersaglio[], testi: string[]): Promise<Map<string, string>> {
+  const admin = createAdminClient();
+  const nomi = new Map<string, string>();
+  const dal = (tipo: string) => Array.from(new Set(bersagli.filter((b) => b.tipo === tipo).map((b) => b.id.toLowerCase())));
+  const daTesti = Array.from(new Set(testi.flatMap(uuidNelTesto)));
+  const avviso = (cosa: string, msg: string) => logger.warn("admin/registro", `${cosa} non risolvibili:`, msg);
+
+  // Primo giro: tutto ciò che ha il nome in una sola riga, più i rimandi ai profili.
+  const idMedia = dal("media");
+  const idVideo = dal("video");
+  const profiliDaMedia = new Map<string, string>(); // media/video id -> artist id
+
+  await Promise.all([
+    idMedia.length > 0
+      ? admin
+          .from("artist_media_submissions")
+          .select("id, artist_id")
+          .in("id", idMedia)
+          .then(({ data, error }) => {
+            if (error) return avviso("contenuti", error.message);
+            for (const r of data ?? []) if (r.artist_id) profiliDaMedia.set(r.id.toLowerCase(), r.artist_id.toLowerCase());
+          })
+      : Promise.resolve(),
+    idVideo.length > 0
+      ? admin
+          .from("artist_videos")
+          .select("id, artist_id")
+          .in("id", idVideo)
+          .then(({ data, error }) => {
+            if (error) return avviso("video", error.message);
+            for (const r of data ?? []) if (r.artist_id) profiliDaMedia.set(r.id.toLowerCase(), r.artist_id.toLowerCase());
+          })
+      : Promise.resolve(),
+    dal("candidatura").length > 0
+      ? admin
+          .from("artist_applications")
+          .select("id, stage_name")
+          .in("id", dal("candidatura"))
+          .then(({ data, error }) => {
+            if (error) return avviso("candidature", error.message);
+            for (const r of data ?? []) nomi.set(r.id.toLowerCase(), r.stage_name);
+          })
+      : Promise.resolve(),
+    dal("struttura").length > 0
+      ? admin
+          .from("venues")
+          .select("id, name")
+          .in("id", dal("struttura"))
+          .then(({ data, error }) => {
+            if (error) return avviso("strutture", error.message);
+            for (const r of data ?? []) nomi.set(r.id.toLowerCase(), r.name);
+          })
+      : Promise.resolve(),
+    dal("blog").length > 0
+      ? admin
+          .from("blog_posts")
+          .select("id, title")
+          .in("id", dal("blog"))
+          .then(({ data, error }) => {
+            if (error) return avviso("articoli", error.message);
+            for (const r of data ?? []) nomi.set(r.id.toLowerCase(), r.title);
+          })
+      : Promise.resolve(),
+    dal("format").length > 0
+      ? admin
+          .from("formats")
+          .select("id, title")
+          .in("id", dal("format"))
+          .then(({ data, error }) => {
+            if (error) return avviso("format", error.message);
+            for (const r of data ?? []) nomi.set(r.id.toLowerCase(), r.title);
+          })
+      : Promise.resolve(),
+    dal("genere").length > 0
+      ? admin
+          .from("genres")
+          .select("id, name")
+          .in("id", dal("genere"))
+          .then(({ data, error }) => {
+            if (error) return avviso("generi", error.message);
+            for (const r of data ?? []) nomi.set(r.id.toLowerCase(), r.name);
+          })
+      : Promise.resolve(),
+    dal("consulente").length > 0
+      ? admin
+          .from("consultants")
+          .select("id, name")
+          .in("id", dal("consulente"))
+          .then(({ data, error }) => {
+            if (error) return avviso("consulenti", error.message);
+            for (const r of data ?? []) nomi.set(r.id.toLowerCase(), r.name);
+          })
+      : Promise.resolve(),
+  ]);
+
+  // Secondo giro: profili artista, eventi e account. Gli UUID dei testi si
+  // provano su tutte e tre le tabelle.
+  const idArtisti = Array.from(new Set([...dal("profilo"), ...profiliDaMedia.values(), ...daTesti]));
+  const idEventi = Array.from(new Set([...dal("evento"), ...daTesti]));
+  const idAccount = Array.from(new Set([...dal("account"), ...daTesti]));
+  const nomiArtisti = new Map<string, string>();
+
+  await Promise.all([
+    idArtisti.length > 0
+      ? admin
+          .from("artists")
+          .select("id, stage_name")
+          .in("id", idArtisti)
+          .then(({ data, error }) => {
+            if (error) return avviso("profili", error.message);
+            for (const r of data ?? []) nomiArtisti.set(r.id.toLowerCase(), r.stage_name);
+          })
+      : Promise.resolve(),
+    idEventi.length > 0
+      ? admin
+          .from("events")
+          .select("id, title")
+          .in("id", idEventi)
+          .then(({ data, error }) => {
+            if (error) return avviso("eventi", error.message);
+            for (const r of data ?? []) nomi.set(r.id.toLowerCase(), r.title);
+          })
+      : Promise.resolve(),
+    idAccount.length > 0
+      ? admin
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", idAccount)
+          .then(({ data, error }) => {
+            if (error) return avviso("account", error.message);
+            for (const r of data ?? []) if (r.full_name) nomi.set(r.id.toLowerCase(), r.full_name);
+          })
+      : Promise.resolve(),
+  ]);
+
+  // I nomi d'arte hanno la precedenza sugli account con lo stesso UUID (non
+  // dovrebbe accadere, ma un profilo è ciò che il Registro racconta).
+  for (const [id, nome] of nomiArtisti) nomi.set(id, nome);
+  // Contenuti e video prendono il nome del profilo a cui appartengono.
+  for (const [id, artistId] of profiliDaMedia) {
+    const nome = nomiArtisti.get(artistId);
+    if (nome) nomi.set(id, nome);
+  }
+  return nomi;
+}
+
+/** Sostituisce nel testo ogni UUID noto con «nome». Gli altri restano uguali. */
+function sostituisciUuid(testo: string, nomi: Map<string, string>): string {
+  return testo.replace(UUID_GLOBALE, (u) => {
+    const nome = nomi.get(u.toLowerCase());
+    return nome ? `«${nome}»` : u;
+  });
+}
+
 type AzioneRow = {
   id: string;
   created_at: string;
@@ -236,6 +433,25 @@ export async function leggiRegistro(
   const nomi = await nomiAccount(idAccount);
   const nome = (id: string | null) => (id ? (nomi.get(id) ?? id.slice(0, 8)) : "—");
 
+  // Nomi al posto degli UUID in «Oggetto» e «Motivo». Se la risoluzione non
+  // riesce, l'UUID resta com'è: la pagina non si rompe.
+  const bersagli: Bersaglio[] = [];
+  const testi: string[] = [];
+  for (const f of finestra) {
+    if (f.fonte === "azione") {
+      if (f.riga.target_id) bersagli.push({ tipo: f.riga.target_type, id: f.riga.target_id });
+      testi.push(f.riga.reason);
+    } else {
+      testi.push(f.riga.reason_text);
+    }
+  }
+  let risolti = new Map<string, string>();
+  try {
+    risolti = await risolviNomi(bersagli, testi);
+  } catch (e) {
+    logger.warn("admin/registro", "nomi non risolti:", e instanceof Error ? e.message : String(e));
+  }
+
   const righe: RegistroRiga[] = finestra.map((f): RegistroRiga => {
     if (f.fonte === "azione") {
       const r = f.riga;
@@ -246,9 +462,9 @@ export async function leggiRegistro(
         operatoreId: r.actor_id,
         operatore: nome(r.actor_id),
         azione: etichettaAzione(r.action),
-        oggetto: `${r.target_type}${r.target_id ? ` ${r.target_id}` : ""}`,
+        oggetto: oggettoLeggibile(r.target_type, r.target_id, risolti),
         interessato: r.affected_user_id ? nome(r.affected_user_id) : (r.affected_email ?? "—"),
-        motivo: r.reason,
+        motivo: sostituisciUuid(r.reason, risolti),
         notifica: r.notified_at ? `Inviata il ${r.notified_at}` : r.notify_error ? `Non inviata: ${r.notify_error}` : "—",
       };
     }
@@ -260,14 +476,21 @@ export async function leggiRegistro(
       operatoreId: r.admin_user_id,
       operatore: nome(r.admin_user_id),
       azione: "Accesso alla conversazione",
-      oggetto: `conversazione ${r.conversation_id}`,
+      oggetto: `Conversazione ${r.conversation_id}`,
       interessato: "—",
-      motivo: `${etichettaCategoria(r.reason_category)}: ${r.reason_text}${r.report_reference ? ` (${r.report_reference})` : ""}`,
+      motivo: `${etichettaCategoria(r.reason_category)}: ${sostituisciUuid(r.reason_text, risolti)}${r.report_reference ? ` (${r.report_reference})` : ""}`,
       notifica: "—",
     };
   });
 
   return { ok: true, righe, totale: nAzioni + nAccessi, avvisi };
+}
+
+function oggettoLeggibile(tipo: string, id: string | null, nomi: Map<string, string>): string {
+  const etichetta = etichettaOggetto(tipo);
+  if (!id) return etichetta;
+  const nome = nomi.get(id.toLowerCase());
+  return nome ? `${etichetta} — ${nome}` : `${etichetta} ${id}`;
 }
 
 function cella(v: string): string {

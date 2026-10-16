@@ -186,7 +186,8 @@ export async function registraAzione(input: AzioneInput): Promise<DecisioneEsito
   try {
     let descrizione = (input.descrizione ?? "").trim();
     if (descrizione.length < MOTIVAZIONE_MIN) {
-      descrizione = `Azione ${input.action} su ${input.targetType}${input.targetId ? ` ${input.targetId}` : ""}`;
+      // Niente UUID nel testo: l'oggetto è già in colonna e il Registro lo risolve in nome.
+      descrizione = `Azione ${input.action.replace(/_/g, " ")} su ${input.targetType}`;
     }
     const esito = await registraDecisione({
       actorId: input.actorId,

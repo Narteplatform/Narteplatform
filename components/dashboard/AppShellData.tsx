@@ -151,6 +151,7 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     closedLeads,
     pendingMediaSubmissions,
     pendingModerationVideos,
+    pendingProfiles,
   ] = await Promise.all([
     safe(admin.from("events").select("id", { count: "exact", head: true }).gte("date", today)),
     safe(admin.from("events").select("id", { count: "exact", head: true }).lt("date", today)),
@@ -163,6 +164,9 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     // sommati nel badge di navigazione.
     safe(admin.from("artist_media_submissions").select("id", { count: "exact", head: true }).eq("status", "pending")),
     safe(admin.from("artist_videos").select("id", { count: "exact", head: true }).eq("moderation_state", "pending")),
+    // Profili aggiuntivi (Pro/Max) creati dagli artisti: nascono `pending` e
+    // non passano da artist_applications, quindi vanno contati a parte.
+    safe(admin.from("artists").select("id", { count: "exact", head: true }).eq("status", "pending")),
   ]);
 
   // Badge «novità»: stessi filtri dei totali, limitati a dopo l'ultima apertura.
@@ -173,6 +177,8 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     nuoveConsulenze,
     nuoveSubmission,
     nuoviVideo,
+    nuoviProfili,
+    nuoviProfiliModerazione,
   ] = await Promise.all([
     safe(dopo(admin.from("artist_applications").select("id", { count: "exact", head: true }).eq("status", "pending"), "created_at", "artisti")),
     safe(dopo(admin.from("leads").select("id", { count: "exact", head: true }).eq("status", "new").in("source", ["format", "contatti"]), "created_at", "leads")),
@@ -182,15 +188,17 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     safe(dopo(admin.from("consultations").select("id", { count: "exact", head: true }).in("status", ["requested", "confirmed"]), "created_at", "consulenza")),
     safe(dopo(admin.from("artist_media_submissions").select("id", { count: "exact", head: true }).eq("status", "pending"), "created_at", "moderazione")),
     safe(dopo(admin.from("artist_videos").select("id", { count: "exact", head: true }).eq("moderation_state", "pending"), "created_at", "moderazione")),
+    safe(dopo(admin.from("artists").select("id", { count: "exact", head: true }).eq("status", "pending"), "created_at", "artisti")),
+    safe(dopo(admin.from("artists").select("id", { count: "exact", head: true }).eq("status", "pending"), "created_at", "moderazione")),
   ]);
 
   const c = (n: { count: number | null } | null) => n?.count ?? 0;
   const newLeadsCount = c(newLeads);
-  const badgeCandidature = c(nuoveCandidature);
+  const badgeCandidature = c(nuoveCandidature) + c(nuoviProfili);
   const badgeLead = c(nuoviLead);
   const badgeChat = c(nuoveChat);
   const badgeConsulenze = c(nuoveConsulenze);
-  const badgeModerazione = c(nuoveSubmission) + c(nuoviVideo);
+  const badgeModerazione = c(nuoveSubmission) + c(nuoviVideo) + c(nuoviProfiliModerazione);
   const pendingConsultations = await safe(
     admin
       .from("consultations")
@@ -232,7 +240,7 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       seenKey: "artisti",
       badge: badge(badgeCandidature),
       children: [
-        { href: "/admin/artisti?filter=pending", label: "In attesa", count: c(pendingApplications) },
+        { href: "/admin/artisti?filter=pending", label: "In attesa", count: c(pendingApplications) + c(pendingProfiles) },
         { href: "/admin/artisti?filter=approved", label: "Roster", count: c(approvedArtists) },
       ],
     },

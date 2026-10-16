@@ -10,7 +10,7 @@ import { sendBookingCancelledByAdminEmail } from "@/lib/emails/booking-notify";
 import { preparaAccessoArtista, inviaBenvenutoArtista } from "@/lib/admin/accesso-artista";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
-import { notificaProfiloRiattivato } from "@/lib/moderation/approvazioni";
+import { notificaProfiloApprovato, profiloMaiPubblicato } from "@/lib/moderation/approvazioni";
 import { applicaModificaPersonale, type PersonnelEditRow } from "@/lib/admin/personnel";
 import { verificaProprietarioNonSospeso } from "@/lib/admin/sospensione";
 import { nascondiRecensioniDiBookingAnnullato } from "@/lib/feedback/moderation";
@@ -104,6 +104,15 @@ export async function updateArtistTier(artistId: string, input: TierOverrideInpu
     });
     if (!esito.ok) logger.warn("artisti", "omaggio non registrato:", esito.error);
   } else {
+    // Il nome serve solo al testo del registro: se non si legge, si scrive
+    // comunque la riga, senza nome.
+    const { data: prof, error: profErr } = await admin
+      .from("artists")
+      .select("stage_name, user_id")
+      .eq("id", artistId)
+      .maybeSingle();
+    if (profErr) logger.warn("artisti", "nome del profilo non letto:", profErr.message);
+    const nomeProfilo = prof?.stage_name ?? null;
     // Revoca o declassamento dell'omaggio: resta traccia anche di questo.
     // (Azione diversa da «omaggio_%», che indica i piani concessi e attivi.)
     await registraAzione({
@@ -111,10 +120,11 @@ export async function updateArtistTier(artistId: string, input: TierOverrideInpu
       targetType: "profilo",
       targetId: artistId,
       action: "piano_omaggio_rimosso",
+      affectedUserId: prof?.user_id ?? null,
       descrizione:
         (parsed.data.reason ?? "").trim().length >= MOTIVAZIONE_MIN
           ? (parsed.data.reason ?? "").trim()
-          : `Piano omaggio rimosso dal profilo ${artistId}.`,
+          : `Piano omaggio rimosso${nomeProfilo ? ` dal profilo «${nomeProfilo}»` : " da un profilo"}.`,
     });
   }
 
@@ -159,6 +169,7 @@ export async function approveApplication(applicationId: string) {
     slug,
     bio: app.bio,
     genre: app.genre,
+    instruments: app.instruments ?? [],
     social_links: app.links,
     status: "approved",
   });
@@ -262,6 +273,9 @@ export async function updateArtistStatus(
   if (error) return { ok: false as const, error: error.message };
 
   if (!negativa) {
+    // Prima di scrivere «profilo_approvato» nel registro: dopo, il profilo
+    // risulterebbe già stato pubblicato.
+    const nuovo = await profiloMaiPubblicato(artistId, current.status);
     await registraAzione({
       actorId: user.id,
       targetType: "profilo",
@@ -271,7 +285,7 @@ export async function updateArtistStatus(
         m.reason ?? `Profilo «${current.stage_name}» approvato (era ${current.status}).`,
       affectedUserId: current.user_id,
     });
-    await notificaProfiloRiattivato(artistId);
+    await notificaProfiloApprovato(artistId, nuovo);
   }
 
   if (negativa && m.reason) {
