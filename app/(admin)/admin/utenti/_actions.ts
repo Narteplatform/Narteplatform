@@ -8,6 +8,7 @@ import { MOTIVAZIONE_MIN, registraAzione, registraDecisione } from "@/lib/modera
 import { createAdminClient } from "@/lib/supabase/server";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { logger } from "@/lib/logger";
+import { creaNotifica } from "@/lib/notifications";
 import { venueTypeEnum } from "@/lib/validators/schemas";
 import { chiudiAccountDalTeam } from "@/lib/admin/chiusura";
 import { createElement } from "react";
@@ -360,6 +361,15 @@ export async function approvaOrganizzatoreAction(userId: string): Promise<EsitoO
     descrizione: `Approvato l'account organizzatore "${letto.riga.display_name}"`,
     affectedUserId: id.data,
   });
+
+  // Campanella (best-effort): non blocca né annulla l'approvazione.
+  void creaNotifica({
+    userId: id.data,
+    kind: "organizzatore_approvato",
+    title: "Account approvato",
+    body: "Ora puoi inviare richieste agli artisti, usare la chat e il calendario.",
+    href: "/organizzatore",
+  }).catch(() => undefined);
 
   // L'email è un'ulteriore cortesia: se non parte l'approvazione resta valida.
   let notified = false;

@@ -404,3 +404,16 @@ l'approvazione.
 
 Verifica dopo l'esecuzione: `npm run db:check-migrations` e le query in fondo al file della
 migration (tutti gli organizzatori esistenti `approved`; nessun ruolo organizer senza riga).
+
+## Notifiche in-app (campanella) — `0073` (16/10/2026)
+
+**`0073_notifiche.sql`** — indipendente da tutte le altre, in qualunque ordine. Il codice è già
+pronto e tollera la tabella mancante: la campanella resta vuota e nessuna notifica viene scritta.
+Eseguire la migration accende le notifiche.
+
+| Parte | Effetto | Attenzione |
+|---|---|---|
+| `notifications` | tabella nuova (user_id, artist_id, kind, title, body, href, read_at) + indice sulle non lette | additiva: nessun dato esistente toccato |
+| RLS e privilegi | `revoke all` a anon/authenticated; l'utente può solo `select` delle proprie righe e `update (read_at)` | l'insert è solo service role: nessuna notifica si può falsificare dal browser |
+
+Verifica dopo l'esecuzione: `npm run db:check-migrations`.

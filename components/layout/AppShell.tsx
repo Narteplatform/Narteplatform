@@ -29,6 +29,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Progress } from "@/components/ui/Progress";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Button } from "@/components/ui/Button";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import type { NotificheIniziali } from "@/lib/notifications/types";
 import { PlanBadge } from "@/components/billing/PlanBadge";
 import { cn } from "@/lib/utils";
 import { parseVisti, serializeVisti, VISTI_COOKIE, VISTI_MAX_AGE } from "@/lib/admin/visti";
@@ -97,6 +99,11 @@ export interface AppShellProps {
    * accanto al breadcrumb e non fra i pulsanti a destra.
    */
   topbarSlot?: React.ReactNode;
+  /**
+   * Notifiche non lette per la campanella. Presente SOLO nelle aree artista e
+   * organizzatore: senza, la campanella non viene resa.
+   */
+  notifications?: NotificheIniziali;
   /**
    * Sostituisce l'ultima voce del breadcrumb. Serve alle rotte [id], dove il
    * percorso contiene un uuid e solo la pagina sa come si chiama la cosa.
@@ -195,6 +202,7 @@ function AppShellInner({
   whatsNewHref,
   showSearch = false,
   topbarSlot,
+  notifications,
   breadcrumbLabel,
   children,
 }: AppShellProps) {
@@ -284,6 +292,12 @@ function AppShellInner({
                   <Sparkles className="size-3.5" /> Novità
                 </Link>
               </Button>
+            )}
+            {notifications && (
+              <NotificationBell
+                initialItems={notifications.items}
+                initialCount={notifications.count}
+              />
             )}
             <TopbarUser user={user} planTier={planTier} />
           </div>

@@ -1,4 +1,5 @@
 import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { creaNotifichePerArtista } from "@/lib/notifications";
 import { createElement } from "react";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
@@ -315,6 +316,14 @@ export async function POST(req: Request) {
     }
 
     logger.debug("booking-request", rid, "step=request-inserted", bookingReq.id);
+
+    // Campanella dell'artista (best-effort: non blocca mai la richiesta).
+    void creaNotifichePerArtista(artist.id, {
+      kind: "booking_nuova",
+      title: "Nuova richiesta di booking",
+      body: `Per il ${data.date}. Aprila per rispondere.`,
+      href: "/dashboard/leads?status=pending",
+    }).catch(() => undefined);
 
     // --- Emails (best-effort)
     try {

@@ -181,6 +181,9 @@ policy e pubblicazioni realtime — che PostgREST non espone — le query sono i
   Il codice è già online e tollera la colonna mancante (= «approved»). Gli organizzatori esistenti
   restano approvati. Chiude anche `consultant` dal metadata di signup e la RPC
   `promote_user_to_organizer` per gli utenti.
+- `0073_notifiche.sql` — notifiche in-app (campanella in topbar, artista e organizzatore): tabella
+  `notifications`, scrive solo la service role, l'utente legge le proprie e segna `read_at`.
+  **Indipendente dalle altre.** Il codice tollera la tabella mancante (campanella vuota).
 
 ## Comandi
 

@@ -31,6 +31,9 @@ import {
   getUnreadCountForUser,
 } from "@/lib/chat/queries";
 import type { ReactNode } from "react";
+import { leggiNonLette } from "@/lib/notifications";
+import type { NotificheIniziali } from "@/lib/notifications/types";
+import { logger } from "@/lib/logger";
 import { AppShell, type AppShellStorage, type NavSection } from "@/components/layout/AppShell";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -482,37 +485,54 @@ async function loadArtistShell(userId: string): Promise<{
     : null;
   const uploadedVideoCount = uploadedVideosRes?.count ?? 0;
 
-  let newLeads = 0;
-  let contactedLeads = 0;
-  let closedLeads = 0;
+  // Le richieste arrivano al singolo profilo, ma il badge è dell'account: chi
+  // ha più profili deve vedere le novità di TUTTI, non solo del profilo
+  // attivo. Si contano le richieste di booking in attesa (il flusso attuale) e
+  // i vecchi lead «new» (flusso precedente, ancora mostrato in pagina).
+  const ownedIds = owned.map((o) => o.id);
+  if (activeArtist && !ownedIds.includes(activeArtist.id)) ownedIds.push(activeArtist.id);
 
-  if (artist) {
-    const [leadsNew, leadsContacted, leadsClosed] = await Promise.all([
+  let newLeads = 0;
+  let negotiatingRequests = 0;
+  let confirmedRequests = 0;
+
+  if (ownedIds.length > 0) {
+    const [bookingsPending, leadsNew, bookingsNegotiating, bookingsConfirmed] = await Promise.all([
+      safe(
+        admin
+          .from("booking_requests")
+          .select("id", { count: "exact", head: true })
+          .in("artist_id", ownedIds)
+          .eq("status", "pending")
+      ),
       safe(
         admin
           .from("leads")
           .select("id", { count: "exact", head: true })
-          .eq("artist_id", artist.id)
+          .in("artist_id", ownedIds)
           .eq("status", "new")
       ),
       safe(
         admin
-          .from("leads")
+          .from("booking_requests")
           .select("id", { count: "exact", head: true })
-          .eq("artist_id", artist.id)
-          .eq("status", "contacted")
+          .in("artist_id", ownedIds)
+          .in("status", ["in_trattativa", "accettata"])
       ),
       safe(
         admin
-          .from("leads")
+          .from("booking_requests")
           .select("id", { count: "exact", head: true })
-          .eq("artist_id", artist.id)
-          .eq("status", "closed")
+          .in("artist_id", ownedIds)
+          .eq("status", "confermata")
       ),
     ]);
-    newLeads = leadsNew?.count ?? 0;
-    contactedLeads = leadsContacted?.count ?? 0;
-    closedLeads = leadsClosed?.count ?? 0;
+    // Una query fallita conta zero: è solo un badge, non governa nessuna scrittura.
+    if (bookingsPending?.error) logger.error("AppShellData", "booking pending:", bookingsPending.error.message);
+    if (leadsNew?.error) logger.error("AppShellData", "leads new:", leadsNew.error.message);
+    newLeads = (bookingsPending?.count ?? 0) + (leadsNew?.count ?? 0);
+    negotiatingRequests = bookingsNegotiating?.count ?? 0;
+    confirmedRequests = bookingsConfirmed?.count ?? 0;
   }
 
   const unreadChat = await safe(getUnreadCountForUser(userId, "artist")).then((v) => v ?? 0);
@@ -551,9 +571,9 @@ async function loadArtistShell(userId: string): Promise<{
       icon: <Inbox className="size-4" />,
       badge: newLeads > 0 ? { label: String(newLeads), variant: "accent" } : undefined,
       children: [
-        { href: "/dashboard/leads?status=new", label: "Nuove", count: newLeads },
-        { href: "/dashboard/leads?status=contacted", label: "Contattate", count: contactedLeads },
-        { href: "/dashboard/leads?status=closed", label: "Chiuse", count: closedLeads },
+        { href: "/dashboard/leads?status=pending", label: "Nuove", count: newLeads },
+        { href: "/dashboard/leads?status=in_trattativa", label: "In trattativa", count: negotiatingRequests },
+        { href: "/dashboard/leads?status=confermata", label: "Confermate", count: confirmedRequests },
       ],
     },
     {
@@ -955,6 +975,12 @@ function defaultOrganizerNav(): NavSection[] {
   ];
 }
 
+/** Notifiche della campanella; tabella mancante o errore = campanella vuota. */
+async function caricaNotifiche(userId: string): Promise<NotificheIniziali> {
+  const { items, count } = await leggiNonLette(userId);
+  return { items, count };
+}
+
 export async function OrganizerAppShell({
   user,
   children,
@@ -964,6 +990,7 @@ export async function OrganizerAppShell({
 }) {
   let navSections: NavSection[];
   let storage: AppShellStorage | undefined;
+  const notifications = await caricaNotifiche(user.id);
   try {
     ({ navSections, storage } = await loadOrganizerShell(user.id));
   } catch (err) {
@@ -983,6 +1010,7 @@ export async function OrganizerAppShell({
       }}
       navSections={navSections}
       storage={storage}
+      notifications={notifications}
     >
       {children}
     </AppShell>
@@ -1001,6 +1029,7 @@ export async function ArtistAppShell({
   let profiles: ArtistProfilesContext;
   let planTier: ArtistTier | null;
   let artistCover: string | null;
+  const notifications = await caricaNotifiche(user.id);
   try {
     ({ navSections, storage, profiles, planTier, artistCover } = await loadArtistShell(user.id));
   } catch (err) {
@@ -1028,6 +1057,7 @@ export async function ArtistAppShell({
       planTier={planTier ?? undefined}
       navSections={navSections}
       storage={storage}
+      notifications={notifications}
       topbarSlot={
         <ArtistProfileSwitcher
           owned={profiles.owned}

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { creaNotifichePerArtista } from "@/lib/notifications";
 import { createAdminClient } from "@/lib/supabase/server";
 import { artistInterestSchema } from "@/app/(user)/artisti/[slug]/_schema";
 import { allowByIp, LIMITI } from "@/lib/security/rate-limit";
@@ -165,6 +166,14 @@ export async function POST(req: Request) {
     }
 
     logger.debug("booking-api", rid, "step=lead-inserted", { leadId: lead.id });
+
+    // Campanella dell'artista (best-effort).
+    void creaNotifichePerArtista(artist.id, {
+      kind: "booking_nuova",
+      title: "Nuova richiesta di booking",
+      body: `Per il ${data.date}. Aprila per rispondere.`,
+      href: "/dashboard/leads",
+    }).catch(() => undefined);
 
     // Email disabilitate per ora — verranno reintegrate in seguito.
 

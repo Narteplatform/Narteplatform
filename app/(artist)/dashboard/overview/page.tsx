@@ -8,6 +8,7 @@ import {
   MessageCircle,
   Video,
 } from "lucide-react";
+import { logger } from "@/lib/logger";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { getActiveArtistRow } from "@/lib/artist/current";
@@ -67,6 +68,8 @@ export default async function ArtistOverviewPage() {
     { count: availableCount },
     { count: newLeadsCount },
     { data: recentLeads },
+    { count: pendingBookingsCount, error: pendingBookingsError },
+    { data: recentBookings, error: recentBookingsError },
     { count: uploadedVideoCount },
     unreadChat,
   ] = await Promise.all([
@@ -95,6 +98,18 @@ export default async function ArtistOverviewPage() {
       .eq("artist_id", artist.id)
       .order("created_at", { ascending: false })
       .limit(5),
+    // Il flusso attuale: le richieste di booking degli organizzatori.
+    supabase
+      .from("booking_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("artist_id", artist.id)
+      .eq("status", "pending"),
+    supabase
+      .from("booking_requests")
+      .select("id, message, event_date, status, created_at, organizers(display_name)")
+      .eq("artist_id", artist.id)
+      .order("created_at", { ascending: false })
+      .limit(5),
     // I video CARICATI vivono in artist_videos, non nella riga di artists.
     supabase
       .from("artist_videos")
@@ -115,9 +130,15 @@ export default async function ArtistOverviewPage() {
   // qui serve solo a decidere se mostrare il conteggio o il lucchetto.
   const canUseChat = entitlementsFor(artist.tier).canUseChat;
 
+  // Se una lettura fallisce si mostra zero/vuoto: sono solo numeri a video,
+  // nessuna scrittura ne dipende.
+  if (pendingBookingsError) logger.error("overview", "booking pending:", pendingBookingsError.message);
+  if (recentBookingsError) logger.error("overview", "booking recenti:", recentBookingsError.message);
+  const newRequestsTotal = (newLeadsCount ?? 0) + (pendingBookingsCount ?? 0);
+
   const heroDescription = (() => {
     const parts: string[] = [];
-    const ln = newLeadsCount ?? 0;
+    const ln = newRequestsTotal;
     const av = availableCount ?? 0;
     if (ln > 0) parts.push(`${ln} nuov${ln === 1 ? "a richiesta" : "e richieste"}`);
     if (av > 0)
@@ -126,13 +147,27 @@ export default async function ArtistOverviewPage() {
     return `Hai ${parts.join(" e ")}.`;
   })();
 
-  const activityItems = (recentLeads ?? []).map((l) => ({
-    kind: "lead" as const,
-    id: l.id,
-    primaryName: l.event_location || l.contact_email,
-    detail: l.message?.slice(0, 100) ?? "",
-    createdAt: l.created_at,
-  }));
+  const activityItems = [
+    ...(recentBookings ?? []).map((b) => {
+      const org = (b as unknown as { organizers: { display_name: string | null } | null }).organizers;
+      return {
+        kind: "lead" as const,
+        id: b.id,
+        primaryName: org?.display_name || "Organizzatore",
+        detail: b.message?.slice(0, 100) || `Richiesta per il ${b.event_date}`,
+        createdAt: b.created_at,
+      };
+    }),
+    ...(recentLeads ?? []).map((l) => ({
+      kind: "lead" as const,
+      id: l.id,
+      primaryName: l.event_location || l.contact_email,
+      detail: l.message?.slice(0, 100) ?? "",
+      createdAt: l.created_at,
+    })),
+  ]
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .slice(0, 5);
 
   return (
     <div className="space-y-8">
@@ -191,9 +226,9 @@ export default async function ArtistOverviewPage() {
         />
         <KpiCard
           label="Nuove richieste"
-          value={newLeadsCount ?? 0}
+          value={newRequestsTotal}
           icon={<Inbox className="size-4" />}
-          href="/dashboard/leads?status=new"
+          href="/dashboard/leads?status=pending"
         />
         {canUseChat ? (
           <KpiCard

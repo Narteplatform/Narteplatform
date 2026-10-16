@@ -13,6 +13,7 @@ import {
 import { sendBookingAcceptedEmail, sendBookingConfirmedEmail } from "@/lib/emails/booking-notify";
 import { logger } from "@/lib/logger";
 import { notifyNewChatMessage, notifyNewChatOffer } from "@/lib/chat/notify";
+import { creaNotifichePerArtista, creaNotifichePerOrganizzatore } from "@/lib/notifications";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import type { Role } from "@/lib/supabase/types";
 import {
@@ -214,6 +215,39 @@ export async function sendMessage(input: ChatMessageInput): Promise<ActionResult
   return { ok: true };
 }
 
+/**
+ * Campanella della controparte di chi ha agito in chat (best-effort, mai
+ * lancia). Artista → notifica l'organizzatore, organizzatore → l'artista;
+ * ogni altro ruolo (superadmin) non genera notifiche.
+ */
+async function notificaControparte(
+  conversationId: string,
+  actorRole: Role | null,
+  n: { kind: string; title: string; body?: string },
+): Promise<void> {
+  try {
+    if (actorRole !== "artist" && actorRole !== "organizer") return;
+    const admin = createAdminClient();
+    const { data: conv, error } = await admin
+      .from("conversations")
+      .select("artist_id, organizer_id")
+      .eq("id", conversationId)
+      .maybeSingle();
+    if (error) {
+      logger.error("chat", "notifica controparte, conversazione non letta:", error.message);
+      return;
+    }
+    if (!conv) return;
+    if (actorRole === "artist") {
+      await creaNotifichePerOrganizzatore(conv.organizer_id, { ...n, href: "/organizzatore/chat" });
+    } else {
+      await creaNotifichePerArtista(conv.artist_id, { ...n, href: "/dashboard/chat" });
+    }
+  } catch (e) {
+    logger.error("chat", "notifica controparte:", e instanceof Error ? e.message : String(e));
+  }
+}
+
 export async function sendOffer(input: ChatOfferInput): Promise<ActionResult> {
   const parsed = chatOfferSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dati offerta non validi" };
@@ -284,6 +318,16 @@ export async function sendOffer(input: ChatOfferInput): Promise<ActionResult> {
     eventDate: parsed.data.event_date ?? null,
   }).catch((e) => console.error("[chat] notifica offerta:", e));
 
+  // Campanella: nuova offerta (o contro-offerta) per la controparte.
+  void notificaControparte(parsed.data.conversation_id, role, {
+    kind: "offerta_ricevuta",
+    title: "Nuova offerta in chat",
+    body:
+      parsed.data.budget_cents != null
+        ? `Ti hanno proposto ${(parsed.data.budget_cents / 100).toLocaleString("it-IT")} €. Apri la chat per rispondere.`
+        : "Apri la chat per rispondere.",
+  });
+
   return { ok: true };
 }
 
@@ -330,12 +374,20 @@ export async function respondToOffer(
       .update({ offer_status: "rejected", offer_responded_at: new Date().toISOString() })
       .eq("id", messageId);
     if (updErr) return { ok: false, error: updErr.message };
+
+    void notificaControparte(msg.conversation_id, role, {
+      kind: "offerta_rifiutata",
+      title: "Offerta rifiutata",
+      body: "La controparte ha rifiutato la tua offerta. Puoi inviarne una nuova dalla chat.",
+    });
     return { ok: true };
   }
 
   // Accettare un'offerta crea un booking confermato: è l'atto conclusivo della
   // negoziazione, quindi passa dallo stesso paywall del resto della chat.
   // accept_offer_v2 è security definer e non conosce i piani: il gate va qui.
+  let acceptConvId: string | null = null;
+  let acceptRole: Role | null = null;
   {
     const { data: msg } = await admin
       .from("messages")
@@ -345,6 +397,8 @@ export async function respondToOffer(
     if (!msg) return { ok: false, error: "Offerta non trovata" };
     const convId = (msg as { conversation_id: string }).conversation_id;
     const { role, isSuperadmin, artistId } = await resolveConversationRole(convId, user.id);
+    acceptConvId = convId;
+    acceptRole = role;
     const blocked = await assertNotBlocked(convId, user.id);
     if (blocked) return blocked;
     const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
@@ -375,6 +429,17 @@ export async function respondToOffer(
     await invio.catch((e) =>
       logger.error("chat", "email dopo accettazione offerta:", e instanceof Error ? e.message : String(e)),
     );
+  }
+
+  if (acceptConvId) {
+    void notificaControparte(acceptConvId, acceptRole, {
+      kind: "offerta_accettata",
+      title: res.stato === "accettata" ? "Offerta accettata: manca la tua conferma" : "Offerta accettata, data confermata",
+      body:
+        res.stato === "accettata"
+          ? "L'artista ha accettato la tua offerta. Conferma la data per chiudere il booking."
+          : "La tua offerta è stata accettata e la data è confermata.",
+    });
   }
 
   revalidatePath("/dashboard/calendario");

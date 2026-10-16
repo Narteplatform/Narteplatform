@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { logger } from "@/lib/logger";
 import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
+import { creaNotifichePerArtista } from "@/lib/notifications";
 import { etichettaContenuti, notificaMediaApprovati } from "@/lib/moderation/approvazioni";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -107,6 +108,16 @@ async function comunicaRifiuto(
       : false,
   });
   if (!esito.ok) logger.warn("admin/moderazione", "rifiuto non registrato:", esito.error);
+
+  // Campanella (best-effort): il motivo completo è nell'email, qui solo l'avviso.
+  if (args.artistId) {
+    await creaNotifichePerArtista(args.artistId, {
+      kind: "contenuto_rifiutato",
+      title: "Contenuto non approvato",
+      body: `Non abbiamo approvato ${args.etichetta}. Controlla la tua email per il motivo.`,
+      href: "/dashboard/profilo-artista",
+    });
+  }
 }
 
 /**

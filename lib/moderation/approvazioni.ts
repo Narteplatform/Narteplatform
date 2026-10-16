@@ -5,6 +5,7 @@ import { dispatchEmail } from "@/lib/emails/dispatch";
 import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
+import { creaNotifichePerArtista } from "@/lib/notifications";
 
 /**
  * Email di esito positivo: contenuti approvati e profilo di nuovo visibile.
@@ -59,6 +60,13 @@ async function destinatarioDelProfilo(artistId: string): Promise<Destinatario | 
 /** Una sola email per azione, anche quando gli elementi approvati sono molti. */
 export async function notificaMediaApprovati(artistId: string | null, itemsLabel: string): Promise<void> {
   if (!artistId) return;
+  // Campanella (best-effort, indipendente dall'email).
+  await creaNotifichePerArtista(artistId, {
+    kind: "contenuto_approvato",
+    title: "Contenuti approvati",
+    body: `Il team ha approvato ${itemsLabel}: ora sono visibili sul tuo profilo.`,
+    href: "/dashboard/profilo-artista",
+  });
   const d = await destinatarioDelProfilo(artistId);
   if (!d) return;
   try {
@@ -88,6 +96,12 @@ export async function notificaMediaApprovati(artistId: string | null, itemsLabel
 
 /** Il profilo è tornato `approved` da `pending` o `rejected`. */
 export async function notificaProfiloRiattivato(artistId: string): Promise<void> {
+  await creaNotifichePerArtista(artistId, {
+    kind: "profilo_approvato",
+    title: "Profilo di nuovo nel catalogo",
+    body: "Abbiamo concluso la verifica: il tuo profilo è di nuovo visibile.",
+    href: "/dashboard/profilo-artista",
+  });
   const d = await destinatarioDelProfilo(artistId);
   if (!d) return;
   try {
@@ -154,6 +168,12 @@ export async function notificaProfiloApprovato(artistId: string, nuovo: boolean)
     await notificaProfiloRiattivato(artistId);
     return;
   }
+  await creaNotifichePerArtista(artistId, {
+    kind: "profilo_approvato",
+    title: "Profilo approvato",
+    body: "Il tuo nuovo profilo è nel catalogo pubblico.",
+    href: "/dashboard/profilo-artista",
+  });
   const d = await destinatarioDelProfilo(artistId);
   if (!d) return;
   try {

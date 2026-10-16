@@ -361,6 +361,14 @@ const MIGRATION = [
       ["colonna organizers.city", () => colonna("organizers", "city")],
     ],
   },
+  {
+    file: "0073_notifiche.sql",
+    cosa: "Notifiche in-app (campanella) per artisti e organizzatori",
+    controlli: [
+      ["tabella notifications", () => tabella("notifications")],
+      ["privilegi anonimi revocati su notifications", () => privilegioAnonRevocato("notifications")],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };

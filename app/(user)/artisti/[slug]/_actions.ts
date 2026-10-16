@@ -1,5 +1,6 @@
 "use server";
 
+import { creaNotifichePerArtista } from "@/lib/notifications";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { leadSchema, type LeadInput } from "@/lib/validators/schemas";
 import { dispatchEmail } from "@/lib/emails/dispatch";
@@ -147,6 +148,14 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
     }
     logger.debug("booking", rid, "step=lead-inserted", { leadId: lead.id });
 
+    // Campanella dell'artista (best-effort).
+    void creaNotifichePerArtista(artist.id, {
+      kind: "booking_nuova",
+      title: "Nuova richiesta di booking",
+      body: `Per il ${data.date}. Aprila per rispondere.`,
+      href: "/dashboard/leads",
+    }).catch(() => undefined);
+
     // Notifiche email best-effort (non bloccano)
     let artistEmail: string | null = null;
     if (artist.user_id) {
@@ -268,6 +277,14 @@ export async function submitLead(input: LeadInput) {
     .single();
 
   if (error || !lead) return { ok: false as const, error: "Errore salvataggio lead" };
+
+  // Campanella dell'artista (best-effort).
+  void creaNotifichePerArtista(artist.id, {
+    kind: "booking_nuova",
+    title: "Nuova richiesta di booking",
+    body: `Per il ${data.eventDate}, a ${data.eventLocation}.`,
+    href: "/dashboard/leads",
+  }).catch(() => undefined);
 
   let artistEmail: string | null = null;
   if (artist.user_id) {

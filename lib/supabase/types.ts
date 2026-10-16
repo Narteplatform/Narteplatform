@@ -528,6 +528,35 @@ export interface Database {
         };
         Relationships: [];
       };
+      /** Notifiche in-app per la campanella (0073). Scrive solo la service role. */
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          artist_id: string | null;
+          kind: string;
+          title: string;
+          body: string | null;
+          href: string | null;
+          created_at: string;
+          read_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          artist_id?: string | null;
+          kind: string;
+          title: string;
+          body?: string | null;
+          href?: string | null;
+          created_at?: string;
+          read_at?: string | null;
+        };
+        Update: {
+          read_at?: string | null;
+        };
+        Relationships: [];
+      };
       /** Registro unico delle decisioni di moderazione (0065). */
       moderation_actions: {
         Row: {

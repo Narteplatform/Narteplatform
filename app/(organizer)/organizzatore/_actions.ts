@@ -15,6 +15,7 @@ import {
   sendBookingConfirmedEmail,
   sendBookingDeclinedEmail,
 } from "@/lib/emails/booking-notify";
+import { creaNotifichePerArtista, creaNotifichePerOrganizzatore } from "@/lib/notifications";
 
 function slugify(s: string) {
   return s
@@ -221,6 +222,13 @@ export async function confirmBookingRequest(requestId: string) {
 
   await sendBookingConfirmedEmail(requestId).catch((e) => console.error("email confirmed:", e));
 
+  void creaNotifichePerArtista(req.artist_id, {
+    kind: "booking_confermata",
+    title: "Data confermata",
+    body: `L'organizzatore ha confermato la data del ${req.event_date}.`,
+    href: "/dashboard/leads?status=confermata",
+  }).catch(() => undefined);
+
   revalidatePath("/organizzatore/richieste");
   revalidatePath("/organizzatore/calendario");
   revalidatePath("/organizzatore");
@@ -233,7 +241,7 @@ export async function cancelBookingRequest(requestId: string) {
   const admin = createAdminClient();
   const { data: req } = await admin
     .from("booking_requests")
-    .select("id, organizer_id, status")
+    .select("id, organizer_id, status, artist_id")
     .eq("id", requestId)
     .maybeSingle();
   if (!req || req.organizer_id !== organizer.id) {
@@ -276,6 +284,13 @@ export async function cancelBookingRequest(requestId: string) {
   await sendBookingCancelledByOrganizerEmail(requestId).catch((e) =>
     console.error("[email] annullamento organizzatore:", e)
   );
+
+  void creaNotifichePerArtista(req.artist_id, {
+    kind: "booking_annullata",
+    title: "Richiesta annullata",
+    body: "L'organizzatore ha annullato una richiesta di booking.",
+    href: "/dashboard/leads",
+  }).catch(() => undefined);
 
   revalidatePath("/organizzatore/richieste");
   revalidatePath("/organizzatore");
@@ -358,6 +373,13 @@ export async function artistAcceptRequest(requestId: string, notes?: string) {
 
   await sendBookingAcceptedEmail(requestId).catch((e) => console.error("email accepted:", e));
 
+  void creaNotifichePerOrganizzatore(req.organizer_id, {
+    kind: "booking_accettata",
+    title: "L'artista ha accettato la tua richiesta",
+    body: "Ora potete accordarvi in chat.",
+    href: "/organizzatore/richieste",
+  }).catch(() => undefined);
+
   revalidatePath("/dashboard/leads");
   revalidatePath("/dashboard/chat");
   revalidatePath("/organizzatore/richieste");
@@ -375,7 +397,7 @@ export async function artistDeclineRequest(requestId: string) {
 
   const { data: req } = await admin
     .from("booking_requests")
-    .select("id, artist_id, status")
+    .select("id, artist_id, organizer_id, status")
     .eq("id", requestId)
     .maybeSingle();
   if (!req) return { ok: false as const, error: "Richiesta non trovata" };
@@ -412,6 +434,13 @@ export async function artistDeclineRequest(requestId: string) {
   }
 
   await sendBookingDeclinedEmail(requestId).catch((e) => console.error("email declined:", e));
+
+  void creaNotifichePerOrganizzatore(req.organizer_id, {
+    kind: "booking_rifiutata",
+    title: "Richiesta non accettata",
+    body: "L'artista non può accettare questa richiesta.",
+    href: "/organizzatore/richieste",
+  }).catch(() => undefined);
 
   revalidatePath("/dashboard/leads");
   revalidatePath("/organizzatore/richieste");

@@ -9,6 +9,7 @@ import { artistSchema, type ArtistInput } from "@/lib/validators/schemas";
 import { sendBookingCancelledByAdminEmail } from "@/lib/emails/booking-notify";
 import { preparaAccessoArtista, inviaBenvenutoArtista } from "@/lib/admin/accesso-artista";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
+import { creaNotifichePerArtista } from "@/lib/notifications";
 import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 import { notificaProfiloApprovato, profiloMaiPubblicato } from "@/lib/moderation/approvazioni";
 import { applicaModificaPersonale, type PersonnelEditRow } from "@/lib/admin/personnel";
@@ -311,6 +312,12 @@ export async function updateArtistStatus(
       },
     });
     if (!esito.ok) logger.warn("artisti", "cambio di stato non registrato:", esito.error);
+    void creaNotifichePerArtista(artistId, {
+      kind: status === "pending" ? "profilo_sospeso" : "profilo_rifiutato",
+      title: status === "pending" ? "Profilo nascosto dal catalogo" : "Profilo non approvato",
+      body: "Controlla la tua email per il motivo.",
+      href: "/dashboard/profilo-artista",
+    }).catch(() => undefined);
   }
 
   revalidatePath("/admin/artisti");
@@ -807,6 +814,12 @@ export async function rimuoviMediaPubblicato(input: RimuoviMediaInput, motivo: s
       : false,
   });
   if (!esito.ok) logger.warn("artisti", "rimozione media non registrata:", esito.error);
+  void creaNotifichePerArtista(artistId, {
+    kind: "contenuto_rifiutato",
+    title: "Contenuto rimosso dal profilo",
+    body: `Abbiamo rimosso ${etichetta} dal tuo profilo. Controlla la tua email per il motivo.`,
+    href: "/dashboard/profilo-artista",
+  }).catch(() => undefined);
 
   revalidatePath(`/admin/artisti/${artistId}`);
   revalidatePath("/artisti");
