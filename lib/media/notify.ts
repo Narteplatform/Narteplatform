@@ -3,6 +3,7 @@ import "server-only";
 import { createElement } from "react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { dispatchEmail } from "@/lib/emails/dispatch";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
@@ -24,9 +25,9 @@ import { logger } from "@/lib/logger";
 const THROTTLE_MINUTES = 30;
 const TEMPLATE = "media_pending_admin";
 
-function adminEmail(): string | null {
-  const raw = process.env.SUPERADMIN_EMAIL?.trim();
-  return raw && raw.includes("@") ? raw : null;
+/** Destinatari del team; il primo fa da chiave per la finestra anti-raffica. */
+function adminEmails(): string[] {
+  return adminRecipients({ fallback: true });
 }
 
 async function recentlyNotified(email: string): Promise<boolean> {
@@ -57,9 +58,9 @@ export async function notifyMediaSubmission(
 ): Promise<void> {
   if (count <= 0) return;
 
-  const to = adminEmail();
-  if (!to) return;
-  if (await recentlyNotified(to)) return;
+  const to = adminEmails();
+  if (to.length === 0) return;
+  if (await recentlyNotified(to[0])) return;
 
   const admin = createAdminClient();
   const { data: artist, error: artistErr } = await admin

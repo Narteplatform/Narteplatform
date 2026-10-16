@@ -143,7 +143,7 @@ export function MessageComposer({
         onChange={onDocChange}
         className="hidden"
       />
-      <div className="flex items-end gap-1.5">
+      <div className="flex min-w-0 items-end gap-1.5">
         <div ref={plusWrapRef} className="relative shrink-0">
           <Button
             type="button"
@@ -217,7 +217,7 @@ export function MessageComposer({
           rows={1}
           placeholder={uploading ? "Caricamento allegato…" : "Scrivi un messaggio…"}
           disabled={uploading}
-          className="flex-1 resize-none rounded-2xl border-[1.5px] border-border bg-background px-3.5 py-2 text-sm leading-relaxed focus:outline-none focus:border-azzurro focus:ring-[3px] focus:ring-azzurro/15 disabled:opacity-60"
+          className="min-h-11 min-w-0 flex-1 resize-none rounded-2xl border-[1.5px] border-border bg-background px-3.5 py-2 text-sm leading-relaxed focus:outline-none focus:border-azzurro focus:ring-[3px] focus:ring-azzurro/15 disabled:opacity-60"
         />
         {text.trim() ? (
           <Button

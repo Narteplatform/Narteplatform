@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { Controller, useWatch } from "react-hook-form";
-import { User } from "lucide-react";
+import { Clock3, User } from "lucide-react";
+import { toast } from "sonner";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { ImageUpload } from "@/components/forms/ImageUpload";
@@ -12,6 +13,7 @@ import { useProfileSectionForm } from "@/components/dashboard/profile/useProfile
 import { useDirittiContenuti } from "@/components/dashboard/profile/DirittiContenuti";
 import { PendingMediaNotice } from "@/components/dashboard/PendingMediaNotice";
 import { PendingMediaThumbs } from "@/components/dashboard/PendingMediaThumbs";
+import { inviaCopertina } from "@/app/(artist)/dashboard/_actions";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
 import {
   infoSectionSchema,
@@ -66,6 +68,31 @@ export function InfoArtistaBlock({
   });
 
   const diritti = useDirittiContenuti();
+
+  // Foto appena inviata in moderazione in questa sessione: il campo resta al
+  // valore pubblicato, così «Salva» non la riaccoda.
+  const [inviata, setInviata] = React.useState<string | null>(null);
+  const inRevisione =
+    pendingCover.find((i) => i.status === "pending")?.url ?? inviata ?? null;
+
+  async function onCoverUploaded(url: string) {
+    try {
+      const res = await inviaCopertina(artist.id, url);
+      if (!res.ok) {
+        if (diritti.gestisciErrore(res.error)) {
+          toast.error("Conferma la dichiarazione sui diritti, poi ricarica la foto.");
+          return;
+        }
+        toast.error(res.error);
+        return;
+      }
+      setInviata(url);
+      form.setValue("cover_image", artist.cover_image ?? "", { shouldDirty: false });
+      toast.success("Foto inviata: sarà visibile dopo l'approvazione del team");
+    } catch {
+      toast.error("Non sono riuscito a inviare la foto. Riprova.");
+    }
+  }
   const values = useWatch({ control: form.control });
   const complete =
     Boolean(values?.cover_image) &&
@@ -177,6 +204,26 @@ export function InfoArtistaBlock({
         <div className="space-y-2 border-t border-border pt-5">
           <Label>Immagine principale</Label>
           <PendingMediaNotice items={pendingCover} />
+          {inRevisione && (
+            <div
+              role="status"
+              className="flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={inRevisione}
+                alt="Anteprima della foto in revisione"
+                className="h-14 w-11 shrink-0 rounded object-cover"
+              />
+              <p className="flex items-center gap-1.5">
+                <Clock3 className="size-4 shrink-0" aria-hidden="true" />
+                <span>
+                  <strong>Foto in revisione.</strong> Resta online quella attuale finché il team
+                  non approva la nuova.
+                </span>
+              </p>
+            </div>
+          )}
           <Controller
             control={form.control}
             name="cover_image"
@@ -187,6 +234,7 @@ export function InfoArtistaBlock({
                 onChange={field.onChange}
                 kind="artist"
                 beforePick={diritti.richiedi}
+                onUploaded={onCoverUploaded}
               />
             )}
           />

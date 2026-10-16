@@ -119,7 +119,7 @@ export function EventForm({
 
       <fieldset className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4">
         <legend className="px-2 font-display text-sm">
-          Immagine evento
+          Locandine evento (due immagini separate)
         </legend>
         <Controller
           control={control}

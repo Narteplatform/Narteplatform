@@ -24,6 +24,25 @@ export function formatDateIt(value: string | Date): string {
   return s.replace(/(^|\s)(\p{Ll})/gu, (_m, sep: string, ch: string) => sep + ch.toUpperCase());
 }
 
+/**
+ * "sabato 14 novembre 2026", minuscolo, per oggetti e testi correnti.
+ * Una data `YYYY-MM-DD` è un giorno di calendario: la si legge in UTC per non
+ * farla scivolare al giorno prima/dopo col fuso del server. Se non è una data
+ * valida restituisce il testo com'era.
+ */
+export function formatDateLongIt(value: string): string {
+  const d = parseDate(value);
+  if (!d) return value;
+  const soloGiorno = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  return d.toLocaleDateString(IT, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    ...(soloGiorno ? { timeZone: "UTC" } : { timeZone: "Europe/Rome" }),
+  });
+}
+
 /** "15:30" */
 export function formatTimeIt(value: string | Date): string {
   const d = typeof value === "string" ? parseDate(value) : value;

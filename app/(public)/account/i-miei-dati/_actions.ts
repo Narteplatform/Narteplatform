@@ -12,6 +12,7 @@ import { logger } from "@/lib/logger";
 import { createElement } from "react";
 import AccountDeletionConfirmEmail from "@/lib/emails/templates/AccountDeletionConfirmEmail";
 import { creaRichiestaCancellazione, SCADENZA_ORE } from "@/lib/legal/cancellazione";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 
 /**
  * Le azioni della pagina «I miei dati»: accesso, portabilità, revoca, richiesta
@@ -189,8 +190,8 @@ export async function richiediCancellazioneAccount(input: unknown) {
     };
   }
 
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-  if (adminEmail) {
+  const adminEmail = adminRecipients();
+  if (adminEmail.length > 0) {
     await dispatchEmail({
       key: "contact_message",
       to: adminEmail,
@@ -211,7 +212,7 @@ export async function richiediCancellazioneAccount(input: unknown) {
   } else {
     logger.warn(
       "account/cancellazione",
-      "ADMIN_NOTIFICATION_EMAIL non impostata: la richiesta è registrata ma nessuno è stato avvisato"
+      "nessun destinatario admin configurato: la richiesta è registrata ma nessuno è stato avvisato"
     );
   }
 

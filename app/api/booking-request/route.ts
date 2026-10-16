@@ -21,6 +21,8 @@ import { logger } from "@/lib/logger";
 import { LEGAL_VERSION } from "@/lib/legal/content";
 import { registraConsensoConContesto } from "@/lib/legal/consents";
 import { registraProvaSuIubendaInBackground } from "@/lib/legal/iubenda-consent";
+import { formatDateLongIt } from "@/lib/emails/format";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 import {
   leggiStatoOrganizzatore,
   richiediAccessoOrganizzatore,
@@ -321,7 +323,7 @@ export async function POST(req: Request) {
         const { data: u } = await admin.auth.admin.getUserById(artist.user_id);
         artistEmail = u?.user?.email ?? null;
       }
-      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+      const adminEmail = adminRecipients();
       const requesterEmail = currentUser?.email ?? "";
       const eventLocation = data.venueName ?? data.venueCity ?? "Da definire";
       const requestParams = buildBookingRequestParams({
@@ -387,12 +389,12 @@ export async function POST(req: Request) {
               params: requestParams,
               replyTo: requesterEmail || undefined,
               fallback: {
-                subject: `Nuova richiesta booking — ${data.date}`,
+                subject: `Nuova richiesta booking — ${formatDateLongIt(data.date)}`,
                 template: "BookingRequestArtist",
                 react: BookingRequestEmail({
                   artistName: artist.stage_name,
                   requesterName: organizer.display_name,
-                  eventDate: data.date,
+                  eventDate: formatDateLongIt(data.date),
                   eventLocation,
                   budget: data.budgetOffer ?? null,
                   message: composedMessage,
@@ -414,7 +416,7 @@ export async function POST(req: Request) {
                 react: BookingRequestEmail({
                   artistName: artist.stage_name,
                   requesterName: organizer.display_name,
-                  eventDate: data.date,
+                  eventDate: formatDateLongIt(data.date),
                   eventLocation,
                   budget: data.budgetOffer ?? null,
                   message: composedMessage,

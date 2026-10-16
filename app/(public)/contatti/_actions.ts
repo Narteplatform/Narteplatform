@@ -12,6 +12,7 @@ import { contactSchema, type ContactInput } from "@/lib/validators/schemas";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
 import ContactMessageEmail from "@/lib/emails/templates/ContactMessageEmail";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 
 export async function submitContact(input: ContactInput) {
   const parsed = contactSchema.safeParse(input);
@@ -77,7 +78,7 @@ export async function submitContact(input: ContactInput) {
     testoCasella: TESTO_CASELLA.privacy,
   });
 
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  const adminEmail = adminRecipients();
   const params = {
     name: data.name,
     email: data.email,

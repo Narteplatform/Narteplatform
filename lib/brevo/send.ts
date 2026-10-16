@@ -1,9 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { TITOLARE } from "@/lib/legal/titolare";
 import { brevoRequest } from "@/lib/brevo/client";
 import { getTemplateId, type EmailKey, type EmailParamsMap } from "@/lib/brevo/registry";
 import type { Json } from "@/lib/supabase/types";
 
-const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || "noreply@narte.it";
+const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || "noreply@narteofficial.it";
 const SENDER_NAME = process.env.BREVO_SENDER_NAME || "N'arte";
 
 type SendTransactionalOpts<K extends EmailKey> = {
@@ -97,7 +98,10 @@ export async function sendTransactional<K extends EmailKey>(
       to: toArr.map((email) => ({ email })),
       params: opts.params,
       sender: { email: SENDER_EMAIL, name: SENDER_NAME },
-      ...(opts.replyTo ? { replyTo: { email: opts.replyTo } } : {}),
+      replyTo: { email: opts.replyTo || TITOLARE.emailContatti },
+      // `textContent` non si può passare con `templateId`: la parte testuale
+      // la genera Brevo dal template. L'header serve ai filtri antispam.
+      headers: { "List-Unsubscribe": `<mailto:${TITOLARE.emailContatti}>` },
     },
   });
 

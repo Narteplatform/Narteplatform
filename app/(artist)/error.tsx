@@ -47,12 +47,13 @@ export default function ArtistGroupError({
           >
             <RefreshCw className="size-4" /> Riprova
           </button>
-          <Link
-            href="/__health"
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
             className="inline-flex h-9 items-center rounded-full border border-border px-4 text-sm hover:bg-muted"
           >
-            Apri diagnostica
-          </Link>
+            Ricarica la pagina
+          </button>
           <Link
             href="/"
             className="inline-flex h-9 items-center rounded-full border border-border px-4 text-sm hover:bg-muted"

@@ -10,11 +10,10 @@ import { buildConsultationParams } from "@/lib/emails/consultation-params";
 import ConsultationRequestEmail from "@/lib/emails/templates/ConsultationRequestEmail";
 import { checkMonthlyQuota, getEntitlementsForUser } from "@/lib/billing/entitlements";
 import { resolveActiveArtist } from "@/lib/artist/current";
-import { TITOLARE } from "@/lib/legal/titolare";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 
 // Notifiche al team: la casella interna configurata, altrimenti il recapito unico.
-const ADMIN_EMAIL =
-  process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SUPERADMIN_EMAIL || TITOLARE.emailContatti;
+const ADMIN_EMAIL = adminRecipients({ fallback: true });
 
 const bookSchema = z.object({
   slotId: z.string().uuid(),

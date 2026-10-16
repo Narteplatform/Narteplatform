@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Skew protection: lega le richieste (Server Action comprese) al deploy che
+  // ha servito la pagina, così un deploy nuovo non rompe i moduli già aperti.
+  // Solo su Vercel, dove la variabile esiste.
+  ...(process.env.VERCEL_DEPLOYMENT_ID
+    ? { deploymentId: process.env.VERCEL_DEPLOYMENT_ID }
+    : {}),
   images: {
     remotePatterns: [
       // *.supabase.co RESTA: è la convivenza. I contenuti già caricati hanno un

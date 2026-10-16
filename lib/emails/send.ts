@@ -1,9 +1,11 @@
 import { Resend } from "resend";
+import { render } from "@react-email/components";
+import { TITOLARE } from "@/lib/legal/titolare";
 import type { ReactElement } from "react";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
 
-const FROM = process.env.RESEND_FROM_EMAIL || "N'arte <noreply@narte.it>";
+const FROM = process.env.RESEND_FROM_EMAIL || "N'arte <noreply@narteofficial.it>";
 
 // Lazy init: il client Resend richiede la chiave nel constructor. Durante
 // la build di Vercel (collect page data) il modulo viene valutato senza
@@ -51,6 +53,17 @@ async function logEmail(row: {
   }
 }
 
+/** Versione solo testo: migliora la consegna e serve ai client senza HTML. */
+async function toPlainText(react: ReactElement): Promise<string | undefined> {
+  try {
+    const text = await render(react, { plainText: true });
+    return text.trim() ? text : undefined;
+  } catch (e) {
+    console.error("[email] versione testo non generata", e);
+    return undefined;
+  }
+}
+
 export async function sendEmail(opts: SendEmailOpts) {
   const toArr = Array.isArray(opts.to) ? opts.to : [opts.to];
   const resend = getResend();
@@ -67,12 +80,15 @@ export async function sendEmail(opts: SendEmailOpts) {
     return { ok: false as const, skipped: true };
   }
   try {
+    const text = await toPlainText(opts.react);
     const { data, error } = await resend.emails.send({
       from: FROM,
       to: toArr,
       subject: opts.subject,
       react: opts.react,
-      replyTo: opts.replyTo,
+      ...(text ? { text } : {}),
+      replyTo: opts.replyTo || TITOLARE.emailContatti,
+      headers: { "List-Unsubscribe": `<mailto:${TITOLARE.emailContatti}>` },
     });
     if (error) {
       console.error("[email] errore Resend", error);

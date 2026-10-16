@@ -15,11 +15,10 @@ import { dispatchEmail } from "@/lib/emails/dispatch";
 import { buildConsultationParams } from "@/lib/emails/consultation-params";
 import ConsultationRequestEmail from "@/lib/emails/templates/ConsultationRequestEmail";
 import { createElement } from "react";
-import { TITOLARE } from "@/lib/legal/titolare";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 
 // Notifiche al team: la casella interna configurata, altrimenti il recapito unico.
-const ADMIN_EMAIL =
-  process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SUPERADMIN_EMAIL || TITOLARE.emailContatti;
+const ADMIN_EMAIL = adminRecipients({ fallback: true });
 
 const consultationSchema = z.object({
   ...honeypotShape,

@@ -9,6 +9,7 @@ import { LIMITI } from "@/lib/security/rate-limit";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import { honeypotShape } from "@/lib/validators/schemas";
 import { publicFormConsent } from "@/lib/legal/consents";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 import {
   registraProvaSuIubendaInBackground,
   TESTO_CASELLA,
@@ -95,8 +96,8 @@ export async function submitEventRequest(input: EventRequestInput) {
   });
 
   // Come il form Format, finora questa richiesta non avvisava nessuno.
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-  if (adminEmail) {
+  const adminEmail = adminRecipients();
+  if (adminEmail.length > 0) {
     await dispatchEmail({
       key: "public_lead_admin",
       to: adminEmail,

@@ -8,6 +8,7 @@ import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
 import { PERCORSO_IN_ATTESA, normalizzaStato, type StatoOrganizzatore } from "@/lib/organizers/stato";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 
 /**
  * Approvazione degli organizzatori (migration 0071).
@@ -197,7 +198,7 @@ export async function avvisaRichiestaOrganizzatore(input: {
   citta?: string | null;
 }): Promise<void> {
   const base = getSiteUrl();
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  const adminEmail = adminRecipients();
   await Promise.allSettled([
     dispatchEmail({
       key: "organizer_registration_received",

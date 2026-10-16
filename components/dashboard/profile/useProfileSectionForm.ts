@@ -11,6 +11,14 @@ import {
   type SectionPayload,
 } from "@/app/(artist)/dashboard/_actions";
 import { useDirittiContenuti } from "@/components/dashboard/profile/DirittiContenuti";
+import {
+  MSG_BOZZA_RECUPERATA,
+  MSG_SITO_AGGIORNATO,
+  RELOAD_DELAY_MS,
+  saveDraft,
+  takeDraft,
+} from "@/lib/forms/draft";
+import { logger } from "@/lib/logger";
 
 /**
  * Un form per blocco, non un form gigante con più pulsanti.
@@ -48,9 +56,36 @@ export function useProfileSectionForm<TValues extends FieldValues, S extends Pro
     mode: "onBlur",
   });
 
+  // Bozza lasciata da un salvataggio andato a vuoto per un sito ridistribuito:
+  // si ripopola il form tenendo i campi «modificati», così Salva è attivo.
+  const draftKey = `${artistId}:${section}`;
+  React.useEffect(() => {
+    const draft = takeDraft(draftKey);
+    if (!draft) return;
+    for (const [key, value] of Object.entries(draft)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      form.setValue(key as any, value as any, { shouldDirty: true });
+    }
+    toast.info(MSG_BOZZA_RECUPERATA);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
+
   const onSubmit = form.handleSubmit(async (values) => {
     setServerError(null);
-    const res = await updateArtistProfileSection(artistId, section, toPayload(values));
+    let res: Awaited<ReturnType<typeof updateArtistProfileSection>>;
+    try {
+      res = await updateArtistProfileSection(artistId, section, toPayload(values));
+    } catch (err) {
+      // Rete, «Failed to find Server Action» (deploy nuovo), risposta non valida.
+      logger.error("[useProfileSectionForm] server action non riuscita", {
+        section,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      saveDraft(draftKey, values as Record<string, unknown>);
+      toast.message(MSG_SITO_AGGIORNATO);
+      window.setTimeout(() => window.location.reload(), RELOAD_DELAY_MS);
+      return;
+    }
     if (!res.ok) {
       // Mancata dichiarazione dei diritti: non è un errore da mostrare crudo,
       // si apre la modale e si invita a ripetere il salvataggio.

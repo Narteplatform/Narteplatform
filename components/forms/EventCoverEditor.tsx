@@ -14,27 +14,30 @@ import {
 } from "@/lib/upload/compressImage";
 
 /**
- * Copertina dell'evento con DUE ritagli dalla stessa immagine.
+ * Immagini dell'evento: DUE caricamenti indipendenti.
  *
  * La copertina finisce in due posti con proporzioni diverse:
  *   - home page e liste eventi (EventCard, PastEventsSection): 3:4 verticale,
  *     colonna `events.cover_image_home` (migration 0007);
  *   - pagina del singolo evento (hero): 16:9 orizzontale, colonna `cover_image`.
- * Si carica il file una volta sola e si sistemano i due riquadri in modo
- * indipendente (zoom e posizione propri); alla conferma si caricano entrambi.
+ * Sono due file distinti (due locandine diverse): ciascun formato ha il proprio
+ * selettore, il proprio ritaglio, la propria anteprima e il proprio upload.
+ * Se manca la verticale, la home usa l'orizzontale.
  */
 
 type Slot = "home" | "hero";
 
-const SLOTS: Record<Slot, { kind: ImageKind; titolo: string; dove: string }> = {
+const SLOTS: Record<Slot, { kind: ImageKind; titolo: string; etichetta: string; dove: string }> = {
   home: {
     kind: "event_home",
-    titolo: "Home page e liste eventi",
+    titolo: "Locandina home e liste",
+    etichetta: "Locandina home e liste (verticale 3:4)",
     dove: "Card verticale 3:4 in home, in /eventi e negli eventi correlati",
   },
   hero: {
     kind: "event",
-    titolo: "Pagina dell'evento",
+    titolo: "Immagine pagina evento",
+    etichetta: "Immagine pagina evento (orizzontale 16:9)",
     dove: "Immagine orizzontale 16:9 in cima alla pagina del singolo evento",
   },
 };
@@ -77,23 +80,47 @@ type Props = {
 };
 
 export function EventCoverEditor({ homeValue, onHomeChange, heroValue, onHeroChange }: Props) {
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-6 sm:grid-cols-[minmax(0,3fr)_minmax(0,5fr)]">
+        <SlotEditor slot="home" value={homeValue} onChange={onHomeChange} />
+        <SlotEditor slot="hero" value={heroValue} onChange={onHeroChange} />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Le due immagini si caricano separatamente, anche con file diversi. Se manca la locandina
+        verticale, la home e le liste usano l&apos;immagine orizzontale.
+      </p>
+    </div>
+  );
+}
+
+function SlotEditor({
+  slot,
+  value,
+  onChange,
+}: {
+  slot: Slot;
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const s = SLOTS[slot];
+  const t = IMAGE_TARGETS[s.kind];
   const inputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [img, setImg] = useState<Source | null>(null);
-  // Il file originale scelto in questa sessione: «Modifica ritagli» riparte da
+  // Il file originale scelto in questa sessione: «Modifica ritaglio» riparte da
   // qui, a piena risoluzione, invece che dal ritaglio già salvato.
   const [original, setOriginal] = useState<Source | null>(null);
-  const [open, setOpen] = useState(false);
-  const [crops, setCrops] = useState<Record<Slot, CropState> | null>(null);
+  const [crop, setCrop] = useState<CropState | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const canvasRefs = useRef<Record<Slot, HTMLCanvasElement | null>>({ home: null, hero: null });
+  const titleId = `event-cover-editor-${slot}`;
 
   function openWith(source: Source) {
     setImg(source);
-    setCrops({ home: initialCrop(source, "home"), hero: initialCrop(source, "hero") });
+    setCrop(initialCrop(source, slot));
     setError(null);
-    setOpen(true);
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -112,72 +139,59 @@ export function EventCoverEditor({ homeValue, onHomeChange, heroValue, onHeroCha
 
   /**
    * Ritaglia di nuovo: dal file scelto in questa sessione se c'è, altrimenti
-   * dall'immagine 16:9 già salvata (più piccola dell'originale). Serve il permesso
-   * CORS del CDN per esportare il canvas: se manca, si chiede di ricaricare il file.
+   * dall'immagine già salvata. Serve il permesso CORS del CDN per esportare il
+   * canvas: se manca, si chiede di ricaricare il file.
    */
   function recropFromUrl() {
     if (original) {
       openWith(original);
       return;
     }
-    const url = heroValue || homeValue;
-    if (!url) return;
+    if (!value) return;
     setLoadError(null);
     const el = new Image();
     el.crossOrigin = "anonymous";
     el.onload = () => openWith(el);
     el.onerror = () =>
       setLoadError("Non riesco a riaprire l'immagine salvata: carica di nuovo il file dal computer.");
-    el.src = url;
+    el.src = value;
   }
 
   const updateCrop = useCallback(
-    (slot: Slot, next: (c: CropState) => CropState) => {
+    (next: (c: CropState) => CropState) => {
       if (!img) return;
-      setCrops((prev) => {
+      setCrop((prev) => {
         if (!prev) return prev;
-        const t = IMAGE_TARGETS[SLOTS[slot].kind];
-        const n = next(prev[slot]);
-        return { ...prev, [slot]: { zoom: n.zoom, offset: clampOffset(img, t.w, t.h, n.zoom, n.offset) } };
+        const n = next(prev);
+        return { zoom: n.zoom, offset: clampOffset(img, t.w, t.h, n.zoom, n.offset) };
       });
     },
-    [img]
+    [img, t.w, t.h]
   );
 
   function close() {
-    setOpen(false);
     setImg(null);
-    setCrops(null);
+    setCrop(null);
     setError(null);
-  }
-
-  async function uploadCanvas(canvas: HTMLCanvasElement, kind: ImageKind): Promise<string> {
-    const blob = await canvasToBlob(canvas, "image/jpeg", CROP_QUALITY);
-    const fd = new FormData();
-    fd.append("file", new File([blob], `${kind}.jpg`, { type: "image/jpeg" }));
-    fd.append("kind", kind);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    if (!res.ok) {
-      const j = (await res.json().catch(() => ({}))) as { error?: string };
-      throw new Error(j.error ?? `Upload fallito (${res.status})`);
-    }
-    const { url } = (await res.json()) as { url: string };
-    return url;
   }
 
   async function confirm() {
-    const home = canvasRefs.current.home;
-    const hero = canvasRefs.current.hero;
-    if (!home || !hero) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     setError(null);
     setUploading(true);
     try {
-      const [homeUrl, heroUrl] = await Promise.all([
-        uploadCanvas(home, SLOTS.home.kind),
-        uploadCanvas(hero, SLOTS.hero.kind),
-      ]);
-      onHomeChange(homeUrl);
-      onHeroChange(heroUrl);
+      const blob = await canvasToBlob(canvas, "image/jpeg", CROP_QUALITY);
+      const fd = new FormData();
+      fd.append("file", new File([blob], `${s.kind}.jpg`, { type: "image/jpeg" }));
+      fd.append("kind", s.kind);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error ?? `Upload fallito (${res.status})`);
+      }
+      const { url } = (await res.json()) as { url: string };
+      onChange(url);
       close();
     } catch (e) {
       setError(
@@ -192,49 +206,68 @@ export function EventCoverEditor({ homeValue, onHomeChange, heroValue, onHeroCha
     }
   }
 
-  const hasAny = Boolean(homeValue || heroValue);
-
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,3fr)_minmax(0,5fr)]">
-        <Preview slot="home" value={homeValue} onRemove={() => onHomeChange("")} />
-        <Preview slot="hero" value={heroValue} onRemove={() => onHeroChange("")} />
+    <div className="space-y-2">
+      <Label>{s.etichetta}</Label>
+      <div
+        className="relative w-full overflow-hidden rounded-xl bg-muted"
+        style={{ aspectRatio: t.aspect, maxWidth: slot === "home" ? 220 : undefined }}
+      >
+        {value ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={value}
+            alt={`Anteprima: ${s.titolo.toLowerCase()}`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center p-3 text-center text-xs text-muted-foreground">
+            Nessuna immagine
+          </div>
+        )}
       </div>
+      <p className="text-xs text-muted-foreground">{s.dove}</p>
 
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={onFile}
+        aria-label={s.etichetta}
+      />
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
-          <Upload className="size-4" /> {hasAny ? "Sostituisci immagine" : "Carica immagine"}
+          <Upload className="size-4" /> {value ? "Sostituisci" : "Carica immagine"}
         </Button>
-        {hasAny && (
-          <Button type="button" variant="ghost" size="sm" onClick={recropFromUrl}>
-            <Crop className="size-4" /> Modifica ritagli
-          </Button>
+        {value && (
+          <>
+            <Button type="button" variant="ghost" size="sm" onClick={recropFromUrl}>
+              <Crop className="size-4" /> Modifica ritaglio
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => onChange("")}>
+              Rimuovi
+            </Button>
+          </>
         )}
       </div>
       {loadError && <p className="text-sm text-red-600">{loadError}</p>}
-      <p className="text-xs text-muted-foreground">
-        Carichi una sola immagine e ne sistemi due ritagli: uno verticale per la home e le liste,
-        uno orizzontale per la pagina dell&apos;evento. Se manca il ritaglio verticale, la home usa
-        quello orizzontale. Per la qualità migliore, ritaglia partendo dal file originale.
-      </p>
 
-      {open && img && crops && (
+      {img && crop && (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="event-cover-editor-title"
+          aria-labelledby={titleId}
         >
-          <div className="relative w-full max-w-5xl space-y-5 bg-background p-5 shadow-2xl sm:rounded-lg sm:p-6">
+          <div className="relative w-full max-w-xl space-y-5 bg-background p-5 shadow-2xl sm:rounded-lg sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p id="event-cover-editor-title" className="font-display text-lg">
-                  Ritaglia la copertina
+                <p id={titleId} className="font-display text-lg">
+                  Ritaglia: {s.etichetta}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Trascina l&apos;immagine per spostarla e usa lo zoom per ridimensionarla. I due
-                  riquadri sono indipendenti.
+                  Trascina l&apos;immagine per spostarla e usa lo zoom per ridimensionarla.
                 </p>
               </div>
               <button
@@ -247,21 +280,16 @@ export function EventCoverEditor({ homeValue, onHomeChange, heroValue, onHeroCha
               </button>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,5fr)] md:items-start">
-              {(["home", "hero"] as const).map((slot) => (
-                <CropPane
-                  key={slot}
-                  slot={slot}
-                  img={img}
-                  crop={crops[slot]}
-                  onChange={(next) => updateCrop(slot, next)}
-                  onReset={() => updateCrop(slot, () => initialCrop(img, slot))}
-                  canvasRef={(el) => {
-                    canvasRefs.current[slot] = el;
-                  }}
-                />
-              ))}
-            </div>
+            <CropPane
+              slot={slot}
+              img={img}
+              crop={crop}
+              onChange={updateCrop}
+              onReset={() => updateCrop(() => initialCrop(img, slot))}
+              canvasRef={(el) => {
+                canvasRef.current = el;
+              }}
+            />
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -270,49 +298,12 @@ export function EventCoverEditor({ homeValue, onHomeChange, heroValue, onHeroCha
                 Annulla
               </Button>
               <Button type="button" variant="accent" onClick={confirm} disabled={uploading}>
-                {uploading ? "Caricamento…" : "Conferma e carica entrambi"}
+                {uploading ? "Caricamento…" : "Conferma e carica"}
               </Button>
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function Preview({ slot, value, onRemove }: { slot: Slot; value: string; onRemove: () => void }) {
-  const s = SLOTS[slot];
-  const t = IMAGE_TARGETS[s.kind];
-  return (
-    <div className="space-y-2">
-      <Label>
-        {s.titolo} <span className="font-normal text-muted-foreground">({t.aspect.replace(/ /g, "")})</span>
-      </Label>
-      <div
-        className="relative w-full overflow-hidden rounded-xl bg-muted"
-        style={{ aspectRatio: t.aspect, maxWidth: slot === "home" ? 220 : undefined }}
-      >
-        {value ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={value} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center p-3 text-center text-xs text-muted-foreground">
-            Nessuna immagine
-          </div>
-        )}
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">{s.dove}</p>
-        {value && (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="shrink-0 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-          >
-            Rimuovi
-          </button>
-        )}
-      </div>
     </div>
   );
 }

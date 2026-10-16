@@ -15,6 +15,7 @@ import {
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
 import ApplicationReceivedEmail from "@/lib/emails/templates/ApplicationReceivedEmail";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 
 export async function submitArtistApplication(input: ArtistApplicationInput) {
   const parsed = artistApplicationSchema.safeParse(input);
@@ -70,7 +71,7 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
     testoCasella: `${TESTO_CASELLA.privacy} — ${TESTO_CASELLA.eta} — ${TESTO_CASELLA.dirittiMateriali}`,
   });
 
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  const adminEmail = adminRecipients();
   // I parametri Brevo e il componente Resend convivono di proposito: finché
   // la chiave non è elencata in BREVO_ENABLED_KEYS parte il secondo, e se
   // Brevo fallisce si ricade comunque su di lui. Vedi lib/emails/dispatch.ts.

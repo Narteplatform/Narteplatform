@@ -216,6 +216,30 @@ perché manca il processo pianificato che dovrebbe farlo partire:
 - [ ] 🟡 **A** — Aggiungere il link di disiscrizione dove serve
 - [ ] 🟢 **A** — Pannello admin per rinviare un'email fallita
 
+### 2.4 DNS di `narteofficial.it` (su Aruba)
+
+Stato verificato il 16/10/2026: dominio autenticato su Brevo, **DKIM presente**
+(`brevo1` e `brevo2`), **DMARC presente con `p=none`**, **SPF assente**. Senza
+SPF i provider (Gmail in testa) trattano la posta con sospetto: è la causa più
+probabile dei messaggi in spam.
+
+- [ ] 🔴 **B** — Aggiungere su Aruba **un solo** record TXT SPF sul dominio radice (`@`):
+  `v=spf1 include:spf.brevo.com include:_spf.aruba.it ~all`
+  Nota: l'`include` di Aruba va verificato sul pannello del dominio, perché
+  dipende da come sono attivate le caselle `@narteofficial.it`. Se ci fosse già
+  un record SPF non va aggiunto un secondo: ne esiste uno solo per dominio,
+  si estende quello presente.
+- [ ] 🟡 **B** — Lasciare DKIM com'è (`brevo1._domainkey`, `brevo2._domainkey`).
+- [ ] 🟡 **B** — DMARC: tenere `p=none` per 2-3 settimane leggendo i report, poi passare a
+  `p=quarantine`. Cambiare solo se SPF e DKIM risultano `pass` sui messaggi reali
+  (intestazione `Authentication-Results`).
+- [ ] 🟡 **A** — Mittente di default nel codice ora `noreply@narteofficial.it`: se su Vercel
+  sono impostate `BREVO_SENDER_EMAIL` o `RESEND_FROM_EMAIL`, hanno la precedenza e vanno
+  allineate allo stesso dominio.
+- [ ] 🟡 **A** — Dopo le modifiche ai template (tolto il riquadro «Immagine in arrivo» da
+  `artist_approved` e `organizer_approved`) i template Brevo vanno risincronizzati:
+  è una scrittura sull'account Brevo, da autorizzare prima.
+
 ---
 
 ## 3. Privacy, GDPR e adempimenti legali 🔴

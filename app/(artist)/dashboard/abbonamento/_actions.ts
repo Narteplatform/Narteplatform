@@ -12,7 +12,7 @@ import { LEGAL_VERSION } from "@/lib/legal/content";
 import { registraConsensoConContesto } from "@/lib/legal/consents";
 import { logger } from "@/lib/logger";
 import { registraProvaSuIubendaInBackground } from "@/lib/legal/iubenda-consent";
-import { TITOLARE } from "@/lib/legal/titolare";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 
 /**
  * Checkout e fatturazione.
@@ -481,7 +481,7 @@ export async function recediAbbonamento(): Promise<
         timeZone: "Europe/Rome",
       });
       await sendEmail({
-        to: process.env.ADMIN_NOTIFICATION_EMAIL || TITOLARE.emailContatti,
+        to: adminRecipients({ fallback: true }),
         subject: "URGENTE: rimborso da recesso da fare a mano",
         template: "recesso_rimborso_manuale",
         meta: { subscription: sub.id, user: user.id },

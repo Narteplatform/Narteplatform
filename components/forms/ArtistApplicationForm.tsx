@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -16,6 +17,20 @@ import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
 import { HoneypotFields } from "@/components/forms/HoneypotField";
 import { PrivacyNotice } from "@/components/forms/PrivacyConsent";
 import { Checkbox } from "@/components/ui/Checkbox";
+import {
+  MSG_BOZZA_RECUPERATA,
+  MSG_SITO_AGGIORNATO,
+  RELOAD_DELAY_MS,
+  saveDraft,
+  takeDraft,
+} from "@/lib/forms/draft";
+
+const DRAFT_KEY = "candidatura-artista";
+// Solo i campi di contenuto: le dichiarazioni (età, diritti) vanno rifatte.
+const DRAFT_FIELDS = [
+  "name", "email", "stageName", "genres", "instruments", "bio",
+  "instagram", "spotify", "website", "video_url", "video_path",
+] as const;
 
 export function ArtistApplicationForm({
   genreOptions = [],
@@ -43,9 +58,31 @@ export function ArtistApplicationForm({
 
   const videoUrl = watch("video_url");
 
+  useEffect(() => {
+    const draft = takeDraft(DRAFT_KEY);
+    if (!draft) return;
+    for (const key of DRAFT_FIELDS) {
+      if (key in draft) {
+        setValue(key, draft[key] as never, { shouldDirty: true });
+      }
+    }
+    toast.info(MSG_BOZZA_RECUPERATA);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function onSubmit(values: ArtistApplicationInput) {
     setError(null);
-    const res = await submitArtistApplication(values);
+    let res: Awaited<ReturnType<typeof submitArtistApplication>>;
+    try {
+      res = await submitArtistApplication(values);
+    } catch {
+      const draft: Record<string, unknown> = {};
+      for (const key of DRAFT_FIELDS) draft[key] = values[key];
+      saveDraft(DRAFT_KEY, draft);
+      toast.message(MSG_SITO_AGGIORNATO);
+      window.setTimeout(() => window.location.reload(), RELOAD_DELAY_MS);
+      return;
+    }
     if (!res.ok) setError(res.error ?? "Errore");
     else setDone(true);
   }

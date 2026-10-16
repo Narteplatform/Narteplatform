@@ -31,10 +31,17 @@ export function MultiSelect({
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
 
-  const selected = React.useMemo(
-    () => options.filter((o) => value.includes(o.value)),
-    [options, value]
-  );
+  // I valori in `value` che non sono (più) fra le opzioni — es. un genere
+  // rinominato — si mostrano comunque, rimovibili: contano per il limite `max`
+  // e non devono bloccarlo in modo invisibile.
+  const selected = React.useMemo(() => {
+    const known = new Set(options.map((o) => o.value));
+    const fromOptions = options.filter((o) => value.includes(o.value));
+    const orphans = value
+      .filter((v) => !known.has(v))
+      .map((v) => ({ value: v, label: v }));
+    return [...fromOptions, ...orphans];
+  }, [options, value]);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -99,7 +106,7 @@ export function MultiSelect({
         <Popover.Content
           align="start"
           sideOffset={6}
-          className="z-50 w-[--radix-popover-trigger-width] overflow-hidden rounded-md border border-border bg-background shadow-lg"
+          className="z-50 w-(--radix-popover-trigger-width) overflow-hidden rounded-md border border-border bg-background shadow-lg"
         >
           <div className="border-b border-border p-2">
             <input

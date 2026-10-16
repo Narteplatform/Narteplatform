@@ -11,6 +11,7 @@ import { LIMITI } from "@/lib/security/rate-limit";
 import { formatInterestSchema, type FormatInterestInput } from "@/lib/validators/schemas";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 
 export async function submitFormatInterest(input: FormatInterestInput) {
   const parsed = formatInterestSchema.safeParse(input);
@@ -56,8 +57,8 @@ export async function submitFormatInterest(input: FormatInterestInput) {
 
   // Finora questo form non avvisava nessuno: il lead finiva in tabella e lì
   // restava, senza che nessuno sapesse di doverlo ricontattare.
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-  if (adminEmail) {
+  const adminEmail = adminRecipients();
+  if (adminEmail.length > 0) {
     await dispatchEmail({
       key: "public_lead_admin",
       to: adminEmail,

@@ -14,7 +14,6 @@ import {
   eyebrow,
   hero,
   ifParam,
-  heroPlaceholder,
   internalBadge,
   layout,
   paragraph,
@@ -126,10 +125,8 @@ const applicationReceivedAdmin = defineTemplate({
 });
 
 /**
- * ATTENZIONE — il mockup mostra "Placeholder immagine": la foto di apertura
- * non è ancora stata fornita. `heroPlaceholder()` disegna quel riquadro
- * tratteggiato, che va sostituito con `hero(...)` prima di attivare l'email:
- * in una casella vera sembrerebbe un errore.
+ * Il riquadro tratteggiato «Immagine in arrivo» è stato tolto: in una casella
+ * vera sembrava un errore. Se arriva la foto di apertura si usa `hero(...)`.
  *
  * Il testo del bottone ricalca il design ("Accedi al lato admin"), anche se
  * per un artista l'area non è `/admin` ma la sua dashboard: è una scelta di
@@ -151,7 +148,6 @@ const artistApproved = defineTemplate({
     body: [
       eyebrow("Account approvato"),
       title(`Benvenuto ${em("artista.")}`),
-      heroPlaceholder(),
       paragraph(
         `Il team di N'Arte ha approvato il tuo account artista.<br />
               Da questo momento puoi accedere alla piattaforma<br />

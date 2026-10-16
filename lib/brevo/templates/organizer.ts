@@ -21,7 +21,6 @@ import {
   em,
   eyebrow,
   hero,
-  heroPlaceholder,
   layout,
   paragraph,
   param,
@@ -95,7 +94,6 @@ const organizerApproved = defineTemplate({
     body: [
       eyebrow("Account approvato"),
       title(`Benvenuto ${em("locale.")}`),
-      heroPlaceholder(),
       paragraph(
         `Il team di N'Arte ha approvato il tuo account locale.<br />
               Da questo momento puoi accedere alla piattaforma<br />

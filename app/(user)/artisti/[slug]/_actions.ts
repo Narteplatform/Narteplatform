@@ -8,6 +8,8 @@ import { getSiteUrl } from "@/lib/site-url";
 import BookingRequestEmail from "@/lib/emails/templates/BookingRequestEmail";
 import { allowByIp, LIMITI } from "@/lib/security/rate-limit";
 import { logger } from "@/lib/logger";
+import { formatDateLongIt } from "@/lib/emails/format";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 import {
   artistInterestSchema,
   type ArtistInterestInput,
@@ -156,7 +158,7 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
         artistEmail = null;
       }
     }
-    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+    const adminEmail = adminRecipients();
     const interestParams = buildBookingRequestParams({
       artistName: artist.stage_name,
       contactName: data.name,
@@ -178,12 +180,12 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
             params: interestParams,
             replyTo: data.email,
             fallback: {
-              subject: `Nuova richiesta booking — ${data.date}`,
+              subject: `Nuova richiesta booking — ${formatDateLongIt(data.date)}`,
               template: "BookingRequestArtist",
               react: BookingRequestEmail({
               artistName: artist.stage_name,
               requesterName: data.name,
-              eventDate: data.date,
+              eventDate: formatDateLongIt(data.date),
               eventLocation,
               budget: null,
               message: composedMessage,
@@ -205,7 +207,7 @@ export async function submitArtistInterest(input: ArtistInterestInput) {
               react: BookingRequestEmail({
               artistName: artist.stage_name,
               requesterName: data.name,
-              eventDate: data.date,
+              eventDate: formatDateLongIt(data.date),
               eventLocation,
               budget: null,
               message: composedMessage,
@@ -273,7 +275,7 @@ export async function submitLead(input: LeadInput) {
     artistEmail = artistUser?.user?.email ?? null;
   }
 
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  const adminEmail = adminRecipients();
 
   const leadParams = buildBookingRequestParams({
     artistName: artist.stage_name,
@@ -296,11 +298,11 @@ export async function submitLead(input: LeadInput) {
           params: leadParams,
           replyTo: data.contactEmail,
           fallback: {
-            subject: `Nuova richiesta booking — ${data.eventLocation}`,
+            subject: `Nuova richiesta booking — ${formatDateLongIt(data.eventDate)}`,
             template: "LeadArtist",
             react: BookingRequestEmail({
               artistName: artist.stage_name,
-              eventDate: data.eventDate,
+              eventDate: formatDateLongIt(data.eventDate),
               eventLocation: data.eventLocation,
               budget: data.budget,
               message: data.message,
@@ -321,7 +323,7 @@ export async function submitLead(input: LeadInput) {
             template: "LeadAdmin",
             react: BookingRequestEmail({
               artistName: artist.stage_name,
-              eventDate: data.eventDate,
+              eventDate: formatDateLongIt(data.eventDate),
               eventLocation: data.eventLocation,
               budget: data.budget,
               message: data.message,

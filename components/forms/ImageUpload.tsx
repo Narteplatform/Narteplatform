@@ -23,9 +23,18 @@ type Props = {
   kind?: Kind;
   /** Se restituisce false il selettore file non si apre (es. dichiarazione dei diritti mancante). */
   beforePick?: () => boolean;
+  /**
+   * Se presente, a caricamento completato viene chiamata questa funzione AL
+   * POSTO di `onChange` (che resta per URL incollato e «Rimuovi»). Serve a chi
+   * deve fare qualcosa subito con il file caricato, es. mandarlo in moderazione.
+   */
+  onUploaded?: (url: string) => void | Promise<void>;
 };
 
-export function ImageUpload({ label, value, onChange, kind = "artist", beforePick }: Props) {
+const FORMATO_NON_SUPPORTATO =
+  "Formato non supportato (es. HEIC da iPhone): esporta la foto in JPG o PNG e riprova.";
+
+export function ImageUpload({ label, value, onChange, kind = "artist", beforePick, onUploaded }: Props) {
   const [open, setOpen] = useState(false);
   const [src, setSrc] = useState<string | null>(null);
   const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null);
@@ -33,6 +42,7 @@ export function ImageUpload({ label, value, onChange, kind = "artist", beforePic
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const dragRef = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,11 +57,17 @@ export function ImageUpload({ label, value, onChange, kind = "artist", beforePic
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
+    setLoadError(null);
     const reader = new FileReader();
+    reader.onerror = () => setLoadError(FORMATO_NON_SUPPORTATO);
     reader.onload = () => {
       const dataUrl = String(reader.result);
       setSrc(dataUrl);
       const img = new Image();
+      img.onerror = () => {
+        setSrc(null);
+        setLoadError(FORMATO_NON_SUPPORTATO);
+      };
       img.onload = () => {
         setImgEl(img);
         // fit cover initial: zoom = max(target.w/img.w, target.h/img.h)
@@ -115,7 +131,8 @@ export function ImageUpload({ label, value, onChange, kind = "artist", beforePic
         throw new Error(j.error ?? `Upload fallito (${res.status})`);
       }
       const { url } = (await res.json()) as { url: string };
-      onChange(url);
+      if (onUploaded) await onUploaded(url);
+      else onChange(url);
       reset();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Errore upload");
@@ -153,7 +170,7 @@ export function ImageUpload({ label, value, onChange, kind = "artist", beforePic
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             className="hidden"
             onChange={onFile}
           />
@@ -167,6 +184,11 @@ export function ImageUpload({ label, value, onChange, kind = "artist", beforePic
               </Button>
             )}
           </div>
+          {loadError && (
+            <p role="alert" className="text-sm text-red-600">
+              {loadError}
+            </p>
+          )}
           <Input
             type="url"
             placeholder="…o incolla URL https://…"

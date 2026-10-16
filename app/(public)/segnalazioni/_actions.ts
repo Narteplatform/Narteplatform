@@ -23,6 +23,7 @@ import { dispatchEmail } from "@/lib/emails/dispatch";
 import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
+import { adminRecipients } from "@/lib/emails/admin-recipients";
 
 /**
  * Invio di una segnalazione o di un reclamo (DSA artt. 16, 17, 20).
@@ -142,7 +143,7 @@ export async function submitContentReport(input: ContentReportInput) {
     timeStyle: "short",
     timeZone: "Europe/Rome",
   });
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  const adminEmail = adminRecipients();
   const adminUrl = `${getSiteUrl()}/admin/segnalazioni`;
   const categoriaLabel = REPORT_CATEGORIES[category];
 
