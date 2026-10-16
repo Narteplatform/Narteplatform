@@ -47,8 +47,39 @@ type Caricamento =
   | { ok: true; utenti: User[]; pagina: number; ultima: number | null; ricerca: boolean }
   | { ok: false; error: string };
 
-async function carica(q: string, pagina: number): Promise<Caricamento> {
+type FiltroRuolo = "artist" | "organizer" | "user";
+
+function leggiRuolo(v: string | undefined): FiltroRuolo | null {
+  return v === "artist" || v === "organizer" || v === "user" ? v : null;
+}
+
+async function carica(q: string, pagina: number, ruolo: FiltroRuolo | null): Promise<Caricamento> {
   const admin = createAdminClient();
+
+  // Filtro per ruolo senza ricerca: si pagina su `profiles.role` e si leggono gli account per id.
+  if (ruolo && !q) {
+    const da = (pagina - 1) * PER_PAGINA;
+    const { data: prof, count, error } = await admin
+      .from("profiles")
+      .select("id", { count: "exact" })
+      .eq("role", ruolo)
+      .order("created_at", { ascending: false })
+      .range(da, da + PER_PAGINA - 1);
+    if (error) {
+      logger.error("admin/utenti", `elenco per ruolo fallito: ${error.message}`);
+      return { ok: false, error: "Non riesco a leggere l'elenco degli utenti." };
+    }
+    const lette = await Promise.all(
+      (prof ?? []).map(async (p) => {
+        const { data: u, error: uErr } = await admin.auth.admin.getUserById(p.id);
+        if (uErr) logger.warn("admin/utenti", `account non letto: ${uErr.message}`);
+        return u?.user ?? null;
+      })
+    );
+    const utenti = lette.filter((u): u is User => u !== null);
+    const ultima = Math.max(1, Math.ceil((count ?? 0) / PER_PAGINA));
+    return { ok: true, utenti, pagina, ultima, ricerca: false };
+  }
 
   if (!q) {
     const { data: res, error } = await admin.auth.admin.listUsers({ page: pagina, perPage: PER_PAGINA });
@@ -95,29 +126,112 @@ async function carica(q: string, pagina: number): Promise<Caricamento> {
     }
     if (res.users.length < PER_PAGINA) break;
   }
+  if (ruolo && trovati.length > 0) {
+    const { data: prof, error } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("role", ruolo)
+      .in("id", trovati.map((u) => u.id));
+    if (error) {
+      logger.error("admin/utenti", `filtro ruolo (ricerca) fallito: ${error.message}`);
+      return { ok: false, error: "Ricerca non riuscita. Riprova." };
+    }
+    const ammessi = new Set((prof ?? []).map((p) => p.id));
+    return { ok: true, utenti: trovati.filter((u) => ammessi.has(u.id)), pagina: 1, ultima: null, ricerca: true };
+  }
   return { ok: true, utenti: trovati, pagina: 1, ultima: null, ricerca: true };
+}
+
+type Conteggi = {
+  totale: number | null;
+  artisti: number | null;
+  organizzatori: number | null;
+  utenti: number | null;
+  profiliArtista: number | null;
+};
+
+/** Conteggi esatti per account (`profiles.role`); `null` = lettura fallita, mai mostrato come 0. */
+async function contaPerRuolo(): Promise<Conteggi> {
+  const admin = createAdminClient();
+  const conta = async (ruolo: FiltroRuolo | null): Promise<number | null> => {
+    let query = admin.from("profiles").select("id", { count: "exact", head: true });
+    if (ruolo) query = query.eq("role", ruolo);
+    const { count, error } = await query;
+    if (error) {
+      logger.error("admin/utenti", `conteggio ${ruolo ?? "totale"} fallito: ${error.message}`);
+      return null;
+    }
+    return count;
+  };
+  const [totale, artisti, organizzatori, utenti, profili] = await Promise.all([
+    conta(null),
+    conta("artist"),
+    conta("organizer"),
+    conta("user"),
+    admin.from("artists").select("id", { count: "exact", head: true }),
+  ]);
+  if (profili.error) logger.error("admin/utenti", `conteggio profili artista fallito: ${profili.error.message}`);
+  return {
+    totale,
+    artisti,
+    organizzatori,
+    utenti,
+    profiliArtista: profili.error ? null : profili.count,
+  };
 }
 
 const FILTRO_IN_ATTESA = "organizzatori-in-attesa";
 
-function Schede({ attivo, inAttesa }: { attivo: boolean; inAttesa: number }) {
+function Schede({
+  attivo,
+  ruolo,
+  inAttesa,
+  conteggi,
+}: {
+  attivo: boolean;
+  ruolo: FiltroRuolo | null;
+  inAttesa: number;
+  conteggi: Conteggi;
+}) {
   const base = "rounded-full border px-3 py-1 text-sm";
   const on = "border-azzurro bg-azzurro/10 font-semibold";
   const off = "border-border text-muted-foreground hover:text-foreground";
+  const n = (v: number | null) => (v === null ? "" : ` (${v})`);
+  const voci: { chiave: FiltroRuolo | null; etichetta: string; href: string; conta: number | null }[] = [
+    { chiave: null, etichetta: "Tutti", href: "/admin/utenti", conta: conteggi.totale },
+    { chiave: "artist", etichetta: "Artisti", href: "/admin/utenti?ruolo=artist", conta: conteggi.artisti },
+    {
+      chiave: "organizer",
+      etichetta: "Organizzatori",
+      href: "/admin/utenti?ruolo=organizer",
+      conta: conteggi.organizzatori,
+    },
+    { chiave: "user", etichetta: "Utenti", href: "/admin/utenti?ruolo=user", conta: conteggi.utenti },
+  ];
   return (
-    <nav aria-label="Filtri utenti" className="flex flex-wrap gap-2">
-      <Link href="/admin/utenti" className={`${base} ${attivo ? off : on}`}>
-        Tutti
-      </Link>
-      <Link href={`/admin/utenti?filtro=${FILTRO_IN_ATTESA}`} className={`${base} ${attivo ? on : off}`}>
-        Organizzatori in attesa{inAttesa > 0 ? ` (${inAttesa})` : ""}
-      </Link>
-    </nav>
+    <div className="space-y-2">
+      <nav aria-label="Filtri utenti" className="flex flex-wrap gap-2">
+        {voci.map((v) => (
+          <Link key={v.etichetta} href={v.href} className={`${base} ${!attivo && ruolo === v.chiave ? on : off}`}>
+            {v.etichetta}
+            {n(v.conta)}
+          </Link>
+        ))}
+        <Link href={`/admin/utenti?filtro=${FILTRO_IN_ATTESA}`} className={`${base} ${attivo ? on : off}`}>
+          Organizzatori in attesa{inAttesa > 0 ? ` (${inAttesa})` : ""}
+        </Link>
+      </nav>
+      {conteggi.profiliArtista !== null && (
+        <p className="text-xs text-muted-foreground">
+          Profili artista totali: {conteggi.profiliArtista} (un account Pro o Max può averne più d&apos;uno).
+        </p>
+      )}
+    </div>
   );
 }
 
 /** Elenco degli organizzatori in attesa di approvazione (migration 0071). */
-async function ElencoOrganizzatoriInAttesa({ inAttesa }: { inAttesa: number }) {
+async function ElencoOrganizzatoriInAttesa({ inAttesa, conteggi }: { inAttesa: number; conteggi: Conteggi }) {
   const admin = createAdminClient();
   const { data: lette, error } = await admin
     .from("organizers")
@@ -140,7 +254,7 @@ async function ElencoOrganizzatoriInAttesa({ inAttesa }: { inAttesa: number }) {
     return (
       <div className="space-y-6">
         {intestazione}
-        <Schede attivo inAttesa={inAttesa} />
+        <Schede attivo ruolo={null} inAttesa={inAttesa} conteggi={conteggi} />
         <p role="alert" className="text-sm text-corallo">
           {colonnaAssente(error)
             ? "L'approvazione degli organizzatori richiede la migration 0071: applicala dal SQL editor."
@@ -164,7 +278,7 @@ async function ElencoOrganizzatoriInAttesa({ inAttesa }: { inAttesa: number }) {
   return (
     <div className="space-y-6">
       {intestazione}
-      <Schede attivo inAttesa={inAttesa} />
+      <Schede attivo ruolo={null} inAttesa={inAttesa} conteggi={conteggi} />
       <Card>
         <CardContent className="overflow-x-auto pt-4">
           {righe.length === 0 ? (
@@ -204,16 +318,17 @@ async function ElencoOrganizzatoriInAttesa({ inAttesa }: { inAttesa: number }) {
 export default async function AdminUtentiPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string; filtro?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; filtro?: string; ruolo?: string }>;
 }) {
   const attore = await requireAdminPageAccess("utenti");
   const sp = await searchParams;
-  const inAttesa = await contaOrganizzatoriInAttesa();
-  if (sp.filtro === FILTRO_IN_ATTESA) return <ElencoOrganizzatoriInAttesa inAttesa={inAttesa} />;
+  const [inAttesa, conteggi] = await Promise.all([contaOrganizzatoriInAttesa(), contaPerRuolo()]);
+  if (sp.filtro === FILTRO_IN_ATTESA) return <ElencoOrganizzatoriInAttesa inAttesa={inAttesa} conteggi={conteggi} />;
+  const ruoloFiltro = leggiRuolo(sp.ruolo);
   const q = (sp.q ?? "").trim().slice(0, 100);
   const pagina = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
 
-  const esito = await carica(q, pagina);
+  const esito = await carica(q, pagina, ruoloFiltro);
 
   const intestazione = (
     <div>
@@ -225,10 +340,11 @@ export default async function AdminUtentiPage({
     </div>
   );
 
-  const schede = <Schede attivo={false} inAttesa={inAttesa} />;
+  const schede = <Schede attivo={false} ruolo={ruoloFiltro} inAttesa={inAttesa} conteggi={conteggi} />;
 
   const ricerca = (
     <form method="get" className="flex max-w-md gap-2">
+      {ruoloFiltro && <input type="hidden" name="ruolo" value={ruoloFiltro} />}
       <Input name="q" defaultValue={q} placeholder="Cerca per email o nome" aria-label="Cerca utente" />
       <Button type="submit" variant="outline">
         Cerca
@@ -290,7 +406,7 @@ export default async function AdminUtentiPage({
   }
 
   const href = (p: number) =>
-    `/admin/utenti?${new URLSearchParams({ ...(q ? { q } : {}), page: String(p) })}`;
+    `/admin/utenti?${new URLSearchParams({ ...(q ? { q } : {}), ...(ruoloFiltro ? { ruolo: ruoloFiltro } : {}), page: String(p) })}`;
 
   return (
     <div className="space-y-6">

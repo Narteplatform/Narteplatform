@@ -107,6 +107,8 @@ const nextConfig: NextConfig = {
         "https://*.storage.bunnycdn.com https://*.b-cdn.net " +
         "https://embeds.iubenda.com https://cdn.iubenda.com https://cs.iubenda.com " +
         "https://consent.iubenda.com https://hits-i.iubenda.com " +
+        // idb/cpl: registro delle preferenze e prove di consenso del widget attuale.
+        "https://idb.iubenda.com https://cpl.iubenda.com " +
         "https://www.google-analytics.com https://*.google-analytics.com " +
         "https://*.analytics.google.com https://www.googletagmanager.com " +
         "https://www.facebook.com https://graph.facebook.com",

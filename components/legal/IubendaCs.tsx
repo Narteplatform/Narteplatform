@@ -45,10 +45,33 @@ export function IubendaCs() {
   if (!IUBENDA_WIDGET_SRC) return null;
 
   return (
-    <Script
-      id="iubenda-cs"
-      strategy="beforeInteractive"
-      src={IUBENDA_WIDGET_SRC}
-    />
+    <>
+      <Script id="iubenda-cs-dominio" strategy="beforeInteractive">
+        {CONFIG_DOMINIO}
+      </Script>
+      <Script
+        id="iubenda-cs"
+        strategy="beforeInteractive"
+        src={IUBENDA_WIDGET_SRC}
+      />
+    </>
   );
 }
+
+/**
+ * IL CONSENSO VA SALVATO SUL DOMINIO ESATTO. È l'unica impostazione che si
+ * scrive qui, e non duplica niente del pannello: il widget la fonde con la sua.
+ *
+ * Di suo iubenda scrive il cookie del consenso sul dominio di secondo livello
+ * (`.vercel.app` per `narteplatform.vercel.app`). `vercel.app` è nella Public
+ * Suffix List e il browser rifiuta il cookie senza errori: il consenso resta in
+ * memoria per la sola pagina e il banner ricompare a ogni navigazione. Su
+ * mobile copre metà schermo, sopra i menu dei moduli, e i tocchi finivano sui
+ * suoi collegamenti. Verificato in un browser senza interfaccia il 16/10/2026:
+ * senza questa riga nessun cookie, con questa riga `_iub_cs-*` sul dominio del
+ * sito e banner che non torna.
+ *
+ * Vale anche su un dominio proprio: legare il consenso all'host esatto non
+ * toglie niente.
+ */
+const CONFIG_DOMINIO = `window._iub=window._iub||{};window._iub.csConfiguration=Object.assign({},window._iub.csConfiguration,{localConsentDomain:location.hostname,localConsentDomainExact:true});`;

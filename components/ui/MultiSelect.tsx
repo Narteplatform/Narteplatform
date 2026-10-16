@@ -106,18 +106,26 @@ export function MultiSelect({
         <Popover.Content
           align="start"
           sideOffset={6}
+          collisionPadding={12}
+          // Su touch non si apre la tastiera da sola: sposterebbe la pagina
+          // mentre l'utente sta per toccare una voce.
+          onOpenAutoFocus={(e) => {
+            if (window.matchMedia("(pointer: coarse)").matches) e.preventDefault();
+          }}
           className="z-50 w-(--radix-popover-trigger-width) overflow-hidden rounded-md border border-border bg-background shadow-lg"
         >
           <div className="border-b border-border p-2">
             <input
-              autoFocus
+
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={searchPlaceholder}
               className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-foreground"
             />
           </div>
-          <ul className="max-h-64 overflow-y-auto py-1">
+          {/* Su schermi bassi (tastiera aperta) l'elenco non deve uscire dallo
+              spazio visibile: oltre il bordo i tocchi finiscono su ciò che sta sotto. */}
+          <ul className="max-h-[min(16rem,calc(var(--radix-popover-content-available-height)-4rem))] overflow-y-auto overscroll-contain py-1">
             {filtered.length === 0 ? (
               <li className="px-3 py-4 text-center text-xs text-muted-foreground">
                 {emptyText}
