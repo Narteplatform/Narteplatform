@@ -45,6 +45,9 @@ function moderationRpc(admin: AdminClient): MediaModerationRpc {
 async function revalidateArtist(admin: AdminClient, artistId: string | null | undefined) {
   revalidatePath("/admin/moderazione");
   revalidatePath("/artisti");
+  // Topbar, selettore profili e liste delle aree autenticate leggono la cover.
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/organizzatore", "layout");
   // La home mostra copertine e profili: dopo una decisione va rigenerata.
   revalidatePath("/");
   if (!artistId) return;

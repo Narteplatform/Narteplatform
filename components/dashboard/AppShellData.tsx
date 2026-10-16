@@ -643,7 +643,8 @@ async function loadArtistShell(userId: string): Promise<{
     storage,
     profiles,
     planTier: activeArtist?.tier ?? null,
-    artistCover: (artist as { cover_image?: string | null } | null)?.cover_image ?? null,
+    artistCover:
+      activeArtist?.cover_image ?? (artist as { cover_image?: string | null } | null)?.cover_image ?? null,
   };
 }
 
@@ -1048,11 +1049,10 @@ export async function ArtistAppShell({
         name: user.name ?? null,
         email: user.email,
         role: "artist",
-        // Il salvataggio del profilo propaga già la cover su profiles.avatar_url.
-        // Questo ripiego copre gli account creati PRIMA di quella sincronizzazione,
-        // che altrimenti resterebbero con l'iniziale finché non risalvano il
-        // profilo — e lo fa senza scrivere nulla sul DB.
-        avatarUrl: user.avatarUrl ?? artistCover,
+        // Foto del profilo artista ATTIVO (artists.cover_image, aggiornata
+        // dall'approvazione in Moderazioni). profiles.avatar_url è unico per
+        // account e resta solo come ripiego.
+        avatarUrl: artistCover ?? user.avatarUrl ?? null,
       }}
       planTier={planTier ?? undefined}
       navSections={navSections}

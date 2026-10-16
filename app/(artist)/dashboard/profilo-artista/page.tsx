@@ -110,7 +110,8 @@ export default async function ArtistProfileEditPage() {
       </header>
 
       <DirittiContenutiProvider initialDichiarato={dirittiDichiarati}>
-      <div className="space-y-3">
+      {/* key sul profilo: cambiando profilo attivo i blocchi si rimontano, senza stato residuo dell'altro */}
+      <div key={artist.id} className="space-y-3">
         <InfoArtistaBlock
           artist={profile}
           genreOptions={genreOptions}

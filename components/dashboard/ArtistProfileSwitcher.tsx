@@ -37,8 +37,23 @@ export function ArtistProfileSwitcher({
     });
   }
 
+  const attivo = owned.find((a) => a.id === activeId) ?? null;
+
   return (
     <div className="flex items-center gap-2">
+      {owned.length > 1 && attivo ? (
+        attivo.cover_image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={attivo.cover_image} alt="" className="size-9 shrink-0 rounded-full object-cover" />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold"
+          >
+            {attivo.stage_name.slice(0, 1).toUpperCase()}
+          </span>
+        )
+      ) : null}
       {owned.length > 1 ? (
         <div className="relative">
           <select
