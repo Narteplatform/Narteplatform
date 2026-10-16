@@ -25,6 +25,7 @@ import {
 import { notifyMediaSubmission } from "@/lib/media/notify";
 import { DIRITTI_NON_DICHIARATI } from "@/lib/legal/diritti-contenuti";
 import { haDichiaratoDiritti } from "@/lib/legal/diritti-contenuti-server";
+import { isBunnyStorageUrl, isSupabasePublicUrl } from "@/lib/storage/bunny/urls";
 import type { ArtistTier, Database } from "@/lib/supabase/types";
 
 type ArtistUpdate = Database["public"]["Tables"]["artists"]["Update"];
@@ -502,6 +503,114 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
   const slug = (slugRow as { slug?: string } | null)?.slug;
   if (slug) revalidatePath(`/artisti/${slug}`);
 
+  return { ok: true as const };
+}
+
+/**
+ * Invia SUBITO la foto profilo appena caricata alla coda di moderazione.
+ *
+ * Caso reale: l'artista carica la foto ma il salvataggio del blocco Info (che
+ * richiede anche il genere) non va a buon fine, e la foto non arriva mai in
+ * `artist_media_submissions`. Qui la copertina si accoda da sola, senza
+ * passare dal resto del blocco. Non scrive mai su `artists.cover_image`: la
+ * foto pubblicata cambia solo all'approvazione, come in
+ * updateArtistProfileSection.
+ */
+export async function inviaCopertina(
+  artistId: string,
+  url: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await ownsArtist(artistId);
+  if (!user) return { ok: false as const, error: "Non autorizzato" };
+
+  // Solo URL https delle nostre destinazioni di upload (Bunny Storage o
+  // Supabase Storage): la chiave la sceglie il server in /api/upload.
+  const clean = typeof url === "string" ? url.trim() : "";
+  if (
+    !clean.startsWith("https://") ||
+    clean.length > 2000 ||
+    !(isBunnyStorageUrl(clean) || isSupabasePublicUrl(clean))
+  ) {
+    return { ok: false as const, error: "Indirizzo dell'immagine non valido" };
+  }
+
+  const admin = createAdminClient();
+
+  const { data: currentRow, error: currentErr } = await admin
+    .from("artists")
+    .select("cover_image")
+    .eq("id", artistId)
+    .maybeSingle();
+  if (currentErr) {
+    logger.error("[inviaCopertina] lettura profilo fallita", {
+      artistId,
+      error: currentErr.message,
+    });
+    return {
+      ok: false as const,
+      error: "Non riesco a leggere il profilo in questo momento. Riprova fra poco.",
+    };
+  }
+  if (!currentRow) return { ok: false as const, error: "Profilo artista non trovato" };
+
+  // Già pubblicata: niente da moderare.
+  if ((currentRow as { cover_image?: string | null }).cover_image === clean) {
+    return { ok: true as const };
+  }
+
+  // FAIL-CLOSED, come updateArtistProfileSection: senza coda non si accoda né
+  // si pubblica niente.
+  const moderationOn = await isMediaModerationEnabled(admin);
+  if (!moderationOn) {
+    logger.error("[inviaCopertina] coda moderazione non disponibile", { artistId });
+    return { ok: false as const, error: MODERAZIONE_NON_DISPONIBILE };
+  }
+
+  const diritti = await haDichiaratoDiritti(user.id);
+  if (!diritti.ok) return { ok: false as const, error: diritti.error };
+  if (!diritti.dichiarato) return { ok: false as const, error: DIRITTI_NON_DICHIARATI };
+
+  const { data: queued, error: queuedErr } = await admin
+    .from("artist_media_submissions")
+    .select("target, url")
+    .eq("artist_id", artistId)
+    .eq("status", "pending");
+  if (queuedErr) {
+    return {
+      ok: false as const,
+      error: "Non riesco a leggere i contenuti in attesa. Riprova fra poco.",
+    };
+  }
+  const giaInCoda = (queued ?? []).some(
+    (row) => row.target === "cover_image" && row.url === clean
+  );
+
+  if (!giaInCoda) {
+    const { error: subErr } = await admin
+      .from("artist_media_submissions")
+      .insert([toCoverSubmission(artistId, user.id, clean)]);
+    // 23505: doppione fermato dall'indice parziale, il contenuto è già in coda.
+    if (subErr && subErr.code !== "23505") {
+      logger.error("[inviaCopertina] coda media fallita", {
+        artistId,
+        error: subErr.message,
+      });
+      return {
+        ok: false as const,
+        error: "Non sono riuscito a inviare la foto per l'approvazione. Riprova.",
+      };
+    }
+    if (!subErr) {
+      void notifyMediaSubmission(artistId, 1).catch((err: unknown) => {
+        logger.error("[inviaCopertina] notifica moderazione fallita", {
+          artistId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+    }
+  }
+
+  revalidatePath("/dashboard", "layout");
   return { ok: true as const };
 }
 
