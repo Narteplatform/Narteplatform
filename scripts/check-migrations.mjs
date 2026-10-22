@@ -369,6 +369,19 @@ const MIGRATION = [
       ["privilegi anonimi revocati su notifications", () => privilegioAnonRevocato("notifications")],
     ],
   },
+  {
+    file: "0074_modifiche_cliente_ottobre.sql",
+    cosa: "Titoli video eventi/format, calendario iCal, contenuti del sito, nome nel registro",
+    controlli: [
+      ["colonna events.video_titles", () => colonna("events", "video_titles")],
+      ["colonna formats.video_titles", () => colonna("formats", "video_titles")],
+      ["tabella calendar_feeds", () => tabella("calendar_feeds")],
+      ["privilegi anonimi revocati su calendar_feeds", () => privilegioAnonRevocato("calendar_feeds")],
+      ["tabella site_settings", () => tabella("site_settings")],
+      ["privilegi anonimi revocati su site_settings", () => privilegioAnonRevocato("site_settings")],
+      ["colonna moderation_actions.target_name", () => colonna("moderation_actions", "target_name")],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };

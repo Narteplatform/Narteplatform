@@ -255,6 +255,7 @@ export interface Database {
           cover_image_home: string | null;
           gallery: string[];
           videos: string[];
+          video_titles: Json;
           description: string | null;
           featured: boolean;
           ticket_url: string | null;
@@ -275,6 +276,7 @@ export interface Database {
           cover_image_home?: string | null;
           gallery?: string[];
           videos?: string[];
+          video_titles?: Json;
           description?: string | null;
           featured?: boolean;
           ticket_url?: string | null;
@@ -295,6 +297,7 @@ export interface Database {
           cover_image_home?: string | null;
           gallery?: string[];
           videos?: string[];
+          video_titles?: Json;
           description?: string | null;
           featured?: boolean;
           ticket_url?: string | null;
@@ -430,6 +433,7 @@ export interface Database {
           cover_image: string | null;
           gallery: string[];
           videos: string[];
+          video_titles: Json;
           icon: string | null;
           order_index: number;
           details: Json;
@@ -448,6 +452,7 @@ export interface Database {
           cover_image?: string | null;
           gallery?: string[];
           videos?: string[];
+          video_titles?: Json;
           icon?: string | null;
           order_index?: number;
           details?: Json;
@@ -466,6 +471,7 @@ export interface Database {
           cover_image?: string | null;
           gallery?: string[];
           videos?: string[];
+          video_titles?: Json;
           icon?: string | null;
           order_index?: number;
           details?: Json;
@@ -558,6 +564,20 @@ export interface Database {
         Relationships: [];
       };
       /** Registro unico delle decisioni di moderazione (0065). */
+      /** Link iCal personale (0074): solo service role. */
+      calendar_feeds: {
+        Row: { user_id: string; token: string; created_at: string };
+        Insert: { user_id: string; token: string; created_at?: string };
+        Update: { user_id?: string; token?: string; created_at?: string };
+        Relationships: [];
+      };
+      /** Contenuti del sito modificabili dall'admin (0074): solo service role. */
+      site_settings: {
+        Row: { key: string; value: string; updated_at: string; updated_by: string | null };
+        Insert: { key: string; value: string; updated_at?: string; updated_by?: string | null };
+        Update: { key?: string; value?: string; updated_at?: string; updated_by?: string | null };
+        Relationships: [];
+      };
       moderation_actions: {
         Row: {
           id: string;
@@ -570,6 +590,7 @@ export interface Database {
           action: string;
           reason: string;
           report_id: string | null;
+          target_name?: string | null;
           notified_at: string | null;
           notify_error: string | null;
         };
@@ -584,6 +605,7 @@ export interface Database {
           action: string;
           reason: string;
           report_id?: string | null;
+          target_name?: string | null;
           notified_at?: string | null;
           notify_error?: string | null;
         };
@@ -598,6 +620,7 @@ export interface Database {
           action?: string;
           reason?: string;
           report_id?: string | null;
+          target_name?: string | null;
           notified_at?: string | null;
           notify_error?: string | null;
         };

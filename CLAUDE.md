@@ -184,6 +184,9 @@ policy e pubblicazioni realtime — che PostgREST non espone — le query sono i
 - `0073_notifiche.sql` — notifiche in-app (campanella in topbar, artista e organizzatore): tabella
   `notifications`, scrive solo la service role, l'utente legge le proprie e segna `read_at`.
   **Indipendente dalle altre.** Il codice tollera la tabella mancante (campanella vuota).
+- `0074_modifiche_cliente_ottobre.sql` — titoli dei video di eventi/format (`video_titles`), token del
+  calendario iCal (`calendar_feeds`), contenuti del sito (`site_settings`, `/admin/contenuti`) e
+  `moderation_actions.target_name`. **Indipendente dalle altre.** Il codice tollera ogni parte mancante.
 
 ## Comandi
 

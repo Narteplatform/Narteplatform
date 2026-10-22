@@ -529,6 +529,7 @@ export async function deleteArtist(artistId: string, reason: string, chiudiAccou
     reason: m.reason,
     affectedUserId: artist.user_id,
     affectedName: artist.stage_name,
+    targetName: artist.stage_name,
     notify: {
       decision: "Abbiamo eliminato il tuo profilo da N'arte.",
       target: `Profilo "${artist.stage_name}"`,

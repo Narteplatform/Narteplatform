@@ -417,3 +417,19 @@ Eseguire la migration accende le notifiche.
 | RLS e privilegi | `revoke all` a anon/authenticated; l'utente può solo `select` delle proprie righe e `update (read_at)` | l'insert è solo service role: nessuna notifica si può falsificare dal browser |
 
 Verifica dopo l'esecuzione: `npm run db:check-migrations`.
+
+## Modifiche del cliente (ottobre) — `0074` (22/10/2026)
+
+**`0074_modifiche_cliente_ottobre.sql`** — indipendente da tutte le altre, in qualunque ordine. Il
+codice è già online e tollera ogni parte mancante: finché non la si esegue i video non hanno titolo,
+il collegamento al calendario dice «non ancora disponibile», i contenuti del sito restano quelli
+scritti nel codice e il registro mostra l'id al posto del nome dei profili eliminati.
+
+| Parte | Effetto | Attenzione |
+|---|---|---|
+| `events.video_titles`, `formats.video_titles` | mappa jsonb URL → titolo, default `{}` | l'elenco `videos` non si tocca |
+| `calendar_feeds` | token del link iCal personale (uno per utente) | `revoke all` a anon/authenticated, nessuna policy: solo service role |
+| `site_settings` | contenuti del sito modificabili da `/admin/contenuti` | `revoke all` a anon/authenticated; chiave assente = testo del codice |
+| `moderation_actions.target_name` | nome dell'oggetto salvato con la decisione | aggiunta solo se la tabella esiste (0065) |
+
+Verifica dopo l'esecuzione: `npm run db:check-migrations`.

@@ -5,6 +5,7 @@ import { dispatchEmail } from "@/lib/emails/dispatch";
 import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
 
 /**
  * Registro e comunicazione delle decisioni di moderazione.
@@ -53,6 +54,11 @@ export type DecisioneInput = {
   /** Per chi non ha un account (es. un candidato). Se assente, si ricava dall'utente. */
   affectedEmail?: string | null;
   affectedName?: string | null;
+  /**
+   * Nome leggibile dell'oggetto (es. il nome d'arte del profilo). Serve al
+   * registro quando l'oggetto non esiste più: senza, mostrerebbe solo l'id.
+   */
+  targetName?: string | null;
   reportId?: string | null;
   /** `false` per registrare senza avvisare (es. l'interessato non è raggiungibile). */
   notify: ComunicazioneDecisione | false;
@@ -79,20 +85,30 @@ export async function registraDecisione(input: DecisioneInput): Promise<Decision
 
   const admin = createAdminClient();
 
-  const { data: riga, error: insErr } = await admin
+  const riga0 = {
+    actor_id: input.actorId,
+    target_type: input.targetType,
+    target_id: input.targetId ?? null,
+    affected_user_id: input.affectedUserId ?? null,
+    affected_email: input.affectedEmail ?? null,
+    action: input.action,
+    reason,
+    report_id: input.reportId ?? null,
+  };
+  const targetName = input.targetName?.trim().slice(0, 200) || null;
+  let { data: riga, error: insErr } = await admin
     .from("moderation_actions")
-    .insert({
-      actor_id: input.actorId,
-      target_type: input.targetType,
-      target_id: input.targetId ?? null,
-      affected_user_id: input.affectedUserId ?? null,
-      affected_email: input.affectedEmail ?? null,
-      action: input.action,
-      reason,
-      report_id: input.reportId ?? null,
-    })
+    .insert(targetName ? { ...riga0, target_name: targetName } : riga0)
     .select("id")
     .single();
+  // Senza la migration 0074 la colonna target_name non c'è: si registra senza.
+  if (insErr && targetName && colonnaAssente(insErr, "target_name")) {
+    ({ data: riga, error: insErr } = await admin
+      .from("moderation_actions")
+      .insert(riga0)
+      .select("id")
+      .single());
+  }
 
   let id: string | null = riga?.id ?? null;
   if (insErr) {

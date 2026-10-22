@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { etichettaCategoria, registroAssente } from "@/lib/chat/access";
 
 /**
@@ -320,6 +321,8 @@ type AzioneRow = {
   reason: string;
   notified_at: string | null;
   notify_error: string | null;
+  /** Dalla 0074: assente sui database che non l'hanno ancora. */
+  target_name?: string | null;
 };
 
 type AccessoRow = {
@@ -356,19 +359,23 @@ export async function leggiRegistro(
   let azioni: AzioneRow[] = [];
   let nAzioni = 0;
   if (vuoleAzioni) {
-    let q = admin
-      .from("moderation_actions")
-      .select(
-        "id, created_at, actor_id, target_type, target_id, affected_user_id, affected_email, action, reason, notified_at, notify_error",
-        { count: "exact" },
-      )
-      .order("created_at", { ascending: false })
-      .range(0, quanti - 1);
-    if (filtri.operatore) q = q.eq("actor_id", filtri.operatore);
-    if (filtri.tipo) q = q.eq("target_type", filtri.tipo);
-    if (filtri.dal) q = q.gte("created_at", inizioGiorno(filtri.dal));
-    if (filtri.al) q = q.lt("created_at", giornoSuccessivo(filtri.al));
-    const { data, error, count } = await q;
+    const colonne =
+      "id, created_at, actor_id, target_type, target_id, affected_user_id, affected_email, action, reason, notified_at, notify_error";
+    const leggi = (sel: string) => {
+      let q = admin
+        .from("moderation_actions")
+        .select(sel, { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(0, quanti - 1);
+      if (filtri.operatore) q = q.eq("actor_id", filtri.operatore);
+      if (filtri.tipo) q = q.eq("target_type", filtri.tipo);
+      if (filtri.dal) q = q.gte("created_at", inizioGiorno(filtri.dal));
+      if (filtri.al) q = q.lt("created_at", giornoSuccessivo(filtri.al));
+      return q.returns<AzioneRow[]>();
+    };
+    let { data, error, count } = await leggi(`${colonne}, target_name`);
+    // Senza la migration 0074 non c'è target_name: si legge senza.
+    if (error && colonnaAssente(error, "target_name")) ({ data, error, count } = await leggi(colonne));
     if (error) {
       if (registroAssente(error.code)) {
         avvisi.push("Il registro delle decisioni non esiste ancora (migration 0065).");
@@ -462,7 +469,7 @@ export async function leggiRegistro(
         operatoreId: r.actor_id,
         operatore: nome(r.actor_id),
         azione: etichettaAzione(r.action),
-        oggetto: oggettoLeggibile(r.target_type, r.target_id, risolti),
+        oggetto: oggettoLeggibile(r.target_type, r.target_id, risolti, r.target_name),
         interessato: r.affected_user_id ? nome(r.affected_user_id) : (r.affected_email ?? "—"),
         motivo: sostituisciUuid(r.reason, risolti),
         notifica: r.notified_at ? `Inviata il ${r.notified_at}` : r.notify_error ? `Non inviata: ${r.notify_error}` : "—",
@@ -486,10 +493,16 @@ export async function leggiRegistro(
   return { ok: true, righe, totale: nAzioni + nAccessi, avvisi };
 }
 
-function oggettoLeggibile(tipo: string, id: string | null, nomi: Map<string, string>): string {
+function oggettoLeggibile(
+  tipo: string,
+  id: string | null,
+  nomi: Map<string, string>,
+  /** Nome salvato con la decisione: vale anche se l'oggetto è stato eliminato. */
+  salvato?: string | null,
+): string {
   const etichetta = etichettaOggetto(tipo);
-  if (!id) return etichetta;
-  const nome = nomi.get(id.toLowerCase());
+  if (!id) return salvato ? `${etichetta} — ${salvato}` : etichetta;
+  const nome = nomi.get(id.toLowerCase()) ?? salvato;
   return nome ? `${etichetta} — ${nome}` : `${etichetta} ${id}`;
 }
 
