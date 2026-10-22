@@ -8,7 +8,8 @@ import { slugify } from "@/lib/utils";
 import { artistSchema, type ArtistInput } from "@/lib/validators/schemas";
 import { sendBookingCancelledByAdminEmail } from "@/lib/emails/booking-notify";
 import { preparaAccessoArtista, inviaBenvenutoArtista } from "@/lib/admin/accesso-artista";
-import { requireAdminPageAccess } from "@/lib/admin/permissions";
+import { getAllowedAdminPages, requireAdminPageAccess } from "@/lib/admin/permissions";
+import { chiudiAccountDalTeam } from "@/lib/admin/chiusura";
 import { creaNotifichePerArtista } from "@/lib/notifications";
 import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 import { notificaProfiloApprovato, profiloMaiPubblicato } from "@/lib/moderation/approvazioni";
@@ -471,7 +472,15 @@ export async function updateArtist(
   return { ok: true as const };
 }
 
-export async function deleteArtist(artistId: string, reason: string) {
+/**
+ * Elimina un profilo artista. Con `chiudiAccount` chiude anche l'account del
+ * proprietario, se questo era il suo ultimo profilo: senza, l'account restava
+ * in Utenti come «Artista · Attivo» pur non avendo più alcun profilo.
+ *
+ * Tutte le verifiche sulla chiusura avvengono PRIMA della cancellazione: se una
+ * non passa non si elimina nulla.
+ */
+export async function deleteArtist(artistId: string, reason: string, chiudiAccount = false) {
   const user = await requireAdminPageAccess("artisti");
   const m = motivazione(reason, true);
   if (!m.ok || !m.reason) return { ok: false as const, error: m.ok ? "Motivazione mancante" : m.error };
@@ -486,6 +495,29 @@ export async function deleteArtist(artistId: string, reason: string) {
     .maybeSingle();
   if (readErr) return { ok: false as const, error: readErr.message };
   if (!artist) return { ok: false as const, error: "Profilo non trovato" };
+
+  if (chiudiAccount) {
+    if (!artist.user_id) {
+      return { ok: false as const, error: "Il profilo non è collegato a un account: eliminalo senza chiudere l'account." };
+    }
+    // La chiusura è un'azione della sezione Utenti: serve anche quel permesso.
+    const pagine = await getAllowedAdminPages(user.id, user.email ?? null);
+    if (!pagine.has("utenti")) {
+      return { ok: false as const, error: "Per chiudere l'account serve l'accesso alla sezione Utenti." };
+    }
+    const { count: altri, error: altriErr } = await admin
+      .from("artists")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", artist.user_id)
+      .neq("id", artistId);
+    if (altriErr) return { ok: false as const, error: altriErr.message };
+    if ((altri ?? 0) > 0) {
+      return {
+        ok: false as const,
+        error: `Il proprietario ha altri ${altri} profili: elimina questo senza chiudere l'account. Nessuna modifica fatta.`,
+      };
+    }
+  }
 
   // Registro e comunicazione PRIMA della cancellazione: dopo, il proprietario
   // non sarebbe più rintracciabile dal profilo. Se non riescono, non si cancella.
@@ -510,6 +542,23 @@ export async function deleteArtist(artistId: string, reason: string) {
   revalidatePath("/admin/artisti");
   revalidatePath("/artisti");
   revalidatePath("/");
+
+  if (chiudiAccount && artist.user_id) {
+    // Stesso percorso del pulsante «Chiudi account» in Utenti: accesso
+    // bloccato, abbonamento disdetto a fine periodo, annullabile per 30 giorni.
+    const chiusura = await chiudiAccountDalTeam({
+      userId: artist.user_id,
+      motivo: m.reason,
+      attoreId: user.id,
+    });
+    revalidatePath("/admin/utenti");
+    if (!chiusura.ok) {
+      return {
+        ok: false as const,
+        error: `Profilo eliminato, ma l'account non è stato chiuso: ${chiusura.error} Puoi chiuderlo da Utenti.`,
+      };
+    }
+  }
   redirect("/admin/artisti");
 }
 

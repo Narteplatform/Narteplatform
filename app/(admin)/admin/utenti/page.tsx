@@ -485,6 +485,11 @@ export default async function AdminUtentiPage({
                             </Badge>
                           )}
                           {cancellazioni.has(u.id) && <Badge variant="warning">Cancellazione richiesta</Badge>}
+                          {/* Account artista rimasto senza profili (es. profilo eliminato
+                              dal team): l'accesso c'è ancora, ma non è un artista in catalogo. */}
+                          {!errore && profilo?.role === "artist" && suoi.length === 0 && (
+                            <Badge variant="warning">Nessun profilo artista</Badge>
+                          )}
                         </div>
                       </td>
                       <td className="px-2 py-2">

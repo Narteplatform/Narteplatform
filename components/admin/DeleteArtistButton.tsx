@@ -17,6 +17,7 @@ export function DeleteArtistButton({
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
+  const [chiudiAccount, setChiudiAccount] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!open) {
@@ -44,6 +45,22 @@ export function DeleteArtistButton({
         onChange={setReason}
         hint="La motivazione viene inviata al proprietario del profilo per email, con il modo per contestare la decisione."
       />
+      <label className="flex items-start gap-2 text-xs">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          checked={chiudiAccount}
+          disabled={pending}
+          onChange={(e) => setChiudiAccount(e.target.checked)}
+        />
+        <span>
+          <span className="font-medium">Chiudi anche l&apos;account del proprietario</span>
+          <span className="block text-[11px] text-muted-foreground">
+            Solo se è il suo unico profilo. Accesso bloccato e abbonamento disdetto a fine
+            periodo; si annulla entro 30 giorni da Impostazioni › Cancellazioni.
+          </span>
+        </span>
+      </label>
       {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
         <Button
@@ -54,6 +71,7 @@ export function DeleteArtistButton({
           onClick={() => {
             setOpen(false);
             setReason("");
+            setChiudiAccount(false);
             setError(null);
           }}
         >
@@ -68,12 +86,16 @@ export function DeleteArtistButton({
             start(async () => {
               setError(null);
               // In caso di successo l'azione fa redirect; torna qui solo con un errore.
-              const res = await deleteArtist(artistId, reason.trim());
+              const res = await deleteArtist(artistId, reason.trim(), chiudiAccount);
               if (res && !res.ok) setError(res.error);
             })
           }
         >
-          {pending ? "Eliminazione..." : "Elimina definitivamente"}
+          {pending
+            ? "Eliminazione..."
+            : chiudiAccount
+            ? "Elimina e chiudi account"
+            : "Elimina definitivamente"}
         </Button>
       </div>
     </div>
