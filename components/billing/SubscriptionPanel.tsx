@@ -141,8 +141,8 @@ function ConfermaAbbonamento({ scelta, onIndietro }: { scelta: Scelta; onIndietr
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">
             <strong className="text-foreground">{prezzo}</strong> ogni {periodo}, prezzo finale
-            (operazione senza IVA, regime forfettario). Si rinnova automaticamente allo stesso
-            prezzo finché non disdici; puoi disdire quando vuoi dalla pagina Abbonamento.
+            senza costi aggiuntivi. Si rinnova automaticamente allo stesso prezzo finché non
+            disdici; puoi disdire quando vuoi dalla pagina Abbonamento.
           </p>
         </div>
 

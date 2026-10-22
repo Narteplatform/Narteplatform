@@ -97,7 +97,7 @@ export async function inviaPromemoriaRinnovi(): Promise<{ inviati: number; salta
             ],
             rows: [
               { label: "Rinnovo", value: data },
-              { label: "Importo", value: `${importo} (senza IVA, regime forfettario)` },
+              { label: "Importo", value: `${importo}, prezzo finale` },
             ],
             button: { label: "Gestisci l'abbonamento", href: manageUrl },
           }),

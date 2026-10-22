@@ -128,7 +128,7 @@ export async function notificaEventoAbbonamento(
               ],
               rows: [
                 { label: "Piano", value: piano },
-                { label: "Prezzo", value: `${importo} ogni ${intervallo} (senza IVA, regime forfettario)` },
+                { label: "Prezzo", value: `${importo} ogni ${intervallo}, prezzo finale` },
                 { label: "Prossimo rinnovo", value: dataIt(item?.current_period_end) },
                 { label: "Condizioni accettate", value: `versione ${sub.metadata?.condizioni_versione ?? "—"} — ${condizioniUrl}` },
               ],

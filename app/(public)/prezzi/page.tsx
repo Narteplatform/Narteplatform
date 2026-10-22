@@ -38,8 +38,9 @@ export default function PrezziPage() {
           <Reveal>
             <PlanComparison />
             <p className="mt-6 text-center text-xs text-muted-foreground">
-              Prezzi finali. Operazione senza IVA ai sensi dell&rsquo;art. 1, cc. 54-89, L.
-              190/2014 (regime forfettario).
+              {/* La dicitura sul regime forfettario sta in fattura e nelle
+                  Condizioni di abbonamento (richiesta del 22/10/2026). */}
+              Prezzi finali, senza costi aggiuntivi.
             </p>
           </Reveal>
         </div>
