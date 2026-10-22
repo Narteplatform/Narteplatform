@@ -15,6 +15,7 @@ import { FaqAccordion } from "@/components/marketing/FaqAccordion";
 import { createAdminClient } from "@/lib/supabase/server";
 import { FAQ } from "@/lib/content/artist-landing";
 import { NARTE_STATS } from "@/lib/content/stats";
+import { getContenuti } from "@/lib/content/site-settings-server";
 
 export const metadata = {
   title: "Sei un artista? — N'arte",
@@ -62,7 +63,7 @@ function faqJsonLd() {
 }
 
 export default async function CandidaturaPage() {
-  const genreOptions = await getGenreOptions();
+  const [genreOptions, c] = await Promise.all([getGenreOptions(), getContenuti()]);
 
   return (
     <>
@@ -77,13 +78,7 @@ export default async function CandidaturaPage() {
         image={heroImageFor("candidatura-artista")}
         label="per gli artisti"
         title="Sei un artista?"
-        description={
-          <>
-            Fatti trovare da chi cerca musica dal vivo. Il profilo è gratuito e
-            non scade: le richieste arrivano a te, senza che tu debba scrivere a
-            nessuno.
-          </>
-        }
+        description={c["artisti.hero.descrizione"]}
       >
         <div className="flex flex-col items-center gap-8">
           <div className="flex flex-wrap justify-center gap-3">
@@ -117,7 +112,7 @@ export default async function CandidaturaPage() {
       <ArtistProfilePreview />
 
       {/* 4 — COME FUNZIONA */}
-      <ArtistHowItWorks />
+      <ArtistHowItWorks titolo={c["artisti.passi.titolo"]} sottotitolo={c["artisti.passi.sottotitolo"]} />
 
       {/* 5 — CONFRONTO */}
       <ArtistComparison />

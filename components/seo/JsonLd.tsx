@@ -46,7 +46,8 @@ export function JsonLd({ data }: { data: Json | Json[] }) {
 /* Costruttori                                                         */
 /* ------------------------------------------------------------------ */
 
-export function organizationJsonLd(): Json {
+/** `social`: i profili da /admin/contenuti; i vuoti si scartano. */
+export function organizationJsonLd(social: string[] = []): Json {
   const base = getSiteUrl().replace(/\/$/, "");
   return {
     "@context": "https://schema.org",
@@ -57,10 +58,7 @@ export function organizationJsonLd(): Json {
     description:
       "Piattaforma italiana che mette in contatto artisti emergenti, organizzatori di eventi musicali e pubblico.",
     areaServed: "IT",
-    sameAs: [
-      "https://instagram.com/narte.official",
-      "https://facebook.com/narteofficiall",
-    ],
+    sameAs: social.filter(Boolean),
   };
 }
 

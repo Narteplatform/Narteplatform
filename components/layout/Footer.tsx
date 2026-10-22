@@ -5,8 +5,13 @@ import { CookiePreferencesLink } from "@/components/legal/CookiePreferencesLink"
 import { titolareInLinea } from "@/lib/legal/titolare";
 import { LEGAL_V2_ROTTE, legalV2Pubblicato } from "@/lib/legal/v2";
 import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
+import { getContenuti } from "@/lib/content/site-settings-server";
+import { hrefTelefono } from "@/lib/content/site-settings";
 
-export function Footer() {
+export async function Footer() {
+  // Telefono, social e descrizione si cambiano da /admin/contenuti.
+  const c = await getContenuti();
+  const telefono = c["contatti.telefono"];
   return (
     <footer className="mt-24 border-t border-notte-60 bg-notte text-palco">
       <div className="container-narte py-16">
@@ -15,36 +20,50 @@ export function Footer() {
             <Link href="/" aria-label="Home N'Arte" className="inline-flex">
               <NarteLogo variant="dark" width={140} className="h-9 w-auto" />
             </Link>
-            <p className="mt-5 text-sm text-notte-20 leading-relaxed">
-              La community napoletana degli artisti emergenti. Booking professionale di live
-              music dal 2018.
-            </p>
+            <p className="mt-5 text-sm text-notte-20 leading-relaxed">{c["footer.descrizione"]}</p>
             <div className="mt-6 flex items-center gap-4 text-palco">
-              <a
-                href="https://instagram.com/narte.official"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram N'Arte"
-                className="transition-opacity hover:opacity-75"
-              >
-                <Instagram className="size-5" />
-              </a>
-              <a
-                href="https://facebook.com/narteofficiall"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook N'Arte"
-                className="transition-opacity hover:opacity-75"
-              >
-                <Facebook className="size-5" />
-              </a>
-              <a
-                href="tel:+393335860666"
-                aria-label="Chiama N'Arte"
-                className="inline-flex items-center gap-1.5 text-xs transition-opacity hover:opacity-75"
-              >
-                <Phone className="size-4" /> +39 333 586 0666
-              </a>
+              {c["social.instagram"] && (
+                <a
+                  href={c["social.instagram"]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram N'Arte"
+                  className="transition-opacity hover:opacity-75"
+                >
+                  <Instagram className="size-5" />
+                </a>
+              )}
+              {c["social.facebook"] && (
+                <a
+                  href={c["social.facebook"]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook N'Arte"
+                  className="transition-opacity hover:opacity-75"
+                >
+                  <Facebook className="size-5" />
+                </a>
+              )}
+              {c["social.tiktok"] && (
+                <a
+                  href={c["social.tiktok"]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="TikTok N'Arte"
+                  className="text-xs font-semibold transition-opacity hover:opacity-75"
+                >
+                  TikTok
+                </a>
+              )}
+              {telefono && (
+                <a
+                  href={hrefTelefono(telefono)}
+                  aria-label="Chiama N'Arte"
+                  className="inline-flex items-center gap-1.5 text-xs transition-opacity hover:opacity-75"
+                >
+                  <Phone className="size-4" /> {telefono}
+                </a>
+              )}
             </div>
           </div>
           <div>

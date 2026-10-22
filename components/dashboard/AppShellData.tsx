@@ -16,6 +16,7 @@ import {
   CreditCard,
   Phone,
   ScrollText,
+  PencilLine,
   Settings,
   Shapes,
   ShieldCheck,
@@ -354,6 +355,11 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       label: "Registro",
       icon: <ScrollText className="size-4" />,
     },
+    contenuti: {
+      href: "/admin/contenuti",
+      label: "Contenuti del sito",
+      icon: <PencilLine className="size-4" />,
+    },
     impostazioni: opts?.isRoot
       ? {
           href: "/admin/impostazioni",
@@ -388,6 +394,7 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     "proposte",
     "utenti",
     "registro",
+    "contenuti",
     "impostazioni",
     "profilo",
   ];

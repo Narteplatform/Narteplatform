@@ -74,6 +74,10 @@ Non erano documentate ma sono costruite e attive:
 - **Recensioni** post-evento, visibili sul profilo pubblico (`lib/feedback/`)
 - **Consulenze** con slot e consulenti (`app/(admin)/admin/consulenza/`)
 - **Statistiche** di visita del profilo, piano Max (`lib/analytics/`)
+- **Contenuti del sito** modificabili da `/admin/contenuti` (telefono, social, alcuni testi): chiavi e
+  testi predefiniti in `lib/content/site-settings.ts`, tabella `site_settings` (0074)
+- **Collegamento a Google Calendar**: feed iCal personale delle date confermate (`lib/calendar/`,
+  `/api/calendario/[token]`, tabella `calendar_feeds`)
 
 ## Sicurezza — aggiunte del 28/08/2026
 

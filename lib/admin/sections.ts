@@ -30,6 +30,8 @@ export const ADMIN_PAGE_KEYS = [
   "proposte",
   "utenti",
   "registro",
+  // Contenuti del sito modificabili (telefono, social, testi chiave): 22/10/2026.
+  "contenuti",
 ] as const;
 export type AdminPageKey = (typeof ADMIN_PAGE_KEYS)[number];
 

@@ -4,10 +4,13 @@ import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
 import { heroImageFor } from "@/lib/content/hero-images";
 import { TITOLARE } from "@/lib/legal/titolare";
+import { getContenuti } from "@/lib/content/site-settings-server";
+import { handleSocial } from "@/lib/content/site-settings";
 
 export const metadata = { title: "Contatti — N'arte" };
 
-export default function ContattiPage() {
+export default async function ContattiPage() {
+  const instagram = (await getContenuti())["social.instagram"];
   return (
     <>
       <PageHero
@@ -57,24 +60,26 @@ export default function ContattiPage() {
                     </span>
                   </a>
                 </li>
-                <li>
-                  <a
-                    href="https://instagram.com/narte"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-center gap-4 rounded-2xl border border-border bg-background p-5 transition hover:border-accent"
-                  >
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-muted">
-                      <Instagram className="size-4" />
-                    </span>
-                    <span>
-                      <span className="block text-xs uppercase tracking-wider text-muted-foreground">
-                        Instagram
+                {instagram && (
+                  <li>
+                    <a
+                      href={instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-4 rounded-2xl border border-border bg-background p-5 transition hover:border-accent"
+                    >
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-muted">
+                        <Instagram className="size-4" />
                       </span>
-                      <span className="block font-display text-base">@narte</span>
-                    </span>
-                  </a>
-                </li>
+                      <span>
+                        <span className="block text-xs uppercase tracking-wider text-muted-foreground">
+                          Instagram
+                        </span>
+                        <span className="block font-display text-base">{handleSocial(instagram)}</span>
+                      </span>
+                    </a>
+                  </li>
+                )}
                 <li>
                   <div className="flex items-center gap-4 rounded-2xl border border-border bg-background p-5">
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-muted">

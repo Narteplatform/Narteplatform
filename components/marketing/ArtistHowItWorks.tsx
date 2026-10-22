@@ -10,19 +10,15 @@ import { STEPS } from "@/lib/content/artist-landing";
  * corretta qualunque sia il numero di passi e sull'ultimo non c'è. Sotto md le
  * card sono impilate e la linea sparisce: non avrebbe niente da collegare.
  */
-export function ArtistHowItWorks() {
+/** Titolo e sottotitolo si cambiano da /admin/contenuti. */
+export function ArtistHowItWorks({ titolo, sottotitolo }: { titolo: string; sottotitolo: string }) {
   return (
     <section id="come-funziona" className="bg-[#F7F5F2] py-20 text-notte md:py-28">
       <div className="container-narte">
         <SectionHeading
           label="come funziona"
-          title="Dalla candidatura alla prima richiesta."
-          description={
-            <>
-              Nessun provino, nessuna quota d&rsquo;iscrizione, nessun contratto
-              da firmare. Quattro passi, e il terzo è già gratis per sempre.
-            </>
-          }
+          title={titolo}
+          description={sottotitolo}
         />
 
         <ol className="mx-auto mt-12 grid max-w-5xl gap-10 sm:grid-cols-2 md:mt-16 md:grid-cols-4 md:gap-6">

@@ -27,6 +27,7 @@ const PAGE_LABELS: Record<AdminPageKey, string> = {
   proposte: "Proposte Max",
   utenti: "Utenti",
   registro: "Registro",
+  contenuti: "Contenuti del sito",
 };
 
 const FORCED: AdminPageKey[] = ["overview", "profilo"];
