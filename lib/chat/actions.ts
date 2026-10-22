@@ -2,6 +2,7 @@
 
 import { leggiStatoOrganizzatore } from "@/lib/organizers/approvazione";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { resolveMediaUrl } from "@/lib/storage/signed";
 import {
@@ -206,10 +207,13 @@ export async function sendMessage(input: ChatMessageInput): Promise<ActionResult
   });
   if (error) return { ok: false, error: error.message };
 
-  // Avvisa la controparte. Non blocca la risposta: il messaggio è già salvato
-  // e un problema di posta non deve far fallire l'invio in chat.
-  await notifyNewChatMessage(parsed.data.conversation_id, role).catch((e) =>
-    console.error("[chat] notifica nuovo messaggio:", e)
+  // Avvisa la controparte dopo la risposta: il messaggio è già salvato, e
+  // aspettare la posta prima di restituire faceva sembrare l'invio bloccato.
+  const conversationId = parsed.data.conversation_id;
+  after(() =>
+    notifyNewChatMessage(conversationId, role).catch((e) =>
+      console.error("[chat] notifica nuovo messaggio:", e)
+    )
   );
 
   return { ok: true };
@@ -530,6 +534,30 @@ export async function sendAttachment(input: {
   });
   if (error) return { ok: false, error: error.message };
   return { ok: true };
+}
+
+/**
+ * Rilettura dei messaggi di una conversazione, per riallineare la chat aperta.
+ *
+ * La lista in pagina si aggiorna col canale realtime, ma il canale cade senza
+ * avvisare (scheda in background, telefono in standby, rete che cambia) e da
+ * quel momento nemmeno i propri messaggi comparivano più fino al ricaricamento.
+ * Il client la chiama dopo ogni invio, alla (ri)connessione del canale e quando
+ * la scheda torna visibile. Sola lettura.
+ */
+export async function fetchConversationMessages(
+  conversationId: string,
+): Promise<{ ok: true; messages: ChatMessage[] } | ActionErr> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Non autorizzato" };
+
+  const { isParty } = await resolveConversationRole(conversationId, user.id);
+  if (!isParty) return { ok: false, error: "Non autorizzato" };
+
+  return { ok: true, messages: await getMessages(conversationId) };
 }
 
 export async function fetchDockConversations(): Promise<

@@ -13,11 +13,14 @@ export function MessageComposer({
   disabled,
   disabledReason,
   allowOffer = true,
+  onSent,
 }: {
   conversationId: string;
   disabled: boolean;
   disabledReason?: string;
   allowOffer?: boolean;
+  /** Dopo un invio riuscito: la chat si riallinea senza aspettare il canale realtime. */
+  onSent?: () => void;
 }) {
   const [text, setText] = useState("");
   const [showOffer, setShowOffer] = useState(false);
@@ -53,6 +56,7 @@ export function MessageComposer({
       }
       setText("");
       if (taRef.current) taRef.current.style.height = "auto";
+      onSent?.();
     });
   }
 
@@ -88,6 +92,7 @@ export function MessageComposer({
         size: up.size,
       });
       if (!res.ok) setError(res.error);
+      else onSent?.();
     } finally {
       setUploading(false);
     }
@@ -118,7 +123,10 @@ export function MessageComposer({
       <div className="border-t border-border bg-surface px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
         <VoiceRecorder
           conversationId={conversationId}
-          onSent={() => setRecording(false)}
+          onSent={() => {
+            setRecording(false);
+            onSent?.();
+          }}
           onCancel={() => setRecording(false)}
           onError={(msg) => setError(msg)}
         />
@@ -249,6 +257,7 @@ export function MessageComposer({
           open={showOffer}
           onClose={() => setShowOffer(false)}
           conversationId={conversationId}
+          onSent={onSent}
         />
       )}
     </div>

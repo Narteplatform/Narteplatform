@@ -27,10 +27,12 @@ export function OfferDialog({
   open,
   onClose,
   conversationId,
+  onSent,
 }: {
   open: boolean;
   onClose: () => void;
   conversationId: string;
+  onSent?: () => void;
 }) {
   const [eventDate, setEventDate] = useState("");
   const [timeSlot, setTimeSlot] = useState<"mattina" | "pomeriggio" | "sera" | "notte">("sera");
@@ -70,6 +72,7 @@ export function OfferDialog({
       setBudgetEur("");
       setDescription("");
       onClose();
+      onSent?.();
     });
   }
 

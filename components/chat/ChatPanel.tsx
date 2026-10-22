@@ -45,7 +45,7 @@ export function ChatPanel({
   canModerate?: boolean;
 }) {
   const router = useRouter();
-  const { messages } = useChatChannel(
+  const { messages, resync } = useChatChannel(
     meta.conversationId,
     initialMessages,
     viewerRole !== "superadmin",
@@ -172,6 +172,7 @@ export function ChatPanel({
         disabled={!canWrite}
         disabledReason={disabledReason}
         allowOffer={canOffer}
+        onSent={resync}
       />
     </div>
   );

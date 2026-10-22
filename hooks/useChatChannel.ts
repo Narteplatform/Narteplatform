@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { fetchConversationMessages } from "@/lib/chat/actions";
 import type { ChatMessage } from "@/lib/chat/queries";
 import type { ChatMessageKind, ChatOfferStatus, Role } from "@/lib/supabase/types";
 
@@ -56,6 +57,22 @@ function fromRaw(r: Raw): ChatMessage {
 }
 
 /**
+ * Unisce i messaggi riletti dal server a quelli in pagina: aggiunge i mancanti
+ * e aggiorna gli esistenti (stato offerta, letture), ma non toglie mai nulla.
+ * Una rilettura fallita o parziale non può svuotare la chat; le cancellazioni
+ * arrivano dal canale realtime.
+ */
+function unisci(prev: ChatMessage[], fresh: ChatMessage[]): ChatMessage[] {
+  if (fresh.length === 0) return prev;
+  const byId = new Map(prev.map((m) => [m.id, m]));
+  for (const m of fresh) byId.set(m.id, m);
+  return [...byId.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+/** Attesa prima di riaprire un canale caduto: cresce fino a 30 secondi. */
+const RITARDI_RICONNESSIONE_MS = [1_000, 3_000, 10_000, 30_000];
+
+/**
  * `realtime = false` per il Team: le sue letture passano dal server dopo un
  * accesso registrato (migration 0064 toglie il permesso di lettura dal
  * browser), quindi non ha senso sottoscrivere nulla. In quel caso i messaggi
@@ -68,13 +85,34 @@ export function useChatChannel(
 ) {
   const [messages, setMessages] = useState<ChatMessage[]>(initial);
   const initialKey = useRef<string>("");
+  // Cambiarlo riapre il canale: è così che si riconnette dopo un errore.
+  const [tentativo, setTentativo] = useState(0);
+  const fallimenti = useRef(0);
 
   useEffect(() => {
     if (!realtime || initialKey.current !== conversationId) {
       setMessages(initial);
       initialKey.current = conversationId ?? "";
+    } else {
+      // Dati più freschi dal server (navigazione, refresh): si uniscono senza
+      // perdere ciò che è arrivato nel frattempo dal canale.
+      setMessages((prev) => unisci(prev, initial));
     }
   }, [conversationId, initial, realtime]);
+
+  /** Rilegge la conversazione dal server e la unisce a quella in pagina. */
+  const resync = useCallback(async () => {
+    if (!conversationId || !realtime) return;
+    try {
+      const res = await fetchConversationMessages(conversationId);
+      if (!res.ok) return;
+      setMessages((prev) =>
+        initialKey.current === conversationId ? unisci(prev, res.messages) : prev,
+      );
+    } catch (err) {
+      console.error("[chat] rilettura messaggi:", err);
+    }
+  }, [conversationId, realtime]);
 
   useEffect(() => {
     if (!conversationId || !realtime) return;
@@ -84,6 +122,8 @@ export function useChatChannel(
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let channel: ReturnType<typeof supabase.channel> | null = null;
+    let chiuso = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     try {
       channel = supabase.channel(`conversation:${conversationId}:${suffix}`);
       channel
@@ -108,11 +148,40 @@ export function useChatChannel(
             }
           },
         )
-        .subscribe();
+        .subscribe((status) => {
+          if (chiuso) return;
+          if (status === "SUBSCRIBED") {
+            fallimenti.current = 0;
+            // Quello che è arrivato mentre il canale si apriva (o era giù) non
+            // passa dal canale: lo si recupera rileggendo.
+            void resync();
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            void resync();
+            // CHANNEL_ERROR è spesso seguito da CLOSED: una riconnessione sola.
+            if (timer) return;
+            const ritardo =
+              RITARDI_RICONNESSIONE_MS[Math.min(fallimenti.current, RITARDI_RICONNESSIONE_MS.length - 1)];
+            fallimenti.current += 1;
+            timer = setTimeout(() => setTentativo((n) => n + 1), ritardo);
+          }
+        });
     } catch (err) {
       console.error("[chat] realtime subscribe failed:", err);
     }
+
+    function alRitorno() {
+      if (document.visibilityState === "visible") void resync();
+    }
+    document.addEventListener("visibilitychange", alRitorno);
+    window.addEventListener("focus", alRitorno);
+    window.addEventListener("online", alRitorno);
+
     return () => {
+      chiuso = true;
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", alRitorno);
+      window.removeEventListener("focus", alRitorno);
+      window.removeEventListener("online", alRitorno);
       if (channel) {
         try {
           supabase.removeChannel(channel);
@@ -121,7 +190,7 @@ export function useChatChannel(
         }
       }
     };
-  }, [conversationId, realtime]);
+  }, [conversationId, realtime, resync, tentativo]);
 
-  return { messages, setMessages };
+  return { messages, setMessages, resync };
 }
