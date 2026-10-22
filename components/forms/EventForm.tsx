@@ -33,6 +33,7 @@ type Values = {
   featured: boolean;
   gallery: string[];
   videos: string[];
+  videoTitles: Record<string, string>;
 };
 
 export function EventForm({
@@ -44,7 +45,7 @@ export function EventForm({
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<Values>({
+  const { register, handleSubmit, control, watch, setValue, formState: { isSubmitting } } = useForm<Values>({
     defaultValues: {
       title: "",
       category: "music",
@@ -60,6 +61,7 @@ export function EventForm({
       featured: false,
       gallery: [],
       videos: [],
+      videoTitles: {},
       ...defaultValues,
     },
   });
@@ -81,6 +83,7 @@ export function EventForm({
       featured: values.featured,
       gallery: values.gallery,
       videos: values.videos,
+      videoTitles: values.videoTitles,
     };
     const res = eventId ? await updateEvent(eventId, payload) : await createEvent(payload);
     if (!res.ok) {
@@ -169,6 +172,8 @@ export function EventForm({
               value={field.value ?? []}
               onChange={field.onChange}
               kind="event-video"
+              titles={watch("videoTitles")}
+              onTitlesChange={(t) => setValue("videoTitles", t, { shouldDirty: true })}
               // Su un evento già salvato il video si collega subito, come per
               // l'artista: così non va perso se il modulo non passa la
               // validazione per un altro campo.

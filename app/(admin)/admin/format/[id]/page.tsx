@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatCover, formatPrezzo } from "@/lib/content/format-covers";
+import { leggiTitoliVideo } from "@/lib/content/video-titles";
 
 export default async function EditFormatPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -81,6 +82,7 @@ export default async function EditFormatPage({ params }: { params: Promise<{ id:
               cover_image: fmt.cover_image ?? "",
               gallery: fmt.gallery ?? [],
               videos: fmt.videos ?? [],
+              video_titles: leggiTitoliVideo(fmt.video_titles),
               seo_title: fmt.seo_title ?? "",
               seo_description: fmt.seo_description ?? "",
               published: fmt.published ?? true,

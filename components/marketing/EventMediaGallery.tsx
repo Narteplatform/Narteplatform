@@ -12,6 +12,8 @@ import {
 type Props = {
   gallery: string[];
   videos: string[];
+  /** Titolo per URL (video_titles, 0074). Un video senza voce non ha titolo. */
+  titles?: Record<string, string>;
 };
 
 /**
@@ -45,7 +47,7 @@ function videoEmbed(url: string): string {
     : url;
 }
 
-export function EventMediaGallery({ gallery, videos }: Props) {
+export function EventMediaGallery({ gallery, videos, titles = {} }: Props) {
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
 
@@ -102,28 +104,31 @@ export function EventMediaGallery({ gallery, videos }: Props) {
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {playable.map((url) => {
               const thumb = videoThumb(url);
+              const titolo = titles[url];
               return (
-                <button
-                  key={url}
-                  type="button"
-                  onClick={() => setActiveVideo(url)}
-                  className="group relative aspect-video overflow-hidden bg-muted"
-                  aria-label={`Riproduci video`}
-                >
-                  {thumb ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                      {url}
-                    </div>
-                  )}
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/45">
-                    <span className="flex size-12 items-center justify-center rounded-full bg-background/95 text-foreground">
-                      <Play className="size-5" />
+                <figure key={url} className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveVideo(url)}
+                    className="group relative block aspect-video w-full overflow-hidden bg-muted"
+                    aria-label={titolo ? `Riproduci il video «${titolo}»` : "Riproduci video"}
+                  >
+                    {thumb ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                        {url}
+                      </div>
+                    )}
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/45">
+                      <span className="flex size-12 items-center justify-center rounded-full bg-background/95 text-foreground">
+                        <Play className="size-5" />
+                      </span>
                     </span>
-                  </span>
-                </button>
+                  </button>
+                  {titolo && <figcaption className="text-sm text-foreground">{titolo}</figcaption>}
+                </figure>
               );
             })}
           </div>
@@ -204,7 +209,7 @@ export function EventMediaGallery({ gallery, videos }: Props) {
           <div className="relative z-0 aspect-video w-full max-w-5xl">
             <iframe
               src={videoEmbed(activeVideo)}
-              title="Video evento"
+              title={titles[activeVideo] ?? "Video evento"}
               className="h-full w-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen

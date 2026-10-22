@@ -232,6 +232,8 @@ export const eventSchema = z.object({
   featured: z.boolean().optional(),
   gallery: z.array(z.string().url()).max(40).optional(),
   videos: z.array(z.string().url()).max(20).optional(),
+  /** Titolo per URL di video (events.video_titles, 0074). */
+  videoTitles: z.record(z.string(), z.string().max(120)).optional(),
 });
 export type EventInput = z.infer<typeof eventSchema>;
 
@@ -246,6 +248,8 @@ export const formatSchema = z.object({
   cover_image: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   gallery: z.array(z.string().url()).max(20).default([]),
   videos: z.array(z.string().url()).max(10).default([]),
+  /** Titolo per URL di video (formats.video_titles, 0074). */
+  video_titles: z.record(z.string(), z.string().max(120)).optional(),
   icon: z.string().max(60).optional().or(z.literal("").transform(() => undefined)),
   order_index: z.coerce.number().int().nonnegative().default(0),
   details: z.record(jsonValueSchema).optional(),

@@ -7,6 +7,7 @@ import { Reveal, StaggerList } from "@/components/animations/Reveal";
 import { Button } from "@/components/ui/Button";
 import { EventInfoCards } from "@/components/marketing/EventInfoCards";
 import { EventMediaGallery } from "@/components/marketing/EventMediaGallery";
+import { leggiTitoliVideo } from "@/lib/content/video-titles";
 import { EventCard } from "@/components/marketing/EventCard";
 import { JsonLd, eventJsonLd, breadcrumbJsonLd } from "@/components/seo/JsonLd";
 
@@ -238,7 +239,11 @@ export default async function EventDetailPage({
             </Reveal>
             <Reveal delay={0.2}>
               <div className="mt-8">
-                <EventMediaGallery gallery={gallery} videos={videos} />
+                <EventMediaGallery
+                  gallery={gallery}
+                  videos={videos}
+                  titles={leggiTitoliVideo(event.video_titles)}
+                />
               </div>
             </Reveal>
           </div>

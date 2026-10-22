@@ -24,6 +24,7 @@ type Values = {
   cover_image: string;
   gallery: string[];
   videos: string[];
+  video_titles: Record<string, string>;
   seo_title: string;
   seo_description: string;
   published: boolean;
@@ -45,6 +46,8 @@ export function FormatForm({
     register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     formState: { isSubmitting },
   } = useForm<Values>({
     defaultValues: {
@@ -57,6 +60,7 @@ export function FormatForm({
       cover_image: "",
       gallery: [],
       videos: [],
+      video_titles: {},
       seo_title: "",
       seo_description: "",
       published: true,
@@ -76,6 +80,7 @@ export function FormatForm({
       cover_image: values.cover_image || undefined,
       gallery: values.gallery,
       videos: values.videos,
+      video_titles: values.video_titles,
       seo_title: values.seo_title || undefined,
       seo_description: values.seo_description || undefined,
       published: values.published,
@@ -182,6 +187,8 @@ export function FormatForm({
               value={field.value ?? []}
               onChange={field.onChange}
               kind="format-video"
+              titles={watch("video_titles")}
+              onTitlesChange={(t) => setValue("video_titles", t, { shouldDirty: true })}
               onPersist={
                 formatId
                   ? async (url) => {

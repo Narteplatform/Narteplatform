@@ -7,6 +7,8 @@ import type { Json } from "@/lib/supabase/types";
 import { slugify } from "@/lib/utils";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { registraAzione } from "@/lib/moderation/decisioni";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { titoliPerVideo } from "@/lib/content/video-titles";
 
 // Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
 // controllo del ruolo superadmin non bastava, perché un superadmin delegato
@@ -30,7 +32,7 @@ export async function createFormat(input: FormatInput) {
   const slug = `${slugBase}-${Date.now().toString(36).slice(-4)}`;
 
   const admin = createAdminClient();
-  const { error } = await admin.from("formats").insert({
+  const riga = {
     title: data.title,
     slug,
     tagline: data.tagline ?? null,
@@ -44,7 +46,15 @@ export async function createFormat(input: FormatInput) {
     seo_title: data.seo_title ?? null,
     seo_description: data.seo_description ?? null,
     published: data.published ?? true,
-  });
+  };
+  const titoli = data.video_titles ? titoliPerVideo(data.video_titles, data.videos ?? []) : null;
+  let { error } = await admin
+    .from("formats")
+    .insert(titoli ? { ...riga, video_titles: titoli } : riga);
+  // Senza la migration 0074 la colonna non c'è: si salva senza titoli.
+  if (error && titoli && colonnaAssente(error, "video_titles")) {
+    ({ error } = await admin.from("formats").insert(riga));
+  }
   if (error) return { ok: false as const, error: error.message };
   await registraAzione({
     actorId: user.id,
@@ -80,24 +90,31 @@ export async function updateFormat(id: string, input: FormatInput) {
   if (data.prezzo) base.prezzo = data.prezzo;
   else delete base.prezzo;
 
-  const { error } = await admin
+  const modifiche = {
+    title: data.title,
+    tagline: data.tagline ?? null,
+    description: data.description ?? null,
+    cover_image: data.cover_image ?? null,
+    // Regola 3 di CLAUDE.md: solo se inviati dal modulo.
+    ...(data.gallery !== undefined ? { gallery: data.gallery } : {}),
+    ...(data.videos !== undefined ? { videos: data.videos } : {}),
+    icon: data.icon ?? null,
+    order_index: data.order_index ?? 0,
+    details: base,
+    seo_title: data.seo_title ?? null,
+    seo_description: data.seo_description ?? null,
+    published: data.published ?? true,
+  };
+  // Titoli solo insieme ai video a cui si riferiscono (regola 3 di CLAUDE.md).
+  const titoli =
+    data.video_titles && data.videos !== undefined ? titoliPerVideo(data.video_titles, data.videos) : null;
+  let { error } = await admin
     .from("formats")
-    .update({
-      title: data.title,
-      tagline: data.tagline ?? null,
-      description: data.description ?? null,
-      cover_image: data.cover_image ?? null,
-      // Regola 3 di CLAUDE.md: solo se inviati dal modulo.
-      ...(data.gallery !== undefined ? { gallery: data.gallery } : {}),
-      ...(data.videos !== undefined ? { videos: data.videos } : {}),
-      icon: data.icon ?? null,
-      order_index: data.order_index ?? 0,
-      details: base,
-      seo_title: data.seo_title ?? null,
-      seo_description: data.seo_description ?? null,
-      published: data.published ?? true,
-    })
+    .update(titoli ? { ...modifiche, video_titles: titoli } : modifiche)
     .eq("id", id);
+  if (error && titoli && colonnaAssente(error, "video_titles")) {
+    ({ error } = await admin.from("formats").update(modifiche).eq("id", id));
+  }
   if (error) return { ok: false as const, error: error.message };
   await registraAzione({
     actorId: user.id,

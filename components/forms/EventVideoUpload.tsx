@@ -8,6 +8,7 @@ import { uploadViaTus } from "@/lib/upload/tusUpload";
 import { UploadAbortedError } from "@/lib/upload/putWithProgress";
 import { guessVideoMime, videoLimitsFor } from "@/lib/upload/video-limits";
 import { isBunnyEmbedUrl } from "@/lib/storage/bunny/urls";
+import { titoloDaNomeFile, type TitoliVideo } from "@/lib/content/video-titles";
 
 type UploadResult = {
   url: string;
@@ -26,6 +27,12 @@ type Props = {
    * resta quello del modulo.
    */
   onPersist?: (url: string) => Promise<{ ok: boolean; error?: string }>;
+  /**
+   * Titolo di ciascun video, per URL. Con `onTitlesChange` sotto ogni video
+   * compare il campo titolo, come nella dashboard artista; si salva col modulo.
+   */
+  titles?: TitoliVideo;
+  onTitlesChange?: (next: TitoliVideo) => void;
 };
 
 type SignResponse =
@@ -73,6 +80,8 @@ export function EventVideoUpload({
   kind = "event-video",
   label = "Video da dispositivo",
   onPersist,
+  titles = {},
+  onTitlesChange,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -138,6 +147,7 @@ export function EventVideoUpload({
     setError(null);
     setUploading(true);
     const next = [...value];
+    const nextTitles = { ...titles };
     try {
       for (const file of files) {
         if (file.size > MAX) {
@@ -146,6 +156,7 @@ export function EventVideoUpload({
         }
         const url = await uploadOne(file);
         next.push(url);
+        if (!nextTitles[url]) nextTitles[url] = titoloDaNomeFile(file.name);
 
         // Salvato subito, come fa la dashboard artista. Se non riesce non si
         // interrompe il caricamento: il video è comunque nel modulo e il Salva
@@ -161,7 +172,11 @@ export function EventVideoUpload({
         }
       }
       onChange(next);
+      onTitlesChange?.(nextTitles);
     } catch (err) {
+      // Anche se un file fallisce, quelli già caricati restano nel modulo.
+      onChange(next);
+      onTitlesChange?.(nextTitles);
       if (err instanceof UploadAbortedError) {
         setError("Caricamento annullato.");
       } else {
@@ -174,7 +189,13 @@ export function EventVideoUpload({
   }
 
   function remove(idx: number) {
+    const url = value[idx];
     onChange(value.filter((_, i) => i !== idx));
+    if (onTitlesChange && url !== undefined && url in titles) {
+      const rest = { ...titles };
+      delete rest[url];
+      onTitlesChange(rest);
+    }
   }
 
   return (
@@ -245,6 +266,17 @@ export function EventVideoUpload({
               >
                 <X className="size-3.5" />
               </button>
+              {onTitlesChange && (
+                <input
+                  type="text"
+                  value={titles[url] ?? ""}
+                  maxLength={120}
+                  placeholder="Titolo del video"
+                  aria-label={`Titolo del video ${idx + 1}`}
+                  onChange={(e) => onTitlesChange({ ...titles, [url]: e.target.value })}
+                  className="block w-full border-0 border-t border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                />
+              )}
             </div>
           ))}
         </div>

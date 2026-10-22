@@ -7,6 +7,8 @@ import { eventSchema, type EventInput } from "@/lib/validators/schemas";
 import { slugify } from "@/lib/utils";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { registraAzione } from "@/lib/moderation/decisioni";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { titoliPerVideo } from "@/lib/content/video-titles";
 
 // Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
 // controllo del ruolo superadmin non bastava, perché un superadmin delegato
@@ -58,7 +60,7 @@ export async function createEvent(input: EventInput) {
   const slug = `${slugBase}-${Date.now().toString(36).slice(-4)}`;
 
   const admin = createAdminClient();
-  const { error } = await admin.from("events").insert({
+  const riga = {
     title: data.title,
     slug,
     category: data.category,
@@ -75,7 +77,15 @@ export async function createEvent(input: EventInput) {
     description: data.description ?? null,
     featured: data.featured ?? false,
     created_by: user.id,
-  });
+  };
+  const titoli = data.videoTitles ? titoliPerVideo(data.videoTitles, data.videos ?? []) : null;
+  let { error } = await admin
+    .from("events")
+    .insert(titoli ? { ...riga, video_titles: titoli } : riga);
+  // Senza la migration 0074 la colonna non c'è: si salva senza titoli.
+  if (error && titoli && colonnaAssente(error, "video_titles")) {
+    ({ error } = await admin.from("events").insert(riga));
+  }
   if (error) return { ok: false as const, error: error.message };
   await registraAzione({
     actorId: user.id,
@@ -94,29 +104,36 @@ export async function updateEvent(id: string, input: EventInput) {
   const data = parsed.data;
 
   const admin = createAdminClient();
-  const { error } = await admin
+  const modifiche = {
+    title: data.title,
+    category: data.category,
+    date: data.date,
+    end_at: data.endAt ?? null,
+    city: data.city,
+    venue: data.venue ?? null,
+    price: data.price ?? null,
+    cover_image: data.coverImage ?? null,
+    // Il modulo invia sempre entrambi i ritagli (precaricati dal DB): vuoto
+    // significa che l'admin li ha rimossi, come per cover_image.
+    cover_image_home: data.coverImageHome ?? null,
+    // Regola 3 di CLAUDE.md: in un aggiornamento, galleria e video si
+    // scrivono solo se il modulo li ha inviati; `?? []` li svuoterebbe.
+    ...(data.gallery !== undefined ? { gallery: data.gallery } : {}),
+    ...(data.videos !== undefined ? { videos: data.videos } : {}),
+    ticket_url: data.ticketUrl ?? null,
+    description: data.description ?? null,
+    featured: data.featured ?? false,
+  };
+  // Titoli solo insieme ai video a cui si riferiscono (regola 3 di CLAUDE.md).
+  const titoli =
+    data.videoTitles && data.videos !== undefined ? titoliPerVideo(data.videoTitles, data.videos) : null;
+  let { error } = await admin
     .from("events")
-    .update({
-      title: data.title,
-      category: data.category,
-      date: data.date,
-      end_at: data.endAt ?? null,
-      city: data.city,
-      venue: data.venue ?? null,
-      price: data.price ?? null,
-      cover_image: data.coverImage ?? null,
-      // Il modulo invia sempre entrambi i ritagli (precaricati dal DB): vuoto
-      // significa che l'admin li ha rimossi, come per cover_image.
-      cover_image_home: data.coverImageHome ?? null,
-      // Regola 3 di CLAUDE.md: in un aggiornamento, galleria e video si
-      // scrivono solo se il modulo li ha inviati; `?? []` li svuoterebbe.
-      ...(data.gallery !== undefined ? { gallery: data.gallery } : {}),
-      ...(data.videos !== undefined ? { videos: data.videos } : {}),
-      ticket_url: data.ticketUrl ?? null,
-      description: data.description ?? null,
-      featured: data.featured ?? false,
-    })
+    .update(titoli ? { ...modifiche, video_titles: titoli } : modifiche)
     .eq("id", id);
+  if (error && titoli && colonnaAssente(error, "video_titles")) {
+    ({ error } = await admin.from("events").update(modifiche).eq("id", id));
+  }
   if (error) return { ok: false as const, error: error.message };
   await registraAzione({
     actorId: user.id,

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { EventForm } from "@/components/forms/EventForm";
+import { leggiTitoliVideo } from "@/lib/content/video-titles";
 import { DeleteEventButton } from "@/components/forms/DeleteEventButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -83,6 +84,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
               featured: event.featured,
               gallery: event.gallery ?? [],
               videos: event.videos ?? [],
+              videoTitles: leggiTitoliVideo(event.video_titles),
             }}
             eventId={event.id}
           />

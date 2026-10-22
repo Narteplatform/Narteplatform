@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Reveal } from "@/components/animations/Reveal";
 import { EventMediaGallery } from "@/components/marketing/EventMediaGallery";
+import { leggiTitoliVideo } from "@/lib/content/video-titles";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 import { FormatInterestForm } from "@/components/marketing/FormatInterestForm";
 import { formatCover, formatPrezzo } from "@/lib/content/format-covers";
@@ -20,6 +22,7 @@ type FormatRow = {
   cover_image: string | null;
   gallery: string[] | null;
   videos: string[] | null;
+  video_titles?: unknown;
   seo_title: string | null;
   seo_description: string | null;
   details: unknown;
@@ -27,14 +30,13 @@ type FormatRow = {
 
 async function getFormat(slug: string): Promise<FormatRow | null> {
   const admin = createAdminClient();
-  const { data } = await admin
-    .from("formats")
-    .select(
-      "id, slug, title, tagline, description, cover_image, gallery, videos, seo_title, seo_description, details"
-    )
-    .eq("slug", slug)
-    .eq("published", true)
-    .maybeSingle();
+  const colonne =
+    "id, slug, title, tagline, description, cover_image, gallery, videos, seo_title, seo_description, details";
+  const leggi = (sel: string) =>
+    admin.from("formats").select(sel).eq("slug", slug).eq("published", true).maybeSingle();
+  let { data, error } = await leggi(`${colonne}, video_titles`);
+  // Senza la migration 0074 non c'è video_titles: la pagina resta com'era.
+  if (error && colonnaAssente(error, "video_titles")) ({ data, error } = await leggi(colonne));
   return data as unknown as FormatRow | null;
 }
 
@@ -190,7 +192,11 @@ export default async function FormatDetailPage({
             </Reveal>
             <Reveal delay={0.2}>
               <div className="mt-8">
-                <EventMediaGallery gallery={[]} videos={videos} />
+                <EventMediaGallery
+                  gallery={[]}
+                  videos={videos}
+                  titles={leggiTitoliVideo(format.video_titles)}
+                />
               </div>
             </Reveal>
           </div>
