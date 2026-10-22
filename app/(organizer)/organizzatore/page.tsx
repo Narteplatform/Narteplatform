@@ -14,7 +14,7 @@ export default async function OrganizerOverviewPage() {
   const { user, organizer } = await requireOrganizer();
   const admin = createAdminClient();
 
-  const [pendingRes, trattativaRes, confermataRes, totalRes, venuesRes, upcomingRes] =
+  const [pendingRes, trattativaRes, daConfermareRes, confermataRes, totalRes, venuesRes, upcomingRes] =
     await Promise.all([
       admin
         .from("booking_requests")
@@ -25,7 +25,14 @@ export default async function OrganizerOverviewPage() {
         .from("booking_requests")
         .select("id", { count: "exact", head: true })
         .eq("organizer_id", organizer.id)
-        .in("status", ["in_trattativa", "accettata"]),
+        .eq("status", "in_trattativa"),
+      // Le accettate dall'artista hanno una scheda tutta loro: contarle dentro
+      // «In trattativa» portava a una lista vuota.
+      admin
+        .from("booking_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("organizer_id", organizer.id)
+        .eq("status", "accettata"),
       admin
         .from("booking_requests")
         .select("id", { count: "exact", head: true })
@@ -72,6 +79,7 @@ export default async function OrganizerOverviewPage() {
 
   const pendingCount = pendingRes.count ?? 0;
   const trattativaCount = trattativaRes.count ?? 0;
+  const daConfermareCount = daConfermareRes.count ?? 0;
   const confermataCount = confermataRes.count ?? 0;
   const totalCount = totalRes.count ?? 0;
   const venuesCount = venuesRes.count ?? 0;
@@ -79,8 +87,10 @@ export default async function OrganizerOverviewPage() {
   const hero = (() => {
     if (venuesCount === 0)
       return "Inizia aggiungendo la tua prima struttura per gestire date e richieste.";
+    if (daConfermareCount > 0)
+      return `${daConfermareCount === 1 ? "Un artista ha accettato la tua offerta" : `${daConfermareCount} artisti hanno accettato la tua offerta`}: manca la tua conferma della data.`;
     if (trattativaCount > 0)
-      return `Hai ${trattativaCount} ${trattativaCount === 1 ? "trattativa aperta" : "trattative aperte"} da confermare.`;
+      return `Hai ${trattativaCount} ${trattativaCount === 1 ? "trattativa aperta" : "trattative aperte"}.`;
     if (pendingCount > 0)
       return `Hai ${pendingCount} ${pendingCount === 1 ? "richiesta in attesa" : "richieste in attesa"} di risposta.`;
     return "Tutto sotto controllo. Esplora gli artisti per inviare nuove richieste.";
@@ -96,6 +106,8 @@ export default async function OrganizerOverviewPage() {
         primary={
           venuesCount === 0
             ? { label: "Aggiungi struttura", href: "/organizzatore/strutture/nuova" }
+            : daConfermareCount > 0
+            ? { label: "Conferma le date", href: "/organizzatore/richieste?status=accettata" }
             : { label: "Esplora artisti", href: "/artisti" }
         }
         secondary={{
@@ -124,7 +136,7 @@ export default async function OrganizerOverviewPage() {
           value={trattativaCount}
           icon={<CalendarDays className="size-4" />}
           href="/organizzatore/richieste?status=in_trattativa"
-          sublabel={trattativaCount > 0 ? "Da confermare" : "Nessuna trattativa"}
+          sublabel={trattativaCount > 0 ? "Aperte in chat" : "Nessuna trattativa"}
         />
         <KpiCard
           label="Confermate"

@@ -828,10 +828,11 @@ async function loadOrganizerShell(userId: string): Promise<{
   let venuesCount = 0;
   let pendingCount = 0;
   let trattativaCount = 0;
+  let daConfermareCount = 0;
   let confermataCount = 0;
 
   if (organizer) {
-    const [venues, pending, trattativa, confermata] = await Promise.all([
+    const [venues, pending, trattativa, daConfermare, confermata] = await Promise.all([
       safe(admin.from("venues").select("id", { count: "exact", head: true }).eq("organizer_id", organizer.id)),
       safe(
         admin
@@ -845,7 +846,17 @@ async function loadOrganizerShell(userId: string): Promise<{
           .from("booking_requests")
           .select("id", { count: "exact", head: true })
           .eq("organizer_id", organizer.id)
-          .in("status", ["in_trattativa", "accettata"])
+          .eq("status", "in_trattativa")
+      ),
+      // Separate da «In trattativa»: ogni voce del menu conta esattamente ciò
+      // che mostra la scheda a cui porta. Prima le accettate finivano nel
+      // contatore di «In trattativa» ma non nella sua lista, che restava vuota.
+      safe(
+        admin
+          .from("booking_requests")
+          .select("id", { count: "exact", head: true })
+          .eq("organizer_id", organizer.id)
+          .eq("status", "accettata")
       ),
       safe(
         admin
@@ -858,6 +869,7 @@ async function loadOrganizerShell(userId: string): Promise<{
     venuesCount = venues?.count ?? 0;
     pendingCount = pending?.count ?? 0;
     trattativaCount = trattativa?.count ?? 0;
+    daConfermareCount = daConfermare?.count ?? 0;
     confermataCount = confermata?.count ?? 0;
   }
 
@@ -882,12 +894,13 @@ async function loadOrganizerShell(userId: string): Promise<{
       href: "/organizzatore/richieste",
       label: "Richieste",
       icon: <Inbox className="size-4" />,
-      badge: pendingCount + trattativaCount > 0
-        ? { label: String(pendingCount + trattativaCount), variant: "accent" }
+      badge: pendingCount + trattativaCount + daConfermareCount > 0
+        ? { label: String(pendingCount + trattativaCount + daConfermareCount), variant: "accent" }
         : undefined,
       children: [
         { href: "/organizzatore/richieste?status=pending", label: "In attesa", count: pendingCount },
         { href: "/organizzatore/richieste?status=in_trattativa", label: "In trattativa", count: trattativaCount },
+        { href: "/organizzatore/richieste?status=accettata", label: "Da confermare", count: daConfermareCount },
         { href: "/organizzatore/richieste?status=confermata", label: "Confermate", count: confermataCount },
       ],
     },

@@ -21,6 +21,17 @@ const TABS: { value: BookingStatus | "all"; label: string }[] = [
   { value: "all", label: "Tutte" },
 ];
 
+/** Cosa significa la scheda, mostrato quando è vuota. */
+const VUOTO: Record<BookingStatus | "all", string> = {
+  pending: "Nessuna richiesta in attesa: l'artista non ha ancora risposto a nessuna delle tue richieste aperte.",
+  in_trattativa: "Nessuna trattativa aperta. Una richiesta passa qui quando tu o l'artista scrivete in chat.",
+  accettata: "Nessuna data da confermare. Quando un artista accetta la tua offerta la trovi qui, pronta per la tua conferma.",
+  confermata: "Nessuna data confermata per ora.",
+  rifiutata: "Nessuna richiesta rifiutata.",
+  annullata: "Nessuna richiesta annullata.",
+  all: "Non hai ancora inviato richieste.",
+};
+
 const STATUS_LABEL: Record<BookingStatus, string> = {
   pending: "In attesa di conferma dell'artista",
   in_trattativa: "In trattativa",
@@ -60,8 +71,18 @@ export default async function OrganizerRequestsPage({
   if (status !== "all") {
     query = query.eq("status", status as BookingStatus);
   }
-  const { data: rows } = await query;
+  // Conteggi per scheda, con lo stesso filtro della lista: il numero accanto
+  // all'etichetta è esattamente quante righe si vedono aprendola.
+  const [{ data: rows }, { data: stati, error: statiErr }] = await Promise.all([
+    query,
+    admin.from("booking_requests").select("status").eq("organizer_id", organizer.id),
+  ]);
   const items = rows ?? [];
+  const conteggi = new Map<string, number>();
+  if (!statiErr) {
+    for (const r of stati ?? []) conteggi.set(r.status, (conteggi.get(r.status) ?? 0) + 1);
+    conteggi.set("all", (stati ?? []).length);
+  }
 
   const artistIds = [...new Set(items.map((r) => r.artist_id))];
   const venueIds = [...new Set(items.map((r) => r.venue_id).filter(Boolean) as string[])];
@@ -92,6 +113,7 @@ export default async function OrganizerRequestsPage({
       <div className="flex flex-wrap gap-2 border-b border-border">
         {TABS.map((t) => {
           const active = (sp.status ?? "pending") === t.value;
+          const n = conteggi.get(t.value);
           return (
             <Link
               key={t.value}
@@ -104,6 +126,16 @@ export default async function OrganizerRequestsPage({
               }
             >
               {t.label}
+              {n ? (
+                <span
+                  className={
+                    "ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums " +
+                    (t.value === "accettata" ? "bg-accent text-white" : "bg-muted text-muted-foreground")
+                  }
+                >
+                  {n}
+                </span>
+              ) : null}
             </Link>
           );
         })}
@@ -112,7 +144,7 @@ export default async function OrganizerRequestsPage({
       {items.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            <p>Nessuna richiesta in questa sezione.</p>
+            <p>{VUOTO[status as BookingStatus | "all"] ?? "Nessuna richiesta in questa sezione."}</p>
             <Button asChild variant="outline" size="sm" className="mt-4">
               <Link href="/artisti">Esplora artisti</Link>
             </Button>
