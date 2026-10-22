@@ -72,7 +72,7 @@ export const BENEFITS: Benefit[] = [
   },
   {
     icon: "wallet",
-    title: "Il tuo cachet è già sul tavolo",
+    title: "La tua fascia di cachet è chiara da subito",
     desc: "La fascia di prezzo sta sul profilo. Chi apre la chat sa già che cifra ha davanti, e la trattativa parte da lì invece che da zero ogni volta.",
   },
 ];
@@ -84,22 +84,22 @@ export const BENEFITS: Benefit[] = [
 export const STEPS: Step[] = [
   {
     title: "Mandi la candidatura",
-    desc: "Nome d’arte, genere, città e un paio di link dove ti si sente suonare. Non serve un press kit.",
+    desc: "Nome d’arte, genere, città e un paio di link in cui ascoltarti. Non serve un press kit.",
     meta: "2 minuti",
   },
   {
-    title: "La guardiamo davvero",
-    desc: "La legge una persona, non un filtro automatico. Se qualcosa non torna te lo scriviamo, invece di lasciarti senza risposta.",
+    title: "Leggiamo la tua candidatura",
+    desc: "La valuta una persona del nostro team, non un sistema automatico. Se manca qualcosa, ti scriviamo per dirti cosa.",
     meta: "Risposta via email",
   },
   {
     title: "Costruisci il profilo",
-    desc: "Foto, video, generi, formazione, fascia di cachet e calendario. È la pagina che gli organizzatori vedranno al posto tuo.",
-    meta: "Gratis, per sempre",
+    desc: "Foto, video, generi, formazione, fascia di cachet e calendario. È la pagina che gli organizzatori vedono quando ti cercano.",
+    meta: "Sempre gratuito",
   },
   {
     title: "Ricevi le richieste",
-    desc: "Chi cerca un artista come te ti trova e ti scrive. Tu leggi, valuti e rispondi.",
+    desc: "Gli organizzatori che cercano il tuo genere trovano il tuo profilo e ti contattano. Sta a te decidere se e come rispondere.",
     meta: "Richieste illimitate",
   },
 ];
@@ -131,8 +131,8 @@ export const COMPARISON: ComparisonRow[] = [
   },
   {
     label: "Quando ti fermi",
-    alone: "Se smetti di scrivere, smetti di suonare.",
-    withNarte: "Il profilo continua a lavorare anche mentre sei in sala prove.",
+    alone: "Se smetti di cercare, le date non arrivano.",
+    withNarte: "Il profilo resta visibile anche quando sei impegnato con altro.",
   },
 ];
 

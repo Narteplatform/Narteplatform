@@ -16,7 +16,7 @@ export default async function ContattiPage() {
       <PageHero
         image={heroImageFor("contatti")}
         label="contatti"
-        title="Parliamone."
+        title="Contattaci."
         description={
           <>
             Per booking, collaborazioni o richieste generiche scrivici. Rispondiamo in genere

@@ -26,8 +26,8 @@ export function ArtistProfilePreview() {
       <div className="container-narte">
         <SectionHeading
           label="cosa ottieni"
-          title="Una pagina che parla al posto tuo."
-          description="Questo è quello che vede un organizzatore quando ti trova. Un link solo, da mandare anche fuori da qui."
+          title="Il tuo profilo, in una pagina."
+          description="Ecco cosa vede un organizzatore quando ti trova. Puoi condividere lo stesso link anche fuori da N'arte."
         />
 
         {/* La colonna della scheda ha la stessa larghezza della scheda (19rem):

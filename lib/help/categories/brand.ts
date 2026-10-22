@@ -69,7 +69,7 @@ export const BRAND: HelpCategory = {
 <h2>Formule che vanno bene</h2>
 <ul>
   <li><strong>Se sei nel roster</strong>: «Artista N'arte», «Trovi il mio profilo su N'arte».</li>
-  <li><strong>Se la data è nata qui</strong>: «Serata nata su N'arte», «Ci siamo conosciuti grazie a N'arte».</li>
+  <li><strong>Se la data è nata qui</strong>: «In collaborazione con N'arte», «Ci siamo conosciuti grazie a N'arte».</li>
   <li><strong>Se l'evento è nostro</strong>: «Un evento N'arte».</li>
   <li><strong>Se sei un locale</strong>: «Cerchiamo i nostri artisti su N'arte».</li>
 </ul>
@@ -109,7 +109,7 @@ export const BRAND: HelpCategory = {
 </ul>
 
 <h2>Come citare N'arte</h2>
-<p>N'arte va citata per quello che ha fatto: vi ha messi in contatto. Vanno bene «Serata nata su N'arte», «Artista N'arte» o un tag a <a href="https://instagram.com/narte.official" rel="noopener">@narte.official</a>.</p>
+<p>Se vi siete trovati su N'arte, ci fa piacere che lo diciate. Alcune formule che potete usare: «Artista trovato su N'arte», «In collaborazione con N'arte» oppure il solo tag <a href="https://instagram.com/narte.official" rel="noopener">@narte.official</a> nel post o nella locandina.</p>
 <p>N'arte non va messa tra gli organizzatori o gli sponsor di una serata che non organizza. Se invece l'evento è nostro, il logo va insieme a quello degli organizzatori.</p>
 <p>Artisti e organizzatori trovano nel <strong>Kit brand</strong> della propria area riservata i file del logo e le indicazioni per usarlo in una locandina.</p>
 

@@ -112,7 +112,7 @@ export function ConsultantPanel({ slots }: { slots: ConsultantSlot[] }) {
             "Consulenza dedicata su misura",
             "Suggerimenti su artisti, format e budget",
             "Supporto nella scelta della struttura",
-            "Nessun costo, nessun impegno",
+            "Gratuita e senza impegno",
           ].map((t) => (
             <li key={t} className="flex items-start gap-2.5">
               <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-accent" />

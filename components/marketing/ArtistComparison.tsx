@@ -22,8 +22,8 @@ export function ArtistComparison() {
       <div className="container-narte">
         <SectionHeading
           label="il confronto"
-          title="Da solo mandi mail e speri."
-          description="Nessuno ti vieta di continuare a fare come hai sempre fatto. Ecco solo cosa cambia, riga per riga."
+          title="Da solo o con N'arte."
+          description="Puoi continuare a cercare date come hai sempre fatto. Ecco cosa cambia, punto per punto."
         />
 
         <div className="mx-auto mt-12 max-w-4xl md:mt-16">

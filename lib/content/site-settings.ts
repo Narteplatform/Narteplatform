@@ -87,7 +87,7 @@ export const CONTENUTI = {
     etichetta: "Come funziona: sottotitolo",
     tipo: "testo-lungo",
     predefinito:
-      "Nessun provino, nessuna quota d'iscrizione, nessun contratto da firmare. Quattro passi, e il terzo è già gratis per sempre.",
+      "Iscriversi non costa nulla e non chiediamo provini né contratti. Bastano quattro passaggi, e il profilo resta gratuito.",
     max: 300,
   },
 } as const satisfies Record<string, DefinizioneContenuto>;

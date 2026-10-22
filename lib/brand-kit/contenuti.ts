@@ -55,7 +55,7 @@ export const BRAND_KIT_REGOLE = `
 
 export const BRAND_KIT_ARTISTA = `
 <h2>Come presentarti</h2>
-<p>Puoi scrivere «Artista N'arte», «Faccio parte del roster N'arte» o «Trovi il mio profilo su N'arte». Per una data nata qui va bene «Serata nata su N'arte».</p>
+<p>Puoi scrivere «Artista N'arte», «Faccio parte del roster N'arte» o «Trovi il mio profilo su N'arte». Per una data trovata qui va bene «In collaborazione con N'arte».</p>
 <p>Il logo puoi usarlo senza chiedere per dire che fai parte del roster, per annunciare una data arrivata dalla piattaforma e per promuovere un evento organizzato da N'arte a cui partecipi. Non va nel tuo logo, nella foto profilo dei tuoi social o nel tuo merchandising.</p>
 
 <h2>Il link al tuo profilo</h2>
@@ -78,7 +78,7 @@ export const BRAND_KIT_ARTISTA = `
 
 export const BRAND_KIT_ORGANIZZATORE = `
 <h2>Come citare N'arte</h2>
-<p>N'arte va citata per quello che ha fatto, cioè mettervi in contatto. Vanno bene «Serata nata su N'arte», «Artista N'arte» o «Cerchiamo i nostri artisti su N'arte», insieme al tag <a href="https://instagram.com/narte.official" rel="noopener">@narte.official</a>.</p>
+<p>Se l'artista lo hai trovato su N'arte, ci fa piacere che tu lo dica. Alcune formule che puoi usare: «Artista trovato su N'arte», «In collaborazione con N'arte» oppure il solo tag <a href="https://instagram.com/narte.official" rel="noopener">@narte.official</a> nel post o nella locandina.</p>
 <p>Non mettere N'arte tra gli organizzatori o gli sponsor di una serata che organizzi tu. Se invece l'evento è organizzato da N'arte, il logo va insieme a quello degli organizzatori.</p>
 
 <h2>Il logo nella locandina</h2>

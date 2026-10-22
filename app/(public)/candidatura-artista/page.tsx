@@ -126,7 +126,7 @@ export default async function CandidaturaPage() {
           questa stessa pagina e ricaricherebbero senza portare da nessuna parte. */}
       <PricingSection
         label="i piani"
-        title="Il profilo è gratis. Il resto lo scegli quando serve."
+        title="Il profilo è gratuito. I piani a pagamento sono facoltativi."
         description={
           <>
             Con il piano gratuito hai la pagina pubblica, il calendario e
@@ -141,8 +141,8 @@ export default async function CandidaturaPage() {
       <section className="bg-[#F7F5F2] py-20 text-notte md:py-28">
         <div className="container-narte">
           <SectionHeading
-            label="dubbi legittimi"
-            title="Le domande che ci fanno tutti."
+            label="domande frequenti"
+            title="Le risposte alle domande più comuni."
           />
           <Reveal delay={0.2}>
             {/* La prima aperta di default fa capire a colpo d'occhio che le
@@ -168,12 +168,12 @@ export default async function CandidaturaPage() {
         <div className="container-narte relative z-10">
           <SectionHeading
             label="candidatura"
-            title="Mandaci due link e sentiamoci."
+            title="Invia la tua candidatura."
             description={
               <>
-                Non serve un press kit, non serve un disco fuori. Serve qualcosa
-                da ascoltare. Le candidature le leggiamo a mano, una per una, e
-                rispondiamo a tutti via email — anche quando la risposta è no.
+                Non servono un press kit o un disco pubblicato: basta qualcosa da
+                ascoltare. Leggiamo ogni candidatura e rispondiamo a tutti via
+                email, anche quando l&rsquo;esito è negativo.
               </>
             }
           />

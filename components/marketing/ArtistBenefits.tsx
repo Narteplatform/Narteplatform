@@ -21,8 +21,8 @@ export function ArtistBenefits() {
       <div className="container-narte">
         <SectionHeading
           label="perché iscriversi"
-          title="Smetti di rincorrere le date."
-          description="Il lavoro più ingrato del fare musica non è suonare: è convincere qualcuno a farti suonare. Questa è la parte che proviamo a toglierti di mezzo."
+          title="Le richieste arrivano a te."
+          description="Trovare date richiede tempo ed energie. N'arte ti aiuta a farti trovare da chi organizza, così puoi concentrarti sulla musica."
         />
 
         {/* Quattro card su due colonne, la griglia centrata nel contenitore.
