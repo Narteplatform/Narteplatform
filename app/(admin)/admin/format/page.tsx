@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
+import { formatCover } from "@/lib/content/format-covers";
 
 export const dynamic = "force-dynamic";
 
@@ -59,20 +60,16 @@ export default async function AdminFormatPage() {
               (formats ?? []).map((fmt) => (
                 <li key={fmt.id} className="flex gap-3 px-4 py-4">
                   <div className="relative size-14 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
-                    {fmt.cover_image ? (
+                    {formatCover(fmt.slug, fmt.cover_image) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={fmt.cover_image}
+                        src={formatCover(fmt.slug, fmt.cover_image)!}
                         alt={fmt.title}
                         className="h-full w-full object-cover"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                        {fmt.icon ? (
-                          <span className="text-lg">{fmt.icon}</span>
-                        ) : (
-                          <ImageIcon className="size-4" />
-                        )}
+                        <ImageIcon className="size-4" />
                       </div>
                     )}
                   </div>
@@ -135,20 +132,16 @@ export default async function AdminFormatPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="relative size-12 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
-                          {fmt.cover_image ? (
+                          {formatCover(fmt.slug, fmt.cover_image) ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={fmt.cover_image}
+                              src={formatCover(fmt.slug, fmt.cover_image)!}
                               alt={fmt.title}
                               className="h-full w-full object-cover"
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                              {fmt.icon ? (
-                                <span className="text-lg">{fmt.icon}</span>
-                              ) : (
-                                <ImageIcon className="size-4" />
-                              )}
+                              <ImageIcon className="size-4" />
                             </div>
                           )}
                         </div>

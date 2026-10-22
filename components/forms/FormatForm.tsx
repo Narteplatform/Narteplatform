@@ -32,9 +32,12 @@ type Values = {
 export function FormatForm({
   defaultValues,
   formatId,
+  copertinaPredefinita = null,
 }: {
   defaultValues?: Partial<Values>;
   formatId?: string;
+  /** La foto che il sito mostra quando non è caricata una copertina (lib/content/format-covers.ts). */
+  copertinaPredefinita?: string | null;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -90,12 +93,15 @@ export function FormatForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Il campo «icona» non c'è più: il sito non lo mostra da nessuna parte e
+          in admin compariva come testo («Mic», «Music2») al posto della foto.
+          Il valore resta nel form così com'è, e si salva invariato. */}
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Titolo">
           <Input {...register("title", { required: true })} />
         </Field>
-        <Field label="Icona (emoji o testo breve)">
-          <Input placeholder="es. 🎸 oppure DJ" {...register("icon")} />
+        <Field label="Ordine (intero, crescente)">
+          <Input type="number" min="0" step="1" {...register("order_index")} />
         </Field>
       </div>
 
@@ -112,10 +118,6 @@ export function FormatForm({
         </Field>
       </div>
 
-      <Field label="Ordine (intero, crescente)">
-        <Input type="number" min="0" step="1" {...register("order_index")} />
-      </Field>
-
       <fieldset className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4">
         <legend className="px-2 font-display text-sm">
           Immagine di copertina
@@ -124,12 +126,28 @@ export function FormatForm({
           control={control}
           name="cover_image"
           render={({ field }) => (
-            <ImageUpload
-              label="Immagine verticale (3:4 portrait)"
-              value={field.value ?? ""}
-              onChange={field.onChange}
-              kind="format"
-            />
+            <>
+              <ImageUpload
+                label="Immagine verticale (3:4 portrait)"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                kind="format"
+              />
+              {!field.value && copertinaPredefinita && (
+                <div className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-surface p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={copertinaPredefinita}
+                    alt=""
+                    className="h-20 w-15 shrink-0 rounded-lg object-cover"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Sul sito ora compare questa foto predefinita. Caricane una qui sopra per
+                    sostituirla.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         />
       </fieldset>

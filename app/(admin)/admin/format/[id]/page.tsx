@@ -7,7 +7,7 @@ import { DeleteFormatButton } from "@/components/forms/DeleteFormatButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { formatPrezzo } from "@/lib/content/format-covers";
+import { formatCover, formatPrezzo } from "@/lib/content/format-covers";
 
 export default async function EditFormatPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,16 +28,12 @@ export default async function EditFormatPage({ params }: { params: Promise<{ id:
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="relative size-20 shrink-0 overflow-hidden rounded-2xl border border-border bg-muted">
-              {fmt.cover_image ? (
+              {formatCover(fmt.slug, fmt.cover_image) ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={fmt.cover_image} alt={fmt.title} className="h-full w-full object-cover" />
+                <img src={formatCover(fmt.slug, fmt.cover_image)!} alt={fmt.title} className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                  {fmt.icon ? (
-                    <span className="text-3xl">{fmt.icon}</span>
-                  ) : (
-                    <ImageIcon className="size-6" />
-                  )}
+                  <ImageIcon className="size-6" />
                 </div>
               )}
             </div>
@@ -90,6 +86,7 @@ export default async function EditFormatPage({ params }: { params: Promise<{ id:
               published: fmt.published ?? true,
             }}
             formatId={fmt.id}
+            copertinaPredefinita={formatCover(fmt.slug, null)}
           />
         </CardContent>
       </Card>
