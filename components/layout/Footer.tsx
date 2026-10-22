@@ -39,11 +39,11 @@ export function Footer() {
                 <Facebook className="size-5" />
               </a>
               <a
-                href="tel:+393335860066"
+                href="tel:+393335860666"
                 aria-label="Chiama N'Arte"
                 className="inline-flex items-center gap-1.5 text-xs transition-opacity hover:opacity-75"
               >
-                <Phone className="size-4" /> +39 333 586 0066
+                <Phone className="size-4" /> +39 333 586 0666
               </a>
             </div>
           </div>
@@ -84,9 +84,9 @@ export function Footer() {
         {/* DATI DEL TITOLARE. Non è un adempimento formale da sbrigare in piccolo:
             è ciò che permette a chi legge di sapere con chi sta trattando, e
             senza il quale un'informativa che dice «il titolare è N'arte» non
-            identifica nessuno. Denominazione, partita IVA e sede vengono da
+            identifica nessuno. Denominazione, partita IVA e città vengono da
             lib/legal/titolare.ts, lo stesso punto che alimenta i documenti: qui
-            e là non possono divergere. */}
+            e là non possono divergere. L'indirizzo completo sta nei documenti. */}
         <p className="mt-12 border-t border-notte-60 pt-6 text-xs text-notte-40">
           {titolareInLinea()}
         </p>

@@ -35,10 +35,17 @@ export const TITOLARE = {
   emailPrivacy: "info@narteofficial.it",
 } as const;
 
-/** Una riga sola, per il piè di pagina. */
+/**
+ * Una riga sola, per il piè di pagina: denominazione, P.IVA e città.
+ *
+ * Via e CAP sono l'abitazione del titolare (richiesta del 22/10/2026): nel piè
+ * di pagina bastano la P.IVA (art. 35 DPR 633/72) e la città. L'indirizzo
+ * completo resta nell'informativa, nelle condizioni e nel modulo di recesso,
+ * dove la legge lo chiede (D.Lgs. 70/2003 art. 7, Codice del consumo).
+ */
 export function titolareInLinea(): string {
   const t = TITOLARE;
-  return `${t.denominazione} — P.IVA ${t.partitaIva} — ${t.indirizzo}, ${t.cap} ${t.citta}`;
+  return `${t.denominazione} — P.IVA ${t.partitaIva} — ${t.citta}`;
 }
 
 /** Il recapito da indicare nei documenti: l'email se c'è, altrimenti la pagina. */
