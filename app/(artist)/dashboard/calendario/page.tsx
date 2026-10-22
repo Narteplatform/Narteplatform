@@ -4,6 +4,7 @@ import { resolveActiveArtist } from "@/lib/artist/current";
 import { AvailabilityCalendar } from "@/components/forms/AvailabilityCalendar";
 import { BulkAvailabilityPanel } from "@/components/dashboard/BulkAvailabilityPanel";
 import { DefaultSlotsEditor } from "@/components/forms/DefaultSlotsEditor";
+import { CollegaCalendario } from "@/components/calendar/CollegaCalendario";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +59,15 @@ export default async function CalendarioPage() {
           orari e per segnarlo come occupato. Le date passate restano in storico.
         </p>
       </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Google Calendar</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CollegaCalendario descrizione="Le date confermate su N'arte, di tutti i tuoi profili, compaiono da sole nel tuo Google Calendar (o in Apple Calendar e Outlook). Il collegamento è in sola lettura: le disponibilità si gestiscono qui." />
+        </CardContent>
+      </Card>
 
       {/* I turni abituali vengono prima, e non è un dettaglio di impaginazione:
           sono il valore predefinito su cui si appoggiano sia il calendario sia

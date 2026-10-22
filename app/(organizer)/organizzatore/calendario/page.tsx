@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { OrganizerCalendar } from "@/components/organizer/OrganizerCalendar";
 import { VenueSwitch } from "@/components/organizer/VenueSwitch";
+import { CollegaCalendario } from "@/components/calendar/CollegaCalendario";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +87,15 @@ export default async function OrganizerCalendarPage({
         </div>
         {allVenues.length > 1 && <VenueSwitch venues={allVenues} selected={selected} />}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Google Calendar</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CollegaCalendario descrizione="Le date confermate di tutte le tue strutture compaiono da sole nel tuo Google Calendar (o in Apple Calendar e Outlook), con artista, struttura e indirizzo." />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">

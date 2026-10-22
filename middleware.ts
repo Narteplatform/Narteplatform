@@ -288,11 +288,13 @@ export const config = {
     // `api/csp-report` escluso: lo chiama il BROWSER da solo, per segnalare una
     // violazione della policy. Non ha bisogno di sapere chi sia l'utente, e una
     // pagina che ne genera dieci pagherebbe dieci getUser() per niente.
+    // `api/calendario` escluso: lo leggono Google/Apple Calendar ogni qualche
+    // ora, senza cookie; l'accesso è il token nel percorso.
     // Rimossa l'esclusione di `api/health`: quella rotta non è mai esistita
     // (le uniche sotto app/api sono artists, booking, booking-request, cron,
     // keepalive, search, stripe, upload, upload-application-video). La pagina
     // di diagnostica è `/__health`, che deve invece PASSARE dal middleware per
     // essere protetta.
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/keepalive|api/cron|api/stripe|api/csp-report|api/artists/view|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|webmanifest)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/keepalive|api/cron|api/stripe|api/csp-report|api/artists/view|api/calendario|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|webmanifest)$).*)",
   ],
 };
