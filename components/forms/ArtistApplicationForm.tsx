@@ -176,7 +176,7 @@ export function ArtistApplicationForm({
       <Field
         label="Video di riferimento (opzionale)"
         error={errors.video_url?.message}
-        hint="Carica un video che mostri la tua performance dal vivo. Max 50MB, formato mp4/webm/mov."
+        hint="Carica un video che mostri la tua performance dal vivo. Max 200MB, formato mp4/webm/mov."
       >
         {/* Hidden RHF fields that store the upload result */}
         <input type="hidden" {...register("video_url")} />

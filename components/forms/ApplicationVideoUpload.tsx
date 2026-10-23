@@ -5,7 +5,7 @@ import { Upload, X, Film } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { uploadViaTus } from "@/lib/upload/tusUpload";
 import { isBunnyEmbedUrl } from "@/lib/storage/bunny/urls";
-import { guessVideoMime, videoLimitsFor } from "@/lib/upload/video-limits";
+import { formatMb, guessVideoMime, videoLimitsFor } from "@/lib/upload/video-limits";
 
 /**
  * Ramo Bunny: si accettano anche i container che il browser non sa decodificare
@@ -191,7 +191,7 @@ export function ApplicationVideoUpload({ onUploaded, onRemoved, uploadedUrl }: P
           </Button>
           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             <Film className="size-3.5 shrink-0" />
-            mp4 / webm / mov · max 50MB
+            mp4 / webm / mov · max {formatMb(MAX_BYTES)}
           </span>
         </div>
       )}
