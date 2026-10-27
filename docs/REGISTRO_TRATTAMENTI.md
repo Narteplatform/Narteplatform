@@ -1,6 +1,8 @@
 # N'arte — Registro delle attività di trattamento
 
-> Articolo 30 GDPR. Versione 1.0 — 29 settembre 2026.
+> Articolo 30 GDPR. Versione 1.1 — 27 ottobre 2026 (la 1.0 era del 29 settembre 2026).
+> Novità della 1.1: testo delle email nel registro (T11), segnalazioni Max ai privati
+> registrati (T16), feed del calendario e notifiche in-app (T17), fornitori Google e Unsplash (§3).
 > Redatto sull'analisi del codice sorgente, dello schema del database e dei
 > flussi applicativi. **Da validare dall'avvocato incaricato.**
 
@@ -56,7 +58,7 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Finalità | Dimostrare che e quando l'interessato ha accettato i documenti |
 | Base giuridica | Obbligo legale (art. 6.1.c) — l'art. 7 § 1 impone di poter dimostrare il consenso |
 | Interessati | Tutti gli utenti registrati |
-| Dati | Identificativo utente, tipo di consenso, versione del documento, esito, istante. **Nessun indirizzo IP, nessun user agent** |
+| Dati | Identificativo utente, tipo di consenso, versione del documento, esito, istante. Con la migration 0070 anche ruolo, browser (user agent) e **impronta irreversibile dell'IP** con sale segreto (`CONSENT_IP_SALT`, ripiego `VISIT_HASH_SALT`); l'IP in chiaro non è salvato |
 | Dove | `user_consents`, `profiles.legal_version_accepted` |
 | Destinatari | Supabase; iubenda (Consent Database, copia della prova) |
 | Extra-UE | Supabase sì; iubenda no (Italia) |
@@ -183,8 +185,26 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Dati | Indirizzo del destinatario, nome, e i dati del fatto che ha generato il messaggio |
 | Dove | Brevo (principale), Resend (riserva); registro degli invii in `email_log` |
 | Extra-UE | Resend sì |
-| Conservazione | *Proposta:* 12 mesi per il registro degli invii |
+| Conservazione | *Proposta:* 12 mesi per il registro degli invii (regola `email_log` 365 giorni nel cron di conservazione, **oggi in sola conta** finché `RETENTION_ENFORCE` ≠ 1) |
 | Nota | `email_log.to_addresses` conserva gli indirizzi in chiaro di chiunque abbia mai ricevuto una comunicazione, ed è consultabile dal pannello amministrativo. Va sottoposto a scadenza |
+
+#### T11-bis — Testo delle email nel registro degli invii *(estensione di T11, dal 27/10/2026, migration 0075)*
+
+| Voce | Valore |
+|---|---|
+| Finalità | Assistenza agli utenti («non mi è arrivata», «cosa diceva l'email»), verifica del contenuto delle comunicazioni dovute, prova di quanto comunicato |
+| Base giuridica | *Proposta:* legittimo interesse (art. 6.1.f) — **da confermare dall'avvocato** insieme alla necessità di conservare il testo integrale |
+| Interessati | Tutti i destinatari delle email della piattaforma |
+| Dati | HTML completo dell'email inviata: nome, date, importi delle offerte, motivazioni delle decisioni del team, dati delle consulenze e degli abbonamenti. **Non** il testo dei messaggi di chat (le email della chat non lo riportano) |
+| Esclusioni | Le email con link d'accesso **non si conservano** (`body_source = riservato`): approvazione artista/organizzatore con impostazione della password, recupero password, conferma della cancellazione, inviti. Negli altri link i token sono oscurati (es. link di disattivazione delle segnalazioni, feed iCal) |
+| Dove | `email_log.body_html`, `email_log.body_source` (`salvato` / `provider` / `riservato`); lettura da `/admin/email/[id]` in un riquadro isolato |
+| Chi vi accede | Tutti i superadmin (pagina «Ultimi invii»). *Da valutare:* limitarlo a chi ha la delega |
+| Invii precedenti alla 0075 | Il testo non è salvato: si legge in sola lettura dal fornitore (Brevo o Resend) finché lo conserva (`lib/emails/recupera-corpo.ts`) |
+| Destinatari | Supabase; Brevo e Resend per i propri registri |
+| Extra-UE | Supabase e Resend sì |
+| Conservazione | 365 giorni, come il resto del registro — **cancellazione automatica oggi spenta**: finché resta spenta il testo non scade |
+| Stato | Codice online; la colonna esiste solo dopo l'applicazione della 0075 (senza, il testo non si salva) |
+| Da fare | Correggere il doc. 09 del fascicolo (§5.1 dice che il testo non è registrato) e l'informativa |
 
 ### T12 — Comunicazioni promozionali
 
@@ -233,6 +253,33 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Destinatari | BunnyWay d.o.o. (Slovenia) |
 | Stato | Il riproduttore non viene caricato finché non c'è il consenso, generale o per il singolo video |
 
+### T16 — Segnalazioni del profilo degli artisti Max *(estesa ai privati il 27/10/2026)*
+
+| Voce | Valore |
+|---|---|
+| Finalità | Promuovere il profilo di un artista Max inviandone il link a destinatari in linea (beneficio del piano, doc. 02 art. 9) |
+| Base giuridica | Strutture e organizzatori professionali: legittimo interesse (da confermare). **Privati registrati** (organizzatori dichiarati privati, utenti con ruolo `user`): **da definire con l'avvocato** — comunicazione promozionale su un terzo a persone fisiche (art. 130 Codice privacy: consenso? legittimo interesse?) |
+| Interessati | Destinatari (anche persone fisiche); l'artista segnalato |
+| Dati | Nome ed email del destinatario, collegamento a struttura/organizzatore/profilo (`profile_id`, 0075), artista, data, nota del team |
+| Dove | `profile_referrals`, `referral_optouts` (impronta dell'email di chi ha disattivato) |
+| Destinatari | Supabase, Brevo/Resend |
+| Opt-out | Link firmato (`REFERRAL_OPTOUT_SECRET`) in ogni email; controllato prima di ogni invio |
+| Riservatezza | L'artista vede il conteggio mensile e il nome delle strutture, non quello dei privati; la 0075 toglie la policy che gli faceva leggere via API le email dei destinatari |
+| Conservazione | *Da definire* |
+
+### T17 — Feed del calendario personale e notifiche in-app
+
+| Voce | Valore |
+|---|---|
+| Finalità | Portare le date confermate nel calendario dell'utente; avvisarlo nell'app di richieste, offerte e decisioni |
+| Base giuridica | Esecuzione del contratto (art. 6.1.b) |
+| Interessati | Artisti e organizzatori |
+| Dati | Feed: token segreto e date confermate (luogo, controparte). Notifiche: titolo, testo breve, link, stato di lettura |
+| Dove | `calendar_feeds` (0074), `notifications` (0073) |
+| Destinatari | Supabase; Google/Apple/Microsoft solo se l'utente collega il feed al proprio calendario |
+| Rischio | Il link del feed è l'unica protezione: chi lo conosce legge le date. Rigenerabile. Va spiegato all'utente |
+| Conservazione | Feed: finché l'utente non lo rigenera o chiude l'account. Notifiche: *da definire* |
+
 ---
 
 ## 3. Responsabili del trattamento e accordi
@@ -246,12 +293,17 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Resend | Email di servizio, canale di riserva | USA | Nomina a responsabile | Pannello Resend |
 | Stripe Payments Europe | Abbonamenti | **Irlanda — UE** | Nomina a responsabile | Pannello Stripe |
 | iubenda | Documenti legali, gestione e archivio dei consensi | **Italia — UE** | Nomina a responsabile | Pannello iubenda |
-| Google | Statistiche di navigazione | Irlanda / USA | Termini per il trattamento dei dati | Amministrazione della proprietà GA4 |
-| Meta | Misurazione e remarketing — **contitolare** | Irlanda / USA | Addendum per la contitolarità | Impostazioni di Business Manager |
-| Unsplash | Immagini remote | USA | — | *da valutare: sostituibile ospitando le immagini* |
+| Google — Analytics 4 | Statistiche di navigazione (**spento**) | Irlanda / USA | Termini per il trattamento dei dati | Amministrazione della proprietà GA4 |
+| Google — accesso con Google | Registrazione e accesso tramite account Google (OAuth, `components/forms/OAuthButtons.tsx`) | Irlanda / USA | Su iniziativa dell'utente: da dichiarare nell'informativa | Console Google Cloud / Supabase Auth |
+| Google — Calendar | Link «aggiungi al calendario» nelle email (`lib/emails/format.ts`); feed iCal personale se l'utente lo collega (`lib/calendar/feed.ts`) | Irlanda / USA | Su iniziativa dell'utente: da dichiarare nell'informativa | — |
+| Google — Meet | Link della videochiamata delle consulenze, inviato per email | Irlanda / USA | *Da verificare* l'account usato dal team (Workspace con DPA o account personale) | — |
+| Google — Gmail | Casella condivisa del team `narte.official.eventi@gmail.com`, destinatario aggiuntivo predefinito delle notifiche interne (nuove candidature, richieste dal sito…) con dati personali (`lib/emails/admin-recipients.ts`) | Irlanda / USA | **Da valutare**: un account Gmail gratuito non prevede un accordo sul trattamento dei dati come Google Workspace. Alternativa: casella sul dominio narteofficial.it | Impostazioni dell'account |
+| Feed iCal personale | Non è un fornitore: link con token segreto (32 byte) che espone le date confermate a chi lo conosce | — | Unica protezione il token; rigenerabile | `calendar_feeds` (0074) |
+| Meta | Misurazione e remarketing — **contitolare** (**spento**) | Irlanda / USA | Addendum per la contitolarità | Impostazioni di Business Manager |
+| Unsplash | Immagini remote decorative (`lib/content/hero-images.ts`): il browser del visitatore contatta i server Unsplash (IP, user agent) | USA | — | *da valutare: sostituibile ospitando le immagini* |
 
 **Da confermare dall'avvocato:** l'adeguatezza dei meccanismi di trasferimento
-dichiarati da Supabase, Vercel, Resend, Google e Meta.
+dichiarati da Supabase, Vercel, Resend, Google (accesso, Calendar, Meet, Gmail, Analytics), Meta e Unsplash.
 
 ---
 

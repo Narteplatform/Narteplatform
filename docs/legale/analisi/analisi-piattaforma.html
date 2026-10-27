@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Analisi della piattaforma N'arte — documento per il legale</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../per-avvocato/_stile.css">
+<style>
+/* Aggiunte al foglio comune di per-avvocato/_stile.css, solo per questo documento. */
+@page {
+  @bottom-right { content: "Pag. " counter(page) " di " counter(pages); font: 8pt "Open Sans", Helvetica, Arial, sans-serif; color: #777; }
+  @bottom-left { content: "N'arte — Analisi per il legale · 27 ottobre 2026 · riservato"; font: 8pt "Open Sans", Helvetica, Arial, sans-serif; color: #777; }
+}
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+/* Segnaposto da compilare: stesso aspetto della classe .seg di src/stampa.css */
+.seg { background: #FFF0A8; padding: 0 1mm; font-weight: 600; font-size: 0.92em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.prio { display: inline-block; font-weight: 600; font-size: 7.6pt; padding: 0.2mm 1.8mm; border-radius: 2mm; white-space: nowrap; }
+.prio.alta { background: #FF5722; color: #fff; }
+.prio.media { background: #0B0B0B; color: #fff; }
+.prio.bassa { background: #E2E2E2; color: #0B0B0B; }
+.stato { display: inline-block; font-size: 7.8pt; font-weight: 600; padding: 0.2mm 1.6mm; border-radius: 1.5mm; border: 1px solid #bbb; white-space: nowrap; }
+.stato.manca { border-color: #FF5722; color: #FF5722; }
+.stato.ok { border-color: #2e7d32; color: #2e7d32; }
+.nuovo { display: inline-block; background: #FFF4EF; color: #FF5722; border: 1px solid #FF5722; font-size: 7.4pt; font-weight: 600; padding: 0 1.4mm; border-radius: 1.5mm; margin-left: 1mm; vertical-align: 1px; }
+.copertina { height: 250mm; display: flex; flex-direction: column; justify-content: space-between; break-after: page; }
+.copertina h1 { font-size: 30pt; margin-top: 45mm; }
+.copertina .barra { height: 4pt; width: 40mm; background: #FF5722; margin: 6mm 0; }
+.copertina .dati { font-size: 9.3pt; color: #444; line-height: 1.65; }
+.indice ol { padding-left: 6mm; columns: 1; }
+.indice li { margin-bottom: 1.4mm; }
+h2 { break-before: auto; }
+h2.capitolo { break-before: auto; margin-top: 8mm; }
+.punto { font-weight: 600; }
+td.n { width: 8mm; font-weight: 600; color: #FF5722; }
+td.p { width: 16mm; }
+.rif { color: #666; font-size: 8.2pt; }
+.piccola td, .piccola th { font-size: 8.4pt; padding: 1.5mm 2mm; }
+.due { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+.box { background: #F4F4F4; padding: 3mm 4mm; border-radius: 1.5mm; break-inside: avoid; }
+.box h3 { margin-top: 0; }
+ul.rischi li::marker { color: #FF5722; }
+</style>
+</head>
+<body>
+
+<section class="copertina">
+  <div>
+    <div class="brand">N'arte<span>Documentazione per il legale</span></div>
+    <h1>Analisi della piattaforma N'arte<br>documento per il legale</h1>
+    <div class="barra"></div>
+    <p class="lead" style="font-size:10.5pt">Un solo documento che descrive la piattaforma dal punto di vista legale: chi la usa, cosa fa,
+    quali dati tratta, quali regole applica e dove stanno i rischi. È redatto sull'analisi del codice
+    sorgente e dei documenti già preparati, e accompagna il fascicolo delle condizioni (documenti 00–09), unito in coda.</p>
+  </div>
+  <div class="dati">
+    <strong>Cliente e titolare del servizio:</strong> Eduardo Castronuovo, ditta individuale — P.IVA IT11071661216 — Napoli<br>
+    <strong>Piattaforma:</strong> narteofficial.it — recapito unico per gli utenti: info@narteofficial.it<br>
+    <strong>Aggiornato al:</strong> 27 ottobre 2026 — accompagna il fascicolo v0.98 (bozza per revisione legale)<br>
+    <strong>Destinatario:</strong> legale incaricato della revisione<br><br>
+    Documento riservato. Non è un parere legale: è la base istruttoria per il professionista incaricato.
+    Le parti evidenziate in <span class="seg">giallo</span> sono dati ancora da fornire o valori proposti da confermare.
+  </div>
+</section>
+
+<section class="indice">
+  <h2>Indice</h2>
+  <ol>
+    <li>Dati da fornire prima della revisione</li>
+    <li>Il modello in una pagina</li>
+    <li>Soggetti e ruoli</li>
+    <li>I flussi principali, passo per passo</li>
+    <li>Dati personali</li>
+    <li>Contenuti caricati dagli utenti</li>
+    <li>Pagamenti e tutela del consumatore</li>
+    <li>Obblighi P2B e DSA</li>
+    <li>Rischi individuati e quesiti al legale, per priorità</li>
+    <li>Documenti allegati e loro stato</li>
+  </ol>
+  <h3>Come leggere questo documento</h3>
+  <ul>
+    <li>Ogni capitolo è a punti. Dove un passaggio ha rilevanza legale, il punto è segnalato con <strong>«Rilevanza legale»</strong>.</li>
+    <li>I rinvii del tipo «doc. 02, art. 9» puntano ai testi del fascicolo allegato (capitolo 10).</li>
+    <li>Le novità rispetto al fascicolo del 1° ottobre sono segnate con <span class="nuovo">nuovo 27/10</span>.</li>
+    <li>Le priorità sono: <span class="prio alta">alta</span> da decidere prima del lancio; <span class="prio media">media</span> da decidere prima della pubblicazione dei testi; <span class="prio bassa">bassa</span> da sistemare, ma non blocca.</li>
+    <li>I nomi tecnici (file, tabelle, variabili) sono solo in nota, per chi assiste il legale.</li>
+  </ul>
+  <div class="attenzione"><strong>Il punto da tenere presente.</strong> Alcune funzioni descritte nei testi sono già scritte nel codice ma
+  <strong>non sono ancora attive in produzione</strong>, perché richiedono modifiche al database non ancora applicate
+  (capitolo 4, ultimo riquadro, e quesito A5). Finché non lo sono, i testi v2 non vanno pubblicati.</div>
+</section>
+
+<!-- ============================================================ 1 -->
+<h2 class="capitolo">1. Dati da fornire prima della revisione</h2>
+<p>Senza questi dati i testi non possono essere approvati in forma definitiva. L'elenco ufficiale dei segnaposto è nella nota 00, §7.</p>
+<table class="piccola">
+<thead><tr><th style="width:30%">Dato</th><th style="width:34%">Dove serve</th><th>Stato</th></tr></thead>
+<tbody>
+<tr><td class="k"><span class="seg">[PEC]</span></td><td>Doc. 01 art. 1, doc. 02 (recesso e modulo tipo), doc. 06 (punto di contatto), doc. 09</td><td><span class="stato manca">manca</span> Cliente</td></tr>
+<tr><td class="k"><span class="seg">[CCIAA]</span> / <span class="seg">[REA]</span></td><td>Doc. 01 art. 1 (identificazione del prestatore, D.Lgs. 70/2003 art. 7)</td><td><span class="stato manca">manca</span> Cliente</td></tr>
+<tr><td class="k">Codice fiscale del titolare</td><td>Identificazione del prestatore; fatture</td><td><span class="stato manca">da fornire</span> Cliente (non compare nei testi: valutare se serve)</td></tr>
+<tr><td class="k">Regime IVA e dicitura in fattura</td><td>Doc. 02 artt. 2.3 e 4.2</td><td>Il cliente ha indicato il regime forfettario (30/09). <span class="seg">[dicitura]</span> e <span class="seg">[modalità di fatturazione elettronica via SdI, marca da bollo sopra 77,47 €]</span> da confermare con il commercialista</td></tr>
+<tr><td class="k"><span class="seg">[DATA DI ENTRATA IN VIGORE]</span></td><td>Tutti i documenti 01–07 e 09</td><td>Da fissare dopo la revisione</td></tr>
+<tr><td class="k"><span class="seg">[N]</span> giorni di nuovi tentativi di pagamento</td><td>Doc. 02 art. 8.1</td><td>Da leggere nella configurazione Stripe</td></tr>
+<tr><td class="k">Effetto del passaggio a un piano inferiore</td><td>Doc. 02 art. 11.1</td><td><span class="seg">[immediato / a fine periodo]</span> Da allineare al portale Stripe</td></tr>
+<tr><td class="k">Shooting del Max annuale: <span class="seg">[IMPORTO]</span>, luogo, durata, numero di foto, diritti del fotografo</td><td>Doc. 02 artt. 7.5 e 9.6; doc. 03 art. 4</td><td><span class="stato manca">manca</span> Cliente (il valore incide sul rimborso in caso di recesso)</td></tr>
+<tr><td class="k">Modalità della consulenza</td><td>Doc. 03 art. 8</td><td><span class="seg">[videochiamata / telefono / in presenza]</span> Cliente</td></tr>
+<tr><td class="k">Criteri di concessione dei piani omaggio</td><td>Doc. 07 (posizionamento)</td><td><span class="stato manca">manca</span> Cliente: oggi ogni omaggio è motivato e registrato, ma i criteri non sono scritti</td></tr>
+<tr><td class="k">Lingue del punto di contatto DSA</td><td>Doc. 06 art. 4</td><td><span class="seg">[SCELTA DEL CLIENTE]</span></td></tr>
+<tr><td class="k"><span class="seg">[ORGANISMO ADR]</span> (facoltativo)</td><td>Doc. 01 art. 18.2</td><td>Legale</td></tr>
+<tr><td class="k">Indirizzo privacy dedicato (facoltativo)</td><td>Doc. 09 §0</td><td>Oggi vale il recapito unico info@narteofficial.it. La casella deve essere attiva e presidiata</td></tr>
+<tr><td class="k">Tempi operativi e periodi di conservazione</td><td>Doc. 02, 03, 05, 06, 09 (riepilogo sotto)</td><td>Proposte tra parentesi quadre: cliente (deve poterli rispettare) e legale</td></tr>
+</tbody>
+</table>
+
+<h3>Tempi e periodi proposti tra parentesi quadre, documento per documento</h3>
+<p>Il valore tra parentesi è la nostra proposta. Un termine promesso e non rispettato è peggio di un termine non promesso.</p>
+<ul>
+  <li><span class="punto">Doc. 02 — Abbonamento:</span> giorni di nuovi tentativi di pagamento; valore dello shooting; effetto del cambio di piano.</li>
+  <li><span class="punto">Doc. 03 — Artisti:</span> esito della candidatura (es. 15 giorni lavorativi); validità dell'invito; attesa prima di ricandidarsi (es. 6 mesi); risposta alle richieste (es. 7 giorni); moderazione dei media (es. 3 giorni lavorativi); cancellazione dei contenuti rifiutati; durata degli estratti (30 secondi); permanenza dei materiali promozionali dopo la rimozione (12 mesi) e dei post social (15 giorni); rimozione di un componente su richiesta (7 giorni); tolleranza e sanzioni sulle consulenze mancate (15 minuti; 2 assenze in 3 mesi; 30 giorni di sospensione); profili inattivi (90 giorni); statistiche (425 giorni).</li>
+  <li><span class="punto">Doc. 05 — Recensioni:</span> termine per recensire (proposta: 90 giorni dall'evento); numero di recensioni mostrate (12); oscuramento in attesa di verifica (30 giorni); contraddittorio con l'autore (5 giorni lavorativi); ritiro su richiesta (5 giorni lavorativi); correzione di errori (7 giorni); conservazione delle decisioni (24 mesi).</li>
+  <li><span class="punto">Doc. 06 — Moderazione:</span> conferma di ricezione (2 giorni lavorativi); decisione (7 o 15 giorni lavorativi); contraddittorio (3 giorni lavorativi); sospensioni (da 7 a 90, da 15 a 90, da 30 a 180 giorni); decisione sul reclamo (15 giorni lavorativi); conservazione di registri e pratiche (24 mesi, 12 mesi).</li>
+  <li><span class="punto">Doc. 09 — Privacy:</span> conservazione di accessi alle chat (24 mesi), recensioni nascoste (12 mesi), file rifiutati (30 giorni), date sul profilo dopo la chiusura dell'organizzatore (12 mesi), consensi (10 anni), richieste di cancellazione (3 anni).</li>
+</ul>
+<div class="attenzione"><strong>Incoerenze da sciogliere.</strong> Per il registro delle decisioni del Team e per quello degli accessi alle chat i
+documenti 06 e 09 propongono <span class="seg">[24 MESI]</span>, mentre la regola di cancellazione predisposta nel codice usa 5 anni
+(la scheda del 1° ottobre propone anch'essa 5 anni). Va scelto un solo periodo e allineati testi e codice.</div>
+
+<!-- ============================================================ 2 -->
+<h2 class="capitolo">2. Il modello in una pagina</h2>
+<p class="lead"><strong>N'arte è una vetrina promozionale.</strong> Mette in contatto artisti musicali emergenti e organizzatori di eventi, e si ferma lì.
+L'unico denaro che incassa è l'abbonamento facoltativo dell'artista.</p>
+<div class="due">
+<div class="box">
+<h3>Cosa fa</h3>
+<ul>
+  <li>Ospita i profili degli artisti e il catalogo.</li>
+  <li>Offre gli strumenti di contatto: richiesta di booking, chat, calendario.</li>
+  <li>Controlla i contenuti degli artisti prima della pubblicazione.</li>
+  <li>Gestisce recensioni, segnalazioni e regole di comportamento.</li>
+  <li>Con il piano Max, il Team <strong>segnala</strong> il profilo dell'artista a destinatari in linea (strutture, organizzatori e, dal 27/10, privati registrati).</li>
+  <li>Offre consulenze agli abbonati Pro e Max sull'uso della piattaforma per il booking.</li>
+</ul>
+</div>
+<div class="box">
+<h3>Cosa non fa</h3>
+<ul>
+  <li>Non partecipa alle trattative e non propone condizioni.</li>
+  <li>Non è parte del contratto di esibizione e non lo conclude per nessuno.</li>
+  <li>Non incassa, non trasferisce e non trattiene il compenso dell'ingaggio. Nessuna commissione.</li>
+  <li>Non candida l'artista a eventi: la segnalazione Max è solo un link promozionale al profilo.</li>
+  <li>Non garantisce che l'evento si svolga né la qualità della prestazione.</li>
+  <li>Non si occupa degli adempimenti dell'evento (agibilità, SIAE, permessi, sicurezza): sono dell'organizzatore o del locale.</li>
+</ul>
+</div>
+</div>
+<h3>Come guadagna</h3>
+<ul>
+  <li>Solo con l'abbonamento degli artisti, via Stripe: Free (gratuito), Pro (9,99 €/mese o 49,99 €/anno), Max (49,99 €/mese o 499,99 €/anno).</li>
+  <li>Organizzatori e pubblico non pagano. Nessuna pubblicità di terzi.</li>
+  <li>Il piano incide su limiti di pubblicazione, chat, visibilità delle recensioni, badge, posizione nel catalogo, consulenze, statistiche, segnalazioni Max e shooting (solo Max annuale).</li>
+</ul>
+<h3>Rilevanza legale</h3>
+<ul class="rischi">
+  <li>Il modello «solo promozionale» è il presupposto su cui sono scritti tutti i testi. Se cambia, cambiano anche i testi.</li>
+  <li>Il punto più delicato è la <strong>segnalazione a pagamento del profilo</strong> (piano Max): promozione o intermediazione? (quesito A1).</li>
+  <li>Dal 27/10 la segnalazione può arrivare anche a <strong>persone fisiche registrate</strong>: si aggiunge un tema privacy e di comunicazioni promozionali (quesito A2).</li>
+  <li>Eventi e format curati da N'arte (NaJam, NuLive, NaBand, NaCena): quando N'arte li organizza in proprio è organizzatore a tutti gli effetti, con un rapporto distinto dalla piattaforma (quesito M9).</li>
+</ul>
+
+<!-- ============================================================ 3 -->
+<h2 class="capitolo">3. Soggetti e ruoli</h2>
+<h3>Il titolare</h3>
+<ul>
+  <li>Eduardo Castronuovo, ditta individuale, P.IVA IT11071661216, Napoli. È titolare del servizio e del trattamento dei dati.</li>
+  <li>Dal 22/10 il piè di pagina del sito mostra solo nome, P.IVA e città, perché l'indirizzo è l'abitazione del titolare. L'indirizzo completo resta nell'informativa, nelle condizioni e nel modulo di recesso, dove la legge lo richiede.<sup>1</sup></li>
+  <li>Recapito pubblico unico: info@narteofficial.it (contatti, privacy, segnalazioni DSA, reclami). Manca la PEC.</li>
+</ul>
+<h3>I cinque ruoli e il visitatore</h3>
+<table class="piccola">
+<thead><tr><th style="width:17%">Ruolo</th><th style="width:28%">Come si diventa</th><th>Cosa può fare</th></tr></thead>
+<tbody>
+<tr><td class="k">Visitatore</td><td>Nessuna registrazione</td><td>Pagine informative, eventi, format, blog. Nel catalogo vede solo schede anonime (genere, strumenti, formazione, piano). Non vede nome né dati identificativi degli artisti.</td></tr>
+<tr><td class="k">Utente (<em>user</em>)</td><td>Registrazione autonoma (email e password, o Google); maggiore età autodichiarata</td><td>Vede i profili completi, salva i preferiti, può inviare una richiesta di booking (e diventa organizzatore). <span class="nuovo">nuovo 27/10</span> Può ricevere le segnalazioni Max come «privato registrato».</td></tr>
+<tr><td class="k">Organizzatore</td><td>Registrazione come organizzatore o prima richiesta di booking. Con la migration 0071 nasce «in attesa» e opera solo dopo l'approvazione del Team</td><td>Registra strutture (locale o «privato»), invia richieste, tratta in chat, conferma le date, recensisce gli artisti. Può dichiararsi «privato».</td></tr>
+<tr><td class="k">Artista</td><td>Solo tramite candidatura approvata dal Team</td><td>Pubblica uno o più profili (1, 2 o 5 secondo il piano), media moderati prima della pubblicazione, calendario, risponde alle richieste, chat (Pro e Max), abbonamento, consulenze.</td></tr>
+<tr><td class="k">Consulente</td><td>Incaricato da N'arte; account creato dal Team</td><td>Vede e gestisce solo le consulenze a lui assegnate (nome, recapiti, motivo della richiesta). Non vede chat né richieste.</td></tr>
+<tr><td class="k">Team (superadmin)</td><td>Nominato dal titolare</td><td>Due livelli: <strong>root</strong> (tutto, compresi gli strumenti irreversibili) e <strong>membri con delega</strong> per singole sezioni.</td></tr>
+</tbody>
+</table>
+<h3>Cosa fa il Team</h3>
+<ul>
+  <li>Valuta le candidature, approva gli organizzatori, modera foto, video e audio prima della pubblicazione.</li>
+  <li>Gestisce segnalazioni e reclami, oscura recensioni, sospende o chiude account, annulla date in caso di abuso.</li>
+  <li>Accede alle chat solo in via eccezionale: delega specifica, uno dei quattro motivi ammessi (assistenza, contestazione, verifica di una segnalazione, obbligo di legge), motivazione scritta, accesso a tempo (2 ore) e registrato.</li>
+  <li>Invia le segnalazioni Max, gestisce consulenze, contenuti del sito, piani omaggio, registro dei recessi.</li>
+  <li>Legge il registro delle email inviate, che <span class="nuovo">nuovo 27/10</span> ora contiene anche il testo delle email (capitolo 5).</li>
+  <li>Il <strong>root</strong> completa le cancellazioni degli account e <span class="nuovo">nuovo 27/10</span> può sbloccare un account chiuso prima della cancellazione definitiva.</li>
+  <li>Non partecipa alle trattative, non modifica il compenso annotato dalle parti, non sceglie l'artista per l'organizzatore.</li>
+</ul>
+<h3>Rilevanza legale</h3>
+<ul class="rischi">
+  <li>Chi accede al pannello va autorizzato al trattamento con istruzioni scritte (art. 29 GDPR; art. 2-quaterdecies Codice privacy).</li>
+  <li>Il consulente tratta dati degli artisti per conto di N'arte: va regolato il rapporto (persona autorizzata o responsabile del trattamento).</li>
+  <li>La maggiore età è solo autodichiarata, per tutti i ruoli.</li>
+  <li>Finché la 0071 non è applicata, gli organizzatori operano senza approvazione e resta aperta una falla tecnica: chi si registra tramite chiamata diretta al sistema può attribuirsi il ruolo di consulente (quesito A5).</li>
+</ul>
+<p class="nota"><sup>1</sup> Codice: <code>lib/legal/titolare.ts</code>, funzione <code>titolareInLinea</code>.</p>
+
+<!-- ============================================================ 4 -->
+<h2 class="capitolo">4. I flussi principali, passo per passo</h2>
+
+<h3>4.1 Registrazione e consensi</h3>
+<ul>
+  <li>Caselle obbligatorie: accettazione dei Termini; dichiarazione di maggiore età. Per i professionisti, seconda casella di approvazione specifica delle clausole vessatorie (doc. 08).</li>
+  <li>Newsletter: casella separata, facoltativa, non preselezionata; revocabile dall'area personale o dal link nell'email.</li>
+  <li>Informativa privacy: presa visione, non «accettazione».</li>
+  <li>Ogni accettazione è registrata con tipo di documento, versione, data e ora; con la 0070 anche ruolo, browser e impronta irreversibile dell'IP. Copia della prova al Consent Database di iubenda.</li>
+  <li>Accesso anche con Google: chi non ha accettato i documenti in vigore viene portato alla schermata di accettazione prima di usare il sito (la stessa usata per gli account creati dal Team).</li>
+  <li>Moduli pubblici (contatti, richiesta evento, consulenza pubblica): frase informativa, nessuna casella; anti-spam e limite di frequenza.</li>
+  <li>Alla pubblicazione dei testi v2, tutti gli utenti esistenti riaccettano una volta sola.</li>
+</ul>
+<p><strong>Rilevanza legale:</strong> forma dell'approvazione specifica verso i professionisti (artt. 1341–1342 c.c.: basta la seconda casella?); prova del consenso (art. 7 GDPR); l'impronta dell'IP è attendibile solo se il «sale» segreto è configurato in produzione (quesito M5).</p>
+
+<h3>4.2 Candidatura dell'artista <span class="nuovo">nuovo 27/10</span></h3>
+<div class="flusso"><span class="p">Modulo di candidatura</span><span class="f">→</span><span class="p">Valutazione del Team</span><span class="f">→</span><span class="p">Esito motivato via email</span><span class="f">→</span><span class="p a">Invito personale</span><span class="f">→</span><span class="p">Attivazione e accettazione</span></div>
+<ul>
+  <li>Il candidato sceglie <strong>«Artista singolo» o «Band»</strong>; per la band indica il numero di componenti (da 2 a 30). Strumenti: massimo 3 per il solista, 6 per la band.</li>
+  <li>Il dato passa al profilo all'approvazione, compare sulla pagina pubblica ed è un filtro del catalogo (visibile anche ai visitatori, senza identificare l'artista).</li>
+  <li>Il candidato dichiara di essere maggiorenne, la veridicità dei dati e di avere i diritti sul video caricato.</li>
+  <li>Il rifiuto è sempre motivato e registrato. L'approvazione invia un invito personale; all'attivazione l'artista accetta Termini e Condizioni per gli artisti.</li>
+  <li>Se chi si candida aveva chiuso l'account con la stessa email, il Team può sbloccarlo dalla candidatura (vedi 4.11).</li>
+</ul>
+<p><strong>Rilevanza legale:</strong> i dati dei componenti della band sono dati di terzi raccolti tramite l'artista (art. 14 GDPR); eventuali minori nelle formazioni (L. 977/1967, da verificare); il numero dei componenti non identifica nessuno, ma i nomi e i ruoli, inseriti dopo nel profilo, sì.</p>
+
+<h3>4.3 Approvazione degli organizzatori</h3>
+<ul>
+  <li>Con la migration 0071 il nuovo organizzatore nasce «in attesa». Fino all'approvazione non accede a richieste, chat, calendario e strutture.</li>
+  <li>Il Team approva o rifiuta da <em>Utenti › organizzatori in attesa</em>. Il rifiuto passa dal registro delle decisioni.</li>
+  <li>Gli organizzatori già esistenti restano approvati.</li>
+  <li>L'organizzatore può dichiararsi «privato». Le date in luoghi privati compaiono al pubblico come «Evento privato — città».</li>
+</ul>
+<p><strong>Rilevanza legale:</strong> il doc. 04, art. 2 descrive come si diventa organizzatore senza menzionare l'approvazione: va allineato. Il rifiuto di un organizzatore professionista è una restrizione ai sensi del P2B solo se è un «utente commerciale» (in genere non lo è: è il cliente dell'artista). Nessuna verifica di identità o di attività commerciale.</p>
+
+<h3>4.4 Richiesta di booking, chat, offerte, doppia conferma</h3>
+<div class="flusso"><span class="p">Richiesta</span><span class="f">→</span><span class="p">Artista accetta / rifiuta</span><span class="f">→</span><span class="p">Chat e offerte</span><span class="f">→</span><span class="p">Artista accetta l'offerta: «accettata»</span><span class="f">→</span><span class="p a">Organizzatore conferma: «confermata»</span></div>
+<ul>
+  <li>L'organizzatore invia la richiesta: data, fascia oraria, struttura, budget facoltativo. Richieste illimitate e gratuite.</li>
+  <li>L'artista accetta o rifiuta. Con un artista Free la richiesta arriva, ma la chat non è disponibile (solo Pro e Max).</li>
+  <li>In chat le parti si scambiano messaggi, allegati, note vocali e «offerte» con un importo.</li>
+  <li><strong>Doppia conferma</strong> (0069/0070): se l'artista accetta un'offerta la richiesta diventa «accettata»; solo la conferma dell'organizzatore la porta a «confermata» e blocca la data.</li>
+  <li>A ogni conferma ciascuna parte dichiara di aver raggiunto l'accordo direttamente con l'altra e prende atto che N'arte non ne è parte.</li>
+  <li>Il «compenso concordato – promemoria» è un'annotazione delle parti, senza valore contrattuale; il Team non può modificarlo.</li>
+  <li>La data confermata si annulla solo passando dal Team, con motivazione.</li>
+</ul>
+<p><strong>Rilevanza legale:</strong> N'arte non deve apparire parte del contratto di esibizione (doc. 01 art. 8; doc. 04 art. 8). <strong>Finché 0069/0070 non sono applicate, in produzione l'accettazione di un'offerta porta ancora direttamente a «confermata»</strong>, senza la conferma separata dell'organizzatore: i testi v2 descrivono il comportamento futuro.</p>
+
+<h3>4.5 Recensioni</h3>
+<ul>
+  <li>Solo l'organizzatore di una data confermata e passata può recensire l'artista. Dichiarazione di veridicità a ogni recensione.</li>
+  <li>Le recensioni sono visibili sui profili Pro e Max; l'artista Free le legge nella propria area. L'artista può rispondere.</li>
+  <li>Il Team può oscurare con motivazione; autore e artista vengono avvisati; la decisione è contestabile.</li>
+  <li>Se l'organizzatore chiude l'account, la recensione resta come «Organizzatore — account chiuso».</li>
+</ul>
+<p><strong>Rilevanza legale:</strong> obblighi di trasparenza sulle recensioni (art. 22, c. 4-bis, e art. 23 Cod. consumo, numerazione da verificare); visibilità legata al piano a pagamento come possibile «selezione» delle recensioni (quesito M6); recensione come giudizio pubblico su persona identificata (legittimo interesse, diffamazione).</p>
+
+<h3>4.6 Abbonamenti Stripe</h3>
+<ul>
+  <li><strong>Prima di pagare:</strong> riepilogo di piano, prezzo, durata, rinnovo automatico e disdetta; l'artista indica se è consumatore o professionista; caselle G1–G3 (condizioni, esecuzione immediata per il consumatore, clausole specifiche per il professionista); pulsante «Abbonati con obbligo di pagamento».</li>
+  <li><strong>Dopo il pagamento:</strong> attivazione immediata ed email di conferma su supporto durevole.</li>
+  <li><strong>Rinnovo:</strong> automatico; per l'annuale promemoria almeno 30 giorni prima, con data, importo e modalità di disdetta.</li>
+  <li><strong>Disdetta:</strong> in ogni momento dall'area abbonamento; effetto a fine periodo, senza rimborso del residuo.</li>
+  <li><strong>Recesso del consumatore:</strong> entro 14 giorni, con pulsante online, email, PEC o modulo tipo (/recesso); rimborso proporzionale; il valore dello shooting già eseguito non si rimborsa. Ogni recesso è registrato.</li>
+  <li><strong>Pagamento non riuscito:</strong> Stripe ritenta per <span class="seg">[N]</span> giorni; poi l'account torna Free, nessun contenuto cancellato.</li>
+  <li><strong>Downgrade:</strong> i contenuti oltre i nuovi limiti restano, non se ne aggiungono altri; chat, statistiche e segnalazioni si fermano.</li>
+  <li>La chiusura dell'account disdice l'abbonamento a fine periodo.</li>
+</ul>
+<p><strong>Rilevanza legale:</strong> capitolo 7.</p>
+
+<h3>4.7 Consulenze (piani Pro e Max) <span class="nuovo">nuovo 27/10</span></h3>
+<ul>
+  <li><strong>Perimetro:</strong> il «booking sulla piattaforma». Cioè l'uso di N'arte per ricevere richieste (profilo, video, prezzi, disponibilità) e la gestione delle richieste e prenotazioni ricevute su N'arte.</li>
+  <li><strong>Esclusi:</strong> ingaggi nati fuori dalla piattaforma; consulenza legale, fiscale, contributiva o finanziaria.</li>
+  <li>Durata indicativa 30 minuti; modalità <span class="seg">[da definire]</span>. Pro: 1 al mese; Max: senza limite mensile, in base agli slot disponibili.</li>
+  <li>Disdetta in autonomia fino a 24 ore prima. La mancata presentazione consuma la quota.</li>
+  <li>Il link alla videochiamata (es. Google Meet) arriva per email.</li>
+  <li>Testi già allineati: doc. 01 art. 12.1 e definizione; doc. 03 artt. 8.1 e 8.6.</li>
+</ul>
+<p><strong>Rilevanza legale:</strong> natura informativa, non professionale; il nuovo perimetro rafforza il modello «solo promozionale» (la consulenza non riguarda trattative fuori piattaforma). Le schede descrittive del 1° ottobre parlano ancora di «orientamento sul percorso artistico»: vale questa analisi.</p>
+
+<h3>4.8 Segnalazioni del profilo (piano Max) <span class="nuovo">nuovo 27/10</span></h3>
+<ul>
+  <li>Il Team invia per email il link al profilo di un artista Max a destinatari che ritiene in linea. Almeno 2 al mese, obbligazione di mezzi.</li>
+  <li>Destinatari possibili: strutture, organizzatori e, <strong>dal 27/10, «privati registrati»</strong>: organizzatori che si sono dichiarati privati e utenti generici (ruolo <em>user</em>). Il Team li sceglie da una tendina (nome ed email); esclusi account bloccati e organizzatori non approvati.</li>
+  <li>L'email dichiara che N'arte non partecipa alla trattativa e contiene un <strong>link di disattivazione</strong> firmato: chi lo usa non riceve più segnalazioni (controllato prima di ogni invio).</li>
+  <li>Ogni segnalazione è registrata. L'artista vede nella propria area quante segnalazioni ha ricevuto nel mese e il nome delle strutture, <strong>non il nome dei privati</strong>.</li>
+  <li>La migration 0075 toglie all'artista la possibilità di leggere via API l'email dei destinatari.</li>
+  <li>Il codice conta le segnalazioni ai privati nella quota mensile di 2.</li>
+</ul>
+<div class="attenzione"><strong>Rischi da valutare.</strong>
+<ul>
+  <li><strong>Base giuridica</strong> dell'invio a persone fisiche registrate di una comunicazione promozionale che riguarda un terzo (l'artista): consenso, legittimo interesse, art. 130 Codice privacy. Il «soft spam» (art. 130, c. 4) copre prodotti propri analoghi, non la promozione di un terzo. Oggi non è raccolto un consenso specifico (quesito A2).</li>
+  <li><strong>Testi da allineare:</strong> doc. 02 art. 9, doc. 03 e doc. 07 descrivono la segnalazione come rivolta a «strutture» e dicono che l'artista vede «a quali strutture» è stato segnalato. Va deciso se le segnalazioni ai privati contano nella quota (oggi sì) e riscritti i testi.</li>
+</ul></div>
+
+<h3>4.9 Notifiche ed email</h3>
+<ul>
+  <li><strong>Email di servizio</strong> (circa 40 tipi): conferme, richieste, offerte, decisioni del Team, abbonamento, promemoria. Fornitore principale Brevo (Francia), riserva Resend (USA). Le email della chat non riportano il testo dei messaggi.</li>
+  <li><strong>Notifiche nell'app</strong> (campanella, migration 0073): nuova richiesta, offerta, decisione dell'artista, contenuto approvato o rifiutato, profilo o account approvato. Le scrive solo il server; l'utente le legge e le segna come lette.</li>
+  <li><strong>Notifiche interne al Team</strong>: alcune comunicazioni (es. nuove candidature, richieste dal sito) arrivano anche alla casella Gmail condivisa del team.</li>
+  <li><strong>Registro degli invii</strong>: destinatario, oggetto, esito e, <span class="nuovo">nuovo 27/10</span>, testo completo (capitolo 5.3).</li>
+</ul>
+<p><strong>Rilevanza legale:</strong> le notifiche in-app non sono previste nel doc. 09 (trattamento di servizio, impatto basso); la casella Gmail è un fornitore non dichiarato (capitolo 5.4).</p>
+
+<h3>4.10 Feed del calendario personale</h3>
+<ul>
+  <li>Artisti e organizzatori possono collegare a Google Calendar (o Apple, Outlook) un calendario personale in sola lettura con le proprie date confermate (migration 0074).</li>
+  <li>Il link contiene un codice segreto lungo: è l'<strong>unica protezione</strong>. Chi lo conosce vede le date. Si può rigenerare, invalidando il vecchio.</li>
+  <li>Separato da questo, i link «aggiungi al calendario» nelle email aprono Google Calendar con i dati dell'evento precompilati.</li>
+</ul>
+<p><strong>Rilevanza legale:</strong> informare l'utente che il link va custodito come una password; Google riceve i dati quando l'utente collega il feed o usa il link (su sua iniziativa). Non descritto nei testi.</p>
+
+<h3>4.11 Chiusura dell'account, cancellazione, sblocco <span class="nuovo">nuovo 27/10</span></h3>
+<div class="flusso"><span class="p">Richiesta dall'area personale</span><span class="f">→</span><span class="p">Conferma via email (48 ore)</span><span class="f">→</span><span class="p">Blocco dell'accesso, profili nascosti</span><span class="f">→</span><span class="p">Almeno 30 giorni</span><span class="f">→</span><span class="p a">Cancellazione definitiva (root)</span></div>
+<ul>
+  <li>La conferma blocca subito l'accesso e toglie i profili dal pubblico. L'abbonamento non si rinnova più.</li>
+  <li>Il blocco <strong>non ha scadenza</strong>: dura finché il root non esegue la cancellazione definitiva con lo strumento dedicato (anteprima in sola lettura, doppia conferma). Prima dei 30 giorni lo strumento richiede una casella «su richiesta dell'interessato».</li>
+  <li>La cancellazione definitiva rimuove file e dati; anonimizza profili e organizzatori dove la cancellazione farebbe sparire i dati della controparte (conversazioni, date); conserva in forma non riconducibile la prova dei consensi; registra l'adempimento.</li>
+  <li><strong>Sblocco</strong>: prima della cancellazione definitiva il superadmin può sbloccare l'account in qualsiasi momento.
+    <ul>
+      <li>Da <em>Utenti › Sblocca account</em>: annulla la chiusura, riapre l'accesso, riporta online i profili, invia un'email all'interessato.</li>
+      <li>Dalla candidatura di chi si ricandida con la stessa email: <em>ripristinare</em> il vecchio profilo, oppure <em>approvare un profilo nuovo</em> lasciando il vecchio nascosto (non cancellato).</li>
+      <li>Motivazione obbligatoria, registrata nel registro delle decisioni.</li>
+    </ul></li>
+  <li>Il completamento della cancellazione non elimina più le candidature arrivate dopo la conferma (prima una ricandidatura veniva cancellata con le vecchie).</li>
+</ul>
+<div class="attenzione"><strong>Rischi da valutare (quesito A3).</strong>
+<ul>
+  <li>Il doc. 01, art. 16.1 promette la cancellazione definitiva «<strong>entro</strong> 30 giorni»; nel prodotto avviene <strong>dopo almeno</strong> 30 giorni, a mano, senza scadenza automatica. Termine dell'art. 12, par. 3 GDPR (un mese, prorogabile).</li>
+  <li>Lo sblocco va limitato ai casi in cui lo chiede l'interessato (ripensamento o nuova candidatura), e documentato: altrimenti si riattiva un account contro una richiesta di cancellazione.</li>
+  <li>Con la scelta «profilo nuovo» il vecchio profilo resta nascosto senza un termine di cancellazione.</li>
+</ul></div>
+
+<h3>4.12 Sospensioni e decisioni motivate</h3>
+<ul>
+  <li>Ogni rifiuto, rimozione, oscuramento, sospensione, chiusura o sblocco passa da un'unica procedura: motivazione obbligatoria (regola applicata e fatti), email all'interessato con link di reclamo, riga nel registro delle decisioni.</li>
+  <li>Il reclamo riceve un numero di pratica, è riesaminato (se possibile da persona diversa) e chiuso con decisione motivata.</li>
+  <li>Strumenti del Team: sospensione e riattivazione dell'account; rimozione di singoli media, componenti, messaggi o allegati; oscuramento di recensioni; strutture nascoste.</li>
+  <li>Gli strumenti irreversibili (cancellazione definitiva) sono riservati al root.</li>
+</ul>
+<p><strong>Rilevanza legale:</strong> motivazione (art. 17 DSA; art. 4 P2B per gli artisti professionisti, con preavviso di 30 giorni per la chiusura); reclamo interno (art. 20 DSA, offerto volontariamente).<sup>2</sup></p>
+
+<h3>4.13 Segnalazioni di contenuti</h3>
+<ul>
+  <li>Chiunque, anche senza account, segnala dalla pagina /segnalazioni: motivo, descrizione, dichiarazione di buona fede, allegati (con la 0070, in un archivio privato).</li>
+  <li>Conferma di ricezione automatica; presa in carico e decisione nei tempi del doc. 06 <span class="seg">[2 / 7 / 15 giorni lavorativi]</span>; contraddittorio con il destinatario; esito motivato a entrambi.</li>
+  <li>Canale dedicato per diritto d'autore, immagine e dati personali, compresa la rimozione del proprio nome da parte di un componente della band.</li>
+  <li>Misure contro gli abusi di segnalazione; comunicazione alle autorità dei sospetti di reato (art. 18 DSA).</li>
+</ul>
+<p class="nota"><sup>2</sup> Codice: <code>lib/moderation/decisioni.ts</code> (<code>registraDecisione</code>), registro <code>moderation_actions</code>; sblocco in <code>lib/legal/cancellazione.ts</code> e <code>app/(admin)/admin/artisti/_actions.ts</code> (<code>sbloccaCandidatura</code>).</p>
+
+<div class="attenzione"><strong>Funzioni scritte ma non ancora attive in produzione.</strong> Si attivano solo applicando al database le migration indicate.
+Il codice tollera la loro assenza e, nel frattempo, si comporta come prima.
+<table class="piccola" style="margin-top:2mm">
+<thead><tr><th style="width:18%">Migration</th><th>Cosa attiva</th></tr></thead>
+<tbody>
+<tr><td class="k">0069 + 0070</td><td>Doppia conferma del booking; visitatori senza alcun dato identificativo degli artisti anche via API; prova delle accettazioni con ruolo, browser e impronta dell'IP; allegati e assegnazione delle segnalazioni; strutture nascoste dal Team; registro dei recessi.</td></tr>
+<tr><td class="k">0071</td><td>Approvazione degli organizzatori; chiusura della falla che consente di attribuirsi il ruolo di consulente alla registrazione.</td></tr>
+<tr><td class="k">0073</td><td>Notifiche nell'app (campanella).</td></tr>
+<tr><td class="k">0074</td><td>Feed del calendario personale; contenuti del sito modificabili; nome dell'oggetto nel registro delle decisioni.</td></tr>
+<tr><td class="k">0075</td><td>Solista/band; testo delle email nel registro; segnalazioni Max ai privati collegate al profilo; chiusura della lettura via API delle email dei destinatari da parte dell'artista.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ 5 -->
+<h2 class="capitolo">5. Dati personali</h2>
+
+<h3>5.1 I trattamenti (registro art. 30, sintesi aggiornata)</h3>
+<table class="piccola">
+<thead><tr><th style="width:6%">#</th><th style="width:24%">Trattamento</th><th style="width:22%">Base giuridica</th><th>Note rilevanti</th></tr></thead>
+<tbody>
+<tr><td class="n">T1</td><td class="k">Account e autenticazione</td><td>Contratto</td><td>Email, nome, ruolo; password cifrata dal fornitore.</td></tr>
+<tr><td class="n">T2</td><td class="k">Registro dei consensi</td><td>Obbligo legale (art. 7.1)</td><td>Con la 0070 anche ruolo, browser e impronta irreversibile dell'IP. Dopo la cancellazione resta pseudonimizzato.</td></tr>
+<tr><td class="n">T3</td><td class="k">Profilo pubblico dell'artista</td><td>Contratto; consenso per i terzi</td><td>Componenti della band: dati raccolti tramite l'artista (art. 14). Solista/band e numero di componenti <span class="nuovo">27/10</span>.</td></tr>
+<tr><td class="n">T4</td><td class="k">Organizzatori e strutture</td><td>Contratto</td><td>La struttura di un privato può essere il suo domicilio: non pubblica.</td></tr>
+<tr><td class="n">T5</td><td class="k">Richieste di booking e chat</td><td>Contratto</td><td>Messaggi, allegati, note vocali, offerte. Accesso del Team limitato, motivato e registrato.</td></tr>
+<tr><td class="n">T6</td><td class="k">Candidature artista</td><td>Misure precontrattuali</td><td>Video in archivio privato. Solista/band <span class="nuovo">27/10</span>.</td></tr>
+<tr><td class="n">T7</td><td class="k">Moduli pubblici</td><td><span class="seg">[da allineare]</span><sup>3</sup></td><td>La richiesta di consulenza contiene testo libero sulle proprie necessità.</td></tr>
+<tr><td class="n">T8</td><td class="k">Recensioni</td><td>Legittimo interesse</td><td>Giudizio pubblico su persona identificata.</td></tr>
+<tr><td class="n">T9</td><td class="k">Statistiche di visita (Max)</td><td>Legittimo interesse</td><td>Codice ricavato da IP, data e profilo con un sale segreto; l'IP non è salvato; il codice cambia ogni giorno. Dato pseudonimo, non anonimo.</td></tr>
+<tr><td class="n">T10</td><td class="k">Abbonamenti</td><td>Contratto; obbligo legale</td><td>I dati della carta restano a Stripe.</td></tr>
+<tr><td class="n">T11</td><td class="k">Email di servizio e registro degli invii</td><td>Contratto; legittimo interesse (registro)</td><td><strong>Esteso il 27/10</strong>: il registro conserva il testo completo (5.3).</td></tr>
+<tr><td class="n">T12</td><td class="k">Newsletter</td><td>Consenso</td><td>Casella separata, revoca in area personale e nel link.</td></tr>
+<tr><td class="n">T13</td><td class="k">Sicurezza e limite di frequenza</td><td>Legittimo interesse; art. 32</td><td>Impronta di IP ed email con un sale segreto, 7 giorni. Vale solo se il sale è configurato.</td></tr>
+<tr><td class="n">T14</td><td class="k">Statistiche di navigazione e pubblicità</td><td>Consenso (art. 122 Codice privacy)</td><td>Google Analytics 4 e Meta Pixel predisposti e <strong>spenti</strong>. Se acceso, Meta è contitolare.</td></tr>
+<tr><td class="n">T15</td><td class="k">Riproduzione dei video</td><td>Consenso (cookie del riproduttore)</td><td>Il riproduttore bunny.net si carica solo dopo il consenso.</td></tr>
+<tr><td class="n">T16</td><td class="k">Segnalazioni Max ai privati registrati <span class="nuovo">27/10</span></td><td><span class="seg">[DA DEFINIRE]</span></td><td>Email promozionale sul profilo di un terzo a persone fisiche registrate; link di disattivazione. Quesito A2.</td></tr>
+<tr><td class="n">T17</td><td class="k">Feed del calendario e notifiche in-app</td><td>Contratto</td><td>Link con codice segreto; notifiche scritte solo dal server.</td></tr>
+</tbody>
+</table>
+<p class="nota"><sup>3</sup> Il registro del 29/09 indica «consenso con casella obbligatoria»; la casella è stata poi sostituita da una frase informativa (doc. 08, punto M). La base giuridica del registro va allineata. Il registro aggiornato è in <code>docs/REGISTRO_TRATTAMENTI.md</code>.</p>
+
+<h3>5.2 Altri trattamenti interni da conoscere</h3>
+<ul>
+  <li><strong>Prova delle accettazioni con impronta dell'IP:</strong> usa un sale segreto dedicato; se manca ne usa un altro; se mancano entrambi l'impronta non è robusta.</li>
+  <li><strong>Limite di frequenza dei moduli:</strong> se il sale non è configurato, il codice ripiega su un valore scritto nel sorgente. In quel caso l'informativa che dichiara l'IP «pseudonimizzato» <strong>non sarebbe vera</strong>. Va verificata la configurazione in produzione.<sup>4</sup></li>
+  <li><strong>Report della politica di sicurezza dei contenuti (CSP):</strong> il browser segnala al server le violazioni (indirizzi di pagina e risorsa); la politica è in sola segnalazione, non ancora attiva.</li>
+  <li><strong>Cancellazione per scadenza:</strong> il processo notturno è pronto ma <strong>spento</strong>: conta i dati scaduti e non cancella nulla, finché il legale non conferma i periodi.</li>
+  <li><strong>Registro degli accessi del Team alle chat</strong> e <strong>registro delle decisioni</strong>: immodificabili da chi vi compare; consultabili dal root.</li>
+</ul>
+<p class="nota"><sup>4</sup> Variabili: <code>RATE_LIMIT_SALT</code> (ripiego <code>VISIT_HASH_SALT</code>, poi un valore fisso nel codice); <code>CONSENT_IP_SALT</code> (ripiego <code>VISIT_HASH_SALT</code>); <code>VISIT_HASH_SALT</code> (senza, le statistiche si spengono); <code>RETENTION_ENFORCE</code> (≠ 1 = solo conteggio); <code>REFERRAL_OPTOUT_SECRET</code> (firma del link di disattivazione delle segnalazioni). Non è stato possibile verificarne i valori in produzione.</p>
+
+<h3>5.3 Il testo delle email nel registro <span class="nuovo">nuovo 27/10</span></h3>
+<ul>
+  <li><strong>Cosa:</strong> da ora il registro degli invii conserva il testo completo delle email inviate (prima solo destinatario, oggetto, esito).</li>
+  <li><strong>Chi lo vede:</strong> tutti i superadmin, dalla pagina «Ultimi invii» dell'amministrazione.</li>
+  <li><strong>Esclusioni:</strong> le email con un link d'accesso (approvazione con impostazione della password, recupero password, conferma della cancellazione, inviti) non si conservano; negli altri link i codici segreti sono oscurati.</li>
+  <li><strong>Contenuto possibile:</strong> nomi, date, importi delle offerte, motivazioni delle decisioni del Team, dati delle consulenze. Le email della chat non contengono il testo dei messaggi.</li>
+  <li><strong>Conservazione:</strong> 365 giorni come il resto del registro, con cancellazione automatica notturna — <strong>che però oggi è spenta</strong> (5.2). Finché resta spenta, il testo si accumula senza limite.</li>
+  <li><strong>Invii precedenti:</strong> il testo si legge in sola lettura dai fornitori (Brevo o Resend) finché lo conservano.</li>
+  <li><strong>Finalità proposta:</strong> assistenza agli utenti e prova delle comunicazioni dovute (legittimo interesse).</li>
+</ul>
+<p><strong>Rilevanza legale:</strong> è un'estensione del trattamento T11. Il doc. 09, §5.1 dice oggi che «il testo dell'email non è registrato»: va corretto prima della pubblicazione. Da valutare minimizzazione, accesso limitato a chi ha la delega e periodo (quesito A4).</p>
+
+<h3>5.4 Fornitori e trasferimenti extra-UE</h3>
+<table class="piccola">
+<thead><tr><th style="width:22%">Fornitore</th><th style="width:33%">Cosa fa</th><th style="width:16%">Sede</th><th>Stato</th></tr></thead>
+<tbody>
+<tr><td class="k">Supabase</td><td>Database, autenticazione, file privati</td><td>USA (AWS)</td><td>DPA da accettare; trasferimento da verificare</td></tr>
+<tr><td class="k">Vercel</td><td>Esecuzione del sito</td><td>USA (elaborazione a Francoforte)</td><td>Come sopra</td></tr>
+<tr><td class="k">bunny.net (BunnyWay)</td><td>File pubblici dei profili, video</td><td>Slovenia (UE), distribuzione mondiale</td><td>DPA</td></tr>
+<tr><td class="k">Brevo</td><td>Email (principale), newsletter</td><td>Francia (UE)</td><td>DPA; conserva il testo delle email inviate</td></tr>
+<tr><td class="k">Resend</td><td>Email (riserva)</td><td>USA</td><td>DPA; trasferimento da verificare</td></tr>
+<tr><td class="k">Stripe Payments Europe</td><td>Abbonamenti</td><td>Irlanda (UE) / USA</td><td>DPA</td></tr>
+<tr><td class="k">iubenda</td><td>Informativa, cookie, registro dei consensi</td><td>Italia</td><td>DPA</td></tr>
+<tr><td class="k">Google — accesso con Google <span class="nuovo">mancava</span></td><td>Registrazione e accesso con l'account Google (OAuth)</td><td>Irlanda / USA</td><td>Iniziativa dell'utente: da dichiarare nell'informativa</td></tr>
+<tr><td class="k">Google — Calendar <span class="nuovo">mancava</span></td><td>Link «aggiungi al calendario»; feed iCal collegato dall'utente</td><td>Irlanda / USA</td><td>Iniziativa dell'utente: da dichiarare nell'informativa</td></tr>
+<tr><td class="k">Google — Meet <span class="nuovo">mancava</span></td><td>Videochiamate delle consulenze</td><td>Irlanda / USA</td><td>Da dichiarare; account usato dal Team da verificare</td></tr>
+<tr><td class="k">Google — Gmail <span class="nuovo">mancava</span></td><td>Casella condivisa del team che riceve notifiche interne con dati personali</td><td>Irlanda / USA</td><td><strong>Da valutare</strong>: un account Gmail gratuito non ha un accordo sul trattamento dei dati come Google Workspace</td></tr>
+<tr><td class="k">Unsplash <span class="nuovo">mancava</span></td><td>Alcune immagini decorative caricate dai server Unsplash</td><td>USA</td><td>Il browser del visitatore contatta Unsplash (IP). Da valutare: sostituibile ospitando le immagini</td></tr>
+<tr><td class="k">Google Analytics 4, Meta</td><td>Statistiche e misurazione</td><td>Irlanda / USA</td><td>Spenti; solo con consenso; Meta contitolare</td></tr>
+</tbody>
+</table>
+<p class="nota">La casella condivisa è narte.official.eventi@gmail.com (destinatario aggiuntivo predefinito delle notifiche interne, <code>lib/emails/admin-recipients.ts</code>).</p>
+
+<h3>5.5 Periodi di conservazione proposti</h3>
+<table class="piccola">
+<thead><tr><th style="width:44%">Dato</th><th>Periodo proposto</th></tr></thead>
+<tbody>
+<tr><td class="k">Account e profili</td><td>Durata dell'account; dopo la chiusura, cancellazione definitiva (oggi: dopo almeno 30 giorni, a mano)</td></tr>
+<tr><td class="k">Chat, allegati, note vocali; richieste chiuse</td><td>36 mesi dall'ultima attività (mai con richieste aperte o date future)</td></tr>
+<tr><td class="k">Registro delle decisioni e degli accessi alle chat</td><td>5 anni nel codice; <span class="seg">[24 MESI]</span> nei doc. 06 e 09 — da scegliere</td></tr>
+<tr><td class="k">Segnalazioni e reclami</td><td>5 anni (codice) / <span class="seg">[24 MESI]</span> (doc. 06)</td></tr>
+<tr><td class="k">Recessi e documenti contabili</td><td>10 anni</td></tr>
+<tr><td class="k">Consensi e accettazioni</td><td>Durata dell'account + <span class="seg">[10 anni]</span>, pseudonimizzati</td></tr>
+<tr><td class="k">Candidature non accolte (video compreso)</td><td>12 mesi</td></tr>
+<tr><td class="k">Consulenze; contatti e richieste dal sito; messaggi tecnici Stripe</td><td>24 mesi</td></tr>
+<tr><td class="k">Registro delle email, <strong>testo compreso</strong></td><td>12 mesi (365 giorni)</td></tr>
+<tr><td class="k">Statistiche di visita</td><td>425 giorni</td></tr>
+<tr><td class="k">Limite di frequenza</td><td>7 giorni</td></tr>
+<tr><td class="k">Account inattivi</td><td>Chiusura dopo 24 mesi con avviso: non implementata, confermare o togliere</td></tr>
+</tbody>
+</table>
+
+<h3>5.6 Misure di sicurezza principali</h3>
+<ul>
+  <li>Accesso ai dati limitato riga per riga su tutte le tabelle, più revoca dei privilegi ai ruoli pubblici.</li>
+  <li>File privati (chat, candidature, allegati delle segnalazioni) raggiungibili solo con link firmati che scadono.</li>
+  <li>Nessuna chiave con privilegi elevati nel browser; intestazioni di sicurezza (HSTS, anti-iframe).</li>
+  <li>IP mai salvati in chiaro dove servono conteggi; anti-spam e limite di frequenza sui moduli pubblici.</li>
+  <li>Accesso del Team per deleghe; accesso alle chat motivato, a tempo, registrato.</li>
+  <li><strong>Da completare:</strong> attivare la CSP; verificare i sali in produzione; attivare la cancellazione per scadenza; backup ripristinabili (il piano gratuito di Supabase non li offre e il progetto si mette in pausa dopo 7 giorni di inattività).</li>
+</ul>
+<h3>5.7 Diritti degli interessati</h3>
+<ul>
+  <li>Dall'area personale (/account/i-miei-dati): esportazione completa in JSON (accesso e portabilità), storico dei consensi, revoca della newsletter, richiesta di cancellazione.</li>
+  <li>Rettifica dal proprio profilo; opposizione e limitazione al recapito unico; reclamo al Garante.</li>
+  <li>DPO: proposto come non necessario. DPIA: proposta come non necessaria, alla luce delle misure sull'accesso alle chat (quesito M2).</li>
+</ul>
+
+<!-- ============================================================ 6 -->
+<h2 class="capitolo">6. Contenuti caricati dagli utenti</h2>
+<ul>
+  <li><strong>Licenza a N'arte</strong> (doc. 03 art. 4): non esclusiva e gratuita, per mostrare i contenuti sulla piattaforma e promuovere l'artista e la piattaforma; anteprime ed estratti brevi; cessa con la rimozione, con un periodo di coda per i materiali già diffusi <span class="seg">[12 mesi]</span>.</li>
+  <li><strong>Dichiarazione dei diritti</strong> al primo caricamento: foto, video, musica e consenso delle persone ritratte. Senza dichiarazione il caricamento è bloccato. Per i componenti della band, dichiarazione di averli informati e di avere il loro consenso.</li>
+  <li><strong>Musica di terzi (cover):</strong> la responsabilità resta dell'artista. Da valutare una licenza SIAE e l'inquadramento come servizio di condivisione di contenuti (art. 102-sexies L. 633/1941).</li>
+  <li><strong>Moderazione preventiva:</strong> ogni foto, video e audio resta in attesa finché il Team non lo approva. In caso di errore tecnico nulla viene pubblicato. Il rifiuto è motivato e il file viene cancellato (video subito; immagini e audio secondo la regola dei file rifiutati).</li>
+  <li><strong>Video solo caricati</strong>, non come link esterni, così passano tutti dalla moderazione.</li>
+  <li><strong>Rimozione:</strong> l'artista toglie i propri contenuti quando vuole; il Team rimuove un singolo contenuto con motivazione; un componente può far togliere il proprio nome.</li>
+  <li><strong>Recensioni e risposte</strong> sono contenuti degli utenti: stesso schema di moderazione e reclamo.</li>
+  <li><strong>Riserva contro l'estrazione di testo e dati</strong> (art. 70-quater L. 633/1941): da verificare.</li>
+</ul>
+<h3>Dove finiscono i file</h3>
+<table class="piccola">
+<thead><tr><th style="width:30%">Contenuto</th><th>Destinazione</th></tr></thead>
+<tbody>
+<tr><td class="k">Foto, audio e video dei profili</td><td>bunny.net (UE) quando il caricamento su bunny.net è attivo; altrimenti Supabase. I due archivi convivono.</td></tr>
+<tr><td class="k">Allegati della chat, note vocali</td><td>Supabase, archivio privato. Mai su un indirizzo pubblico.</td></tr>
+<tr><td class="k">Video delle candidature</td><td>Supabase, archivio privato.</td></tr>
+<tr><td class="k">Allegati delle segnalazioni</td><td>Supabase, archivio privato (0070).</td></tr>
+<tr><td class="k">Video di eventi e format</td><td>Supabase.</td></tr>
+</tbody>
+</table>
+<p><strong>Rilevanza legale:</strong> i file su bunny.net sono serviti da una rete di distribuzione mondiale: dopo la rimozione possono restare nelle copie temporanee per <span class="seg">[TEMPO — DA VERIFICARE CON IL FORNITORE]</span>. La cancellazione definitiva dell'account rimuove i file registrati; quelli non registrati vanno controllati a mano.</p>
+
+<!-- ============================================================ 7 -->
+<h2 class="capitolo">7. Pagamenti e tutela del consumatore</h2>
+<ul>
+  <li><strong>Stripe</strong> incassa l'abbonamento sul proprio dominio. N'arte non vede la carta. Ricevuta di Stripe; esportazione degli incassi per il commercialista.</li>
+  <li><strong>Consumatore o professionista:</strong> lo dichiara l'artista al checkout. Al consumatore si applicano Codice del consumo e recesso; al professionista l'approvazione specifica delle clausole vessatorie.</li>
+  <li><strong>Informazioni precontrattuali e conferma</strong> su supporto durevole (artt. 49 e 51 Cod. consumo): riepilogo, pulsante con obbligo di pagamento, email di conferma.</li>
+  <li><strong>Esecuzione immediata:</strong> il consumatore la chiede espressamente e prende atto delle conseguenze sul recesso; il rimborso è proporzionale.</li>
+  <li><strong>Funzione di recesso online</strong> (Dir. UE 2023/2673, applicabile dal 19 giugno 2026): pulsante nell'area abbonamento, pagina /recesso con modulo tipo. Stato del recepimento italiano da verificare.</li>
+  <li><strong>Rinnovo automatico:</strong> promemoria almeno 30 giorni prima del rinnovo annuale.</li>
+  <li><strong>Shooting del Max annuale</strong> già eseguito nel periodo di recesso: il suo valore <span class="seg">[IMPORTO]</span> non si rimborsa. Serve il valore, e va valutata la tenuta della clausola.</li>
+  <li><strong>Benefici svolti dal Team</strong> (segnalazioni, consulenze, shooting): obbligazioni di mezzi, con rimedio se non resi.</li>
+  <li><strong>Badge «Artista Pro»</strong>: indica solo un abbonamento attivo; spiegato sul sito (ex «Verificato N'arte», rinominato per evitare una pratica ingannevole).</li>
+  <li><strong>Fiscale:</strong> regime forfettario indicato dal cliente; fattura elettronica via SdI e marca da bollo sopra 77,47 € da organizzare con il commercialista.</li>
+  <li><strong>ODR:</strong> la piattaforma europea è dismessa dal 20 luglio 2025; il link non va inserito.</li>
+</ul>
+<div class="attenzione"><strong>Il compenso degli ingaggi resta fuori dalla piattaforma.</strong> N'arte non incassa, non trasferisce, non garantisce e non trattiene nulla
+sull'ingaggio. L'«offerta» in chat e il «compenso concordato – promemoria» sono annotazioni delle parti, senza valore contrattuale e senza flusso di denaro.
+Gli adempimenti dell'evento (agibilità INPS, SIAE, permessi, sicurezza) sono dell'organizzatore o del locale (doc. 04, art. 6).</div>
+
+<!-- ============================================================ 8 -->
+<h2 class="capitolo">8. Obblighi P2B e DSA</h2>
+<h3>Regolamento UE 2019/1150 (P2B) — artisti con partita IVA</h3>
+<ul>
+  <li><strong>Termini chiari e preavviso</strong> di 15 giorni sulle modifiche (art. 3).</li>
+  <li><strong>Motivazione delle restrizioni</strong> (art. 4): ogni sospensione o chiusura passa dal registro delle decisioni, con motivazione e reclamo; preavviso di 30 giorni per la chiusura.</li>
+  <li><strong>Criteri di posizionamento</strong> (art. 5, doc. 07): il catalogo mette in cima gli artisti Max, poi Pro, poi gli altri; il catalogo lo dichiara con un'etichetta; la pagina /criteri-di-posizionamento è pronta ma spenta.</li>
+  <li><strong>Posizionamento a pagamento</strong> dichiarato apertamente; nessuna raccomandazione personalizzata; i piani omaggio incidono sull'ordine e vanno concessi con criteri scritti (oggi mancano).</li>
+  <li>Esenzione, come piccola impresa, dal sistema interno di reclami (art. 11) e dai mediatori (art. 12): da confermare.</li>
+</ul>
+<h3>Regolamento UE 2022/2065 (DSA) — piattaforma online, microimpresa</h3>
+<ul>
+  <li><strong>Applicabili</strong> (proposta): punti di contatto (artt. 11–12), termini e condizioni (art. 14), segnalazioni (art. 16), motivazione (art. 17), notifica di reati (art. 18). Le misure contro gli abusi (art. 23) sono previste dal doc. 06 art. 12; la nota 00 le indica come obbligatorie, ma l'art. 23 sta nella sezione 3, da cui l'art. 19 esenta le microimprese: da verificare (se esente, restano come scelta volontaria).</li>
+  <li><strong>Esente</strong> come microimpresa dalla sezione 3 (art. 19), salvo verifica del conteggio con imprese collegate. Il reclamo interno è offerto volontariamente.</li>
+  <li><strong>Trasparenza:</strong> registro unico delle decisioni con chi, cosa, quando, perché ed esito; esportabile.</li>
+  <li><strong>Visitatori senza dati identificativi:</strong> scelta di riservatezza del cliente, effettiva via API solo con la 0070.</li>
+</ul>
+<p><strong>Da confermare:</strong> lingue del punto di contatto; designazione di AGCOM come coordinatore dei servizi digitali; regola dei 12 mesi dopo la perdita della qualifica di microimpresa.</p>
+
+<!-- ============================================================ 9 -->
+<h2 class="capitolo">9. Rischi individuati e quesiti al legale, per priorità</h2>
+<p>I quesiti A sono da sciogliere prima del lancio. I riferimenti «00 §» rinviano alla nota di accompagnamento allegata.</p>
+
+<h3>Priorità alta</h3>
+<table class="piccola">
+<thead><tr><th style="width:7%">#</th><th>Questione e domanda</th><th style="width:19%">Rif.</th></tr></thead>
+<tbody>
+<tr><td class="n">A1</td><td><strong>Segnalazione a pagamento del profilo (Max).</strong> Presentare il profilo di un artista a terzi, su pagamento dell'artista e senza partecipare alla trattativa, è attività promozionale? O può essere qualificata come intermediazione tra domanda e offerta di lavoro (D.Lgs. 276/2003, compreso il divieto di oneri a carico dei lavoratori, art. 11) o come agenzia di spettacolo (art. 115 TULPS)? Alternativa pronta: una newsletter collettiva senza selezione individuale.</td><td>00 §3.1; doc. 02 art. 9</td></tr>
+<tr><td class="n">A2</td><td><strong>Segnalazione Max ai privati registrati.</strong> (a) Quale base giuridica per inviare a persone fisiche registrate una comunicazione promozionale che riguarda un terzo: consenso specifico, legittimo interesse, art. 130 Codice privacy? Serve una casella dedicata alla registrazione? (b) Le segnalazioni ai privati devono contare nella quota mensile garantita (oggi sì)? I testi (doc. 02, 03, 07) parlano solo di «strutture» e vanno allineati. (c) L'informativa (doc. 09) va integrata.</td><td>Cap. 4.8; doc. 02 art. 9; doc. 07</td></tr>
+<tr><td class="n">A3</td><td><strong>Cancellazione e sblocco degli account.</strong> Il testo promette la cancellazione «entro 30 giorni»; il prodotto blocca senza scadenza e cancella a mano «dopo almeno 30 giorni». Il Team può sbloccare in ogni momento prima della cancellazione. Come conciliare con l'art. 12, par. 3 e l'art. 17 GDPR? Limitare lo sblocco alla richiesta dell'interessato? Termine per il vecchio profilo lasciato nascosto?</td><td>Cap. 4.11; doc. 01 art. 16.1</td></tr>
+<tr><td class="n">A4</td><td><strong>Testo delle email nel registro.</strong> Nuova estensione del trattamento: base giuridica (legittimo interesse?), minimizzazione, accesso di tutti i superadmin, 365 giorni. La cancellazione automatica è spenta: oggi il testo non scade. Il doc. 09, §5.1 dice il contrario.</td><td>Cap. 5.3; doc. 09 §5</td></tr>
+<tr><td class="n">A5</td><td><strong>Testi e prodotto non allineati finché le migration non sono applicate.</strong> Doppia conferma, anonimato dei visitatori via API, prova delle accettazioni con IP, registro dei recessi, approvazione degli organizzatori e chiusura della falla sul ruolo di consulente non sono attivi in produzione. Proposta: applicare 0069–0075 prima di pubblicare i testi v2. Il legale conferma l'ordine?</td><td>Cap. 4 (riquadro); CLAUDE.md</td></tr>
+<tr><td class="n">A6</td><td><strong>Conservazione dichiarata e non applicata.</strong> I periodi del doc. 09 non sono applicati (cancellazione automatica spenta). Pubblicarli senza attivarla significa dichiarare una conservazione che non avviene (artt. 5.1.e e 13.2.a GDPR). Chiediamo l'approvazione dei periodi del cap. 5.5, per poterla attivare.</td><td>Cap. 5.5; doc. 09 §11</td></tr>
+<tr><td class="n">A7</td><td><strong>Dati del prestatore mancanti.</strong> PEC, CCIAA/REA e data di entrata in vigore sono obbligatori per pubblicare (D.Lgs. 70/2003 art. 7; Cod. consumo).</td><td>Cap. 1</td></tr>
+</tbody>
+</table>
+
+<h3>Priorità media</h3>
+<table class="piccola">
+<thead><tr><th style="width:7%">#</th><th>Questione e domanda</th><th style="width:19%">Rif.</th></tr></thead>
+<tbody>
+<tr><td class="n">M1</td><td><strong>P2B e DSA:</strong> conferma dell'inquadramento (cap. 8), delle esenzioni da microimpresa e del reclamo interno volontario.</td><td>00 §3.2; doc. 06, 07</td></tr>
+<tr><td class="n">M2</td><td><strong>DPIA e DPO:</strong> servono, viste le misure sull'accesso del Team alle chat?</td><td>00 §3.3</td></tr>
+<tr><td class="n">M3</td><td><strong>Trasferimenti extra-UE</strong> (Supabase, Vercel, Resend, Google; Meta se acceso): Data Privacy Framework o clausole tipo, fornitore per fornitore.</td><td>Cap. 5.4</td></tr>
+<tr><td class="n">M4</td><td><strong>Fornitori non dichiarati:</strong> Google (accesso con Google, Calendar, Meet e la casella Gmail condivisa del team, senza DPA se account gratuito); Unsplash. Integrare il doc. 09 o eliminare la dipendenza.</td><td>Cap. 5.4</td></tr>
+<tr><td class="n">M5</td><td><strong>Sali di pseudonimizzazione in produzione</strong> (limite di frequenza, impronta IP dei consensi, statistiche): se mancano, l'informativa non è vera. Da verificare prima della pubblicazione.</td><td>Cap. 5.2</td></tr>
+<tr><td class="n">M6</td><td><strong>Recensioni visibili solo sui profili a pagamento:</strong> è una selezione rilevante (art. 22, c. 4-bis Cod. consumo)? Basta dichiararlo?</td><td>00 §3.4; doc. 05</td></tr>
+<tr><td class="n">M7</td><td><strong>Clausole vessatorie verso i professionisti:</strong> la seconda casella basta, o è meglio rinunciare a foro esclusivo e tetto di responsabilità?</td><td>00 §3.5; doc. 08</td></tr>
+<tr><td class="n">M8</td><td><strong>Shooting e recesso:</strong> tenuta della clausola che non rimborsa lo shooting eseguito; valore; diritti del fotografo.</td><td>Doc. 02 artt. 7.5, 9.6</td></tr>
+<tr><td class="n">M9</td><td><strong>Eventi e format curati da N'arte:</strong> quando N'arte organizza in proprio serve un contratto separato con gli artisti.</td><td>00 §3.1.4</td></tr>
+<tr><td class="n">M10</td><td><strong>Feed del calendario:</strong> il link segreto è l'unica protezione; informare l'utente e prevederne la revoca.</td><td>Cap. 4.10</td></tr>
+<tr><td class="n">M11</td><td><strong>Approvazione degli organizzatori:</strong> integrare doc. 04 art. 2 e doc. 08; motivazione del rifiuto.</td><td>Cap. 4.3</td></tr>
+<tr><td class="n">M12</td><td><strong>Periodi incoerenti</strong> tra testi (24 mesi) e codice (5 anni) per registri delle decisioni, degli accessi alle chat e delle segnalazioni.</td><td>Cap. 1, 5.5</td></tr>
+<tr><td class="n">M13</td><td><strong>Strutture private e domicilio:</strong> confermare che al pubblico basti «Evento privato — città».</td><td>Doc. 04 art. 4</td></tr>
+<tr><td class="n">M14</td><td><strong>Autorizzazioni al Team e accordo con i consulenti</strong> (art. 29 GDPR; responsabili o autorizzati).</td><td>Cap. 3</td></tr>
+<tr><td class="n">M15</td><td><strong>Fatturazione e IVA:</strong> dicitura del forfettario, SdI, marca da bollo (con il commercialista).</td><td>Doc. 02 artt. 2.3, 4.2</td></tr>
+<tr><td class="n">M16</td><td><strong>Recesso online:</strong> stato del recepimento della Dir. UE 2023/2673 e perimetro dell'obbligo.</td><td>00 §3.4</td></tr>
+</tbody>
+</table>
+
+<h3>Priorità bassa</h3>
+<table class="piccola">
+<thead><tr><th style="width:7%">#</th><th>Questione e domanda</th><th style="width:19%">Rif.</th></tr></thead>
+<tbody>
+<tr><td class="n">B1</td><td><strong>Marchi:</strong> «N'arte», NaJam, NuLive, NaBand, NaCena sono registrati?</td><td>Doc. 01 art. 10</td></tr>
+<tr><td class="n">B2</td><td><strong>Riferimenti normativi da confermare</strong>, segnati «da verificare» nei testi: agibilità INPS (art. 66 D.L. 73/2021); pubblico spettacolo (SCIA fino a 200 persone, art. 141 Reg. TULPS, D.P.R. 151/2011, «decreto palchi»); acustica (L. 447/1995, D.P.C.M. 215/1999); minori (L. 977/1967); diritto d'autore (artt. 70-quater e 102-sexies L. 633/1941, licenza SIAE per le cover); L. 132/2025 sull'intelligenza artificiale; numerazione degli artt. 22 e 23 Cod. consumo.</td><td>00 §3.7</td></tr>
+<tr><td class="n">B3</td><td><strong>Notifiche nell'app:</strong> menzione nell'informativa (trattamento di servizio).</td><td>Cap. 4.9</td></tr>
+<tr><td class="n">B4</td><td><strong>Google Analytics e Meta Pixel</strong> (oggi spenti): prima di accenderli, termini Google e addendum di contitolarità Meta; aggiornare la cookie policy.</td><td>Cap. 5.1 (T14)</td></tr>
+<tr><td class="n">B5</td><td><strong>CSP in sola segnalazione:</strong> attivarla dopo la verifica; i report contengono indirizzi di pagina.</td><td>Cap. 5.2</td></tr>
+<tr><td class="n">B6</td><td><strong>Indirizzo del titolare:</strong> confermare che basti nel piè di pagina nome, P.IVA e città, con l'indirizzo completo nei documenti legali.</td><td>Cap. 3</td></tr>
+</tbody>
+</table>
+
+<!-- ============================================================ 10 -->
+<h2 class="capitolo">10. Documenti allegati e loro stato</h2>
+<p>Il fascicolo segue questa analisi nello stesso PDF. Versione del fascicolo: <strong>0.98 — bozza per revisione legale, 27 ottobre 2026</strong>.
+Le intestazioni dei singoli documenti riportano ancora «0.97»: le modifiche successive al 1° ottobre sono indicate sotto.</p>
+<table class="piccola">
+<thead><tr><th style="width:6%">Doc.</th><th style="width:25%">Titolo</th><th style="width:22%">Online oggi?</th><th>Cosa va approvato / note</th></tr></thead>
+<tbody>
+<tr><td class="n">00</td><td class="k">Nota di accompagnamento</td><td>Non si pubblica</td><td>Aggiornata al 27/10: scostamenti (§5) e segnaposto (§7).</td></tr>
+<tr><td class="n">01</td><td class="k">Termini e condizioni generali</td><td>Online la v1 (bozza precedente); v2 spenta</td><td>Testo completo. Modificato il 27/10 (consulenze, art. 12.1). Da correggere: art. 16.1 (cancellazione).</td></tr>
+<tr><td class="n">02</td><td class="k">Condizioni di abbonamento</td><td>Spenta</td><td>Prezzi, rinnovo, recesso, Max. Da allineare: art. 9 (privati).</td></tr>
+<tr><td class="n">03</td><td class="k">Condizioni per gli artisti</td><td>Spenta</td><td>Modificato l'8/10 (anteprima per i visitatori) e il 27/10 (consulenze, artt. 8.1 e 8.6). Da integrare: solista/band.</td></tr>
+<tr><td class="n">04</td><td class="k">Condizioni per gli organizzatori</td><td>Spenta</td><td>Da integrare: approvazione degli organizzatori (art. 2).</td></tr>
+<tr><td class="n">05</td><td class="k">Regolamento delle recensioni</td><td>Spenta</td><td>Tempi tra parentesi quadre.</td></tr>
+<tr><td class="n">06</td><td class="k">Moderazione, segnalazioni e reclami</td><td>Pagina /segnalazioni attiva; testo v2 spento</td><td>Tempi, PEC, lingue del punto di contatto; periodo dei registri.</td></tr>
+<tr><td class="n">07</td><td class="k">Criteri di posizionamento</td><td>Spenta (etichette nel catalogo già attive)</td><td>Modificato l'8/10 (art. 9.1). Criteri degli omaggi; segnalazioni ai privati.</td></tr>
+<tr><td class="n">08</td><td class="k">Caselle e punti di accettazione</td><td>Non si pubblica (specifica)</td><td>Testi delle caselle; eventuale casella per le segnalazioni ai privati (A2).</td></tr>
+<tr><td class="n">09</td><td class="k">Integrazioni all'informativa privacy</td><td>Online la v1 sotto l'informativa iubenda</td><td>Da correggere: §5 (testo delle email). Da integrare: segnalazioni ai privati, feed del calendario, notifiche, fornitori Google (accesso, Calendar, Meet, Gmail) e Unsplash.</td></tr>
+</tbody>
+</table>
+<ul>
+  <li><strong>Interruttore:</strong> le pagine v2 si accendono tutte insieme solo dopo l'approvazione del legale e la compilazione dei segnaposto; insieme si chiede a tutti gli utenti di riaccettare.<sup>5</sup></li>
+  <li><strong>PDF precedenti superati:</strong> i PDF stampati il 1° ottobre non contengono le modifiche dell'8 ottobre (doc. 03 e 07) né quelle del 27 ottobre (doc. 01 e 03). Valgono quelli allegati a questa analisi.</li>
+  <li><strong>Schede descrittive del 1° ottobre</strong> («per-avvocato», sei documenti): restano utili come introduzione; dove differiscono (consulenze, segnalazioni Max, cancellazione, registro email, approvazione organizzatori) vale questa analisi.</li>
+  <li><strong>Registro dei trattamenti</strong> (art. 30): aggiornato al 27/10 con i fornitori mancanti e il testo delle email.</li>
+</ul>
+<h3>Cosa chiediamo al legale</h3>
+<ol>
+  <li>Parere sui quesiti ad alta priorità (A1–A7), in particolare A1 e A2.</li>
+  <li>Revisione dei documenti 01–07 e 09, con commenti o in revisione tracciata; approvazione delle caselle (doc. 08).</li>
+  <li>Approvazione dei periodi di conservazione (cap. 5.5), per attivare la cancellazione automatica.</li>
+  <li>Per ogni documento: versione, data di entrata in vigore, e se serve una nuova accettazione o basta un avviso.</li>
+  <li>Nessun segnaposto residuo nei testi approvati.</li>
+</ol>
+<p class="nota"><sup>5</sup> Variabile <code>NEXT_PUBLIC_LEGAL_V2_PUBBLICATO</code> = 1, insieme all'aumento di <code>LEGAL_CONSENT_VERSION</code>. Sorgenti modificabili: <code>docs/legale/src/</code>; i PDF si rigenerano con <code>node docs/legale/analisi/genera.mjs</code>.</p>
+
+</body>
+</html>

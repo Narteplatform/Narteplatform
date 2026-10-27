@@ -6,7 +6,7 @@
 
 <dl class="intestazione">
   <dt>Documento</dt><dd>Nota di accompagnamento — non destinata alla pubblicazione</dd>
-  <dt>Versione</dt><dd>0.97 — 1° ottobre 2026 (sostituisce la 0.96)</dd>
+  <dt>Versione</dt><dd>0.98 — 27 ottobre 2026 (sostituisce la 0.97 del 1° ottobre)</dd>
   <dt>Cliente</dt><dd>Eduardo Castronuovo, ditta individuale — P.IVA IT11071661216 — Via Domenico Fontana 27, 80128 Napoli</dd>
   <dt>Piattaforma</dt><dd>N'arte — narteofficial.it</dd>
   <dt>Destinatario</dt><dd>Legale incaricato della revisione</dd>
@@ -27,7 +27,7 @@
   <tr><th>Ruolo</th><th>Come si diventa</th><th>Cosa fa</th></tr>
   <tr><td>Visitatore</td><td>—</td><td>Vede catalogo, eventi, format, blog; del profilo artista vede solo un'anteprima</td></tr>
   <tr><td>Utente registrato</td><td>Registrazione autonoma (18+ autodichiarato)</td><td>Vede i profili completi, salva i preferiti</td></tr>
-  <tr><td>Organizzatore</td><td>Registrazione autonoma, o automaticamente alla prima Richiesta di booking</td><td>Inserisce strutture, invia richieste, tratta in chat, conferma date, recensisce gli artisti</td></tr>
+  <tr><td>Organizzatore</td><td>Registrazione autonoma, o automaticamente alla prima Richiesta di booking; con la migration 0071 opera solo dopo l'approvazione del Team (§5.4)</td><td>Inserisce strutture, invia richieste, tratta in chat, conferma date, recensisce gli artisti</td></tr>
   <tr><td>Artista</td><td>Solo tramite candidatura approvata dal Team</td><td>Pubblica profili e media (moderati prima della pubblicazione), gestisce il calendario, accetta le richieste, tratta in chat (piani Pro e Max), si abbona, prenota consulenze</td></tr>
   <tr><td>Consulente</td><td>Nominato da N'arte</td><td>Svolge consulenze sugli slot pubblicati</td></tr>
   <tr><td>Team (superadmin)</td><td>Nominato dal titolare</td><td>Approva artisti e media, modera recensioni e chat, annulla date confermate, concede piani omaggio</td></tr>
@@ -42,7 +42,7 @@
   <li>Dopo la data, l'Organizzatore può recensire l'Artista.</li>
 </ol>
 <p>Il denaro dell'ingaggio non passa mai dalla Piattaforma.</p>
-<p><span class="art">2.3</span> <strong>Abbonamenti:</strong> Free (gratuito); Pro 9,99 €/mese o 49,99 €/anno; Max 49,99 €/mese o 499,99 €/anno. Il piano incide su limiti di pubblicazione, chat, visibilità delle recensioni, badge, posizione nel catalogo, consulenze, statistiche. Il Max include anche due servizi del Team: la segnalazione del profilo alle strutture (almeno 2 al mese) e lo shooting fotografico con l'annuale.</p>
+<p><span class="art">2.3</span> <strong>Abbonamenti:</strong> Free (gratuito); Pro 9,99 €/mese o 49,99 €/anno; Max 49,99 €/mese o 499,99 €/anno. Il piano incide su limiti di pubblicazione, chat, visibilità delle recensioni, badge, posizione nel catalogo, consulenze, statistiche. Il Max include anche due servizi del Team: la segnalazione del profilo alle strutture (almeno 2 al mese; dal 27 ottobre anche ai privati registrati, §5.4) e lo shooting fotografico con l'annuale. Le consulenze dei piani Pro e Max riguardano il booking sulla Piattaforma: uso di N'arte per ricevere richieste e gestione delle richieste e prenotazioni ricevute su N'arte.</p>
 
 <h2>3. Quesiti</h2>
 
@@ -153,6 +153,7 @@
 <p>I testi sono scritti per il prodotto come deve essere. Queste modifiche vanno fatte <strong>prima</strong> di pubblicarli, altrimenti i testi promettono cose che il software non fa.</p>
 <p><span class="art">5.0</span> <strong>Stato al 30 settembre 2026 (v0.96).</strong> Il prodotto è stato corretto su tutti i punti tecnici e le migration 0061–0068 sono applicate. Restano solo le decisioni che spettano al legale e al cliente: approvazione dei testi, periodi di conservazione, PEC e REA, data di entrata in vigore. Le righe ancora «Aperte» o «Parziali» sono le cose da completare prima di pubblicare i testi.</p>
 <p><span class="art">5.0-bis</span> <strong>Seconda lista del cliente (1° ottobre 2026).</strong> Recepite: doppia conferma del booking (l'accettazione dell'artista porta a «accettata», solo l'organizzatore conferma); riservatezza reale verso i visitatori (nessun dato identificativo nemmeno via API); strumenti del Team per ogni misura con registro unico consultabile; motivazione strutturata (regola e fatti); comunicazioni centralizzate e registrate; moderazione «fail-closed»; dichiarazione dei diritti sui contenuti e consenso dei componenti tracciati; prova delle accettazioni con ruolo, browser e impronta dell'IP; frase informativa al posto della casella nei moduli pubblici; accettazione per ruolo pronta per la pubblicazione dei documenti v2; promemoria annuale con processo proprio; registro dei recessi e pagina /recesso; allegati e assegnazione delle segnalazioni; newsletter sincronizzata; regole di conservazione complete (attive dopo il parere del legale). Le modifiche al database sono nelle migration 0069–0070.</p>
+<p><span class="art">5.0-ter</span> <strong>Stato al 27 ottobre 2026 (v0.98).</strong> Le migration 0069, 0070, 0071, 0073, 0074 e 0075 sono scritte ma <strong>non ancora applicate</strong> al database di produzione: le funzioni che descrivono (doppia conferma, nessun dato identificativo per i visitatori anche via API, prova delle accettazioni con ruolo, browser e impronta dell'IP, registro dei recessi, allegati delle segnalazioni, approvazione degli organizzatori, notifiche, feed del calendario, solista/band, testo delle email nel registro, segnalazioni Max ai privati) non sono attive finché non lo sono. Le righe che le citano come «risolte» vanno lette così: risolte nel codice, attive dopo l'applicazione. Le modifiche di prodotto del 22–27 ottobre hanno aperto i nuovi scostamenti del §5.4. L'analisi della piattaforma che precede il fascicolo li riprende con le relative priorità.</p>
 <h3>5.1 Scostamenti principali</h3>
 <table>
   <tr><th>#</th><th>Scostamento</th><th>Rif.</th><th>Priorità / stato</th></tr>
@@ -198,6 +199,21 @@
   <tr><td>32</td><td>Chat, allegati e note vocali non hanno alcuna scadenza di conservazione. Immagini e audio rifiutati in moderazione non vengono cancellati. La procedura notturna non tocca i file.</td><td>09 cl. 11</td><td><strong>Parziale</strong>: file dei media respinti rimossi; conservazione delle chat da fissare con il legale</td></tr>
   <tr><td>33</td><td>Affermazioni pubblicitarie da verificare o riformulare: «centinaia di artisti» in home; il centro assistenza cita un filtro per città che non esiste.</td><td>07</td><td><strong>Risolto</strong></td></tr>
 </table>
+<h3>5.4 Scostamenti emersi dopo il 1° ottobre (modifiche del 22–27 ottobre 2026)</h3>
+<table>
+  <tr><th>#</th><th>Scostamento</th><th>Rif.</th><th>Priorità / stato</th></tr>
+  <tr><td>34</td><td>Le migration 0069–0075 non sono applicate in produzione. In particolare, finché non si applica la 0070 l'accettazione di un'Offerta porta ancora direttamente a «confermata», e i visitatori possono leggere via API dati degli artisti che i testi dichiarano riservati; finché non si applica la 0071 gli organizzatori operano senza approvazione e chi si registra con una chiamata diretta può attribuirsi il ruolo di consulente.</td><td>01 art. 8; 07 art. 9; 04 art. 2</td><td><strong>Aperto</strong>, priorità alta: applicare prima di pubblicare i testi</td></tr>
+  <tr><td>35</td><td>Il registro delle email conserva ora il testo completo delle email inviate, visibile a tutti i superadmin (esclusi i messaggi con link d'accesso; token oscurati), con conservazione di 365 giorni. Il doc. 09, §5.1 dice ancora che «il testo dell'email non è registrato».</td><td>09 §5</td><td><strong>Aperto</strong>: correggere il doc. 09; registro dei trattamenti già aggiornato</td></tr>
+  <tr><td>36</td><td>Il Team può segnalare un Artista Max anche ai «privati registrati» (organizzatori che si sono dichiarati privati e utenti generici). I testi descrivono la segnalazione come rivolta alle «strutture» e promettono all'Artista di vedere «a quali strutture» è stato segnalato; oggi l'Artista non vede il nome dei privati. Le segnalazioni ai privati contano nella quota mensile. Base giuridica dell'invio a persone fisiche da definire (art. 130 Codice privacy).</td><td>02 art. 9; 03; 07; 09</td><td><strong>Aperto</strong>, priorità alta: decisione del legale, poi allineamento dei testi</td></tr>
+  <tr><td>37</td><td>Cancellazione dell'account: il testo promette la cancellazione definitiva «entro 30 giorni»; nel prodotto la conferma blocca l'accesso senza scadenza e la cancellazione si completa a mano, dopo almeno 30 giorni. Dal 27 ottobre il Team può sbloccare l'account in qualsiasi momento prima della cancellazione definitiva (da Utenti o dalla nuova candidatura, ripristinando il vecchio profilo o approvandone uno nuovo e lasciando il vecchio nascosto), con motivazione registrata.</td><td>01 art. 16.1; 09</td><td><strong>Aperto</strong>, priorità alta</td></tr>
+  <tr><td>38</td><td>Approvazione degli organizzatori (0071): non descritta nel doc. 04, art. 2, né nei punti di accettazione del doc. 08.</td><td>04 art. 2; 08</td><td><strong>Aperto</strong></td></tr>
+  <tr><td>39</td><td>Candidatura come «Artista singolo» o «Band» (numero di componenti; fino a 3 strumenti per il solista, 6 per la band): il dato compare sul profilo pubblico e filtra il catalogo, ma non è descritto nei doc. 03 e 07.</td><td>03 artt. 2–3; 07 art. 5</td><td><strong>Aperto</strong>, priorità bassa</td></tr>
+  <tr><td>40</td><td>Fornitori e funzioni non descritti nel doc. 09: Google (accesso con Google, link «aggiungi al calendario», Meet per le consulenze, casella Gmail condivisa del team che riceve le notifiche interne), Unsplash (immagini remote), feed iCal personale protetto solo da un link segreto, notifiche nell'app.</td><td>09</td><td><strong>Aperto</strong>: registro dei trattamenti già aggiornato</td></tr>
+  <tr><td>41</td><td>Conservazione dei registri: i doc. 06 (artt. 15.4 e 17.2) e 09 propongono [24 MESI] per registro degli accessi alle chat, decisioni e segnalazioni; la regola predisposta nel codice usa 5 anni.</td><td>06; 09 §11</td><td><strong>Aperto</strong>: scegliere un solo periodo</td></tr>
+  <tr><td>42</td><td>Consulenze dei piani Pro e Max: il perimetro è ora il booking sulla Piattaforma (non ingaggi nati fuori, non consulenza legale, fiscale o contributiva).</td><td>01 art. 12.1; 03 artt. 8.1 e 8.6</td><td><strong>Risolto</strong>: testi aggiornati il 27 ottobre</td></tr>
+  <tr><td>43</td><td>I PDF del 1° ottobre non contengono le modifiche dell'8 ottobre (doc. 03 art. 3.1 e doc. 07 art. 9.1: anteprima sfocata per i visitatori) né quelle del 27 ottobre. Dal 22 ottobre il piè di pagina del sito mostra solo nome, P.IVA e città del titolare.</td><td>03; 07</td><td><strong>Risolto</strong>: PDF rigenerati il 27 ottobre</td></tr>
+  <tr><td>44</td><td>Pseudonimizzazione degli IP: limite di frequenza, impronta dell'IP nelle accettazioni e statistiche funzionano come dichiarato solo se i rispettivi «sali» segreti sono configurati in produzione; per il limite di frequenza, in mancanza, il codice ripiega su un valore fisso.</td><td>09 §6; 08</td><td><strong>Da verificare</strong> nella configurazione di produzione</td></tr>
+</table>
 
 <h2>6. Decisioni del cliente già prese</h2>
 <ul>
@@ -216,16 +232,22 @@
 <table>
   <tr><th>Segnaposto</th><th>Dove</th><th>Chi lo fornisce</th></tr>
   <tr><td>[DATA DI ENTRATA IN VIGORE]</td><td>Tutti i documenti</td><td>Cliente, dopo la revisione</td></tr>
-  <tr><td>[PEC]</td><td>01, 02, 06</td><td>Cliente</td></tr>
+  <tr><td>[PEC]</td><td>01, 02 (anche modulo di recesso), 06, 09</td><td>Cliente</td></tr>
   <tr><td>[CCIAA] / [REA]</td><td>01</td><td>Cliente</td></tr>
-  <tr><td>Regime IVA e fatturazione</td><td>02 artt. 2.3 e 4.2</td><td>Commercialista</td></tr>
+  <tr><td>Codice fiscale del titolare (se richiesto nei testi)</td><td>01</td><td>Cliente</td></tr>
+  <tr><td>Regime IVA (forfettario, indicato dal cliente), dicitura e fatturazione elettronica</td><td>02 artt. 2.3 e 4.2</td><td>Commercialista</td></tr>
   <tr><td>[N] giorni di nuovi tentativi di pagamento</td><td>02 art. 8.1</td><td>Configurazione Stripe</td></tr>
   <tr><td>Effetto del passaggio a un piano inferiore</td><td>02 art. 11.1</td><td>Configurazione del portale Stripe</td></tr>
-  <tr><td>Valore e condizioni dello shooting; diritti del fotografo</td><td>02 artt. 7.5 e 9.6</td><td>Cliente</td></tr>
+  <tr><td>[IMPORTO] e condizioni dello shooting; diritti del fotografo</td><td>02 artt. 7.5 e 9.6</td><td>Cliente</td></tr>
+  <tr><td>[MODALITÀ] della consulenza (videochiamata / telefono / in presenza)</td><td>03 art. 8</td><td>Cliente</td></tr>
+  <tr><td>Criteri di concessione dei piani omaggio</td><td>07</td><td>Cliente</td></tr>
+  <tr><td>Lingue del punto di contatto [SCELTA DEL CLIENTE]</td><td>06 art. 4</td><td>Cliente</td></tr>
+  <tr><td>Indirizzo privacy dedicato (facoltativo)</td><td>09</td><td>Cliente</td></tr>
+  <tr><td>Base giuridica delle segnalazioni Max ai privati registrati</td><td>02 art. 9; 09</td><td>Legale (§5.4, riga 36)</td></tr>
   <tr><td>[ORGANISMO ADR] (facoltativo)</td><td>01 art. 18.2</td><td>Legale</td></tr>
 </table>
-<p><span class="art">7.1</span> I documenti 03–07 contengono inoltre segnaposto su <strong>tempi e soglie operative</strong>, per esempio <span class="seg">[7 GIORNI]</span>, <span class="seg">[2 GIORNI LAVORATIVI]</span>, <span class="seg">[12 MESI]</span>: tempi di moderazione e di risposta alle segnalazioni, durata delle sospensioni, conservazione, tolleranze sulle consulenze. Il valore tra parentesi è la nostra proposta. Va confermato dal cliente, che deve poterlo rispettare davvero, e dal legale. Un termine promesso e non rispettato è peggio di un termine non promesso.</p>
-<p><span class="art">7.2</span> Mancano ancora due recapiti: info@narteofficial.it, cioè il punto di contatto DSA del doc. 06, e la PEC.</p>
+<p><span class="art">7.1</span> I documenti 02, 03, 05, 06 e 09 contengono inoltre segnaposto su <strong>tempi e soglie operative</strong>, per esempio <span class="seg">[7 GIORNI]</span>, <span class="seg">[2 GIORNI LAVORATIVI]</span>, <span class="seg">[12 MESI]</span>: tempi di moderazione e di risposta alle segnalazioni, durata delle sospensioni, conservazione, tolleranze sulle consulenze. Il valore tra parentesi è la nostra proposta. Va confermato dal cliente, che deve poterlo rispettare davvero, e dal legale. Un termine promesso e non rispettato è peggio di un termine non promesso. Il riepilogo per documento è nel capitolo 1 dell'analisi della piattaforma.</p>
+<p><span class="art">7.2</span> Recapiti: info@narteofficial.it è il recapito unico, anche come punto di contatto DSA del doc. 06; la casella deve essere attiva e presidiata. Manca ancora la PEC.</p>
 
 <h2>8. Cosa chiediamo e in che forma</h2>
 <ul>
