@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { COMPONENTI_MAX, COMPONENTI_MIN } from "@/lib/constants/formazione";
 import { BUDGET_RANGES } from "@/lib/constants/budget-ranges";
 
 /**
@@ -82,6 +83,13 @@ export const infoSectionSchema = z.object({
   bio: z.string().max(4000, "La bio non può superare i 4000 caratteri"),
   cover_image: z.string(),
   percorso_artistico: z.enum(["", "cover_artist", "tribute_band", "progetto_inedito"]),
+  // Solista/band (0075). Nel modulo i componenti sono testo: "" = non indicato.
+  formazione: z.enum(["", "solista", "band"]),
+  componenti: z.string().refine((v) => {
+    if (v.trim() === "") return true;
+    const n = Number(v);
+    return Number.isInteger(n) && n >= COMPONENTI_MIN && n <= COMPONENTI_MAX;
+  }, `Indica un numero da ${COMPONENTI_MIN} a ${COMPONENTI_MAX}`),
 });
 
 export type InfoSectionValues = z.infer<typeof infoSectionSchema>;
@@ -98,6 +106,8 @@ export function toInfoPayload(v: InfoSectionValues, canSetPercorso: boolean) {
     instruments: v.instruments,
     bio: emptyToNull(v.bio),
     cover_image: emptyToNull(v.cover_image),
+    formazione: v.formazione === "" ? null : v.formazione,
+    componenti: v.formazione === "band" && v.componenti.trim() !== "" ? Number(v.componenti) : null,
   };
   if (!canSetPercorso) return base;
   return {
@@ -243,6 +253,8 @@ export const PROFILE_SECTION_PAYLOAD_SCHEMAS = {
     bio: nullableText,
     cover_image: z.string().nullable(),
     percorso_artistico: z.enum(PERCORSO_VALUES).nullable().optional(),
+    formazione: z.enum(["solista", "band"]).nullable().optional(),
+    componenti: z.number().int().min(COMPONENTI_MIN).max(COMPONENTI_MAX).nullable().optional(),
   }),
   gallery: z.object({ gallery: z.array(z.string()).max(100) }),
   audio: z.object({ audio_files: z.array(audioTrackSchema).max(50) }),

@@ -14,6 +14,12 @@ import { MultiSelect } from "@/components/ui/MultiSelect";
 import { ApplicationVideoUpload } from "@/components/forms/ApplicationVideoUpload";
 import { submitArtistApplication } from "@/app/(public)/candidatura-artista/_actions";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
+import {
+  COMPONENTI_MAX,
+  COMPONENTI_MIN,
+  FORMAZIONI,
+  MAX_STRUMENTI_CANDIDATURA,
+} from "@/lib/constants/formazione";
 import { HoneypotFields } from "@/components/forms/HoneypotField";
 import { PrivacyNotice } from "@/components/forms/PrivacyConsent";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -26,9 +32,11 @@ import {
 } from "@/lib/forms/draft";
 
 const DRAFT_KEY = "candidatura-artista";
+const selectClass =
+  "h-10 w-full rounded-md border-[1.5px] border-border bg-surface px-3 text-sm text-foreground transition-colors focus:border-azzurro focus:outline-none focus:ring-[3px] focus:ring-azzurro/15";
 // Solo i campi di contenuto: le dichiarazioni (età, diritti) vanno rifatte.
 const DRAFT_FIELDS = [
-  "name", "email", "stageName", "genres", "instruments", "bio",
+  "name", "email", "formazione", "componenti", "stageName", "genres", "instruments", "bio",
   "instagram", "spotify", "website", "video_url", "video_path",
 ] as const;
 
@@ -44,6 +52,7 @@ export function ArtistApplicationForm({
     handleSubmit,
     control,
     setValue,
+    getValues,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<ArtistApplicationInput>({
@@ -57,6 +66,10 @@ export function ArtistApplicationForm({
   });
 
   const videoUrl = watch("video_url");
+  const formazione = watch("formazione");
+  const band = formazione === "band";
+  // Finché non si sceglie vale il limite più basso: nessuno strumento da togliere dopo.
+  const maxStrumenti = MAX_STRUMENTI_CANDIDATURA[band ? "band" : "solista"];
 
   useEffect(() => {
     const draft = takeDraft(DRAFT_KEY);
@@ -112,7 +125,46 @@ export function ArtistApplicationForm({
         <Field label="Email" error={errors.email?.message}>
           <Input type="email" {...register("email")} autoComplete="email" />
         </Field>
-        <Field label="Nome d'arte" error={errors.stageName?.message}>
+        <Field label="Ti candidi come" error={errors.formazione?.message}>
+          <select
+            className={selectClass}
+            defaultValue=""
+            {...register("formazione", {
+              onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
+                if (e.target.value === "band") return;
+                // Da band a solista: si tengono i primi strumenti scelti.
+                const scelti = getValues("instruments") ?? [];
+                const max = MAX_STRUMENTI_CANDIDATURA.solista;
+                if (scelti.length > max) setValue("instruments", scelti.slice(0, max));
+                setValue("componenti", undefined);
+              },
+            })}
+          >
+            <option value="" disabled>
+              Seleziona…
+            </option>
+            {FORMAZIONI.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {band ? (
+          <Field label="Quanti siete?" error={errors.componenti?.message}>
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={COMPONENTI_MIN}
+              max={COMPONENTI_MAX}
+              {...register("componenti")}
+            />
+          </Field>
+        ) : (
+          // Tiene la griglia allineata: il nome d'arte resta nella colonna sinistra.
+          <div className="hidden md:block" aria-hidden />
+        )}
+        <Field label={band ? "Nome della band" : "Nome d'arte"} error={errors.stageName?.message}>
           <Input {...register("stageName")} />
         </Field>
         <Field
@@ -137,9 +189,13 @@ export function ArtistApplicationForm({
           />
         </Field>
         <Field
-          label="Strumenti (opzionale, massimo 3)"
+          label={`Strumenti (opzionale, massimo ${maxStrumenti})`}
           error={errors.instruments?.message}
-          hint="Seleziona fino a 3 strumenti che suoni dal vivo."
+          hint={
+            band
+              ? `Seleziona fino a ${maxStrumenti} strumenti suonati dal vivo dalla band.`
+              : `Seleziona fino a ${maxStrumenti} strumenti che suoni dal vivo.`
+          }
           className="md:col-span-2"
         >
           <Controller
@@ -150,8 +206,8 @@ export function ArtistApplicationForm({
                 options={instrumentOpts}
                 value={field.value ?? []}
                 onChange={field.onChange}
-                max={3}
-                placeholder="Seleziona fino a 3 strumenti…"
+                max={maxStrumenti}
+                placeholder={`Seleziona fino a ${maxStrumenti} strumenti…`}
                 searchPlaceholder="Cerca strumento…"
                 emptyText="Nessuno strumento trovato"
               />

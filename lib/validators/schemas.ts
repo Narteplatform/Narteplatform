@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Json } from "@/lib/supabase/types";
 import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from "@/lib/security/honeypot";
 import { ADMIN_PAGE_KEYS, type AdminPageKey } from "@/lib/admin/sections";
+import { COMPONENTI_MAX, COMPONENTI_MIN, MAX_STRUMENTI_CANDIDATURA } from "@/lib/constants/formazione";
 
 /**
  * Valore JSON generico, per colonne jsonb "libere" come `formats.details`.
@@ -93,15 +94,37 @@ export const artistApplicationSchema = z.object({
 
   name: z.string().min(2).max(80),
   email: z.string().email(),
+  formazione: z.enum(["solista", "band"], {
+    errorMap: () => ({ message: "Indica se ti candidi come artista singolo o come band" }),
+  }),
+  // Vuoto = non indicato; obbligatorio solo per le band (controllo sotto).
+  componenti: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
+    z
+      .number({ invalid_type_error: "Indica un numero" })
+      .int("Indica un numero intero")
+      .min(COMPONENTI_MIN, `Una band ha almeno ${COMPONENTI_MIN} componenti`)
+      .max(COMPONENTI_MAX, `Massimo ${COMPONENTI_MAX} componenti`)
+      .optional(),
+  ),
   stageName: z.string().min(2).max(80),
   genres: z.array(z.string().min(1)).min(1, "Seleziona almeno un genere").max(3, "Massimo 3 generi"),
-  instruments: z.array(z.string()).max(3, "Massimo 3 strumenti").optional().default([]),
+  // Il limite dipende dalla formazione: 3 per il solista, 6 per la band (sotto).
+  instruments: z.array(z.string()).max(MAX_STRUMENTI_CANDIDATURA.band).optional().default([]),
   bio: z.string().max(2000).optional(),
   instagram: z.string().max(120).optional(),
   spotify: z.string().max(200).optional(),
   website: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   video_url: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   video_path: z.string().max(500).optional().or(z.literal("").transform(() => undefined)),
+}).superRefine((v, ctx) => {
+  const max = MAX_STRUMENTI_CANDIDATURA[v.formazione];
+  if ((v.instruments ?? []).length > max) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["instruments"], message: `Massimo ${max} strumenti` });
+  }
+  if (v.formazione === "band" && v.componenti === undefined) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["componenti"], message: "Indica quanti siete" });
+  }
 });
 export type ArtistApplicationInput = z.infer<typeof artistApplicationSchema>;
 
@@ -282,6 +305,9 @@ export const artistSchema = z.object({
   // Generi: stringa CSV (compat input form admin)
   genre: z.string().max(400).optional().or(z.literal("").transform(() => undefined)),
   instruments: z.string().max(400).optional().or(z.literal("").transform(() => undefined)),
+  // Solista/band (0075). Assente = non indicato.
+  formazione: z.enum(["solista", "band"]).optional(),
+  componenti: z.number().int().min(COMPONENTI_MIN).max(COMPONENTI_MAX).optional(),
   bio: z.string().max(4000).optional().or(z.literal("").transform(() => undefined)),
   cover_image: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   instagram: z.string().max(200).optional().or(z.literal("").transform(() => undefined)),

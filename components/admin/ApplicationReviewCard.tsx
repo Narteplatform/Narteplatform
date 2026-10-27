@@ -3,6 +3,8 @@ import { isBunnyEmbedUrl } from "@/lib/storage/bunny/urls";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { ApplicationActions } from "@/components/admin/ApplicationActions";
+import { etichettaFormazione } from "@/lib/constants/formazione";
+import type { ArtistFormation } from "@/lib/supabase/types";
 
 /**
  * Scheda di revisione di una candidatura artista.
@@ -21,6 +23,9 @@ export type CandidaturaDaRivedere = {
   stage_name: string;
   genre: string[];
   instruments: string[] | null;
+  /** Assenti finché la 0075 non è applicata. */
+  formazione?: ArtistFormation | null;
+  componenti?: number | null;
   bio: string | null;
   links: unknown;
   created_at: string;
@@ -83,6 +88,11 @@ export function ApplicationReviewCard({
             <p className="font-display text-lg leading-tight tracking-tight break-words">
               {a.stage_name}
             </p>
+            {etichettaFormazione(a.formazione, a.componenti) && (
+              <Badge variant="muted" className="mt-1">
+                {etichettaFormazione(a.formazione, a.componenti)}
+              </Badge>
+            )}
             <p className="text-sm text-muted-foreground break-words">
               {a.name} ·{" "}
               <a href={`mailto:${a.email}`} className="underline-offset-2 hover:underline">

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Search, ChevronDown, RotateCcw, Check } from "lucide-react";
 import { ArtistCard } from "@/components/marketing/ArtistCard";
 import { TopArtistBadge } from "@/components/marketing/ArtistBadges";
-import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
+import type { ArtistFormation, ArtistTier, PriceBand } from "@/lib/supabase/types";
 import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
 
 export type ExplorerArtist = {
@@ -20,6 +20,8 @@ export type ExplorerArtist = {
   cover_image?: string | null;
   genre: string[];
   instruments: string[];
+  /** Solista o band. Null se non indicato (profili precedenti alla 0075). */
+  formazione?: ArtistFormation | null;
   price_band?: PriceBand;
   tier?: ArtistTier | null;
   /** Media dei voti ricevuti. `null` quando l'artista non ha recensioni. */
@@ -39,6 +41,8 @@ const ROLE_GROUPS: { key: string; label: string; match: (instr: string) => boole
   { key: "trombettista", label: "Trombettista", match: (i) => /tromba|trombett|trumpet/i.test(i) },
   { key: "violinista", label: "Violinista", match: (i) => /violin/i.test(i) },
 ];
+
+const FORMAZIONE_LABEL: Record<ArtistFormation, string> = { solista: "Solista", band: "Band" };
 
 // Dropdown with multi-select checkboxes
 function FilterDropdown({
@@ -165,7 +169,17 @@ export function ArtistsExplorer({
 }) {
   const [genreFilters, setGenreFilters] = useState<string[]>([]);
   const [roleFilters, setRoleFilters] = useState<string[]>([]);
+  const [formazioneFilters, setFormazioneFilters] = useState<string[]>([]);
   const [query, setQuery] = useState("");
+
+  // Il filtro compare solo se almeno un profilo ha indicato la formazione.
+  const formazioneOptions = useMemo(() => {
+    const m = new Map<ArtistFormation, number>();
+    for (const a of artists) if (a.formazione) m.set(a.formazione, (m.get(a.formazione) ?? 0) + 1);
+    return (Object.keys(FORMAZIONE_LABEL) as ArtistFormation[])
+      .filter((k) => (m.get(k) ?? 0) > 0)
+      .map((k) => ({ key: k, label: FORMAZIONE_LABEL[k], count: m.get(k) ?? 0 }));
+  }, [artists]);
 
   const genreCounts = useMemo(() => {
     const m = new Map<string, number>();
@@ -220,11 +234,17 @@ export function ArtistsExplorer({
   );
 
   const hasFilters =
-    genreFilters.length > 0 || roleFilters.length > 0 || query.length > 0;
+    genreFilters.length > 0 ||
+    roleFilters.length > 0 ||
+    formazioneFilters.length > 0 ||
+    query.length > 0;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return artists.filter((a) => {
+      if (formazioneFilters.length > 0 && !(a.formazione && formazioneFilters.includes(a.formazione))) {
+        return false;
+      }
       if (genreFilters.length > 0) {
         const has = (a.genre ?? []).some((g) => genreFilters.includes(g));
         if (!has) return false;
@@ -245,7 +265,7 @@ export function ArtistsExplorer({
       }
       return true;
     });
-  }, [artists, genreFilters, roleFilters, query, isGuest]);
+  }, [artists, genreFilters, roleFilters, formazioneFilters, query, isGuest]);
 
   // Top artists: tier='max', shown as a dedicated section when no filters active
   const topArtists = useMemo(
@@ -301,6 +321,7 @@ export function ArtistsExplorer({
   function reset() {
     setGenreFilters([]);
     setRoleFilters([]);
+    setFormazioneFilters([]);
     setQuery("");
   }
 
@@ -323,6 +344,15 @@ export function ArtistsExplorer({
 
         {/* Dropdown filters */}
         <div className="flex shrink-0 items-center gap-2">
+          {formazioneOptions.length > 0 && (
+            <FilterDropdown
+              label="Formazione"
+              options={formazioneOptions}
+              selected={formazioneFilters}
+              onToggle={(key) => toggle(formazioneFilters, setFormazioneFilters, key)}
+              onClear={() => setFormazioneFilters([])}
+            />
+          )}
           {categoryOptions.length > 0 && (
             <FilterDropdown
               label="Categoria"

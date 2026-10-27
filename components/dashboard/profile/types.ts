@@ -22,6 +22,9 @@ export type ArtistProfileData = {
   audio_files: AudioTrack[] | null;
   tier: "free" | "pro" | "max";
   percorso_artistico: "cover_artist" | "tribute_band" | "progetto_inedito" | null;
+  /** Assenti finché la 0075 non è applicata. */
+  formazione?: "solista" | "band" | null;
+  componenti?: number | null;
   price_range: string | null;
   gig_min_minutes: number | null;
   gig_max_minutes: number | null;

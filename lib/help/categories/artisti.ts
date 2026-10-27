@@ -11,7 +11,7 @@ import {
   MAX_VIDEO_PER_ARTIST,
 } from "@/lib/upload/video-limits";
 
-const UPDATED = "2026-10-09";
+const UPDATED = "2026-10-27";
 
 /** Megabyte leggibili a partire dai byte della fonte unica. */
 const MB = (bytes: number) => `${Math.round(bytes / 1024 / 1024)} MB`;
@@ -51,9 +51,10 @@ export const ARTISTI: HelpCategory = {
 <p>La candidatura richiede pochi minuti, ma conviene avere già sottomano:</p>
 <ul>
   <li><strong>Nome e cognome</strong> e un <strong>indirizzo email</strong> che controlli spesso: la risposta arriverà lì.</li>
-  <li><strong>Nome d'arte</strong>, anche provvisorio: potrai cambiarlo in seguito dalla dashboard.</li>
+  <li>Se ti candidi come <strong>artista singolo</strong> o come <strong>band</strong>; per la band, quanti siete.</li>
+  <li><strong>Nome d'arte</strong> (o della band), anche provvisorio: potrai cambiarlo in seguito dalla dashboard.</li>
   <li><strong>Generi musicali</strong>, da 1 a un massimo di 3. Sono il filtro principale con cui ti cercano, quindi meglio due etichette precise che cinque generiche.</li>
-  <li><strong>Strumenti</strong> che porti sul palco (facoltativo, massimo 3).</li>
+  <li><strong>Strumenti</strong> che porti sul palco (facoltativo: massimo 3 per un artista singolo, 6 per una band).</li>
   <li><strong>Una biografia</strong> che racconti il progetto: da quanto suoni, che tipo di serate fai, cosa ti distingue.</li>
   <li><strong>Almeno un link attivo</strong> fra Instagram, Spotify e sito.</li>
   <li>Un <strong>video di riferimento</strong>: è facoltativo, ma aiuta molto, perché una performance dice più di tre paragrafi.</li>

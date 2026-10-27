@@ -26,6 +26,7 @@ import { entitlementsFor } from "@/lib/billing/plans";
 import { JsonLd, musicGroupJsonLd, breadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { ArtistReviews } from "@/components/marketing/ArtistReviews";
 import { getPublicFeedbackForArtist } from "@/lib/feedback/queries";
+import { etichettaFormazione, isFormazione } from "@/lib/constants/formazione";
 
 type SocialLinks = {
   instagram?: string | null;
@@ -196,6 +197,8 @@ export default async function ArtistDetailPage({
     bio?: string | null;
     genre?: string[] | null;
     instruments?: string[] | null;
+    formazione?: string | null;
+    componenti?: number | null;
     city?: string | null;
     cover_image?: string | null;
     gallery?: string[] | null;
@@ -542,7 +545,13 @@ export default async function ArtistDetailPage({
           {/* Right column: title + genres + CALENDAR */}
           <div className="flex flex-col">
             <Reveal>
-              <p className="accent-label mb-3">artista</p>
+              {/* «band · 4 componenti» / «solista»; «artista» se non indicato (prima della 0075). */}
+              <p className="accent-label mb-3">
+                {(isFormazione(artist.formazione)
+                  ? etichettaFormazione(artist.formazione, artist.componenti)
+                  : null
+                )?.toLowerCase() ?? "artista"}
+              </p>
             </Reveal>
             <Reveal delay={0.1}>
               <h1 className="display-xl text-4xl md:text-5xl lg:text-6xl">

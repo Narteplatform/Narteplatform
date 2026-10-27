@@ -10,6 +10,7 @@ import {
 } from "@/lib/artist/video-status";
 import { logger } from "@/lib/logger";
 import { isMissingColumnError } from "@/lib/supabase/errors";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { entitlementsFor } from "@/lib/billing/plans";
 import { checkCollectionLimit, getEntitlements } from "@/lib/billing/entitlements";
 import { PROFILE_SECTION_PAYLOAD_SCHEMAS } from "@/lib/validators/artist-profile";
@@ -46,6 +47,8 @@ export type ProfileColumns = {
   videos: string[];
   audio_files: AudioTrack[];
   percorso_artistico: "cover_artist" | "tribute_band" | "progetto_inedito" | null;
+  formazione: "solista" | "band" | null;
+  componenti: number | null;
   // Booking information (sezione GigSalad-style)
   price_range: string | null;
   gig_min_minutes: number | null;
@@ -74,7 +77,17 @@ export type ProfileSectionId = "info" | "gallery" | "audio" | "booking" | "socia
  * resto in silenzio.
  */
 const SECTION_COLUMNS = {
-  info: ["stage_name", "city", "genre", "instruments", "bio", "percorso_artistico", "cover_image"],
+  info: [
+    "stage_name",
+    "city",
+    "genre",
+    "instruments",
+    "bio",
+    "percorso_artistico",
+    "cover_image",
+    "formazione",
+    "componenti",
+  ],
   gallery: ["gallery"],
   audio: ["audio_files"],
   booking: [
@@ -101,7 +114,7 @@ const SECTION_COLUMNS = {
  * della sezione restano obbligatorie, così un blocco non può dimenticarne una
  * per sbaglio.
  */
-type OptionalProfileColumn = "percorso_artistico";
+type OptionalProfileColumn = "percorso_artistico" | "formazione" | "componenti";
 
 export type SectionPayload<S extends ProfileSectionId> = Pick<
   ProfileColumns,
@@ -414,7 +427,13 @@ export async function updateArtistProfileSection<S extends ProfileSectionId>(
   }
 
   if (Object.keys(patch).length > 0) {
-    const { error } = await admin.from("artists").update(patch).eq("id", artistId);
+    let { error } = await admin.from("artists").update(patch).eq("id", artistId);
+    // Migration 0075 non ancora applicata: si salva il resto senza la formazione.
+    if (colonnaAssente(error, "formazione") || colonnaAssente(error, "componenti")) {
+      delete patch.formazione;
+      delete patch.componenti;
+      ({ error } = await admin.from("artists").update(patch).eq("id", artistId));
+    }
     if (error) return { ok: false as const, error: error.message };
   }
 

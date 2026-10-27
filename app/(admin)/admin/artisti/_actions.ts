@@ -15,6 +15,7 @@ import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/modera
 import { notificaProfiloApprovato, profiloMaiPubblicato } from "@/lib/moderation/approvazioni";
 import { applicaModificaPersonale, type PersonnelEditRow } from "@/lib/admin/personnel";
 import { verificaProprietarioNonSospeso } from "@/lib/admin/sospensione";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
 import {
   annullaCancellazioneConfermata,
   leggiCancellazioneAttiva,
@@ -182,7 +183,7 @@ export async function approveApplication(applicationId: string) {
 
   const slugBase = slugify(app.stage_name);
   const slug = `${slugBase}-${Date.now().toString(36).slice(-4)}`;
-  const { error: insertErr } = await admin.from("artists").insert({
+  const profilo = {
     user_id: userId,
     stage_name: app.stage_name,
     slug,
@@ -190,8 +191,17 @@ export async function approveApplication(applicationId: string) {
     genre: app.genre,
     instruments: app.instruments ?? [],
     social_links: app.links,
-    status: "approved",
+    status: "approved" as const,
+  };
+  let { error: insertErr } = await admin.from("artists").insert({
+    ...profilo,
+    formazione: app.formazione ?? null,
+    componenti: app.formazione === "band" ? (app.componenti ?? null) : null,
   });
+  // Migration 0075 non ancora applicata: il profilo nasce senza formazione.
+  if (colonnaAssente(insertErr, "formazione") || colonnaAssente(insertErr, "componenti")) {
+    ({ error: insertErr } = await admin.from("artists").insert(profilo));
+  }
   if (insertErr) return { ok: false as const, error: insertErr.message };
 
   await admin.from("artist_applications").update({ status: "approved" }).eq("id", applicationId);
@@ -486,11 +496,13 @@ export async function updateArtist(
   // profilo. Se la lettura fallisce ci si ferma: senza di essa non si scrive.
   const { data: prima, error: readErr } = await admin
     .from("artists")
-    .select("user_id, stage_name, city, genre, instruments, bio, cover_image, social_links, personnel")
+    .select("*")
     .eq("id", artistId)
     .maybeSingle();
   if (readErr) return { ok: false as const, error: readErr.message };
   if (!prima) return { ok: false as const, error: "Profilo non trovato" };
+  // `formazione` c'è solo con la 0075: senza, non si scrive (né si confronta).
+  const haFormazione = "formazione" in prima;
 
   const chiaviDelModulo = ["instagram", "facebook", "tiktok", "youtube", "spotify", "website"];
   const socialAttuali =
@@ -514,6 +526,12 @@ export async function updateArtist(
     bio: data.bio ?? null,
     cover_image: data.cover_image ?? null,
     social_links,
+    ...(haFormazione
+      ? {
+          formazione: data.formazione ?? null,
+          componenti: data.formazione === "band" ? (data.componenti ?? null) : null,
+        }
+      : {}),
   };
 
   const cambiati: string[] = [];
@@ -522,6 +540,9 @@ export async function updateArtist(
   if (JSON.stringify([...(prima.genre ?? [])].sort()) !== JSON.stringify([...nuovi.genre].sort())) cambiati.push("generi");
   if (JSON.stringify([...(prima.instruments ?? [])].sort()) !== JSON.stringify([...nuovi.instruments].sort())) cambiati.push("strumenti");
   if ((prima.bio ?? null) !== nuovi.bio) cambiati.push("biografia");
+  if (haFormazione && ((prima.formazione ?? null) !== nuovi.formazione || (prima.componenti ?? null) !== nuovi.componenti)) {
+    cambiati.push("formazione");
+  }
   if ((prima.cover_image ?? null) !== nuovi.cover_image) cambiati.push("immagine di copertina");
   if (JSON.stringify(prima.social_links ?? {}) !== JSON.stringify(nuovi.social_links)) cambiati.push("collegamenti social");
 

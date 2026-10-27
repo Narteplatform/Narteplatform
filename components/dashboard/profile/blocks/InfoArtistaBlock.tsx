@@ -15,6 +15,7 @@ import { PendingMediaNotice } from "@/components/dashboard/PendingMediaNotice";
 import { PendingMediaThumbs } from "@/components/dashboard/PendingMediaThumbs";
 import { inviaCopertina } from "@/app/(artist)/dashboard/_actions";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
+import { COMPONENTI_MAX, COMPONENTI_MIN, FORMAZIONI } from "@/lib/constants/formazione";
 import {
   infoSectionSchema,
   toInfoPayload,
@@ -54,6 +55,8 @@ export function InfoArtistaBlock({
       cover_image: artist.cover_image ?? "",
       percorso_artistico: (artist.percorso_artistico ??
         "") as InfoSectionValues["percorso_artistico"],
+      formazione: artist.formazione ?? "",
+      componenti: artist.componenti ? String(artist.componenti) : "",
     }),
     [artist]
   );
@@ -127,6 +130,30 @@ export function InfoArtistaBlock({
           <Field label="Città" error={errors.city?.message}>
             <Input {...form.register("city")} />
           </Field>
+          <Field label="Formazione" error={errors.formazione?.message}>
+            <select
+              {...form.register("formazione")}
+              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+            >
+              <option value="">— Non specificato —</option>
+              {FORMAZIONI.map((f) => (
+                <option key={f.value} value={f.value}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {values?.formazione === "band" && (
+            <Field label="Quanti siete?" error={errors.componenti?.message}>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={COMPONENTI_MIN}
+                max={COMPONENTI_MAX}
+                {...form.register("componenti")}
+              />
+            </Field>
+          )}
         </div>
 
         <Field label="Generi musicali (max 3)" error={errors.genre?.message}>

@@ -414,6 +414,8 @@ export default async function AdminArtistDetailPage({
               city: artist.city ?? "",
               genre: artist.genre ?? [],
               instruments: artist.instruments ?? [],
+              formazione: artist.formazione ?? "",
+              componenti: artist.componenti ? String(artist.componenti) : "",
               bio: artist.bio ?? "",
               cover_image: artist.cover_image ?? "",
               instagram: social.instagram ?? "",

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { ImageUpload } from "@/components/forms/ImageUpload";
 import { INSTRUMENT_OPTIONS } from "@/lib/constants/artist-options";
+import { COMPONENTI_MAX, COMPONENTI_MIN, FORMAZIONI } from "@/lib/constants/formazione";
 import { MotivazioneField } from "@/components/admin/MotivazioneField";
 import { updateArtist } from "@/app/(admin)/admin/artisti/_actions";
 import type { PersonnelRowView } from "@/lib/admin/personnel";
@@ -17,6 +18,9 @@ type Values = {
   city: string;
   genre: string[];
   instruments: string[];
+  /** "" = non indicato. */
+  formazione: "" | "solista" | "band";
+  componenti: string;
   bio: string;
   cover_image: string;
   instagram: string;
@@ -53,12 +57,14 @@ export function ArtistEditForm({ artistId, genreOptions, defaults, personnel = [
       const o = personnel[i];
       return !o || p.origine !== o.origine || p.name.trim() !== o.name.trim() || p.role.trim() !== o.role.trim();
     });
-  const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<Values>({
+  const { register, handleSubmit, control, watch, formState: { isSubmitting } } = useForm<Values>({
     defaultValues: {
       stage_name: defaults.stage_name ?? "",
       city: defaults.city ?? "",
       genre: defaults.genre ?? [],
       instruments: defaults.instruments ?? [],
+      formazione: defaults.formazione ?? "",
+      componenti: defaults.componenti ?? "",
       bio: defaults.bio ?? "",
       cover_image: defaults.cover_image ?? "",
       instagram: defaults.instagram ?? "",
@@ -70,12 +76,18 @@ export function ArtistEditForm({ artistId, genreOptions, defaults, personnel = [
     },
   });
 
+  const band = watch("formazione") === "band";
   const genreOpts = genreOptions.map((g) => ({ value: g, label: g }));
   const instrumentOpts = INSTRUMENT_OPTIONS.map((i) => ({ value: i, label: i }));
 
   async function onSubmit(values: Values) {
     setError(null);
     setOk(false);
+    const componenti = values.formazione === "band" && values.componenti.trim() !== "" ? Number(values.componenti) : undefined;
+    if (componenti !== undefined && !(Number.isInteger(componenti) && componenti >= COMPONENTI_MIN && componenti <= COMPONENTI_MAX)) {
+      setError(`Componenti della band: indica un numero da ${COMPONENTI_MIN} a ${COMPONENTI_MAX}.`);
+      return;
+    }
     if (personeToccate && !reason) {
       setError("Hai modificato i componenti della band: indica regola e fatti nella motivazione.");
       return;
@@ -85,6 +97,8 @@ export function ArtistEditForm({ artistId, genreOptions, defaults, personnel = [
       city: values.city || undefined,
       genre: values.genre.join(",") || undefined,
       instruments: values.instruments.join(",") || undefined,
+      formazione: values.formazione || undefined,
+      componenti,
       bio: values.bio || undefined,
       cover_image: values.cover_image || undefined,
       instagram: values.instagram || undefined,
@@ -128,6 +142,26 @@ export function ArtistEditForm({ artistId, genreOptions, defaults, personnel = [
             )}
           />
         </Field>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Formazione">
+          <select
+            {...register("formazione")}
+            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+          >
+            <option value="">— Non specificato —</option>
+            {FORMAZIONI.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {band && (
+          <Field label="Numero di componenti">
+            <Input type="number" inputMode="numeric" min={COMPONENTI_MIN} max={COMPONENTI_MAX} {...register("componenti")} />
+          </Field>
+        )}
       </div>
       <Field label="Strumenti suonati live">
         <Controller

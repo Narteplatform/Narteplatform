@@ -16,6 +16,7 @@ import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
 import ApplicationReceivedEmail from "@/lib/emails/templates/ApplicationReceivedEmail";
 import { adminRecipients } from "@/lib/emails/admin-recipients";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
 
 export async function submitArtistApplication(input: ArtistApplicationInput) {
   const parsed = artistApplicationSchema.safeParse(input);
@@ -39,7 +40,7 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
   try {
     const supabase = createAdminClient();
 
-    const { error } = await supabase.from("artist_applications").insert({
+    const riga = {
       name: data.name,
       email: data.email,
       stage_name: data.stageName,
@@ -56,7 +57,17 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
       // Prova del consenso, sulla stessa riga della candidatura: quando quella
       // non approvata verrà cancellata, se ne andrà con lei.
       ...publicFormConsent(),
-    });
+    };
+    const formazione = {
+      formazione: data.formazione,
+      componenti: data.formazione === "band" ? (data.componenti ?? null) : null,
+    };
+    let { error } = await supabase.from("artist_applications").insert({ ...riga, ...formazione });
+    // Migration 0075 non ancora applicata: la candidatura si salva comunque,
+    // senza la formazione (il limite di strumenti è già stato controllato).
+    if (colonnaAssente(error, "formazione") || colonnaAssente(error, "componenti")) {
+      ({ error } = await supabase.from("artist_applications").insert(riga));
+    }
     if (error) return { ok: false as const, error: "Errore salvataggio candidatura" };
   } catch {
     return { ok: false as const, error: "Errore server" };

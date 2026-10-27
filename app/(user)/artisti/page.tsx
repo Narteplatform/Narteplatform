@@ -8,6 +8,8 @@ import { ArtistsExplorer, type ExplorerArtist } from "@/components/marketing/Art
 import { heroImageFor } from "@/lib/content/hero-images";
 import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
 import { getRatingsForArtists } from "@/lib/feedback/queries";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { isFormazione } from "@/lib/constants/formazione";
 
 export const metadata = { title: "Artisti — N'arte" };
 
@@ -19,6 +21,7 @@ type ArtistRow = {
   cover_image: string | null;
   genre: string[] | null;
   instruments?: string[] | null;
+  formazione?: string | null;
   price_band?: PriceBand | null;
   tier?: ArtistTier | null;
 };
@@ -36,12 +39,18 @@ type ArtistRow = {
  */
 async function loadGuestArtists() {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("artists")
-    .select("id, genre, instruments, tier")
-    .eq("is_public", true)
-    // `artist_tier_enum` è dichiarato ('free','pro','max'): `desc` = max → pro → free.
-    .order("tier", { ascending: false });
+  // `formazione` (0075) è concessa anche ad anon: serve al filtro Solista/Band.
+  // Finché la migration manca si rilegge senza, invece di svuotare il catalogo.
+  const leggi = (colonne: string) =>
+    supabase
+      .from("artists")
+      .select(colonne)
+      .eq("is_public", true)
+      // `artist_tier_enum` è dichiarato ('free','pro','max'): `desc` = max → pro → free.
+      .order("tier", { ascending: false })
+      .returns<ArtistRow[]>();
+  let { data, error } = await leggi("id, genre, instruments, tier, formazione");
+  if (colonnaAssente(error, "formazione")) ({ data, error } = await leggi("id, genre, instruments, tier"));
   if (error) {
     logger.error("ArtistiPage", "lettura catalogo ospiti fallita", error);
     return [];
@@ -50,6 +59,7 @@ async function loadGuestArtists() {
     id: a.id,
     genre: (a.genre ?? []) as string[],
     instruments: (a.instruments ?? []) as string[],
+    formazione: isFormazione(a.formazione) ? a.formazione : null,
     tier: (a.tier ?? "free") as ArtistTier,
   }));
 }
@@ -71,12 +81,18 @@ export default async function ArtistiPage() {
     // già max → pro → free, senza bisogno di una colonna di peso.
     // ArtistsExplorer filtra client-side preservando l'ordine dell'array, per
     // cui questo order copre tutto il roster e la ricerca a valle.
-    const full = await supabase
-      .from("artists")
-      .select("id, slug, stage_name, city, genre, instruments, cover_image, price_band, tier")
-      .eq("is_public", true)
-      .order("tier", { ascending: false })
-      .order("stage_name", { ascending: true });
+    const leggi = (colonne: string) =>
+      supabase
+        .from("artists")
+        .select(colonne)
+        .eq("is_public", true)
+        .order("tier", { ascending: false })
+        .order("stage_name", { ascending: true })
+        .returns<ArtistRow[]>();
+    const COLONNE = "id, slug, stage_name, city, genre, instruments, cover_image, price_band, tier";
+    let full = await leggi(`${COLONNE}, formazione`);
+    // Migration 0075 non ancora applicata: si legge senza la formazione.
+    if (colonnaAssente(full.error, "formazione")) full = await leggi(COLONNE);
     if (full.error) {
       console.error("[ArtistiPage] full select error", full.error);
       const minimal = await supabase
@@ -103,6 +119,7 @@ export default async function ArtistiPage() {
       cover_image: a.cover_image,
       genre: (a.genre ?? []) as string[],
       instruments: (a.instruments ?? []) as string[],
+      formazione: isFormazione(a.formazione) ? a.formazione : null,
       price_band: (a.price_band ?? "standard") as PriceBand,
       // `free` e non `"standard"`: quello è un valore di price_band_enum.
       tier: (a.tier ?? "free") as ArtistTier,
