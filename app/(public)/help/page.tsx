@@ -138,8 +138,8 @@ export default function HelpHomePage() {
                 Sei un artista abbonato?
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                La consulenza con il team N&rsquo;arte è inclusa nei piani Pro e Max:
-                prenoti uno slot dalla tua area riservata.
+                La consulenza sul booking con il team N&rsquo;arte è inclusa nei piani Pro e
+                Max: prenoti uno slot dalla tua area riservata.
               </p>
               <Link
                 href="/help/consulenza/prenotare-chiamata"

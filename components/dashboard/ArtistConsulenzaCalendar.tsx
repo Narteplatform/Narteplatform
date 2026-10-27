@@ -286,7 +286,7 @@ export function ArtistConsulenzaCalendar({
                     value={needs}
                     onChange={(e) => setNeeds(e.target.value)}
                     rows={4}
-                    placeholder="Es: vorrei capire come migliorare il mio EPK e ottenere più date…"
+                    placeholder="Es: ho ricevuto una richiesta con un budget basso, come rispondo? Oppure: il mio profilo riceve poche richieste, cosa cambio?"
                     className="mt-1 w-full resize-y rounded-md border border-border bg-muted px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/30"
                   />
                   {error && <p className="mt-2 text-sm text-red-600">{error}</p>}

@@ -1,13 +1,13 @@
 import type { HelpCategory } from "@/lib/help/types";
 import { ENTITLEMENTS, PLAN_LABELS } from "@/lib/billing/plans";
 
-const UPDATED = "2026-10-09";
+const UPDATED = "2026-10-27";
 
 export const CONSULENZA: HelpCategory = {
   slug: "consulenza",
   title: "Consulenza N'arte",
   description:
-    "Le sessioni con un consulente del team, riservate agli artisti abbonati: come prenotarle e come sfruttarle.",
+    "Le sessioni sul booking con un consulente del team, riservate agli artisti abbonati: come prenotarle e come sfruttarle.",
   icon: "phone",
   audience: "artist",
   articles: [
@@ -23,6 +23,14 @@ export const CONSULENZA: HelpCategory = {
         "artisti/tier-pro-max",
       ],
       content: `
+<h2>Di cosa si parla</h2>
+<p>La consulenza N'arte riguarda il <strong>booking sulla piattaforma</strong>:</p>
+<ul>
+  <li>come usare N'arte per ricevere più richieste: profilo, video, fascia di prezzo, disponibilità;</li>
+  <li>come gestire le <strong>richieste e le prenotazioni che hai ricevuto su N'arte</strong>: come rispondere, come proporre un prezzo in chat, cosa chiarire con l'organizzatore prima della data.</li>
+</ul>
+<p>Non è una consulenza legale, fiscale o contributiva, e non riguarda ingaggi nati fuori dalla piattaforma.</p>
+
 <h2>A chi è riservata</h2>
 <p>La consulenza N'arte è una sessione individuale con un consulente del team, <strong>riservata agli artisti con un abbonamento attivo</strong>. Si prenota dall'area riservata: non c'è una pagina pubblica di prenotazione.</p>
 <p>Quante sessioni hai a disposizione dipende dal piano:</p>
@@ -87,10 +95,11 @@ export const CONSULENZA: HelpCategory = {
   <li>Sto puntando al <strong>tipo di locale sbagliato</strong>?</li>
   <li>Conviene tenere tutto in un profilo o <a href="/help/artisti/profili-multipli">separare i progetti</a>?</li>
   <li>Come rispondo a una richiesta con <strong>budget troppo basso</strong> senza chiudere la porta?</li>
+  <li>Ho una <strong>prenotazione confermata</strong>: cosa conviene chiarire con l'organizzatore prima della data?</li>
 </ul>
 
 <h2>Cosa la consulenza non è</h2>
-<p>Il consulente <strong>non può garantirti date</strong>, non fa da agente e non contatta i locali al posto tuo: lavora con te sul posizionamento, sul profilo e sul modo in cui ti proponi.</p>
+<p>Il consulente <strong>non può garantirti date</strong>, non fa da agente, non contatta i locali al posto tuo e non tratta per te: lavora con te sul modo in cui usi N'arte, sul profilo e sulle richieste e prenotazioni che ricevi sulla piattaforma.</p>
 <p>La segnalazione del profilo alle strutture è una cosa diversa, inclusa nel piano ${PLAN_LABELS.max} e curata dal team: almeno due segnalazioni al mese, senza garanzia di ingaggi.</p>
 
 <h2>Dopo</h2>
@@ -134,7 +143,7 @@ export const CONSULENZA: HelpCategory = {
       related: ["prenotare-chiamata", "iniziare/differenze-ruoli", "policy/codice-condotta"],
       content: `
 <h2>Chi sono i consulenti</h2>
-<p>Sono professionisti che tengono le sessioni individuali con gli artisti abbonati: lavorano sul posizionamento del progetto, sul profilo, sul modo di proporsi agli organizzatori e sulla strategia di crescita.</p>
+<p>Sono professionisti che tengono le sessioni individuali sul booking con gli artisti abbonati: li aiutano a usare la piattaforma per ricevere più richieste e a gestire le richieste e le prenotazioni ricevute su N'arte.</p>
 <p>Sul profilo di ciascuno compaiono nome, ruolo e una breve biografia: l'artista vede con chi sta prenotando.</p>
 
 <h2>Che competenze cerchiamo</h2>

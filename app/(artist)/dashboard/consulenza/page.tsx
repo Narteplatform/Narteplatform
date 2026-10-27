@@ -116,8 +116,10 @@ export default async function ArtistConsulenzaPage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground md:text-base">
           Scegli un giorno dal calendario, poi seleziona orario e consulente. La prenotazione è
-          confermata automaticamente e si può disdire fino a 24 ore prima. Le consulenze sono
-          un orientamento sul percorso artistico, non una consulenza legale, fiscale o contributiva.
+          confermata automaticamente e si può disdire fino a 24 ore prima. La consulenza riguarda il
+          booking su N&apos;arte: come usare il profilo per ricevere più richieste e come gestire le
+          richieste e le prenotazioni ricevute sulla piattaforma. Non è una consulenza legale, fiscale
+          o contributiva.
         </p>
       </div>
 

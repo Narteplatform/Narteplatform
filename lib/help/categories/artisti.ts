@@ -437,7 +437,7 @@ ${PLAN_TABLE_ROWS}
 <p>Non lo sono su nessun piano, nemmeno su quello gratuito: bloccare una richiesta vorrebbe dire penalizzare l'organizzatore che ti sta cercando, senza vantaggi per nessuno. <strong>Il limite riguarda la chat</strong>: con ${PLAN_LABELS.free} ricevi la richiesta e l'email, mentre per scrivere in chat serve ${PLAN_LABELS.pro} o ${PLAN_LABELS.max}.</p>
 
 <h2>Cosa giustifica il salto a ${PLAN_LABELS.max}</h2>
-<p>Soprattutto le <strong>statistiche</strong>, l'etichetta <strong>TOP Artist</strong> con la fascia in evidenza e i <strong>${ENTITLEMENTS.max.artistProfilesMax} profili</strong>. In più hai le consulenze senza limite mensile (in base agli slot disponibili), la segnalazione del tuo profilo ad almeno due strutture al mese, curata dal team (è un impegno di mezzi: N'arte non tratta per te e non garantisce ingaggi), e, con l'abbonamento annuale, uno <strong>shooting fotografico</strong> incluso una tantum.</p>
+<p>Soprattutto le <strong>statistiche</strong>, l'etichetta <strong>TOP Artist</strong> con la fascia in evidenza e i <strong>${ENTITLEMENTS.max.artistProfilesMax} profili</strong>. In più hai le consulenze sul booking senza limite mensile (in base agli slot disponibili), la segnalazione del tuo profilo ad almeno due strutture al mese, curata dal team (è un impegno di mezzi: N'arte non tratta per te e non garantisce ingaggi), e, con l'abbonamento annuale, uno <strong>shooting fotografico</strong> incluso una tantum.</p>
 
 <h2>Domande frequenti</h2>
 <h3>C'è un periodo di prova?</h3>

@@ -205,7 +205,7 @@ export async function checkMonthlyQuota(
   if (limit === 0) {
     return {
       ok: false,
-      error: "La consulenza professionale è inclusa nei piani Pro e Max.",
+      error: "La consulenza sul booking è inclusa nei piani Pro e Max.",
     };
   }
 

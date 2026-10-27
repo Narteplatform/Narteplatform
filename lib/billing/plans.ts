@@ -312,7 +312,7 @@ export const PLAN_CARD_HIGHLIGHTS: Record<ArtistTier, string[]> = {
     "Recensioni e badge Artista Pro",
     "Fino a 10 foto e 3 video, 2 profili",
     "Priorità nei risultati di ricerca",
-    "1 consulenza professionale al mese",
+    "1 consulenza al mese sul booking",
   ],
   max: [
     "Tutto del piano Pro",
@@ -437,7 +437,8 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
     primary: true,
   },
   {
-    label: "Consulenza professionale",
+    label: "Consulenza sul booking",
+    hint: "Con il team N'arte: come ottenere più date dalla piattaforma e come gestire le richieste e le prenotazioni ricevute su N'arte.",
     values: { free: false, pro: "1 slot al mese", max: "Senza limite mensile (in base agli slot)" },
     primary: true,
   },

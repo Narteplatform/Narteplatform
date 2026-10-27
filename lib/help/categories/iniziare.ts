@@ -107,7 +107,7 @@ export const INIZIARE: HelpCategory = {
 <p>Un account artista <strong>non può inviare richieste di booking</strong> ad altri artisti.</p>
 
 <h3>Consulente</h3>
-<p>Professionista del team che tiene le sessioni di <a href="/help/consulenza/prenotare-chiamata">consulenza</a> con gli artisti. Ha un accesso limitato ai soli appuntamenti e al proprio profilo.</p>
+<p>Professionista del team che tiene le sessioni di <a href="/help/consulenza/prenotare-chiamata">consulenza sul booking</a> con gli artisti abbonati. Ha un accesso limitato ai soli appuntamenti e al proprio profilo.</p>
 
 <h3>Team N'arte</h3>
 <p>Approva le candidature, cura eventi, format e blog, modera le recensioni e può annullare una data confermata, ma solo indicando una motivazione. Ha visibilità sulle conversazioni per poter intervenire in caso di contestazione: lo trovi scritto anche nella <a href="/privacy">informativa privacy</a>.</p>
