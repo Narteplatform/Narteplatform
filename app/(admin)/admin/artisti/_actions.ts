@@ -15,6 +15,11 @@ import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/modera
 import { notificaProfiloApprovato, profiloMaiPubblicato } from "@/lib/moderation/approvazioni";
 import { applicaModificaPersonale, type PersonnelEditRow } from "@/lib/admin/personnel";
 import { verificaProprietarioNonSospeso } from "@/lib/admin/sospensione";
+import {
+  annullaCancellazioneConfermata,
+  leggiCancellazioneAttiva,
+  sbloccaSenzaRipristino,
+} from "@/lib/legal/cancellazione";
 import { nascondiRecensioniDiBookingAnnullato } from "@/lib/feedback/moderation";
 import { logger } from "@/lib/logger";
 import { rimuoviFileSeNonUsato } from "@/lib/media/file-cleanup";
@@ -157,7 +162,19 @@ export async function approveApplication(applicationId: string) {
   // Un account sospeso non può avere profili approvati: si ferma prima di
   // scrivere qualsiasi cosa (profilo, ruolo, stato della candidatura).
   const proprietario = await verificaProprietarioNonSospeso(userId);
-  if (!proprietario.ok) return { ok: false as const, error: proprietario.error };
+  if (!proprietario.ok) {
+    // Caso tipico: l'artista ha chiuso l'account e si è ricandidato con la
+    // stessa email. Si propone lo sblocco invece di un vicolo cieco.
+    const chiusura = userId ? await leggiCancellazioneAttiva(userId) : null;
+    if (chiusura?.ok && chiusura.attiva) {
+      return {
+        ok: false as const,
+        error: "Questa persona aveva chiuso il proprio account: per approvare la candidatura va prima sbloccato.",
+        sblocco: { profiliPrecedenti: chiusura.attiva.profiliPrecedenti },
+      };
+    }
+    return { ok: false as const, error: proprietario.error };
+  }
 
   if (userId) {
     await admin.from("profiles").update({ role: "artist" }).eq("id", userId);
@@ -198,6 +215,98 @@ export async function approveApplication(applicationId: string) {
   revalidatePath("/admin/artisti");
   revalidatePath("/artisti");
   return { ok: true as const, notified };
+}
+
+/**
+ * Sblocco dell'account di chi aveva chiuso il profilo e si è ricandidato con la
+ * stessa email. Il Team sceglie caso per caso:
+ *  - «ripristina»: torna online il profilo di prima (con foto, video,
+ *    recensioni) e la nuova candidatura si chiude senza creare nulla;
+ *  - «nuovo»: si approva la nuova candidatura come profilo nuovo e il vecchio
+ *    resta nascosto, senza cancellare niente.
+ * In entrambi i casi la richiesta di cancellazione si chiude come annullata.
+ */
+export async function sbloccaCandidatura(
+  applicationId: string,
+  scelta: "ripristina" | "nuovo",
+  motivo: string,
+) {
+  const user = await requireAdminPageAccess("artisti");
+  const m = motivazione(motivo, true);
+  if (!m.ok || !m.reason) return { ok: false as const, error: m.ok ? "Motivazione mancante" : m.error };
+
+  const admin = createAdminClient();
+  const { data: app, error: appErr } = await admin
+    .from("artist_applications")
+    .select("id, name, email, stage_name, status")
+    .eq("id", applicationId)
+    .maybeSingle();
+  if (appErr) return { ok: false as const, error: appErr.message };
+  if (!app) return { ok: false as const, error: "Candidatura non trovata" };
+  if (app.status !== "pending") return { ok: false as const, error: "La candidatura non è più in attesa." };
+
+  // L'utente si ricava dall'email come fa l'approvazione: nessuna email parte da qui.
+  const accesso = await preparaAccessoArtista(app.email, app.name);
+  if (!accesso.ok) return { ok: false as const, error: accesso.error };
+
+  const chiusura = await leggiCancellazioneAttiva(accesso.userId);
+  if (!chiusura.ok) return { ok: false as const, error: "Non riesco a leggere la richiesta di cancellazione. Nessuna modifica fatta." };
+  if (!chiusura.attiva) {
+    return { ok: false as const, error: "Non risulta una cancellazione in corso per questo account: se è bloccato per altro motivo, gestiscilo da Utenti." };
+  }
+
+  if (scelta === "ripristina") {
+    if (chiusura.attiva.profiliPrecedenti.length === 0) {
+      return { ok: false as const, error: "Non c'è più un profilo precedente da ripristinare: approva la candidatura come profilo nuovo." };
+    }
+    const esito = await annullaCancellazioneConfermata({
+      richiestaId: chiusura.attiva.richiestaId,
+      attoreId: user.id,
+      motivo: m.reason,
+    });
+    if (!esito.ok) return { ok: false as const, error: esito.error };
+
+    // La candidatura ha avuto risposta: il profilo è quello di prima. Si chiude
+    // come approvata, senza crearne un altro e senza email di rifiuto.
+    const { error: chiusaErr } = await admin
+      .from("artist_applications")
+      .update({ status: "approved" })
+      .eq("id", applicationId);
+    if (chiusaErr) logger.warn("artisti", "candidatura non chiusa dopo il ripristino:", chiusaErr.message);
+
+    const nomi = chiusura.attiva.profiliPrecedenti.map((p) => `«${p.stage_name}»`).join(", ");
+    await registraAzione({
+      actorId: user.id,
+      targetType: "candidatura",
+      targetId: applicationId,
+      action: "candidatura_chiusa_con_ripristino",
+      descrizione: `Candidatura «${app.stage_name}» chiusa: ripristinato il profilo precedente ${nomi}.`,
+      affectedUserId: accesso.userId,
+    });
+
+    revalidatePath("/admin/artisti");
+    revalidatePath("/admin/utenti");
+    revalidatePath("/artisti");
+    return { ok: true as const, scelta, notified: esito.notified };
+  }
+
+  const sblocco = await sbloccaSenzaRipristino({
+    richiestaId: chiusura.attiva.richiestaId,
+    attoreId: user.id,
+    motivo: m.reason,
+  });
+  if (!sblocco.ok) return { ok: false as const, error: sblocco.error };
+
+  // Ora il proprietario non è più bloccato: approvazione normale, con benvenuto.
+  const approvata = await approveApplication(applicationId);
+  revalidatePath("/admin/utenti");
+  if (!approvata.ok) {
+    return {
+      ok: false as const,
+      error: `Account sbloccato, ma l'approvazione non è riuscita: ${approvata.error} Riprova con «Approva».`,
+    };
+  }
+  return { ok: true as const, scelta, notified: approvata.notified };
 }
 
 export async function rejectApplication(applicationId: string, reason: string) {

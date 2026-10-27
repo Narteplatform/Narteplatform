@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { SospensioneAccount } from "@/components/admin/SospensioneAccount";
 import { ChiusuraAccount } from "@/components/admin/ChiusuraAccount";
+import { SbloccoAccount } from "@/components/admin/SbloccoAccount";
 import { ApprovazioneOrganizzatore } from "@/components/admin/ApprovazioneOrganizzatore";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { contaOrganizzatoriInAttesa } from "@/lib/organizers/approvazione";
@@ -506,6 +507,8 @@ export default async function AdminUtentiPage({
                               </Link>
                             )}
                           </div>
+                        ) : puoAgire && bloccato && cancellazioni.has(u.id) ? (
+                          <SbloccoAccount userId={u.id} />
                         ) : (
                           <span className="text-xs text-muted-foreground">
                             {bloccato && !sospensione ? "Bloccato per altro motivo" : "—"}

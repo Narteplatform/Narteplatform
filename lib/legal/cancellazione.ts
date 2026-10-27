@@ -494,3 +494,149 @@ export async function annullaCancellazioneConfermata({
   }
   return { ok: true, reference: decisione.reference, notified: decisione.notified, accessoRipristinato: !sospeso };
 }
+
+export type CancellazioneAttiva = {
+  richiestaId: string;
+  /** Profili nascosti alla chiusura e ancora `pending`: quelli che «Ripristina» riporterebbe online. */
+  profiliPrecedenti: { id: string; stage_name: string }[];
+};
+
+/**
+ * La richiesta di cancellazione confermata e ancora aperta dell'utente, con i
+ * profili che un annullamento rimetterebbe online. `attiva: null` = nessuna.
+ * Lettura con errore controllato: su `ok: false` chi chiama si ferma.
+ */
+export async function leggiCancellazioneAttiva(
+  userId: string
+): Promise<{ ok: true; attiva: CancellazioneAttiva | null } | { ok: false }> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("account_deletion_requests")
+    .select("id, restore_state")
+    .eq("user_id", userId)
+    .not("confirmed_at", "is", null)
+    .is("cancelled_at", null)
+    .is("completed_at", null)
+    .order("confirmed_at", { ascending: false })
+    .limit(1);
+  if (error) {
+    logger.error("cancellazione", `lettura richiesta attiva fallita: ${error.message}`);
+    return { ok: false };
+  }
+  const richiesta = data?.[0];
+  if (!richiesta) return { ok: true, attiva: null };
+
+  const stato = richiesta.restore_state;
+  const grezzo =
+    stato && typeof stato === "object" && !Array.isArray(stato)
+      ? (stato as Record<string, Json | undefined>).artisti_riportati_a_pending
+      : null;
+  const ids = Array.isArray(grezzo) ? grezzo.filter((x): x is string => typeof x === "string") : [];
+  if (ids.length === 0) return { ok: true, attiva: { richiestaId: richiesta.id, profiliPrecedenti: [] } };
+
+  const { data: profili, error: erroreProfili } = await admin
+    .from("artists")
+    .select("id, stage_name, status")
+    .in("id", ids);
+  if (erroreProfili) {
+    logger.error("cancellazione", `lettura profili precedenti fallita: ${erroreProfili.message}`);
+    return { ok: false };
+  }
+  return {
+    ok: true,
+    attiva: {
+      richiestaId: richiesta.id,
+      profiliPrecedenti: (profili ?? [])
+        .filter((p) => p.status === "pending")
+        .map((p) => ({ id: p.id, stage_name: p.stage_name })),
+    },
+  };
+}
+
+/**
+ * Sblocco di un account chiuso SENZA ripristinare i profili di prima.
+ *
+ * Serve quando l'interessato, dopo aver chiuso l'account, si ricandida con la
+ * stessa email e il Team decide di approvare la candidatura nuova: l'accesso
+ * si riapre e la richiesta di cancellazione si chiude come annullata, ma i
+ * vecchi profili restano `pending`, cioè fuori dal sito. Nessun dato viene
+ * cancellato: se non servono più si eliminano a mano da Artisti.
+ *
+ * Nessuna email qui: all'interessato arriva il benvenuto dell'approvazione.
+ * Stesso ordine di `annullaCancellazioneConfermata`: prima lo sblocco
+ * (ripetibile), poi `cancelled_at`.
+ */
+export async function sbloccaSenzaRipristino({
+  richiestaId,
+  attoreId,
+  motivo,
+}: {
+  richiestaId: string;
+  attoreId: string;
+  motivo: string;
+}): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
+  const motivoPulito = motivo.trim();
+  if (motivoPulito.length < MOTIVAZIONE_MIN) {
+    return { ok: false, error: `La motivazione deve avere almeno ${MOTIVAZIONE_MIN} caratteri.` };
+  }
+  const admin = createAdminClient();
+
+  const { data: richiesta, error } = await admin
+    .from("account_deletion_requests")
+    .select("id, user_id, confirmed_at, cancelled_at, completed_at")
+    .eq("id", richiestaId)
+    .maybeSingle();
+  if (error) {
+    logger.error("cancellazione", `lettura richiesta fallita: ${error.message}`);
+    return { ok: false, error: "Non riesco a leggere la richiesta. Nessuna modifica fatta." };
+  }
+  if (!richiesta) return { ok: false, error: "Richiesta non trovata." };
+  if (!richiesta.confirmed_at || richiesta.cancelled_at || richiesta.completed_at) {
+    return { ok: false, error: "La richiesta non è più aperta: ricarica la pagina." };
+  }
+
+  const { data: letto, error: erroreUtente } = await admin.auth.admin.getUserById(richiesta.user_id);
+  if (erroreUtente || !letto?.user) {
+    logger.error("cancellazione", `utente non leggibile: ${erroreUtente?.message ?? "assente"}`);
+    return { ok: false, error: "Utente non trovato o non leggibile. Nessuna modifica fatta." };
+  }
+  if (leggiSospensione(letto.user.app_metadata) !== null) {
+    return {
+      ok: false,
+      error: "L'account è anche sospeso dal Team: riattivalo prima da Utenti. Nessuna modifica fatta.",
+    };
+  }
+
+  const { error: erroreSblocco } = await admin.auth.admin.updateUserById(richiesta.user_id, {
+    ban_duration: "none",
+  });
+  if (erroreSblocco) {
+    logger.error("cancellazione", `sblocco fallito: ${erroreSblocco.message}`);
+    return { ok: false, error: "Sblocco dell'accesso non riuscito. Puoi riprovare: l'operazione è ripetibile." };
+  }
+
+  const { data: chiusa, error: erroreChiusura } = await admin
+    .from("account_deletion_requests")
+    .update({ cancelled_at: new Date().toISOString() })
+    .eq("id", richiesta.id)
+    .is("cancelled_at", null)
+    .is("completed_at", null)
+    .select("id");
+  if (erroreChiusura || !chiusa || chiusa.length === 0) {
+    logger.error(
+      "cancellazione",
+      `ACCOUNT SBLOCCATO MA RICHIESTA NON ANNULLATA — id=${richiesta.id}: ${erroreChiusura?.message ?? "nessuna riga aggiornata"}`
+    );
+    return { ok: false, error: "Account sbloccato ma richiesta non segnata come annullata. Puoi riprovare: l'operazione è ripetibile." };
+  }
+
+  await registraAzione({
+    actorId: attoreId,
+    targetType: "account",
+    targetId: richiesta.user_id,
+    affectedUserId: richiesta.user_id,
+    action: "cancellazione_annullata_nuovo_profilo",
+    descrizione: motivoPulito,
+  });
+  return { ok: true, userId: richiesta.user_id };
+}

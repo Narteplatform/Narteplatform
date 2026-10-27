@@ -394,11 +394,15 @@ async function costruisci(richiestaId: string, attoreId: string | null): Promise
   const fileCandidature: FileSupabase[] = [];
   let erroreCandidature: string | undefined;
   {
-    const { data, count, error } = await admin
+    // Solo quelle arrivate prima della conferma: chi chiude l'account e poi si
+    // ricandida con la stessa email ha una candidatura nuova, che non fa parte
+    // della richiesta e va valutata (e sbloccata) dal Team, non cancellata.
+    let query = admin
       .from("artist_applications")
       .select("id, video_path", { count: "exact" })
-      .ilike("email", patEmail)
-      .range(0, LIMITE_RIGHE - 1);
+      .ilike("email", patEmail);
+    if (r.confirmed_at) query = query.lte("created_at", r.confirmed_at);
+    const { data, count, error } = await query.range(0, LIMITE_RIGHE - 1);
     if (error) erroreCandidature = error.message;
     else if (!data) erroreCandidature = "risposta senza dati";
     else if (count !== null && count > data.length) erroreCandidature = `troppe righe (${count})`;

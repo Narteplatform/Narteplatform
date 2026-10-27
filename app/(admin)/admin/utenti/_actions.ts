@@ -11,6 +11,7 @@ import { logger } from "@/lib/logger";
 import { creaNotifica } from "@/lib/notifications";
 import { venueTypeEnum } from "@/lib/validators/schemas";
 import { chiudiAccountDalTeam } from "@/lib/admin/chiusura";
+import { annullaCancellazioneConfermata, leggiCancellazioneAttiva } from "@/lib/legal/cancellazione";
 import { createElement } from "react";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
@@ -450,4 +451,33 @@ export async function rifiutaOrganizzatoreAction(userId: string, motivo: string)
   revalidatePath("/admin/utenti");
   revalidatePath("/admin");
   return { ok: true, notified: esito.ok ? esito.notified : false };
+}
+
+/**
+ * Sblocco di un account chiuso (dall'interessato o dal Team) prima della
+ * cancellazione definitiva: annulla la richiesta, riapre l'accesso e riporta
+ * online i profili nascosti alla chiusura. Se la persona si è ricandidata, lo
+ * sblocco con la scelta del profilo si fa dalla candidatura, in Artisti.
+ */
+export async function sbloccaAccountChiusoAction(userId: string, motivo: string): Promise<EsitoSospensioneAzione> {
+  const attore = await requireAdminPageAccess("utenti");
+  const parsed = schema.safeParse({ userId, motivo });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dati non validi." };
+  }
+  const chiusura = await leggiCancellazioneAttiva(parsed.data.userId);
+  if (!chiusura.ok) return { ok: false, error: "Non riesco a leggere la richiesta di cancellazione. Nessuna modifica fatta." };
+  if (!chiusura.attiva) return { ok: false, error: "Non risulta una cancellazione in corso per questo account." };
+
+  const esito = await annullaCancellazioneConfermata({
+    richiestaId: chiusura.attiva.richiestaId,
+    attoreId: attore.id,
+    motivo: parsed.data.motivo,
+  });
+  if (!esito.ok) return { ok: false, error: esito.error };
+  revalidatePath("/admin/utenti");
+  revalidatePath("/admin/impostazioni/cancellazioni");
+  revalidatePath("/admin/artisti", "layout");
+  revalidatePath("/artisti");
+  return { ok: true, notified: esito.notified };
 }
