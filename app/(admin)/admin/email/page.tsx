@@ -238,10 +238,17 @@ export default async function AdminEmailPage({
                   <li key={r.id} className="py-3">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">{r.subject}</p>
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          → {r.to_addresses.join(", ")}
-                        </p>
+                        <Link
+                          href={`/admin/email/${r.id}`}
+                          className="group block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azzurro"
+                        >
+                          <p className="truncate font-medium group-hover:text-accent group-hover:underline">
+                            {r.subject}
+                          </p>
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                            → {r.to_addresses.join(", ")}
+                          </p>
+                        </Link>
                         {r.error && (
                           <p className="mt-1 line-clamp-2 rounded-md bg-red-50 px-2 py-1 text-xs text-red-700">
                             {r.error}

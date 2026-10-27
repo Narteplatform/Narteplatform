@@ -4,6 +4,8 @@ import { TITOLARE } from "@/lib/legal/titolare";
 import type { ReactElement } from "react";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { corpoResend, corpoRiservato, type CorpoDaSalvare } from "@/lib/emails/corpo";
 
 const FROM = process.env.RESEND_FROM_EMAIL || "N'arte <noreply@narteofficial.it>";
 
@@ -36,10 +38,11 @@ async function logEmail(row: {
   providerId?: string | null;
   error?: string | null;
   meta?: Json;
+  corpo?: CorpoDaSalvare | null;
 }) {
   try {
     const admin = createAdminClient();
-    await admin.from("email_log").insert({
+    const riga = {
       to_addresses: row.to,
       subject: row.subject,
       template: row.template ?? null,
@@ -47,10 +50,33 @@ async function logEmail(row: {
       provider_id: row.providerId ?? null,
       error: row.error ?? null,
       meta: row.meta ?? {},
-    });
+    };
+    let { error } = await admin.from("email_log").insert(row.corpo ? { ...riga, ...row.corpo } : riga);
+    // Migration 0075 non ancora applicata: la riga si scrive senza il corpo.
+    if (row.corpo && (colonnaAssente(error, "body_html") || colonnaAssente(error, "body_source"))) {
+      ({ error } = await admin.from("email_log").insert(riga));
+    }
+    if (error) console.error("[email_log] riga non salvata", error.message);
   } catch (e) {
     console.error("[email_log] impossibile salvare riga", e);
   }
+}
+
+/** HTML per il registro: se non si genera, la riga si scrive senza corpo. */
+async function toHtml(react: ReactElement): Promise<string | null> {
+  try {
+    return await render(react);
+  } catch (e) {
+    console.error("[email] HTML per il registro non generato", e);
+    return null;
+  }
+}
+
+/** Chiave Brevo dell'invio, se passa da dispatchEmail (meta.key). */
+function chiaveDaMeta(meta: Json | undefined): string | null {
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return null;
+  const k = (meta as Record<string, Json | undefined>).key;
+  return typeof k === "string" ? k : null;
 }
 
 /** Versione solo testo: migliora la consegna e serve ai client senza HTML. */
@@ -79,6 +105,11 @@ export async function sendEmail(opts: SendEmailOpts) {
     });
     return { ok: false as const, skipped: true };
   }
+  const chiave = chiaveDaMeta(opts.meta);
+  // Le email riservate (link d'accesso) non si trasformano nemmeno in HTML.
+  const corpo = corpoRiservato(opts.template, chiave)
+    ? corpoResend(null, opts.template, chiave)
+    : corpoResend(await toHtml(opts.react));
   try {
     const text = await toPlainText(opts.react);
     const { data, error } = await resend.emails.send({
@@ -99,6 +130,7 @@ export async function sendEmail(opts: SendEmailOpts) {
         status: "failed",
         error: typeof error === "object" && error && "message" in error ? String((error as { message: unknown }).message) : JSON.stringify(error),
         meta: opts.meta,
+        corpo,
       });
       return { ok: false as const, error };
     }
@@ -109,6 +141,7 @@ export async function sendEmail(opts: SendEmailOpts) {
       status: "sent",
       providerId: data?.id ?? null,
       meta: opts.meta,
+      corpo,
     });
     return { ok: true as const, id: data?.id };
   } catch (err) {
@@ -120,6 +153,7 @@ export async function sendEmail(opts: SendEmailOpts) {
       status: "failed",
       error: err instanceof Error ? err.message : String(err),
       meta: opts.meta,
+      corpo,
     });
     return { ok: false as const, error: err };
   }

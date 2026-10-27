@@ -3,6 +3,8 @@ import { TITOLARE } from "@/lib/legal/titolare";
 import { brevoRequest } from "@/lib/brevo/client";
 import { getTemplateId, type EmailKey, type EmailParamsMap } from "@/lib/brevo/registry";
 import type { Json } from "@/lib/supabase/types";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { corpoBrevo, type CorpoDaSalvare } from "@/lib/emails/corpo";
 
 const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || "noreply@narteofficial.it";
 const SENDER_NAME = process.env.BREVO_SENDER_NAME || "N'arte";
@@ -41,10 +43,11 @@ async function logEmail(row: {
   providerId?: string | null;
   error?: string | null;
   meta?: Json;
+  corpo?: CorpoDaSalvare | null;
 }) {
   try {
     const admin = createAdminClient();
-    await admin.from("email_log").insert({
+    const riga = {
       to_addresses: row.to,
       subject: row.subject,
       template: row.template,
@@ -52,7 +55,13 @@ async function logEmail(row: {
       provider_id: row.providerId ?? null,
       error: row.error ?? null,
       meta: row.meta ?? {},
-    });
+    };
+    let { error } = await admin.from("email_log").insert(row.corpo ? { ...riga, ...row.corpo } : riga);
+    // Migration 0075 non ancora applicata: la riga si scrive senza il corpo.
+    if (row.corpo && (colonnaAssente(error, "body_html") || colonnaAssente(error, "body_source"))) {
+      ({ error } = await admin.from("email_log").insert(riga));
+    }
+    if (error) console.error("[email_log] riga non salvata (brevo)", error.message);
   } catch (e) {
     console.error("[email_log] impossibile salvare riga (brevo)", e);
   }
@@ -137,6 +146,9 @@ export async function sendTransactional<K extends EmailKey>(
     status: "sent",
     providerId: result.data?.messageId ?? null,
     meta: baseMeta,
+    // Solo per gli invii riusciti: se Brevo fallisce, il corpo vero lo salva
+    // l'eventuale ricaduta su Resend, nella propria riga.
+    corpo: corpoBrevo(opts.key, opts.params),
   });
   return { ok: true, id: result.data?.messageId ?? null };
 }
