@@ -22,6 +22,10 @@ export type ConsentKind =
   | "maggiore_eta"
   | "diritti_contenuti";
 export type ArtistPath = "cover_artist" | "tribute_band" | "progetto_inedito";
+/** Solista o band (0075). Null = non indicato. */
+export type ArtistFormation = "solista" | "band";
+/** Origine del corpo salvato in email_log (0075). */
+export type EmailBodySource = "salvato" | "provider" | "riservato";
 export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "privato" | "altro";
 /** «accettata» (0069): l'artista ha accettato un'offerta, manca la conferma dell'organizzatore. */
 export type BookingStatus =
@@ -120,6 +124,8 @@ export interface Database {
           /** Colonna generata: status = 'approved' and not plan_suspended. Sola lettura. */
           is_public: boolean;
           percorso_artistico: ArtistPath | null;
+          formazione: ArtistFormation | null;
+          componenti: number | null;
           price_range: string | null;
           gig_min_minutes: number | null;
           gig_max_minutes: number | null;
@@ -152,6 +158,8 @@ export interface Database {
           status?: ArtistStatus;
           tier?: ArtistTier;
           percorso_artistico?: ArtistPath | null;
+          formazione?: ArtistFormation | null;
+          componenti?: number | null;
           price_range?: string | null;
           gig_min_minutes?: number | null;
           gig_max_minutes?: number | null;
@@ -183,6 +191,8 @@ export interface Database {
           status?: ArtistStatus;
           tier?: ArtistTier;
           percorso_artistico?: ArtistPath | null;
+          formazione?: ArtistFormation | null;
+          componenti?: number | null;
           price_range?: string | null;
           gig_min_minutes?: number | null;
           gig_max_minutes?: number | null;
@@ -496,6 +506,8 @@ export interface Database {
           video_url: string | null;
           video_path: string | null;
           instruments: string[];
+          formazione: ArtistFormation | null;
+          componenti: number | null;
           created_at: string;
           consent_version: string | null;
           consent_at: string | null;
@@ -512,6 +524,8 @@ export interface Database {
           video_url?: string | null;
           video_path?: string | null;
           instruments?: string[];
+          formazione?: ArtistFormation | null;
+          componenti?: number | null;
           created_at?: string;
           consent_version?: string | null;
           consent_at?: string | null;
@@ -528,6 +542,8 @@ export interface Database {
           video_url?: string | null;
           video_path?: string | null;
           instruments?: string[];
+          formazione?: ArtistFormation | null;
+          componenti?: number | null;
           created_at?: string;
           consent_version?: string | null;
           consent_at?: string | null;
@@ -749,6 +765,7 @@ export interface Database {
           recipient_name: string;
           recipient_email: string;
           organizer_id: string | null;
+          profile_id: string | null;
           venue_id: string | null;
           note: string | null;
           email_status: "inviata" | "non_inviata";
@@ -762,6 +779,7 @@ export interface Database {
           recipient_name: string;
           recipient_email: string;
           organizer_id?: string | null;
+          profile_id?: string | null;
           venue_id?: string | null;
           note?: string | null;
           email_status?: "inviata" | "non_inviata";
@@ -775,6 +793,7 @@ export interface Database {
           recipient_name?: string;
           recipient_email?: string;
           organizer_id?: string | null;
+          profile_id?: string | null;
           venue_id?: string | null;
           note?: string | null;
           email_status?: "inviata" | "non_inviata";
@@ -1445,6 +1464,8 @@ export interface Database {
           template: string | null;
           status: "sent" | "failed" | "skipped";
           provider_id: string | null;
+          body_html: string | null;
+          body_source: EmailBodySource | null;
           error: string | null;
           meta: Json;
           sent_at: string;
@@ -1456,6 +1477,8 @@ export interface Database {
           template?: string | null;
           status: "sent" | "failed" | "skipped";
           provider_id?: string | null;
+          body_html?: string | null;
+          body_source?: EmailBodySource | null;
           error?: string | null;
           meta?: Json;
           sent_at?: string;
@@ -1467,6 +1490,8 @@ export interface Database {
           template?: string | null;
           status?: "sent" | "failed" | "skipped";
           provider_id?: string | null;
+          body_html?: string | null;
+          body_source?: EmailBodySource | null;
           error?: string | null;
           meta?: Json;
           sent_at?: string;

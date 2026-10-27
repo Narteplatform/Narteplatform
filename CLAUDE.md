@@ -191,6 +191,10 @@ policy e pubblicazioni realtime — che PostgREST non espone — le query sono i
 - `0074_modifiche_cliente_ottobre.sql` — titoli dei video di eventi/format (`video_titles`), token del
   calendario iCal (`calendar_feeds`), contenuti del sito (`site_settings`, `/admin/contenuti`) e
   `moderation_actions.target_name`. **Indipendente dalle altre.** Il codice tollera ogni parte mancante.
+- `0075_modifiche_cliente_27_ottobre.sql` — solista/band su candidature e profili (`formazione`,
+  `componenti`, con grant anon), testo delle email nel registro (`email_log.body_html`/`body_source`),
+  `profile_referrals.profile_id` per le proposte Max ai privati. **Indipendente dalle altre**, ma se la
+  0070 si esegue dopo, va rieseguita la 0075 (il revoke di tabella toglie il grant di colonna).
 
 ## Comandi
 

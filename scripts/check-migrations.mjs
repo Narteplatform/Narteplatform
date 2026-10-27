@@ -382,6 +382,18 @@ const MIGRATION = [
       ["colonna moderation_actions.target_name", () => colonna("moderation_actions", "target_name")],
     ],
   },
+  {
+    file: "0075_modifiche_cliente_27_ottobre.sql",
+    cosa: "Solista/band, corpo delle email nel registro, proposte Max ai privati",
+    controlli: [
+      ["colonna artists.formazione", () => colonna("artists", "formazione")],
+      ["colonna artists.componenti", () => colonna("artists", "componenti")],
+      ["colonna artist_applications.formazione", () => colonna("artist_applications", "formazione")],
+      ["colonna email_log.body_html", () => colonna("email_log", "body_html")],
+      ["colonna email_log.body_source", () => colonna("email_log", "body_source")],
+      ["colonna profile_referrals.profile_id", () => colonna("profile_referrals", "profile_id")],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };

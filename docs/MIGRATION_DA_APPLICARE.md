@@ -433,3 +433,23 @@ scritti nel codice e il registro mostra l'id al posto del nome dei profili elimi
 | `moderation_actions.target_name` | nome dell'oggetto salvato con la decisione | aggiunta solo se la tabella esiste (0065) |
 
 Verifica dopo l'esecuzione: `npm run db:check-migrations`.
+
+## Modifiche del cliente (27 ottobre) — `0075` (27/10/2026)
+
+**`0075_modifiche_cliente_27_ottobre.sql`** — indipendente da tutte le altre, in qualunque ordine. Il
+codice è già online e tollera ogni parte mancante: finché non la si esegue la scelta solista/band della
+candidatura non si salva (il limite di 6 strumenti per le band vale comunque), il registro email non
+conserva il testo dei nuovi invii e le proposte Max ai privati partono senza il collegamento al profilo.
+
+| Parte | Effetto | Attenzione |
+|---|---|---|
+| `artists.formazione`, `artists.componenti` | solista/band e numero di componenti, sul profilo e nel filtro del catalogo | grant di select a anon sulle due colonne |
+| `artist_applications.formazione`, `.componenti` | la stessa scelta, nella candidatura | — |
+| `email_log.body_html`, `.body_source` | testo completo delle email negli «Ultimi invii» | le email con link di accesso non si salvano (`riservato`) |
+| `profile_referrals.profile_id` | collegamento al privato destinatario di una proposta Max | `on delete set null` |
+
+⚠️ **Se la `0070` viene eseguita dopo questa, rieseguire la `0075`** (è idempotente): il `revoke` della
+0070 a livello di tabella toglie a anon anche la lettura di `formazione` e `componenti`, e il filtro
+solista/band del catalogo smetterebbe di funzionare per gli ospiti.
+
+Verifica dopo l'esecuzione: `npm run db:check-migrations`.
