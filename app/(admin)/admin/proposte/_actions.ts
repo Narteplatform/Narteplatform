@@ -12,6 +12,7 @@ import { creaTokenOptout, hashEmail, normalizzaEmail } from "@/lib/referrals/opt
 import { meseCorrente, tabellaAssente } from "@/lib/referrals/periodo";
 import { logger } from "@/lib/logger";
 import { registraAzione } from "@/lib/moderation/decisioni";
+import { colonnaAssente } from "@/lib/admin/schema-compat";
 
 export type SegnalazioneState = { error?: string; ok?: string };
 
@@ -19,7 +20,7 @@ const MSG_MIGRATION = "Registro delle segnalazioni assente: applica la migration
 
 const schema = z.object({
   artistId: z.string().uuid("Scegli un artista"),
-  // "venue:<uuid>" | "org:<uuid>" | "manual"
+  // "venue:<uuid>" | "org:<uuid>" | "user:<uuid>" | "manual"
   recipient: z.string().min(1, "Scegli il destinatario"),
   manualName: z.string().trim().max(120).optional(),
   manualEmail: z.string().trim().max(200).optional(),
@@ -34,6 +35,8 @@ type Destinatario = {
   email: string;
   organizerId: string | null;
   venueId: string | null;
+  /** Utente privato registrato (ruolo `user`). */
+  profileId: string | null;
 };
 
 type Risolto = { ok: true; dest: Destinatario } | { ok: false; error: string };
@@ -47,7 +50,7 @@ async function risolviDestinatario(
     const email = normalizzaEmail(d.manualEmail ?? "");
     if (name.length < 2) return { ok: false, error: "Inserisci il nome del destinatario." };
     if (!emailSchema.safeParse(email).success) return { ok: false, error: "Email del destinatario non valida." };
-    return { ok: true, dest: { name, email, organizerId: null, venueId: null } };
+    return { ok: true, dest: { name, email, organizerId: null, venueId: null, profileId: null } };
   }
 
   const [kind, id] = d.recipient.split(":");
@@ -63,7 +66,10 @@ async function risolviDestinatario(
     if (!data) return { ok: false, error: "Struttura non trovata." };
     const email = normalizzaEmail(data.email ?? "");
     if (!emailSchema.safeParse(email).success) return { ok: false, error: "La struttura non ha un'email valida." };
-    return { ok: true, dest: { name: data.name, email, organizerId: data.organizer_id, venueId: data.id } };
+    return {
+      ok: true,
+      dest: { name: data.name, email, organizerId: data.organizer_id, venueId: data.id, profileId: null },
+    };
   }
 
   if (kind === "org") {
@@ -78,7 +84,24 @@ async function risolviDestinatario(
     if (uErr) return { ok: false, error: "Non riesco a leggere l'email dell'organizzatore. Riprova." };
     const email = normalizzaEmail(u?.user?.email ?? "");
     if (!emailSchema.safeParse(email).success) return { ok: false, error: "L'organizzatore non ha un'email valida." };
-    return { ok: true, dest: { name: data.display_name, email, organizerId: data.id, venueId: null } };
+    return { ok: true, dest: { name: data.display_name, email, organizerId: data.id, venueId: null, profileId: null } };
+  }
+
+  if (kind === "user") {
+    const { data, error } = await admin
+      .from("profiles")
+      .select("id, role, full_name")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) return { ok: false, error: "Non riesco a leggere l'utente. Riprova." };
+    if (!data || data.role !== "user") return { ok: false, error: "Utente privato non trovato." };
+    const { data: u, error: uErr } = await admin.auth.admin.getUserById(data.id);
+    if (uErr) return { ok: false, error: "Non riesco a leggere l'email dell'utente. Riprova." };
+    const email = normalizzaEmail(u?.user?.email ?? "");
+    if (!emailSchema.safeParse(email).success) return { ok: false, error: "L'utente non ha un'email valida." };
+    const meta = u?.user?.user_metadata as { full_name?: string } | undefined;
+    const name = data.full_name?.trim() || meta?.full_name?.trim() || email;
+    return { ok: true, dest: { name, email, organizerId: null, venueId: null, profileId: data.id } };
   }
 
   return { ok: false, error: "Destinatario non valido." };
@@ -157,20 +180,24 @@ export async function inviaSegnalazioneProfilo(
 
   // 5. Registro prima dell'invio: se l'email parte, la traccia esiste già.
   const nota = (data.note ?? "").trim();
-  const { data: riga, error: insErr } = await admin
-    .from("profile_referrals")
-    .insert({
-      artist_id: artist.id,
-      sent_by: user.id,
-      recipient_name: dest.name,
-      recipient_email: dest.email,
-      organizer_id: dest.organizerId,
-      venue_id: dest.venueId,
-      note: nota === "" ? null : nota,
-      period_month: periodo,
-    })
-    .select("id")
-    .single();
+  const registro = {
+    artist_id: artist.id,
+    sent_by: user.id,
+    recipient_name: dest.name,
+    recipient_email: dest.email,
+    organizer_id: dest.organizerId,
+    venue_id: dest.venueId,
+    note: nota === "" ? null : nota,
+    period_month: periodo,
+  };
+  const inserisci = (riga: typeof registro & { profile_id?: string }) =>
+    admin.from("profile_referrals").insert(riga).select("id").single();
+  let { data: riga, error: insErr } = await inserisci(
+    dest.profileId ? { ...registro, profile_id: dest.profileId } : registro,
+  );
+  // Migration 0075 non ancora applicata: nome ed email del privato restano nel
+  // registro, manca solo il collegamento al profilo.
+  if (colonnaAssente(insErr, "profile_id")) ({ data: riga, error: insErr } = await inserisci(registro));
   if (insErr || !riga) {
     if (insErr && tabellaAssente(insErr.code)) return { error: MSG_MIGRATION };
     logger.error("referrals", "registrazione segnalazione fallita:", insErr?.message);

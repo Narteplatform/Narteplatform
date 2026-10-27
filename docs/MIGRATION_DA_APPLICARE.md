@@ -447,6 +447,7 @@ conserva il testo dei nuovi invii e le proposte Max ai privati partono senza il 
 | `artist_applications.formazione`, `.componenti` | la stessa scelta, nella candidatura | — |
 | `email_log.body_html`, `.body_source` | testo completo delle email negli «Ultimi invii» | le email con link di accesso non si salvano (`riservato`) |
 | `profile_referrals.profile_id` | collegamento al privato destinatario di una proposta Max | `on delete set null` |
+| drop policy `profile_referrals_select_owner` | l'artista non legge più via API email e nome dei destinatari | la dashboard legge dal server: nessun effetto visibile |
 
 ⚠️ **Se la `0070` viene eseguita dopo questa, rieseguire la `0075`** (è idempotente): il `revoke` della
 0070 a livello di tabella toglie a anon anche la lettura di `formazione` e `componenti`, e il filtro

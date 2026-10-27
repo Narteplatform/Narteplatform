@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import type { Privato } from "@/lib/referrals/privati";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Textarea } from "@/components/ui/Input";
@@ -10,7 +11,7 @@ import {
 } from "@/app/(admin)/admin/proposte/_actions";
 
 export type CandidatoDestinatario = {
-  /** "venue:<id>" oppure "org:<id>" */
+  /** "venue:<id>", "org:<id>" oppure "user:<id>" */
   value: string;
   name: string;
   detail: string;
@@ -22,13 +23,20 @@ export function ProfileReferralForm({
   artists,
   defaultArtistId,
   candidates,
+  privati,
 }: {
   artists: { id: string; name: string }[];
   defaultArtistId: string;
   candidates: CandidatoDestinatario[];
+  /** Privati registrati, per la tendina. `null` = elenco non leggibile. */
+  privati: Privato[] | null;
 }) {
   const [state, action, pending] = useActionState(inviaSegnalazioneProfilo, initial);
   const [recipient, setRecipient] = useState<string>(candidates[0]?.value ?? "manual");
+  // Valore della tendina dei privati: resta anche se si passa ad altro, così
+  // tornando su «Privato registrato» la scelta non si perde.
+  const [privato, setPrivato] = useState<string>("");
+  const privatoAttivo = recipient === "privato";
 
   return (
     <form action={action} className="space-y-4">
@@ -70,6 +78,50 @@ export function ProfileReferralForm({
             </span>
           </label>
         ))}
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="radio"
+            name={privatoAttivo ? undefined : "recipient"}
+            value="privato"
+            checked={privatoAttivo}
+            onChange={() => setRecipient("privato")}
+            className="mt-1"
+          />
+          <span className="font-medium">Privato registrato</span>
+        </label>
+        {privatoAttivo && (
+          <div className="pl-6">
+            {privati === null ? (
+              <p role="alert" className="text-sm text-corallo-dark">
+                Non riesco a leggere l&apos;elenco dei privati. Riprova fra un momento.
+              </p>
+            ) : privati.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nessun privato registrato con un&apos;email.</p>
+            ) : (
+              <>
+                <Label htmlFor="privato">Scegli il privato *</Label>
+                {/* Il valore inviato come «recipient» è quello della tendina. */}
+                <select
+                  id="privato"
+                  name="recipient"
+                  required
+                  value={privato}
+                  onChange={(e) => setPrivato(e.target.value)}
+                  className="h-10 w-full rounded-md border-[1.5px] border-border bg-surface px-3 text-sm focus:border-azzurro focus:outline-none focus:ring-[3px] focus:ring-azzurro/15"
+                >
+                  <option value="" disabled>
+                    Scegli fra {privati.length} privati registrati…
+                  </option>
+                  {privati.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.name} · {p.email} ({p.tipo})
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+          </div>
+        )}
         <label className="flex items-start gap-2 text-sm">
           <input
             type="radio"

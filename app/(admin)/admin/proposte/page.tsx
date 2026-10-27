@@ -2,6 +2,7 @@ import { AlertTriangle, Megaphone } from "lucide-react";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
+import { elencaPrivati } from "@/lib/referrals/privati";
 import {
   QUOTA_SEGNALAZIONI_MENSILE as QUOTA,
   etichettaMese,
@@ -54,7 +55,7 @@ export default async function AdminPropostePage({
   const scorso = spostaMese(corrente, -1);
   const primaDelloScorso = spostaMese(corrente, -2);
 
-  const [artistsRes, referralsRes, storicoRes] = await Promise.all([
+  const [artistsRes, referralsRes, storicoRes, privatiRes] = await Promise.all([
     admin.from("artists").select("id, stage_name, slug, is_public").eq("tier", "max").order("stage_name"),
     admin
       .from("profile_referrals")
@@ -66,7 +67,9 @@ export default async function AdminPropostePage({
       .select("id, created_at, artist_id, sent_by, recipient_name, recipient_email, email_status, period_month, note")
       .order("created_at", { ascending: false })
       .limit(100),
+    elencaPrivati(),
   ]);
+  const privati = privatiRes.ok ? privatiRes.privati : null;
 
   if (artistsRes.error) {
     logger.error("admin/proposte", "lettura artisti Max fallita:", artistsRes.error.message);
@@ -276,6 +279,7 @@ export default async function AdminPropostePage({
               artists={opzioniArtista}
               defaultArtistId={defaultArtista}
               candidates={candidati}
+              privati={privati}
             />
           )}
         </CardContent>

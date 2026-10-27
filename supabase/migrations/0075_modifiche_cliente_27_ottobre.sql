@@ -21,6 +21,9 @@
 --   3. Proposte Max verso i privati registrati. La segnalazione di un artista
 --      può andare anche a un utente privato (ruolo `user`): si tiene il
 --      collegamento al suo profilo come già si fa per organizzatori e strutture.
+--      Chiude anche la lettura diretta delle segnalazioni da parte dell'artista
+--      (policy «owner»): vedeva l'email del destinatario, che ora può essere
+--      quella di un privato.
 --
 -- INDIPENDENTE dalle migration in attesa (0069/0070/0071/0073/0074): qualunque
 -- ordine. Il codice è già online e tollera ogni parte mancante.
@@ -76,3 +79,10 @@ alter table public.profile_referrals
 
 comment on column public.profile_referrals.profile_id is
   'Presente se il destinatario è un utente privato registrato (ruolo user).';
+
+-- Il proprietario dell'artista leggeva via PostgREST tutte le colonne delle
+-- proprie segnalazioni, email del destinatario compresa. Con i privati fra i
+-- destinatari è il dato personale di un terzo. La dashboard legge dal server
+-- con la service role e mostra solo il nome delle strutture: la policy non
+-- serve più, si toglie. Resta la lettura del Team (superadmin).
+drop policy if exists "profile_referrals_select_owner" on public.profile_referrals;
