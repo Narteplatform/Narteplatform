@@ -100,6 +100,12 @@ export function ArtistApplicationForm({
     else setDone(true);
   }
 
+  // Il form è lungo e il bottone è in fondo: senza un messaggio qui un campo
+  // in errore fuori schermo farebbe sembrare il click senza effetto.
+  function onInvalid() {
+    setError("Controlla i campi evidenziati in rosso.");
+  }
+
   if (done) {
     return (
       <div className="rounded-xl border border-accent/40 bg-accent/5 p-6">
@@ -116,7 +122,7 @@ export function ArtistApplicationForm({
   const instrumentOpts = INSTRUMENT_OPTIONS.map((s) => ({ value: s, label: s }));
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4">
       <HoneypotFields register={register as never} />
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Nome e cognome" error={errors.name?.message}>
@@ -223,10 +229,10 @@ export function ArtistApplicationForm({
           <Input placeholder="@username" {...register("instagram")} />
         </Field>
         <Field label="Spotify" error={errors.spotify?.message}>
-          <Input placeholder="link profilo" {...register("spotify")} />
+          <Input placeholder="https://open.spotify.com/artist/…" {...register("spotify")} />
         </Field>
         <Field label="Sito" error={errors.website?.message}>
-          <Input placeholder="https://" {...register("website")} />
+          <Input placeholder="https://www.tuosito.it" {...register("website")} />
         </Field>
       </div>
       <Field
@@ -249,7 +255,6 @@ export function ArtistApplicationForm({
           }}
         />
       </Field>
-      {error && <p className="text-sm text-red-600">{error}</p>}
       <PrivacyNotice />
       <Checkbox
         {...register("acceptedAge")}
@@ -262,6 +267,7 @@ export function ArtistApplicationForm({
         label="Dichiaro che le informazioni inserite sono veritiere e che ho i diritti per inviare il video e i materiali allegati, compreso il consenso delle persone che vi compaiono."
       />
 
+      {error && <p className="text-sm text-red-600">{error}</p>}
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Invio..." : "Invia candidatura"}
       </Button>

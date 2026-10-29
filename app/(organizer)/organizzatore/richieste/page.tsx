@@ -8,13 +8,22 @@ import { Button } from "@/components/ui/Button";
 import type { BookingStatus } from "@/lib/supabase/types";
 import { minToBudgetLabel } from "@/lib/constants/budget-ranges";
 import { FinalPriceBox } from "@/components/booking/FinalPriceBox";
+import { oggiRoma } from "@/lib/date/roma";
 
 export const dynamic = "force-dynamic";
 
 type Search = { status?: string };
 
-const TABS: { value: BookingStatus | "all"; label: string }[] = [
-  { value: "pending", label: "In attesa" },
+/**
+ * Le richieste in attesa sono divise per data dell'evento: quelle con la data
+ * già passata non aspettano più una risposta utile e restano a parte. È solo
+ * una vista: lo stato nel DB resta `pending`.
+ */
+type Scheda = BookingStatus | "all" | "pending_passate";
+
+const TABS: { value: Scheda; label: string }[] = [
+  { value: "pending", label: "In attesa · future" },
+  { value: "pending_passate", label: "In attesa · passate" },
   { value: "in_trattativa", label: "In trattativa" },
   { value: "accettata", label: "Da confermare" },
   { value: "confermata", label: "Confermate" },
@@ -22,8 +31,9 @@ const TABS: { value: BookingStatus | "all"; label: string }[] = [
 ];
 
 /** Cosa significa la scheda, mostrato quando è vuota. */
-const VUOTO: Record<BookingStatus | "all", string> = {
-  pending: "Nessuna richiesta in attesa: l'artista non ha ancora risposto a nessuna delle tue richieste aperte.",
+const VUOTO: Record<Scheda, string> = {
+  pending: "Nessuna richiesta in attesa per date future.",
+  pending_passate: "Nessuna richiesta in attesa con la data dell'evento già passata.",
   in_trattativa: "Nessuna trattativa aperta. Una richiesta passa qui quando tu o l'artista scrivete in chat.",
   accettata: "Nessuna data da confermare. Quando un artista accetta la tua offerta la trovi qui, pronta per la tua conferma.",
   confermata: "Nessuna data confermata per ora.",
@@ -58,6 +68,8 @@ export default async function OrganizerRequestsPage({
   const { user, organizer } = await requireOrganizer();
   const sp = await searchParams;
   const status = sp.status ?? "pending";
+  const statoDb = status === "pending_passate" ? "pending" : status;
+  const oggi = oggiRoma();
   const admin = createAdminClient();
 
   let query = admin
@@ -65,22 +77,30 @@ export default async function OrganizerRequestsPage({
     .select(
       "id, event_date, time_slot, budget_offer, message, status, artist_id, venue_id, created_at, final_price, final_price_proposed_by, final_price_proposed_at, final_price_confirmed_by, final_price_confirmed_at"
     )
-    .eq("organizer_id", organizer.id)
-    .order("created_at", { ascending: false });
+    .eq("organizer_id", organizer.id);
 
-  if (status !== "all") {
-    query = query.eq("status", status as BookingStatus);
+  if (status === "pending") {
+    // La data più vicina per prima: è quella che chiede una risposta.
+    query = query.eq("status", "pending").gte("event_date", oggi).order("event_date", { ascending: true });
+  } else if (status === "pending_passate") {
+    query = query.eq("status", "pending").lt("event_date", oggi).order("event_date", { ascending: false });
+  } else {
+    if (statoDb !== "all") query = query.eq("status", statoDb as BookingStatus);
+    query = query.order("created_at", { ascending: false });
   }
   // Conteggi per scheda, con lo stesso filtro della lista: il numero accanto
   // all'etichetta è esattamente quante righe si vedono aprendola.
   const [{ data: rows }, { data: stati, error: statiErr }] = await Promise.all([
     query,
-    admin.from("booking_requests").select("status").eq("organizer_id", organizer.id),
+    admin.from("booking_requests").select("status, event_date").eq("organizer_id", organizer.id),
   ]);
   const items = rows ?? [];
   const conteggi = new Map<string, number>();
   if (!statiErr) {
-    for (const r of stati ?? []) conteggi.set(r.status, (conteggi.get(r.status) ?? 0) + 1);
+    for (const r of stati ?? []) {
+      const chiave = r.status === "pending" && r.event_date < oggi ? "pending_passate" : r.status;
+      conteggi.set(chiave, (conteggi.get(chiave) ?? 0) + 1);
+    }
     conteggi.set("all", (stati ?? []).length);
   }
 
@@ -144,7 +164,7 @@ export default async function OrganizerRequestsPage({
       {items.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            <p>{VUOTO[status as BookingStatus | "all"] ?? "Nessuna richiesta in questa sezione."}</p>
+            <p>{VUOTO[status as Scheda] ?? "Nessuna richiesta in questa sezione."}</p>
             <Button asChild variant="outline" size="sm" className="mt-4">
               <Link href="/artisti">Esplora artisti</Link>
             </Button>
@@ -157,12 +177,13 @@ export default async function OrganizerRequestsPage({
             const venue = r.venue_id ? venues.get(r.venue_id) : null;
             const priceConfirmed =
               r.status === "confermata" && r.final_price_confirmed_at != null;
+            const dataPassata = r.status === "pending" && r.event_date < oggi;
             return (
               <Card
                 key={r.id}
                 className={`overflow-hidden ${
                   priceConfirmed ? "border-emerald-500 ring-1 ring-emerald-500/40" : ""
-                }`}
+                } ${dataPassata ? "opacity-75" : ""}`}
               >
                 <CardHeader className="flex-row items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -192,6 +213,11 @@ export default async function OrganizerRequestsPage({
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</Badge>
+                    {dataPassata && (
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        Data passata
+                      </span>
+                    )}
                     {priceConfirmed && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
                         <CheckCircle2 className="size-3" /> Compenso annotato €{Number(r.final_price)}

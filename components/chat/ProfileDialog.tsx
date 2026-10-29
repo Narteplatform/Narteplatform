@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import type { ChatPartyMeta } from "@/lib/chat/queries";
+import { hrefLink } from "@/lib/social-url";
 
 export function ProfileDialog({
   open,
@@ -95,9 +96,9 @@ export function ProfileDialog({
                     <Instagram className="size-4" /> {meta.artist.instagram}
                   </a>
                 )}
-                {meta.artist.spotify && (
+                {hrefLink(meta.artist.spotify) && (
                   <a
-                    href={meta.artist.spotify}
+                    href={hrefLink(meta.artist.spotify) ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-foreground hover:text-azzurro"
@@ -105,9 +106,9 @@ export function ProfileDialog({
                     <Music2 className="size-4" /> Spotify
                   </a>
                 )}
-                {meta.artist.website && (
+                {hrefLink(meta.artist.website) && (
                   <a
-                    href={meta.artist.website}
+                    href={hrefLink(meta.artist.website) ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-foreground hover:text-azzurro"

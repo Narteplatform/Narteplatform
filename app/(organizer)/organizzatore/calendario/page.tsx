@@ -63,10 +63,12 @@ export default async function OrganizerCalendarPage({
         .then((r) => new Map((r.data ?? []).map((a) => [a.id, a])))
     : new Map();
 
+  const venueNames = new Map(allVenues.map((v) => [v.id, v.name]));
   const events = rows.map((r) => {
     const a = artists.get(r.artist_id);
     return {
       id: r.id,
+      venue: r.venue_id ? (venueNames.get(r.venue_id) ?? null) : null,
       date: r.event_date,
       title: a?.stage_name ?? "Artista",
       slug: a?.slug ?? null,

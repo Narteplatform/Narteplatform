@@ -20,11 +20,17 @@ export function FeedbackForm({ bookingId, artistName }: { bookingId: string; art
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<FeedbackInput>({
     resolver: zodResolver(feedbackSchema),
     defaultValues: { booking_request_id: bookingId, rating: 0, body: "" },
   });
+
+  // Senza questo un errore di validazione non mostrato renderebbe il click muto.
+  function onInvalid() {
+    setError(rating < 1 ? "Seleziona un voto" : "Controlla i campi evidenziati");
+  }
 
   function onSubmit(values: FeedbackInput) {
     setError(null);
@@ -62,7 +68,7 @@ export function FeedbackForm({ bookingId, artistName }: { bookingId: string; art
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-3">
       <input type="hidden" {...register("booking_request_id")} value={bookingId} />
       <div>
         <Label>Valutazione</Label>
@@ -73,7 +79,12 @@ export function FeedbackForm({ bookingId, artistName }: { bookingId: string; art
               <button
                 key={n}
                 type="button"
-                onClick={() => setRating(n)}
+                onClick={() => {
+                  // Il voto deve arrivare anche al form: lo schema lo richiede (min 1).
+                  setRating(n);
+                  setError(null);
+                  setValue("rating", n, { shouldValidate: true });
+                }}
                 onMouseEnter={() => setHover(n)}
                 onMouseLeave={() => setHover(0)}
                 aria-label={`${n} stelle`}

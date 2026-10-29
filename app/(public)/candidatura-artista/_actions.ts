@@ -18,12 +18,28 @@ import ApplicationReceivedEmail from "@/lib/emails/templates/ApplicationReceived
 import { adminRecipients } from "@/lib/emails/admin-recipients";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
 
+/** Per dire in quale campo è l'errore quando il controllo lato server non passa. */
+const ETICHETTE_CAMPI: Record<string, string> = {
+  name: "Nome e cognome",
+  email: "Email",
+  stageName: "Nome d'arte",
+  genres: "Generi",
+  instruments: "Strumenti",
+  bio: "Bio",
+  instagram: "Instagram",
+  spotify: "Spotify",
+  website: "Sito",
+  video_url: "Video",
+};
+
 export async function submitArtistApplication(input: ArtistApplicationInput) {
   const parsed = artistApplicationSchema.safeParse(input);
   if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const campo = issue ? ETICHETTE_CAMPI[String(issue.path[0])] : undefined;
     return {
       ok: false as const,
-      error: parsed.error.issues[0]?.message ?? "Dati non validi",
+      error: issue ? (campo ? `${campo}: ${issue.message}` : issue.message) : "Dati non validi",
     };
   }
   const data = parsed.data;

@@ -27,6 +27,7 @@ import { JsonLd, musicGroupJsonLd, breadcrumbJsonLd } from "@/components/seo/Jso
 import { ArtistReviews } from "@/components/marketing/ArtistReviews";
 import { getPublicFeedbackForArtist } from "@/lib/feedback/queries";
 import { etichettaFormazione, isFormazione } from "@/lib/constants/formazione";
+import { hrefLink } from "@/lib/social-url";
 
 type SocialLinks = {
   instagram?: string | null;
@@ -459,8 +460,10 @@ export default async function ArtistDetailPage({
       label: "Instagram",
       icon: <Instagram className="size-5" />,
     });
-  if (social.facebook)
-    socials.push({ key: "fb", href: social.facebook, label: "Facebook", icon: <Facebook className="size-5" /> });
+  // Facebook, YouTube, Spotify e sito si mostrano solo se apribili: un valore
+  // senza `https://` diventerebbe un percorso relativo del sito (→ 404).
+  const fb = hrefLink(social.facebook);
+  if (fb) socials.push({ key: "fb", href: fb, label: "Facebook", icon: <Facebook className="size-5" /> });
   if (social.tiktok)
     socials.push({
       key: "tt",
@@ -470,12 +473,12 @@ export default async function ArtistDetailPage({
       label: "TikTok",
       icon: <TikTokIcon className="size-5" />,
     });
-  if (social.youtube)
-    socials.push({ key: "yt", href: social.youtube, label: "YouTube", icon: <Youtube className="size-5" /> });
-  if (social.spotify)
-    socials.push({ key: "sp", href: social.spotify, label: "Spotify", icon: <SpotifyIcon className="size-5" /> });
-  if (social.website)
-    socials.push({ key: "web", href: social.website, label: "Sito", icon: <Globe className="size-5" /> });
+  const yt = hrefLink(social.youtube);
+  if (yt) socials.push({ key: "yt", href: yt, label: "YouTube", icon: <Youtube className="size-5" /> });
+  const sp = hrefLink(social.spotify);
+  if (sp) socials.push({ key: "sp", href: sp, label: "Spotify", icon: <SpotifyIcon className="size-5" /> });
+  const web = hrefLink(social.website);
+  if (web) socials.push({ key: "web", href: web, label: "Sito", icon: <Globe className="size-5" /> });
 
   return (
     <article>

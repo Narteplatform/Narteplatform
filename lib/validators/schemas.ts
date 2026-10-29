@@ -3,6 +3,7 @@ import type { Json } from "@/lib/supabase/types";
 import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from "@/lib/security/honeypot";
 import { ADMIN_PAGE_KEYS, type AdminPageKey } from "@/lib/admin/sections";
 import { COMPONENTI_MAX, COMPONENTI_MIN, MAX_STRUMENTI_CANDIDATURA } from "@/lib/constants/formazione";
+import { isLinkWeb, normalizzaLink } from "@/lib/social-url";
 
 /**
  * Valore JSON generico, per colonne jsonb "libere" come `formats.details`.
@@ -13,6 +14,22 @@ import { COMPONENTI_MAX, COMPONENTI_MIN, MAX_STRUMENTI_CANDIDATURA } from "@/lib
 const jsonValueSchema: z.ZodType<Json> = z.lazy(() =>
   z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(jsonValueSchema), z.record(jsonValueSchema)])
 );
+
+/**
+ * Link facoltativo incollato da un artista: si normalizza prima di validare
+ * (`spotify:artist:…`, indirizzo senza `https://`, parametri `?si=`), così un
+ * link valido non viene mai rifiutato per come è stato copiato. Vuoto = assente.
+ */
+function linkFacoltativo(esempio: string) {
+  return z.preprocess(
+    (v) => (typeof v === "string" ? normalizzaLink(v) || undefined : v),
+    z
+      .string()
+      .max(500, "Link troppo lungo")
+      .refine(isLinkWeb, `Incolla il link completo, per esempio ${esempio}`)
+      .optional(),
+  );
+}
 
 /**
  * Campi della trappola anti-bot, da spargere in ogni schema di modulo pubblico:
@@ -113,8 +130,8 @@ export const artistApplicationSchema = z.object({
   instruments: z.array(z.string()).max(MAX_STRUMENTI_CANDIDATURA.band).optional().default([]),
   bio: z.string().max(2000).optional(),
   instagram: z.string().max(120).optional(),
-  spotify: z.string().max(200).optional(),
-  website: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  spotify: linkFacoltativo("https://open.spotify.com/artist/…"),
+  website: linkFacoltativo("https://www.tuosito.it"),
   video_url: z.string().url().optional().or(z.literal("").transform(() => undefined)),
   video_path: z.string().max(500).optional().or(z.literal("").transform(() => undefined)),
 }).superRefine((v, ctx) => {

@@ -5,6 +5,7 @@ import { dispatchEmail } from "@/lib/emails/dispatch";
 import { formatDateIt, formatDateRome, formatEuro, formatMinutes, formatTimeRome } from "@/lib/emails/format";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
+import { dataRoma, spostaGiorni } from "@/lib/date/roma";
 import type { EmailKey } from "@/lib/brevo/registry";
 import type { Json } from "@/lib/supabase/types";
 
@@ -51,22 +52,6 @@ export interface RiepilogoPromemoria {
   rinviatiPerLimite: number;
   errori: string[];
   dettaglio: EsitoPromemoria[];
-}
-
-/** YYYY-MM-DD nel fuso di Roma. */
-function dataRoma(d: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Rome",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(d);
-}
-
-/** Somma giorni a una data YYYY-MM-DD (aritmetica in UTC: niente salti d'ora legale). */
-function spostaGiorni(ymd: string, giorni: number): string {
-  const [y, m, d] = ymd.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d + giorni)).toISOString().slice(0, 10);
 }
 
 function maschera(email: string): string {
