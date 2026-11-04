@@ -562,6 +562,8 @@ export interface Database {
           href: string | null;
           created_at: string;
           read_at: string | null;
+          /** Chiave di raggruppamento (0076), es. 'chat:<conversation_id>'. */
+          ref_key: string | null;
         };
         Insert: {
           id?: string;
@@ -573,9 +575,19 @@ export interface Database {
           href?: string | null;
           created_at?: string;
           read_at?: string | null;
+          ref_key?: string | null;
         };
+        /**
+         * L'utente (authenticated) puo' aggiornare solo read_at (grant di
+         * colonna, 0073); gli altri campi li aggiorna la service role per le
+         * notifiche raggruppate.
+         */
         Update: {
           read_at?: string | null;
+          title?: string;
+          body?: string | null;
+          href?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -585,6 +597,77 @@ export interface Database {
         Row: { user_id: string; token: string; created_at: string };
         Insert: { user_id: string; token: string; created_at?: string };
         Update: { user_id?: string; token?: string; created_at?: string };
+        Relationships: [];
+      };
+      /** Link iCal per profilo artista (0076): solo service role. */
+      artist_calendar_feeds: {
+        Row: { artist_id: string; user_id: string; token: string; created_at: string };
+        Insert: { artist_id: string; user_id: string; token: string; created_at?: string };
+        Update: { token?: string; created_at?: string };
+        Relationships: [];
+      };
+      /** Tappe di «Chi siamo» (0076): solo service role. */
+      site_milestones: {
+        Row: {
+          id: string;
+          year_label: string;
+          date_label: string;
+          title: string;
+          description: string;
+          photo_url: string | null;
+          photo_alt: string;
+          order_index: number;
+          created_at: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          year_label?: string;
+          date_label?: string;
+          title: string;
+          description?: string;
+          photo_url?: string | null;
+          photo_alt?: string;
+          order_index?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          year_label?: string;
+          date_label?: string;
+          title?: string;
+          description?: string;
+          photo_url?: string | null;
+          photo_alt?: string;
+          order_index?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      /** Messaggi al team dalla pagina Consulente (0076): solo service role. */
+      team_messages: {
+        Row: {
+          id: string;
+          user_id: string;
+          artist_id: string | null;
+          role: "artist" | "organizer";
+          subject: string;
+          body: string;
+          created_at: string;
+          handled_at: string | null;
+          handled_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          artist_id?: string | null;
+          role: "artist" | "organizer";
+          subject: string;
+          body: string;
+        };
+        Update: { handled_at?: string | null; handled_by?: string | null };
         Relationships: [];
       };
       /** Contenuti del sito modificabili dall'admin (0074): solo service role. */
@@ -1407,6 +1490,8 @@ export interface Database {
           rating: number | null;
           status: "new" | "read" | "archived";
           created_at: string;
+          /** Profilo artista attivo all'invio (0076). */
+          artist_id: string | null;
         };
         Insert: {
           id?: string;
@@ -1418,6 +1503,7 @@ export interface Database {
           rating?: number | null;
           status?: "new" | "read" | "archived";
           created_at?: string;
+          artist_id?: string | null;
         };
         Update: {
           id?: string;

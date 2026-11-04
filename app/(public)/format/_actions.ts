@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/server";
+import { creaNotificheAdmin } from "@/lib/notifications";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import { publicFormConsent } from "@/lib/legal/consents";
 import {
@@ -58,6 +59,12 @@ export async function submitFormatInterest(input: FormatInterestInput) {
   // Finora questo form non avvisava nessuno: il lead finiva in tabella e lì
   // restava, senza che nessuno sapesse di doverlo ricontattare.
   const adminEmail = adminRecipients();
+  await creaNotificheAdmin({
+    kind: "admin_lead",
+    title: `Nuovo lead (Format): ${data.name}`,
+    body: data.message.slice(0, 200),
+    href: "/admin/leads?status=new",
+  });
   if (adminEmail.length > 0) {
     await dispatchEmail({
       key: "public_lead_admin",

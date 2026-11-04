@@ -7,6 +7,7 @@ import { adminRecipients } from "@/lib/emails/admin-recipients";
 import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
+import { creaNotificheAdmin } from "@/lib/notifications";
 
 /**
  * Avvisa il superadmin che un artista ha caricato contenuti da approvare.
@@ -61,6 +62,14 @@ export async function notifyMediaSubmission(
   const to = adminEmails();
   if (to.length === 0) return;
   if (await recentlyNotified(to[0])) return;
+  // Una notifica in-app per artista finche' non la si legge (raggruppata).
+  await creaNotificheAdmin({
+    kind: "admin_moderazione",
+    title: "Contenuti da approvare",
+    body: `${count} nuov${count === 1 ? "o contenuto" : "i contenuti"} in coda di moderazione`,
+    href: "/admin/moderazione",
+    refKey: `moderazione:${artistId}`,
+  });
 
   const admin = createAdminClient();
   const { data: artist, error: artistErr } = await admin

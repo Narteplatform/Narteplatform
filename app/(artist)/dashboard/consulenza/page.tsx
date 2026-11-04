@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { MyConsultations, type MiaConsulenza } from "@/components/dashboard/MyConsultations";
+import { TeamMessageForm } from "@/components/dashboard/TeamMessageForm";
 import {
   ArtistConsulenzaCalendar,
   type CalendarConsultant,
@@ -143,11 +144,27 @@ export default async function ArtistConsulenzaPage() {
         <CardContent>
           {!hasAvailability ? (
             <p className="text-sm text-muted-foreground">
-              Nessuno slot disponibile al momento.
+              Nessuno slot disponibile al momento. Puoi comunque scrivere al team qui sotto: ti
+              rispondiamo per email.
             </p>
           ) : (
             <ArtistConsulenzaCalendar consultants={consultants} slots={slots} />
           )}
+        </CardContent>
+      </Card>
+
+      {/* Sempre disponibile; in evidenza quando non ci sono slot. */}
+      <Card id="scrivi-al-team" className={!hasAvailability ? "border-corallo/40" : undefined}>
+        <CardHeader>
+          <CardTitle className="text-base">Scrivi al team N&apos;arte</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {hasAvailability
+              ? "Non trovi un orario adatto o hai una domanda veloce? Mandaci un messaggio."
+              : "Non ci sono appuntamenti liberi: lasciaci il tuo messaggio e ti ricontattiamo."}
+          </p>
+        </CardHeader>
+        <CardContent>
+          <TeamMessageForm />
         </CardContent>
       </Card>
     </div>

@@ -115,8 +115,8 @@ export default async function ArtistOverviewPage() {
       .from("artist_videos")
       .select("id", { count: "exact", head: true })
       .eq("artist_id", artist.id),
-    // Stesso conteggio del badge in sidebar (AppShellData): unica fonte.
-    getUnreadCountForUser(user.id, "artist"),
+    // Stesso conteggio del badge in sidebar (AppShellData): profilo attivo.
+    getUnreadCountForUser(user.id, "artist", { artistId: artist.id }),
   ]);
 
   const gallery = artist.gallery ?? [];

@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
-import { getOwnedArtists } from "@/lib/artist/current";
+import { getOwnedArtists, resolveActiveArtist } from "@/lib/artist/current";
+import { avvisaTeam } from "@/lib/notifications/team";
 import { feedbackSchema, platformFeedbackSchema } from "@/lib/validators/schemas";
 import {
   applicaModerazione,
@@ -248,7 +249,7 @@ export async function submitPlatformFeedback(input: {
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
-    .select("role")
+    .select("role, full_name")
     .eq("id", user.id)
     .maybeSingle();
   const role = (profile?.role ?? "user") as
@@ -261,15 +262,38 @@ export async function submitPlatformFeedback(input: {
     return { ok: false, error: "Solo artisti e organizzatori possono inviare feedback" };
   }
 
-  const { error } = await admin.from("platform_feedback").insert({
+  // Un account Max puo' avere fino a 5 profili: si registra quello attivo,
+  // cosi' in admin si legge «da Zio Castro · Artista «Burdell Band»».
+  const attivo = role === "artist" ? await resolveActiveArtist(user.id) : null;
+
+  const riga = {
     user_id: user.id,
     role,
     category: parsed.data.category,
     subject: parsed.data.subject ?? null,
     body: parsed.data.body,
     rating: parsed.data.rating ?? null,
-  });
+  };
+  let { error } = await admin
+    .from("platform_feedback")
+    .insert(attivo ? { ...riga, artist_id: attivo.id } : riga);
+  // Colonna artist_id assente (0076 non applicata): si salva senza profilo.
+  if (error && attivo && (error.code === "42703" || error.code === "PGRST204")) {
+    ({ error } = await admin.from("platform_feedback").insert(riga));
+  }
   if (error) return { ok: false, error: error.message };
+
+  const nome = profile?.full_name || user.email || "Utente";
+  const chi = attivo ? `${nome} · Artista «${attivo.stage_name}»` : `${nome} · ${role === "artist" ? "Artista" : "Organizzatore"}`;
+  await avvisaTeam({
+    kind: "admin_feedback",
+    titolo: `Nuovo feedback da ${chi}`,
+    anteprima: parsed.data.subject || parsed.data.body.slice(0, 160),
+    adminPath: "/admin/feedback",
+    mittente: { nome: chi, email: user.email ?? null },
+    oggettoEmail: `Feedback (${parsed.data.category})${parsed.data.subject ? `: ${parsed.data.subject}` : ""}`,
+    messaggio: parsed.data.rating ? `${parsed.data.body}\n\nValutazione: ${parsed.data.rating}/5` : parsed.data.body,
+  });
 
   revalidatePath("/dashboard/feedback");
   revalidatePath("/organizzatore/feedback");

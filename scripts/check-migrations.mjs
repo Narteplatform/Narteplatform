@@ -394,6 +394,20 @@ const MIGRATION = [
       ["colonna profile_referrals.profile_id", () => colonna("profile_referrals", "profile_id")],
     ],
   },
+  {
+    file: "0076_modifiche_cliente_novembre.sql",
+    cosa: "Notifiche raggruppate e in tempo reale, profilo nel feedback, iCal per profilo, tappe Chi siamo, messaggi al team",
+    controlli: [
+      ["colonna notifications.ref_key", () => colonna("notifications", "ref_key")],
+      ["colonna platform_feedback.artist_id", () => colonna("platform_feedback", "artist_id")],
+      ["tabella artist_calendar_feeds", () => tabella("artist_calendar_feeds")],
+      ["privilegi anonimi revocati su artist_calendar_feeds", () => privilegioAnonRevocato("artist_calendar_feeds")],
+      ["tabella site_milestones", () => tabella("site_milestones")],
+      ["privilegi anonimi revocati su site_milestones", () => privilegioAnonRevocato("site_milestones")],
+      ["tabella team_messages", () => tabella("team_messages")],
+      ["privilegi anonimi revocati su team_messages", () => privilegioAnonRevocato("team_messages")],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };

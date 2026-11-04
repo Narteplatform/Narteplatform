@@ -235,18 +235,34 @@ async function rowsToConversations(
 const CONV_SELECT =
   "id, artist_id, organizer_id, last_message_at, artists!inner(id, stage_name, cover_image, user_id), organizers!inner(id, display_name, avatar_url, user_id)";
 
-/**
- * Conversazioni di TUTTI i profili dell'account, non solo di quello attivo.
- *
- * Scelta deliberata: un account può avere fino a 5 profili, e filtrare sul solo
- * profilo attivo nasconderebbe i messaggi arrivati agli altri. Un organizzatore
- * che scrive e non riceve risposta perché l'artista aveva "l'altro profilo
- * selezionato" è esattamente il danno che questa piattaforma deve evitare.
- */
-export async function getConversationsForArtist(userId: string): Promise<ConversationItem[]> {
+/** Id dei profili artista dell'account (null se la lettura fallisce). */
+async function ownedArtistIds(userId: string): Promise<string[] | null> {
   const admin = createAdminClient();
-  const { data: owned } = await admin.from("artists").select("id").eq("user_id", userId);
-  const ids = ((owned ?? []) as unknown as { id: string }[]).map((a) => a.id);
+  const { data, error } = await admin.from("artists").select("id").eq("user_id", userId);
+  if (error) {
+    console.error("[chat] lettura profili dell'account:", error);
+    return null;
+  }
+  return ((data ?? []) as unknown as { id: string }[]).map((a) => a.id);
+}
+
+/**
+ * Conversazioni dell'artista.
+ *
+ * Con `artistId` (il profilo attivo, gia' verificato come posseduto dal
+ * chiamante) solo quelle di quel profilo: ogni profilo ha la sua chat. Senza,
+ * quelle di tutti i profili dell'account. I messaggi arrivati agli altri
+ * profili non si perdono: li segnalano i badge nel selettore profilo e la
+ * campanella (vedi getArtistUnreadByProfile).
+ */
+export async function getConversationsForArtist(
+  userId: string,
+  opts: { artistId?: string } = {},
+): Promise<ConversationItem[]> {
+  const admin = createAdminClient();
+  const owned = await ownedArtistIds(userId);
+  if (!owned || owned.length === 0) return [];
+  const ids = opts.artistId ? owned.filter((id) => id === opts.artistId) : owned;
   if (ids.length === 0) return [];
   const { data } = await admin
     .from("conversations")
@@ -254,6 +270,33 @@ export async function getConversationsForArtist(userId: string): Promise<Convers
     .in("artist_id", ids)
     .order("last_message_at", { ascending: false });
   return rowsToConversations((data as unknown as ConvRow[]) ?? [], "artist");
+}
+
+/**
+ * Messaggi non letti per ciascun profilo dell'account: alimenta i badge del
+ * selettore profilo, cosi' un messaggio arrivato a un altro profilo resta
+ * visibile senza mescolare le chat.
+ */
+export async function getArtistUnreadByProfile(userId: string): Promise<Record<string, number>> {
+  const admin = createAdminClient();
+  const owned = await ownedArtistIds(userId);
+  if (!owned || owned.length === 0) return {};
+  const { data, error } = await admin
+    .from("messages")
+    .select("id, conversations!inner(artist_id)")
+    .in("conversations.artist_id", owned)
+    .eq("sender_role", "organizer")
+    .is("read_by_artist_at", null);
+  if (error) {
+    console.error("[chat] non letti per profilo:", error);
+    return {};
+  }
+  const out: Record<string, number> = {};
+  for (const row of (data ?? []) as unknown as { conversations: { artist_id: string } }[]) {
+    const id = row.conversations.artist_id;
+    out[id] = (out[id] ?? 0) + 1;
+  }
+  return out;
 }
 
 export async function getConversationsForOrganizer(userId: string): Promise<ConversationItem[]> {
@@ -416,14 +459,15 @@ export async function getConversationMeta(conversationId: string): Promise<ChatP
 export async function getUnreadCountForUser(
   userId: string,
   role: "artist" | "organizer",
+  opts: { artistId?: string } = {},
 ): Promise<number> {
   const admin = createAdminClient();
   if (role === "artist") {
-    // Somma su TUTTI i profili dell'account: un badge che conta solo il profilo
-    // attivo direbbe "0 non letti" mentre un organizzatore aspetta risposta su
-    // un altro profilo.
-    const { data: owned } = await admin.from("artists").select("id").eq("user_id", userId);
-    const ids = ((owned ?? []) as unknown as { id: string }[]).map((a) => a.id);
+    // Con artistId: solo il profilo attivo (badge della sidebar, coerente con
+    // la lista della chat). Senza: tutti i profili dell'account.
+    const owned = await ownedArtistIds(userId);
+    if (!owned) return 0;
+    const ids = opts.artistId ? owned.filter((id) => id === opts.artistId) : owned;
     if (ids.length === 0) return 0;
     const { data } = await admin
       .from("messages")
@@ -481,9 +525,10 @@ export async function getConversationIdsForUser(userId: string): Promise<string[
     .eq("id", userId)
     .maybeSingle();
   if (profile?.role === "artist") {
-    const { data: a } = await admin.from("artists").select("id").eq("user_id", userId).maybeSingle();
-    if (!a) return [];
-    const { data } = await admin.from("conversations").select("id").eq("artist_id", a.id);
+    // Un account puo' avere piu' profili: maybeSingle() qui andava in errore.
+    const owned = await ownedArtistIds(userId);
+    if (!owned || owned.length === 0) return [];
+    const { data } = await admin.from("conversations").select("id").in("artist_id", owned);
     return (data ?? []).map((r) => r.id);
   }
   if (profile?.role === "organizer") {

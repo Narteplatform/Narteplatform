@@ -81,6 +81,48 @@ export async function linkCalendario(userId: string, rigenera = false): Promise<
   return { ok: true, link: costruisciLink(token) };
 }
 
+/**
+ * Link iCal di UN profilo artista (migration 0076, `artist_calendar_feeds`):
+ * ogni profilo di un account Max ha il suo calendario. Se la tabella non c'e'
+ * ancora si ricade sul link dell'account (tutti i profili), come prima.
+ * La proprieta' del profilo la verifica il chiamante.
+ */
+export async function linkCalendarioProfilo(
+  userId: string,
+  artistId: string,
+  rigenera = false,
+): Promise<EsitoLink & { perProfilo?: boolean }> {
+  const admin = createAdminClient();
+
+  if (!rigenera) {
+    const { data, error } = await admin
+      .from("artist_calendar_feeds")
+      .select("token")
+      .eq("artist_id", artistId)
+      .maybeSingle();
+    if (error) {
+      if (tabellaAssente(error.code)) return linkCalendario(userId, rigenera);
+      logger.error(AREA, "lettura token profilo:", error.message);
+      return { ok: false, error: "Non riesco a leggere il tuo link. Riprova tra poco." };
+    }
+    if (data) return { ok: true, link: costruisciLink(data.token), perProfilo: true };
+  }
+
+  const token = nuovoToken();
+  const { error } = await admin
+    .from("artist_calendar_feeds")
+    .upsert(
+      { artist_id: artistId, user_id: userId, token, created_at: new Date().toISOString() },
+      { onConflict: "artist_id" },
+    );
+  if (error) {
+    if (tabellaAssente(error.code)) return linkCalendario(userId, rigenera);
+    logger.error(AREA, "scrittura token profilo:", error.message);
+    return { ok: false, error: "Non riesco a creare il link. Riprova tra poco." };
+  }
+  return { ok: true, link: costruisciLink(token), perProfilo: true };
+}
+
 export type Feed = { nome: string; eventi: EventoCalendario[] };
 
 /**
@@ -99,12 +141,33 @@ export async function feedDaToken(token: string): Promise<Feed | null> {
     .eq("token", token)
     .maybeSingle();
   if (error) throw new Error(`calendar_feeds: ${error.message}`);
-  if (!riga) return null;
-  const userId = riga.user_id;
+
+  // Non e' un link dell'account: forse e' quello di un singolo profilo (0076).
+  let soloProfilo: string | null = null;
+  let userId = riga?.user_id ?? null;
+  if (!riga) {
+    const { data: perProfilo, error: errProfilo } = await admin
+      .from("artist_calendar_feeds")
+      .select("user_id, artist_id")
+      .eq("token", token)
+      .maybeSingle();
+    if (errProfilo && !tabellaAssente(errProfilo.code)) {
+      throw new Error(`artist_calendar_feeds: ${errProfilo.message}`);
+    }
+    if (!perProfilo) return null;
+    userId = perProfilo.user_id;
+    soloProfilo = perProfilo.artist_id;
+  }
+  if (!userId) return null;
 
   const [artistiRes, orgRes] = await Promise.all([
-    admin.from("artists").select("id, stage_name, slug").eq("user_id", userId),
-    admin.from("organizers").select("id, display_name").eq("user_id", userId).maybeSingle(),
+    soloProfilo
+      ? admin.from("artists").select("id, stage_name, slug").eq("id", soloProfilo).eq("user_id", userId)
+      : admin.from("artists").select("id, stage_name, slug").eq("user_id", userId),
+    // Il link di un profilo contiene solo le date di quel profilo.
+    soloProfilo
+      ? Promise.resolve({ data: null, error: null })
+      : admin.from("organizers").select("id, display_name").eq("user_id", userId).maybeSingle(),
   ]);
   if (artistiRes.error) throw new Error(`artists: ${artistiRes.error.message}`);
   if (orgRes.error) throw new Error(`organizers: ${orgRes.error.message}`);

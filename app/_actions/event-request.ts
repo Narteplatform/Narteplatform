@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { creaNotificheAdmin } from "@/lib/notifications";
 import { createAdminClient } from "@/lib/supabase/server";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
@@ -97,6 +98,12 @@ export async function submitEventRequest(input: EventRequestInput) {
 
   // Come il form Format, finora questa richiesta non avvisava nessuno.
   const adminEmail = adminRecipients();
+  await creaNotificheAdmin({
+    kind: "admin_lead",
+    title: `Richiesta evento: ${data.name}`,
+    body: data.eventType,
+    href: "/admin/leads?status=new",
+  });
   if (adminEmail.length > 0) {
     await dispatchEmail({
       key: "public_lead_admin",

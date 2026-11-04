@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { creaNotificheAdmin } from "@/lib/notifications";
 import { requireUser } from "@/lib/auth/guards";
 import { createAdminClient } from "@/lib/supabase/server";
 import { esportaDatiUtente } from "@/lib/legal/export-dati";
@@ -191,6 +192,11 @@ export async function richiediCancellazioneAccount(input: unknown) {
   }
 
   const adminEmail = adminRecipients();
+  await creaNotificheAdmin({
+    kind: "admin_cancellazione",
+    title: `Richiesta di cancellazione account: ${nome}`,
+    href: "/admin/impostazioni/cancellazioni",
+  });
   if (adminEmail.length > 0) {
     await dispatchEmail({
       key: "contact_message",

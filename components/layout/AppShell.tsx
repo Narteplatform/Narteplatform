@@ -100,8 +100,8 @@ export interface AppShellProps {
    */
   topbarSlot?: React.ReactNode;
   /**
-   * Notifiche non lette per la campanella. Presente SOLO nelle aree artista e
-   * organizzatore: senza, la campanella non viene resa.
+   * Notifiche per la campanella (artista, organizzatore, superadmin): senza,
+   * la campanella non viene resa.
    */
   notifications?: NotificheIniziali;
   /**
@@ -294,10 +294,7 @@ function AppShellInner({
               </Button>
             )}
             {notifications && (
-              <NotificationBell
-                initialItems={notifications.items}
-                initialCount={notifications.count}
-              />
+              <NotificationBell notifications={notifications} />
             )}
             <TopbarUser user={user} planTier={planTier} />
           </div>

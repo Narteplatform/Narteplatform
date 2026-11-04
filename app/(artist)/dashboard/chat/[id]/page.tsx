@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/guards";
-import { getOwnedArtists } from "@/lib/artist/current";
+import { getOwnedArtists, resolveActiveArtist } from "@/lib/artist/current";
 import { ConversationList } from "@/components/chat/ConversationList";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import {
@@ -23,17 +23,26 @@ export default async function ArtistChatDetailPage({
   const meta = await getConversationMeta(id);
   if (!meta) notFound();
 
-  // Si controllano TUTTI i profili posseduti, non solo quello attivo: un
-  // account con più artisti deve poter aprire le conversazioni di ciascuno
-  // senza dover prima cambiare profilo.
+  // Si controllano TUTTI i profili posseduti: una chat di un altro profilo
+  // dell'account si apre, ma prima si passa a quel profilo, cosi' lista,
+  // badge e calendario restano coerenti con la conversazione aperta.
   const owned = await getOwnedArtists(user.id);
   const isOwn = owned.some((a) => a.id === meta.artist.id);
   const isSuper = user.profile?.role === "superadmin";
   if (!isOwn && !isSuper) notFound();
 
+  if (isOwn) {
+    const active = await resolveActiveArtist(user.id, owned);
+    if (active && active.id !== meta.artist.id) {
+      redirect(
+        `/dashboard/profili/passa?to=${meta.artist.id}&next=${encodeURIComponent(`/dashboard/chat/${id}`)}`,
+      );
+    }
+  }
+
   const [messages, conversations] = await Promise.all([
     getMessages(id),
-    getConversationsForArtist(user.id),
+    getConversationsForArtist(user.id, isOwn ? { artistId: meta.artist.id } : {}),
   ]);
 
   return (

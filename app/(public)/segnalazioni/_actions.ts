@@ -1,6 +1,7 @@
 "use server";
 
 import { createElement } from "react";
+import { creaNotificheAdmin } from "@/lib/notifications";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import {
@@ -144,6 +145,12 @@ export async function submitContentReport(input: ContentReportInput) {
     timeZone: "Europe/Rome",
   });
   const adminEmail = adminRecipients();
+  await creaNotificheAdmin({
+    kind: "admin_segnalazione",
+    title: `Nuov${kind === "reclamo" ? "o reclamo" : "a segnalazione"} ${reference}`,
+    body: targetLabel,
+    href: "/admin/segnalazioni",
+  });
   const adminUrl = `${getSiteUrl()}/admin/segnalazioni`;
   const categoriaLabel = REPORT_CATEGORIES[category];
 

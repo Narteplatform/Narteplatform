@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/server";
+import { creaNotificheAdmin } from "@/lib/notifications";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import { publicFormConsent } from "@/lib/legal/consents";
 import {
@@ -79,6 +80,12 @@ export async function submitContact(input: ContactInput) {
   });
 
   const adminEmail = adminRecipients();
+  await creaNotificheAdmin({
+    kind: "admin_contatto",
+    title: `Nuovo messaggio da ${data.name}`,
+    body: data.subject ? `${data.subject} — ${data.message.slice(0, 160)}` : data.message.slice(0, 200),
+    href: "/admin/leads?status=new",
+  });
   const params = {
     name: data.name,
     email: data.email,

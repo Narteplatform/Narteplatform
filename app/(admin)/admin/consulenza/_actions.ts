@@ -650,3 +650,23 @@ export async function updateConsultationNotes(consultationId: string, notes: str
   revalidatePath("/admin/consulenza");
   return { ok: true as const };
 }
+
+/**
+ * Messaggio «scrivi al team» (team_messages, 0076) segnato come gestito o
+ * riaperto. Solo superadmin con accesso alla pagina Consulenza.
+ */
+export async function segnaMessaggioTeamGestito(id: string, gestito: boolean) {
+  const idOk = z.string().uuid().safeParse(id);
+  if (!idOk.success) return { ok: false as const, error: "Messaggio non valido" };
+  const user = await requireAdminPageAccess("consulenza");
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("team_messages")
+    .update(gestito ? { handled_at: new Date().toISOString(), handled_by: user.id } : { handled_at: null, handled_by: null })
+    .eq("id", idOk.data)
+    .select("id");
+  if (error) return { ok: false as const, error: error.message };
+  if (!data || data.length === 0) return { ok: false as const, error: "Messaggio non trovato" };
+  revalidatePath("/admin/consulenza/messaggi");
+  return { ok: true as const };
+}

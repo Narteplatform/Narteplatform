@@ -510,6 +510,8 @@ export type PlatformFeedbackRow = {
   created_at: string;
   user_name: string | null;
   user_email: string | null;
+  /** Profilo artista che ha inviato il feedback (0076), o l'unico dell'account. */
+  artist_name: string | null;
 };
 
 export async function listPlatformFeedback(filters?: {
@@ -518,34 +520,60 @@ export async function listPlatformFeedback(filters?: {
   category?: "generale" | "bug" | "suggerimento" | "altro";
 }): Promise<PlatformFeedbackRow[]> {
   const admin = createAdminClient();
-  let query = admin
-    .from("platform_feedback")
-    .select("id, user_id, role, category, subject, body, rating, status, created_at")
-    .order("created_at", { ascending: false });
-  if (filters?.status) query = query.eq("status", filters.status);
-  if (filters?.role) query = query.eq("role", filters.role);
-  if (filters?.category) query = query.eq("category", filters.category);
+  const build = (cols: string) => {
+    let query = admin.from("platform_feedback").select(cols).order("created_at", { ascending: false });
+    if (filters?.status) query = query.eq("status", filters.status);
+    if (filters?.role) query = query.eq("role", filters.role);
+    if (filters?.category) query = query.eq("category", filters.category);
+    return query;
+  };
+  const BASE = "id, user_id, role, category, subject, body, rating, status, created_at";
 
-  const { data } = await query;
-  const rows = data ?? [];
+  type Riga = Omit<PlatformFeedbackRow, "user_name" | "user_email" | "artist_name"> & { artist_id?: string | null };
+  let res = await build(`${BASE}, artist_id`);
+  // Colonna artist_id assente (0076 non applicata): si legge senza.
+  if (res.error && (res.error.code === "42703" || res.error.code === "PGRST204")) res = await build(BASE);
+  if (res.error) {
+    console.error("[feedback] lettura feedback piattaforma:", res.error.message);
+    return [];
+  }
+  const rows = (res.data ?? []) as unknown as Riga[];
   if (rows.length === 0) return [];
 
   const ids = [...new Set(rows.map((r) => r.user_id))];
-  const [{ data: profiles }, { data: usersList }] = await Promise.all([
+  // Email per singolo utente: listUsers({ perPage: 200 }) perdeva in silenzio
+  // le email oltre il duecentesimo account.
+  const [{ data: profiles }, { data: artisti }, utenti] = await Promise.all([
     admin.from("profiles").select("id, full_name").in("id", ids),
-    admin.auth.admin.listUsers({ perPage: 200 }),
+    admin.from("artists").select("id, stage_name, user_id").in("user_id", ids),
+    Promise.all(ids.map((id) => admin.auth.admin.getUserById(id).then((r) => r.data.user ?? null, () => null))),
   ]);
   const profileMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
   const emailMap = new Map<string, string>();
-  for (const u of usersList?.users ?? []) {
-    if (u.id && u.email) emailMap.set(u.id, u.email);
+  for (const u of utenti) if (u?.id && u.email) emailMap.set(u.id, u.email);
+  const artistById = new Map((artisti ?? []).map((a) => [a.id, a.stage_name as string]));
+  const profiliPerUtente = new Map<string, string[]>();
+  for (const a of artisti ?? []) {
+    if (!a.user_id) continue;
+    profiliPerUtente.set(a.user_id, [...(profiliPerUtente.get(a.user_id) ?? []), a.stage_name as string]);
   }
 
-  return rows.map((r) => ({
-    ...r,
-    user_name: profileMap.get(r.user_id) ?? null,
-    user_email: emailMap.get(r.user_id) ?? null,
-  }));
+  return rows.map(({ artist_id, ...r }) => {
+    const unico = profiliPerUtente.get(r.user_id);
+    return {
+      ...r,
+      user_name: profileMap.get(r.user_id) ?? null,
+      user_email: emailMap.get(r.user_id) ?? null,
+      artist_name:
+        r.role !== "artist"
+          ? null
+          : artist_id
+            ? (artistById.get(artist_id) ?? null)
+            : unico && unico.length === 1
+              ? unico[0]
+              : null,
+    };
+  });
 }
 
 export type PlatformFeedbackStats = {

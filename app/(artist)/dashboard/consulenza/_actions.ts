@@ -1,5 +1,9 @@
 "use server";
 
+import { logger } from "@/lib/logger";
+import { avvisaTeam } from "@/lib/notifications/team";
+import { teamMessageSchema, type TeamMessageInput } from "@/lib/validators/schemas";
+import { creaNotificheAdmin } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createElement } from "react";
@@ -151,6 +155,12 @@ export async function bookConsultationAsArtist(input: {
         }),
       },
     }).catch((e) => console.error("[email] artist book admin:", e)),
+    creaNotificheAdmin({
+      kind: "admin_consulenza",
+      title: `Consulenza prenotata: ${displayName ?? "Artista"}`,
+      body: slotAt,
+      href: "/admin/consulenza/confermati",
+    }),
   ]);
 
   revalidatePath("/dashboard/consulenza");
@@ -227,8 +237,105 @@ export async function cancelConsultationAsArtist(consultationId: string) {
       needs: "L'artista ha disdetto la consulenza dalla propria area. Lo slot è di nuovo libero.",
     }),
   }).catch(() => undefined);
+  await creaNotificheAdmin({
+    kind: "admin_consulenza",
+    title: `Consulenza disdetta: ${c.name ?? "Artista"}`,
+    body: quando,
+    href: "/admin/consulenza",
+  });
 
   revalidatePath("/dashboard/consulenza");
   revalidatePath("/admin/consulenza");
+  return { ok: true as const };
+}
+
+/** Al massimo un messaggio al minuto e 10 al giorno per account. */
+const LIMITE_GIORNO = 10;
+
+/**
+ * «Scrivi al team» dalla pagina Consulente: serve soprattutto quando non ci
+ * sono slot liberi. Il messaggio si salva in team_messages (visibile in
+ * /admin/consulenza/messaggi), arriva come notifica in tempo reale ai
+ * superadmin e per email alla casella del team, con risposta diretta
+ * all'artista. Senza la tabella (0076 non applicata) parte solo l'email.
+ */
+export async function inviaMessaggioAlTeam(input: TeamMessageInput) {
+  const parsed = teamMessageSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: "Devi accedere" };
+
+  const admin = createAdminClient();
+  const { data: profile, error: profErr } = await admin
+    .from("profiles")
+    .select("role, full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profErr) return { ok: false as const, error: "Non è stato possibile verificare il tuo account." };
+  const role = profile?.role === "organizer" ? "organizer" : profile?.role === "artist" ? "artist" : null;
+  if (!role) return { ok: false as const, error: "Funzione riservata ad artisti e organizzatori." };
+
+  const attivo = role === "artist" ? await resolveActiveArtist(user.id) : null;
+
+  // Limite anti-raffica, letto dalla tabella stessa. Se la lettura fallisce
+  // per tabella mancante si prosegue (solo email); per altri errori ci si ferma.
+  let tabellaPresente = true;
+  const giorno = new Date(Date.now() - 86_400_000).toISOString();
+  const { data: recenti, error: recErr } = await admin
+    .from("team_messages")
+    .select("created_at")
+    .eq("user_id", user.id)
+    .gt("created_at", giorno)
+    .order("created_at", { ascending: false })
+    .limit(LIMITE_GIORNO);
+  if (recErr) {
+    if (recErr.code === "42P01" || recErr.code === "PGRST205") tabellaPresente = false;
+    else {
+      logger.error("team", "lettura messaggi recenti:", recErr.message);
+      return { ok: false as const, error: "Non è stato possibile inviare il messaggio. Riprova tra poco." };
+    }
+  } else {
+    const righe = recenti ?? [];
+    if (righe.length >= LIMITE_GIORNO) {
+      return { ok: false as const, error: "Hai già scritto più volte oggi: ti risponderemo al più presto." };
+    }
+    if (righe[0] && Date.now() - new Date(righe[0].created_at).getTime() < 60_000) {
+      return { ok: false as const, error: "Hai appena inviato un messaggio: attendi un minuto." };
+    }
+  }
+
+  if (tabellaPresente) {
+    const { error } = await admin.from("team_messages").insert({
+      user_id: user.id,
+      artist_id: attivo?.id ?? null,
+      role,
+      subject: parsed.data.subject,
+      body: parsed.data.body,
+    });
+    if (error) {
+      logger.error("team", "salvataggio messaggio:", error.message);
+      return { ok: false as const, error: "Non è stato possibile inviare il messaggio. Riprova tra poco." };
+    }
+  }
+
+  const nome = profile?.full_name || user.email || "Utente";
+  const chi = attivo ? `${nome} · Artista «${attivo.stage_name}»` : `${nome} · ${role === "artist" ? "Artista" : "Organizzatore"}`;
+  await avvisaTeam({
+    kind: "admin_messaggio_team",
+    titolo: `Messaggio al team da ${chi}`,
+    anteprima: parsed.data.subject,
+    adminPath: tabellaPresente ? "/admin/consulenza/messaggi" : "/admin/consulenza",
+    mittente: { nome: chi, email: user.email ?? null },
+    oggettoEmail: `Messaggio dalla pagina Consulente: ${parsed.data.subject}`,
+    messaggio: parsed.data.body,
+  });
+
+  revalidatePath("/admin/consulenza/messaggi");
   return { ok: true as const };
 }

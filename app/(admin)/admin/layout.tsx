@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { requireRole } from "@/lib/auth/guards";
 import { AdminAppShell } from "@/components/dashboard/AppShellData";
 import type { Role } from "@/lib/supabase/types";
+import { Toaster } from "sonner";
 
 /**
  * PWA installabile limitata all'area admin: il manifest è collegato solo da
@@ -57,6 +58,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       }}
     >
       {children}
+      {/* Toast delle notifiche in tempo reale (campanella, NotificationBell). */}
+      <Toaster richColors position="bottom-right" closeButton />
     </AdminAppShell>
   );
 }

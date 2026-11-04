@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { fetchDockConversations } from "@/lib/chat/actions";
+import { activeArtistFromCookie } from "@/lib/artist/active-cookie-client";
 import type { ConversationItem } from "@/lib/chat/queries";
 import type { ChatMessageKind, Role } from "@/lib/supabase/types";
 
@@ -33,6 +34,8 @@ export function useUnreadToasts(currentUserId: string) {
   const pathRef = useRef(pathname);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const convByIdRef = useRef<Map<string, ConversationItem>>(new Map());
+  // Profilo attivo secondo il server, ripiego se il cookie non c'e' ancora.
+  const serverActiveRef = useRef<string | null>(null);
 
   useEffect(() => {
     pathRef.current = pathname;
@@ -45,9 +48,12 @@ export function useUnreadToasts(currentUserId: string) {
   useEffect(() => {
     let cancelled = false;
     const reload = async () => {
-      const res = await fetchDockConversations();
+      const res = await fetchDockConversations("all");
       if (cancelled) return;
-      if (res.ok) setConversations(res.conversations);
+      if (res.ok) {
+        setConversations(res.conversations);
+        serverActiveRef.current = res.activeArtistId ?? null;
+      }
     };
     reload();
     return () => {
@@ -75,7 +81,7 @@ export function useUnreadToasts(currentUserId: string) {
             const conv = convByIdRef.current.get(r.conversation_id);
             if (!conv) {
               // Nuova conversation: aggiorna lista in background, no toast (avoid spam)
-              fetchDockConversations().then((res) => {
+              fetchDockConversations("all").then((res) => {
                 if (res.ok) setConversations(res.conversations);
               });
               return;
@@ -84,19 +90,27 @@ export function useUnreadToasts(currentUserId: string) {
             const p = pathRef.current ?? "";
             if (p.includes(`/chat/${r.conversation_id}`)) return;
 
-            toast(conv.counterpartName, {
+            const inArtistArea = !p.startsWith("/organizzatore");
+            // Account con piu' profili: il messaggio puo' essere per un profilo
+            // diverso da quello attivo. Si avvisa comunque, dicendo per quale
+            // profilo, e il clic passa prima a quel profilo.
+            const activeId = activeArtistFromCookie() ?? serverActiveRef.current;
+            const otherProfile =
+              inArtistArea && r.sender_role === "organizer" && activeId !== null && conv.artistId !== activeId;
+            toast(otherProfile ? `${conv.counterpartName} · per «${conv.artistName}»` : conv.counterpartName, {
               description: previewBody(r),
-              duration: 4500,
+              duration: otherProfile ? 7000 : 4500,
               action: {
                 label: "Apri",
                 onClick: () => {
-                  // Lascia che layout decida il base path: prendi pathname corrente
-                  const base = p.startsWith("/dashboard")
-                    ? "/dashboard/chat"
-                    : p.startsWith("/organizzatore")
-                    ? "/organizzatore/chat"
-                    : "/dashboard/chat";
-                  window.location.href = `${base}/${r.conversation_id}`;
+                  if (!inArtistArea) {
+                    window.location.href = `/organizzatore/chat/${r.conversation_id}`;
+                    return;
+                  }
+                  const chat = `/dashboard/chat/${r.conversation_id}`;
+                  window.location.href = otherProfile
+                    ? `/dashboard/profili/passa?to=${conv.artistId}&next=${encodeURIComponent(chat)}`
+                    : chat;
                 },
               },
             });

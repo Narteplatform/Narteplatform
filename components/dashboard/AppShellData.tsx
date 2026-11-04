@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Bell,
   Building2,
   CalendarDays,
   Flag,
@@ -30,9 +31,11 @@ import {
 import {
   getActiveConversationsCountSuperadmin,
   getUnreadCountForUser,
+  getArtistUnreadByProfile,
 } from "@/lib/chat/queries";
 import type { ReactNode } from "react";
-import { leggiNonLette } from "@/lib/notifications";
+import { contaNonLettePerProfilo, leggiNotifiche } from "@/lib/notifications";
+import type { AreaNotifiche } from "@/lib/notifications/types";
 import type { NotificheIniziali } from "@/lib/notifications/types";
 import { logger } from "@/lib/logger";
 import { AppShell, type AppShellStorage, type NavSection } from "@/components/layout/AppShell";
@@ -120,7 +123,12 @@ const BOTTOM_NAV_LABELS: Partial<Record<AdminPageKey, string>> = {
   overview: "Home",
 };
 
-async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boolean }): Promise<{
+async function loadAdminShell(opts?: {
+  allowed?: Set<AdminPageKey>;
+  isRoot?: boolean;
+  /** Notifiche non lette del superadmin: badge della voce «Notifiche». */
+  notificheNonLette?: number;
+}): Promise<{
   navSections: NavSection[];
   bottomNav: NavSection[];
   badgesAt: number;
@@ -196,13 +204,30 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     safe(dopo(admin.from("artists").select("id", { count: "exact", head: true }).eq("status", "pending"), "created_at", "moderazione")),
   ]);
 
+  // Feedback, segnalazioni e recensioni: prima non avevano badge, e un
+  // feedback arrivato restava invisibile finche' non si apriva la pagina.
+  const [nuoviFeedback, nuoveSegnalazioni, nuoveRecensioni] = await Promise.all([
+    safe(dopo(admin.from("platform_feedback").select("id", { count: "exact", head: true }).eq("status", "new"), "created_at", "feedback")),
+    safe(dopo(admin.from("content_reports").select("id", { count: "exact", head: true }).eq("status", "ricevuta"), "created_at", "segnalazioni")),
+    visti.recensioni
+      ? safe(admin.from("feedback").select("id", { count: "exact", head: true }).gt("created_at", visti.recensioni))
+      : null,
+  ]);
+
   const c = (n: { count: number | null } | null) => n?.count ?? 0;
   const newLeadsCount = c(newLeads);
   const badgeCandidature = c(nuoveCandidature) + c(nuoviProfili);
   const badgeLead = c(nuoviLead);
   const badgeChat = c(nuoveChat);
   const badgeConsulenze = c(nuoveConsulenze);
+  const nuoviMessaggiTeam = await safe(
+    dopo(admin.from("team_messages").select("id", { count: "exact", head: true }).is("handled_at", null), "created_at", "consulenza")
+  ).then((v) => (v?.error ? 0 : (v?.count ?? 0)));
   const badgeModerazione = c(nuoveSubmission) + c(nuoviVideo) + c(nuoviProfiliModerazione);
+  // Messaggi «scrivi al team» non ancora gestiti (0076). Tabella assente = 0.
+  const messaggiTeamAperti = await safe(
+    admin.from("team_messages").select("id", { count: "exact", head: true }).is("handled_at", null)
+  ).then((v) => (v?.error ? 0 : (v?.count ?? 0)));
   const pendingConsultations = await safe(
     admin
       .from("consultations")
@@ -282,10 +307,11 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       label: "Consulenza",
       icon: <Phone className="size-4" />,
       seenKey: "consulenza",
-      badge: badge(badgeConsulenze),
+      badge: badge(badgeConsulenze + nuoviMessaggiTeam),
       children: [
         { href: "/admin/consulenza", label: "Appuntamenti", count: pendingConsultations },
         { href: "/admin/consulenza/confermati", label: "Confermati" },
+        { href: "/admin/consulenza/messaggi", label: "Messaggi al team", count: messaggiTeamAperti },
         { href: "/admin/consulenza/consulenti", label: "Consulenti" },
         { href: "/admin/consulenza/slots", label: "Slot legacy" },
       ],
@@ -304,6 +330,8 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       href: "/admin/feedback",
       label: "Feedback",
       icon: <Star className="size-4" />,
+      seenKey: "feedback",
+      badge: badge(c(nuoviFeedback)),
     },
     moderazione: {
       href: "/admin/moderazione",
@@ -316,11 +344,15 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
       href: "/admin/segnalazioni",
       label: "Segnalazioni",
       icon: <Flag className="size-4" />,
+      seenKey: "segnalazioni",
+      badge: badge(c(nuoveSegnalazioni)),
     },
     recensioni: {
       href: "/admin/recensioni",
       label: "Recensioni",
       icon: <MessageSquareQuote className="size-4" />,
+      seenKey: "recensioni",
+      badge: badge(c(nuoveRecensioni)),
     },
     abbonamenti: {
       href: "/admin/abbonamenti",
@@ -407,6 +439,17 @@ async function loadAdminShell(opts?: { allowed?: Set<AdminPageKey>; isRoot?: boo
     (k) => sectionsByKey[k]!
   ) as NavSection[];
 
+  // «Notifiche» non e' una pagina soggetta a permessi: ogni superadmin ha le
+  // sue. Va subito sotto Overview, come nelle aree artista e organizzatore.
+  const vociNotifiche: NavSection = {
+    href: "/admin/notifiche",
+    label: "Notifiche",
+    icon: <Bell className="size-4" />,
+    badge: badge(opts?.notificheNonLette ?? 0),
+  };
+  const dopoOverview = navSections[0]?.href === "/admin" ? 1 : 0;
+  navSections.splice(dopoOverview, 0, vociNotifiche);
+
   // Stesso filtro dei permessi della sidebar: un superadmin non-root senza
   // accesso a Chat non deve trovarsela in barra. `children` rimossi: nella
   // barra la voce è un solo tocco, non un accordion.
@@ -427,6 +470,8 @@ type ArtistProfilesContext = {
   owned: OwnedArtist[];
   activeId: string | null;
   canCreateMore: boolean;
+  /** Novita' per profilo (richieste in attesa + messaggi non letti + notifiche). */
+  news?: Record<string, number>;
 };
 
 async function loadArtistShell(userId: string): Promise<{
@@ -492,57 +537,80 @@ async function loadArtistShell(userId: string): Promise<{
     : null;
   const uploadedVideoCount = uploadedVideosRes?.count ?? 0;
 
-  // Le richieste arrivano al singolo profilo, ma il badge è dell'account: chi
-  // ha più profili deve vedere le novità di TUTTI, non solo del profilo
-  // attivo. Si contano le richieste di booking in attesa (il flusso attuale) e
-  // i vecchi lead «new» (flusso precedente, ancora mostrato in pagina).
+  // Ogni profilo ha le sue richieste e le sue chat: i badge della sidebar
+  // contano solo il profilo ATTIVO, cosi' coincidono con le liste in pagina.
+  // Le novita' degli altri profili non si perdono: finiscono in `profiles.news`
+  // e compaiono come badge accanto a ciascun profilo nel selettore in topbar.
   const ownedIds = owned.map((o) => o.id);
   if (activeArtist && !ownedIds.includes(activeArtist.id)) ownedIds.push(activeArtist.id);
+  const activeId = activeArtist?.id ?? null;
 
   let newLeads = 0;
   let negotiatingRequests = 0;
   let confirmedRequests = 0;
+  let unreadChat = 0;
+  // Badge del selettore = notifiche non lette del profilo, come la campanella
+  // (ogni nuova richiesta e ogni chat ne genera una). Se le notifiche non sono
+  // leggibili si ripiega su richieste in attesa + messaggi non letti.
+  const notifichePerProfilo = await contaNonLettePerProfilo(userId);
+  const news: Record<string, number> = { ...(notifichePerProfilo ?? {}) };
+  const addNews = (artistId: string | null | undefined, n = 1) => {
+    if (!artistId || notifichePerProfilo) return;
+    news[artistId] = (news[artistId] ?? 0) + n;
+  };
 
   if (ownedIds.length > 0) {
-    const [bookingsPending, leadsNew, bookingsNegotiating, bookingsConfirmed] = await Promise.all([
-      safe(
-        admin
-          .from("booking_requests")
-          .select("id", { count: "exact", head: true })
-          .in("artist_id", ownedIds)
-          .eq("status", "pending")
-      ),
-      safe(
-        admin
-          .from("leads")
-          .select("id", { count: "exact", head: true })
-          .in("artist_id", ownedIds)
-          .eq("status", "new")
-      ),
-      safe(
-        admin
-          .from("booking_requests")
-          .select("id", { count: "exact", head: true })
-          .in("artist_id", ownedIds)
-          .in("status", ["in_trattativa", "accettata"])
-      ),
-      safe(
-        admin
-          .from("booking_requests")
-          .select("id", { count: "exact", head: true })
-          .in("artist_id", ownedIds)
-          .eq("status", "confermata")
-      ),
-    ]);
+    const [bookingsPending, leadsNew, bookingsNegotiating, bookingsConfirmed, unreadByProfile] =
+      await Promise.all([
+        safe(
+          admin
+            .from("booking_requests")
+            .select("artist_id")
+            .in("artist_id", ownedIds)
+            .eq("status", "pending")
+        ),
+        safe(
+          admin
+            .from("leads")
+            .select("artist_id")
+            .in("artist_id", ownedIds)
+            .eq("status", "new")
+        ),
+        activeId
+          ? safe(
+              admin
+                .from("booking_requests")
+                .select("id", { count: "exact", head: true })
+                .eq("artist_id", activeId)
+                .in("status", ["in_trattativa", "accettata"])
+            )
+          : null,
+        activeId
+          ? safe(
+              admin
+                .from("booking_requests")
+                .select("id", { count: "exact", head: true })
+                .eq("artist_id", activeId)
+                .eq("status", "confermata")
+            )
+          : null,
+        safe(getArtistUnreadByProfile(userId)),
+      ]);
     // Una query fallita conta zero: è solo un badge, non governa nessuna scrittura.
     if (bookingsPending?.error) logger.error("AppShellData", "booking pending:", bookingsPending.error.message);
     if (leadsNew?.error) logger.error("AppShellData", "leads new:", leadsNew.error.message);
-    newLeads = (bookingsPending?.count ?? 0) + (leadsNew?.count ?? 0);
+    const pendingRows = [
+      ...((bookingsPending?.data ?? []) as { artist_id: string | null }[]),
+      ...((leadsNew?.data ?? []) as { artist_id: string | null }[]),
+    ];
+    for (const r of pendingRows) addNews(r.artist_id);
+    newLeads = pendingRows.filter((r) => r.artist_id === activeId).length;
     negotiatingRequests = bookingsNegotiating?.count ?? 0;
     confirmedRequests = bookingsConfirmed?.count ?? 0;
+    for (const [artistId, n] of Object.entries(unreadByProfile ?? {})) addNews(artistId, n);
+    unreadChat = activeId ? (unreadByProfile?.[activeId] ?? 0) : 0;
   }
-
-  const unreadChat = await safe(getUnreadCountForUser(userId, "artist")).then((v) => v ?? 0);
+  profiles.news = news;
 
   const navSections: NavSection[] = [
     {
@@ -774,6 +842,7 @@ export async function AdminAppShell({
   let bottomNav: NavSection[] | undefined;
   let storage: AppShellStorage | undefined = undefined;
   let badgesAt: number | undefined;
+  let notifications: NotificheIniziali | undefined;
   try {
     if (isConsultant) {
       ({ navSections, storage } = await loadConsultantShell(user.id));
@@ -783,7 +852,12 @@ export async function AdminAppShell({
     } else {
       const isRoot = isRootSuperadminEmail(user.email);
       const allowed = await getAllowedAdminPages(user.id, user.email);
-      ({ navSections, bottomNav, badgesAt } = await loadAdminShell({ allowed, isRoot }));
+      notifications = await caricaNotifiche(user.id, "admin");
+      ({ navSections, bottomNav, badgesAt } = await loadAdminShell({
+        allowed,
+        isRoot,
+        notificheNonLette: notifications.count,
+      }));
     }
   } catch (err) {
     console.error("[AppShellData] loadAdminShell crashed:", err);
@@ -805,6 +879,7 @@ export async function AdminAppShell({
       bottomNav={bottomNav}
       badgesAt={badgesAt}
       storage={storage}
+      notifications={notifications}
     >
       {children}
     </AppShell>
@@ -996,10 +1071,37 @@ function defaultOrganizerNav(): NavSection[] {
   ];
 }
 
+const PAGINA_NOTIFICHE: Record<AreaNotifiche, string> = {
+  artist: "/dashboard/notifiche",
+  organizer: "/organizzatore/notifiche",
+  admin: "/admin/notifiche",
+};
+
 /** Notifiche della campanella; tabella mancante o errore = campanella vuota. */
-async function caricaNotifiche(userId: string): Promise<NotificheIniziali> {
-  const { items, count } = await leggiNonLette(userId);
-  return { items, count };
+async function caricaNotifiche(
+  userId: string,
+  area: AreaNotifiche,
+  activeArtistId?: string | null,
+): Promise<NotificheIniziali> {
+  const { items, count } = await leggiNotifiche(userId, { artistId: activeArtistId ?? null, limit: 15 });
+  return { items, count, userId, area, pageHref: PAGINA_NOTIFICHE[area] };
+}
+
+/**
+ * Voce «Notifiche» subito sotto la Dashboard (richiesta del cliente: una
+ * sezione dedicata, sempre a portata, oltre alla campanella).
+ */
+function conVoceNotifiche(nav: NavSection[], n: NotificheIniziali, overviewHref: string): NavSection[] {
+  const voce: NavSection = {
+    href: n.pageHref,
+    label: "Notifiche",
+    icon: <Bell className="size-4" />,
+    badge: n.count > 0 ? { label: String(n.count), variant: "accent" } : undefined,
+  };
+  const i = nav.findIndex((s) => s.href === overviewHref);
+  const out = [...nav];
+  out.splice(i >= 0 ? i + 1 : 0, 0, voce);
+  return out;
 }
 
 export async function OrganizerAppShell({
@@ -1011,7 +1113,7 @@ export async function OrganizerAppShell({
 }) {
   let navSections: NavSection[];
   let storage: AppShellStorage | undefined;
-  const notifications = await caricaNotifiche(user.id);
+  const notifications = await caricaNotifiche(user.id, "organizer");
   try {
     ({ navSections, storage } = await loadOrganizerShell(user.id));
   } catch (err) {
@@ -1019,6 +1121,7 @@ export async function OrganizerAppShell({
     navSections = defaultOrganizerNav();
     storage = undefined;
   }
+  navSections = conVoceNotifiche(navSections, notifications, "/organizzatore");
   return (
     <AppShell
       brand={<ShellBrand suffix="Organizzatore" />}
@@ -1050,7 +1153,6 @@ export async function ArtistAppShell({
   let profiles: ArtistProfilesContext;
   let planTier: ArtistTier | null;
   let artistCover: string | null;
-  const notifications = await caricaNotifiche(user.id);
   try {
     ({ navSections, storage, profiles, planTier, artistCover } = await loadArtistShell(user.id));
   } catch (err) {
@@ -1061,6 +1163,10 @@ export async function ArtistAppShell({
     planTier = null;
     artistCover = null;
   }
+  // Dopo la shell: serve il profilo attivo per filtrare la campanella.
+  const notifications = await caricaNotifiche(user.id, "artist", profiles.activeId);
+  navSections = conVoceNotifiche(navSections, notifications, "/dashboard/overview");
+
   return (
     <AppShell
       brand={<ShellBrand suffix="Artista" />}
@@ -1083,6 +1189,7 @@ export async function ArtistAppShell({
           owned={profiles.owned}
           activeId={profiles.activeId}
           canCreateMore={profiles.canCreateMore}
+          news={profiles.news}
         />
       }
     >

@@ -34,9 +34,11 @@ export function ChatDock() {
     if (res.ok) setConversations(res.conversations);
   }, []);
 
+  // Si ricarica anche all'apertura: dopo un cambio di profilo l'elenco deve
+  // mostrare le chat del nuovo profilo attivo, non quelle del precedente.
   useEffect(() => {
     reloadList();
-  }, [reloadList]);
+  }, [reloadList, state.open]);
 
   useEffect(() => {
     const supabase = createClient();

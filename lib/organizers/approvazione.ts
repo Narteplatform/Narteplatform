@@ -1,4 +1,5 @@
 import "server-only";
+import { creaNotificheAdmin } from "@/lib/notifications";
 import { createElement } from "react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
@@ -199,6 +200,12 @@ export async function avvisaRichiestaOrganizzatore(input: {
 }): Promise<void> {
   const base = getSiteUrl();
   const adminEmail = adminRecipients();
+  await creaNotificheAdmin({
+    kind: "admin_organizzatore",
+    title: `Organizzatore da approvare: ${input.nome}`,
+    body: input.citta ? `Città: ${input.citta}` : null,
+    href: "/admin/utenti?filtro=organizzatori-in-attesa",
+  });
   await Promise.allSettled([
     dispatchEmail({
       key: "organizer_registration_received",

@@ -1,3 +1,4 @@
+import { creaNotificheAdmin } from "@/lib/notifications";
 import "server-only";
 import { createElement } from "react";
 import { dispatchEmail } from "@/lib/emails/dispatch";
@@ -24,6 +25,12 @@ export async function avvisaNuovoProfilo(input: {
   const ownerEmail = input.ownerEmail ?? "";
 
   await Promise.allSettled([
+    creaNotificheAdmin({
+      kind: "admin_profilo",
+      title: `Nuovo profilo da approvare: ${input.stageName}`,
+      body: ownerEmail ? `Account ${ownerEmail}` : null,
+      href: "/admin/artisti?filter=pending",
+    }),
     registraAzione({
       actorId: input.ownerId,
       targetType: "profilo",

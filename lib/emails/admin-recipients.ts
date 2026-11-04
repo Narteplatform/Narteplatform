@@ -29,9 +29,11 @@ export function adminRecipients(opts: { fallback?: boolean } = {}): string[] {
     ...indirizzi(process.env.ADMIN_NOTIFICATION_EMAIL),
     ...indirizzi(extraRaw || EXTRA_DEFAULT),
   ];
-  if (lista.length === 0) lista.push(EXTRA_DEFAULT);
+  // Prima il ripiego richiesto, poi la casella condivisa: nell'ordine opposto
+  // la lista non era mai vuota e il ripiego non scattava mai.
   if (opts.fallback && lista.length === 0) {
     lista.push(...indirizzi(process.env.SUPERADMIN_EMAIL), TITOLARE.emailContatti.toLowerCase());
   }
+  if (lista.length === 0) lista.push(EXTRA_DEFAULT);
   return Array.from(new Set(lista));
 }

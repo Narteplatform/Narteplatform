@@ -191,8 +191,13 @@ export default async function AdminFeedbackPage({
                     <span className="font-medium text-foreground">
                       {f.user_name || f.user_email || "Utente"}
                     </span>{" "}
-                    · {f.role === "artist" ? "Artista" : "Organizzatore"} ·{" "}
-                    {new Date(f.created_at).toLocaleString("it-IT")}
+                    ·{" "}
+                    {f.role === "artist"
+                      ? f.artist_name
+                        ? `Artista «${f.artist_name}»`
+                        : "Artista"
+                      : "Organizzatore"}{" "}
+                    · {new Date(f.created_at).toLocaleString("it-IT", { timeZone: "Europe/Rome" })}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">

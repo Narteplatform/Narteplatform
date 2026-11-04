@@ -65,7 +65,12 @@ export default async function CalendarioPage() {
           <CardTitle className="text-base">Google Calendar</CardTitle>
         </CardHeader>
         <CardContent>
-          <CollegaCalendario descrizione="Le date confermate su N'arte, di tutti i tuoi profili, compaiono da sole nel tuo Google Calendar (o in Apple Calendar e Outlook). Il collegamento è in sola lettura: le disponibilità si gestiscono qui." />
+          {/* key: cambiando profilo il link mostrato e' quello del nuovo profilo. */}
+          <CollegaCalendario
+            key={artist.id}
+            ambito="profilo"
+            descrizione={`Le date confermate di «${artist.stage_name}» compaiono da sole nel tuo Google Calendar (o in Apple Calendar e Outlook). Ogni profilo ha il suo link. Il collegamento è in sola lettura: le disponibilità si gestiscono qui.`}
+          />
         </CardContent>
       </Card>
 

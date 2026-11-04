@@ -13,7 +13,14 @@ import type { LinkCalendario } from "@/lib/calendar/feed";
  * pagina. Si apre poi con un vero link e non con window.open dopo l'attesa:
  * i browser bloccano le finestre aperte fuori dal clic.
  */
-export function CollegaCalendario({ descrizione }: { descrizione: string }) {
+export function CollegaCalendario({
+  descrizione,
+  ambito = "account",
+}: {
+  descrizione: string;
+  /** "profilo": link del solo profilo artista attivo. */
+  ambito?: "account" | "profilo";
+}) {
   const [link, setLink] = useState<LinkCalendario | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [copiato, setCopiato] = useState(false);
@@ -23,7 +30,7 @@ export function CollegaCalendario({ descrizione }: { descrizione: string }) {
   function carica(rigenera: boolean) {
     setErrore(null);
     start(async () => {
-      const res = await ottieniLinkCalendario(rigenera);
+      const res = await ottieniLinkCalendario(rigenera, ambito);
       if (!res.ok) {
         setErrore(res.error);
         return;

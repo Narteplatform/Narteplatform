@@ -1,5 +1,6 @@
 "use server";
 
+import { resolveActiveArtist } from "@/lib/artist/current";
 import { leggiStatoOrganizzatore } from "@/lib/organizers/approvazione";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
@@ -14,7 +15,11 @@ import {
 import { sendBookingAcceptedEmail, sendBookingConfirmedEmail } from "@/lib/emails/booking-notify";
 import { logger } from "@/lib/logger";
 import { notifyNewChatMessage, notifyNewChatOffer } from "@/lib/chat/notify";
-import { creaNotifichePerArtista, creaNotifichePerOrganizzatore } from "@/lib/notifications";
+import {
+  creaNotificaRaggruppata,
+  creaNotifichePerArtista,
+  creaNotifichePerOrganizzatore,
+} from "@/lib/notifications";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import type { Role } from "@/lib/supabase/types";
 import {
@@ -215,8 +220,62 @@ export async function sendMessage(input: ChatMessageInput): Promise<ActionResult
       console.error("[chat] notifica nuovo messaggio:", e)
     )
   );
+  after(() => notificaMessaggioChat(conversationId, role, parsed.data.body));
 
   return { ok: true };
+}
+
+/**
+ * Notifica in-app di un messaggio di chat, UNA per conversazione: finche'
+ * il destinatario non la legge, i messaggi successivi aggiornano la stessa
+ * («3 nuovi messaggi») invece di riempire la lista. Best-effort, mai lancia.
+ */
+async function notificaMessaggioChat(
+  conversationId: string,
+  actorRole: Role | null,
+  anteprima: string,
+): Promise<void> {
+  try {
+    if (actorRole !== "artist" && actorRole !== "organizer") return;
+    const admin = createAdminClient();
+    const { data: conv, error } = await admin
+      .from("conversations")
+      .select("artist_id, organizer_id, artists(stage_name, user_id), organizers(display_name, user_id)")
+      .eq("id", conversationId)
+      .maybeSingle();
+    if (error || !conv) {
+      if (error) logger.error("chat", "notifica messaggio, conversazione non letta:", error.message);
+      return;
+    }
+    const a = conv.artists as unknown as { stage_name: string; user_id: string | null } | null;
+    const o = conv.organizers as unknown as { display_name: string; user_id: string | null } | null;
+    const versoArtista = actorRole === "organizer";
+    const userId = versoArtista ? a?.user_id : o?.user_id;
+    if (!userId) return;
+
+    const campoLetto = versoArtista ? "read_by_artist_at" : "read_by_organizer_at";
+    const { count } = await admin
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("conversation_id", conversationId)
+      .eq("sender_role", actorRole)
+      .is(campoLetto, null);
+    const n = Math.max(1, count ?? 1);
+    const mittente = versoArtista ? (o?.display_name ?? "Un organizzatore") : (a?.stage_name ?? "L'artista");
+    const testo = anteprima.length > 140 ? `${anteprima.slice(0, 137)}…` : anteprima;
+
+    await creaNotificaRaggruppata({
+      userId,
+      artistId: versoArtista ? conv.artist_id : null,
+      kind: "messaggio_chat",
+      refKey: `chat:${conversationId}`,
+      title: versoArtista ? `${mittente} ti ha scritto` : `${mittente} ti ha risposto`,
+      body: n > 1 ? `${n} nuovi messaggi · «${testo}»` : `«${testo}»`,
+      href: versoArtista ? `/dashboard/chat/${conversationId}` : `/organizzatore/chat/${conversationId}`,
+    });
+  } catch (e) {
+    logger.error("chat", "notifica messaggio:", e instanceof Error ? e.message : String(e));
+  }
 }
 
 /**
@@ -243,9 +302,9 @@ async function notificaControparte(
     }
     if (!conv) return;
     if (actorRole === "artist") {
-      await creaNotifichePerOrganizzatore(conv.organizer_id, { ...n, href: "/organizzatore/chat" });
+      await creaNotifichePerOrganizzatore(conv.organizer_id, { ...n, href: `/organizzatore/chat/${conversationId}` });
     } else {
-      await creaNotifichePerArtista(conv.artist_id, { ...n, href: "/dashboard/chat" });
+      await creaNotifichePerArtista(conv.artist_id, { ...n, href: `/dashboard/chat/${conversationId}` });
     }
   } catch (e) {
     logger.error("chat", "notifica controparte:", e instanceof Error ? e.message : String(e));
@@ -533,6 +592,9 @@ export async function sendAttachment(input: {
     attachment_duration_ms: input.duration_ms ?? null,
   });
   if (error) return { ok: false, error: error.message };
+  const anteprima =
+    input.kind === "image" ? "📷 Foto" : input.kind === "voice" ? "🎙️ Vocale" : `📎 ${input.name.slice(0, 80)}`;
+  after(() => notificaMessaggioChat(input.conversation_id, role, anteprima));
   return { ok: true };
 }
 
@@ -560,8 +622,20 @@ export async function fetchConversationMessages(
   return { ok: true, messages: await getMessages(conversationId) };
 }
 
-export async function fetchDockConversations(): Promise<
-  | { ok: true; conversations: ConversationItem[]; role: "artist" | "organizer" }
+/**
+ * Conversazioni per dock e toast. `scope: "active"` (dock) limita l'artista al
+ * profilo attivo; `"all"` (toast) le include tutte, cosi' un messaggio a un
+ * altro profilo dell'account viene comunque segnalato.
+ */
+export async function fetchDockConversations(
+  scope: "active" | "all" = "active",
+): Promise<
+  | {
+      ok: true;
+      conversations: ConversationItem[];
+      role: "artist" | "organizer";
+      activeArtistId?: string | null;
+    }
   | ActionErr
 > {
   const supabase = await createClient();
@@ -577,8 +651,12 @@ export async function fetchDockConversations(): Promise<
     .eq("id", user.id)
     .maybeSingle();
   if (profile?.role === "artist") {
-    const conversations = await getConversationsForArtist(user.id);
-    return { ok: true, conversations, role: "artist" };
+    const active = await resolveActiveArtist(user.id);
+    const conversations = await getConversationsForArtist(
+      user.id,
+      scope === "active" && active ? { artistId: active.id } : {},
+    );
+    return { ok: true, conversations, role: "artist", activeArtistId: active?.id ?? null };
   }
   if (profile?.role === "organizer") {
     const conversations = await getConversationsForOrganizer(user.id);
@@ -636,6 +714,17 @@ export async function markConversationRead(conversationId: string): Promise<Acti
       .eq("conversation_id", conversationId)
       .neq("sender_role", "organizer")
       .is("read_by_organizer_at", null);
+  }
+  // Chat letta = notifica della chat letta, anche se la si e' aperta senza
+  // passare dalla campanella. Senza la colonna ref_key (0076) non fa nulla.
+  const { error: errNotifica } = await admin
+    .from("notifications")
+    .update({ read_at: now })
+    .eq("user_id", user.id)
+    .eq("ref_key", `chat:${conversationId}`)
+    .is("read_at", null);
+  if (errNotifica && errNotifica.code !== "42703" && errNotifica.code !== "PGRST204" && errNotifica.code !== "42P01") {
+    logger.warn("chat", "notifica chat non segnata come letta:", errNotifica.message);
   }
   return { ok: true };
 }

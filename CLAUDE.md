@@ -153,7 +153,7 @@ In `.claude/agents/`:
 ## Migration
 
 Si applicano dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md).
-**Al 30/09/2026 sono applicate tutte, fino alla 0068** (verificato con lo script qui sotto).
+**Al 04/11/2026 sono applicate tutte, fino alla 0075** (verificato con lo script qui sotto).
 Per ogni nuova migration: intestazione CONTESTO in italiano, additiva dove possibile, RLS +
 `revoke all … from anon, authenticated` sulle tabelle nuove, voce in
 `scripts/check-migrations.mjs` e in `docs/MIGRATION_DA_APPLICARE.md`, e una riga qui sotto
@@ -169,32 +169,12 @@ policy e pubblicazioni realtime — che PostgREST non espone — le query sono i
 
 **In attesa:**
 
-- `0069_booking_accettata.sql` — nuovo stato `accettata` del booking (doppia conferma).
-  Da eseguire da solo, PRIMA della 0070.
-- `0070_allineamento_finale.sql` — doppia conferma (`accept_offer_v2`: accetta l'artista →
-  `accettata`, accetta l'organizzatore → `confermata`), ruolo/user agent/IP in hash nelle
-  accettazioni, allegati e assegnazione delle segnalazioni (bucket privato
-  `report-attachments`), `venues.hidden_at`, tabella `subscription_withdrawals`, e
-  **visitatori senza dati identificativi**: anon legge di `artists` solo
-  `id, genre, instruments, tier, is_public, status, percorso_artistico`; nessuna lettura anon
-  su `artist_videos`, calendario e `consultants`. Il codice per gli ospiti usa già solo
-  quelle colonne.
-- `0071_approvazione_organizzatori.sql` — approvazione degli organizzatori: `organizers.approval_status`
-  (pending/approved/rejected), i nuovi organizzatori nascono «in attesa» e il team li approva da
-  `/admin/utenti?filtro=organizzatori-in-attesa`. **Indipendente da 0069/0070**, in qualunque ordine.
-  Il codice è già online e tollera la colonna mancante (= «approved»). Gli organizzatori esistenti
-  restano approvati. Chiude anche `consultant` dal metadata di signup e la RPC
-  `promote_user_to_organizer` per gli utenti.
-- `0073_notifiche.sql` — notifiche in-app (campanella in topbar, artista e organizzatore): tabella
-  `notifications`, scrive solo la service role, l'utente legge le proprie e segna `read_at`.
-  **Indipendente dalle altre.** Il codice tollera la tabella mancante (campanella vuota).
-- `0074_modifiche_cliente_ottobre.sql` — titoli dei video di eventi/format (`video_titles`), token del
-  calendario iCal (`calendar_feeds`), contenuti del sito (`site_settings`, `/admin/contenuti`) e
-  `moderation_actions.target_name`. **Indipendente dalle altre.** Il codice tollera ogni parte mancante.
-- `0075_modifiche_cliente_27_ottobre.sql` — solista/band su candidature e profili (`formazione`,
-  `componenti`, con grant anon), testo delle email nel registro (`email_log.body_html`/`body_source`),
-  `profile_referrals.profile_id` per le proposte Max ai privati. **Indipendente dalle altre**, ma se la
-  0070 si esegue dopo, va rieseguita la 0075 (il revoke di tabella toglie il grant di colonna).
+- `0076_modifiche_cliente_novembre.sql` — notifiche raggruppate (`notifications.ref_key`) e in
+  tempo reale (tabella nella pubblicazione `supabase_realtime`), profilo nel feedback
+  (`platform_feedback.artist_id`), link iCal per profilo (`artist_calendar_feeds`), tappe di Chi
+  siamo (`site_milestones`, con le 6 attuali), messaggi al team dalla pagina Consulente
+  (`team_messages`). **Indipendente dalle altre.** Il codice tollera ogni parte mancante: senza,
+  la campanella si aggiorna solo al ritorno sulla scheda e le chat non si raggruppano.
 
 ## Comandi
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/server";
+import { creaNotificheAdmin } from "@/lib/notifications";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import { publicFormConsent } from "@/lib/legal/consents";
 import {
@@ -99,6 +100,12 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
   });
 
   const adminEmail = adminRecipients();
+  await creaNotificheAdmin({
+    kind: "admin_candidatura",
+    title: `Nuova candidatura: ${data.stageName || data.name}`,
+    body: `${data.name} · ${data.genres.join(", ")}`,
+    href: "/admin/artisti?filter=pending",
+  });
   // I parametri Brevo e il componente Resend convivono di proposito: finché
   // la chiave non è elencata in BREVO_ENABLED_KEYS parte il secondo, e se
   // Brevo fallisce si ricade comunque su di lui. Vedi lib/emails/dispatch.ts.

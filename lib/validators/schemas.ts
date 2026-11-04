@@ -629,3 +629,10 @@ export const platformFeedbackSchema = z.object({
     .or(z.literal("").transform(() => undefined)),
 });
 export type PlatformFeedbackInput = z.infer<typeof platformFeedbackSchema>;
+
+/** «Scrivi al team» dalla pagina Consulente (team_messages, 0076). */
+export const teamMessageSchema = z.object({
+  subject: z.string().trim().min(3, "Scrivi un oggetto (almeno 3 caratteri)").max(140, "Massimo 140 caratteri"),
+  body: z.string().trim().min(10, "Almeno 10 caratteri").max(4000, "Massimo 4000 caratteri"),
+});
+export type TeamMessageInput = z.infer<typeof teamMessageSchema>;

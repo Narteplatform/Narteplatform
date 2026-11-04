@@ -17,6 +17,25 @@ funzionalità nuove restano spente finché non si arriva in fondo.
 
 ---
 
+## `0076_modifiche_cliente_novembre.sql` — notifiche in tempo reale e profili autonomi
+
+Indipendente dalle altre, additiva e idempotente. Non modifica righe esistenti.
+
+- `notifications.ref_key` + indice univoco parziale: una sola notifica non letta per
+  conversazione (i messaggi successivi la aggiornano).
+- `notifications` nella pubblicazione `supabase_realtime`: campanella, toast e badge si
+  aggiornano senza ricaricare. La RLS della 0073 fa arrivare a ciascuno solo le proprie righe.
+- `platform_feedback.artist_id`: il profilo attivo all'invio del feedback.
+- `artist_calendar_feeds`: un link iCal per profilo. `calendar_feeds` non cambia, i link già
+  collegati a Google continuano a funzionare.
+- `site_milestones`: le tappe di Chi siamo, inizializzate con le 6 attuali solo se vuota.
+- `team_messages`: «Scrivi al team» dalla pagina Consulente.
+
+Verifica: `npm run db:check-migrations`; per la pubblicazione realtime la query in
+`docs/VERIFICA_MIGRATION.sql`.
+
+---
+
 ---
 
 ## `0058_private_buckets_and_organizers.sql` — l'ultimo residuo

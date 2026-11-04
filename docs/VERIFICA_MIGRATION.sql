@@ -324,3 +324,10 @@ order by column_name;
 
 select has_table_privilege('anon', 'public.artists', 'SELECT') as select_tabella_intera;
 -- Atteso: false (resta solo il privilegio sulle colonne elencate sopra).
+
+
+-- 0076 — notifiche nella pubblicazione realtime e indice di raggruppamento
+select tablename from pg_publication_tables
+ where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'notifications';
+select indexname from pg_indexes
+ where schemaname = 'public' and indexname = 'notifications_user_ref_unread_uidx';
