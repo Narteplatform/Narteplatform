@@ -112,7 +112,7 @@ export function ChatDock() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.85 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-[70] md:bottom-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-azzurro text-white shadow-[0_8px_30px_rgba(26,107,173,0.35)] hover:bg-azzurro-dark transition-colors"
+            className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-[70] md:bottom-24 inline-flex h-14 w-14 items-center justify-center rounded-full bg-azzurro text-white shadow-[0_8px_30px_rgba(26,107,173,0.35)] hover:bg-azzurro-dark transition-colors"
             aria-label="Apri chat"
           >
             <MessageCircle className="size-6" />

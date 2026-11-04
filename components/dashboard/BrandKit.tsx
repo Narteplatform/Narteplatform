@@ -2,7 +2,6 @@ import { Download } from "lucide-react";
 import {
   BRAND_KIT_COLORI,
   BRAND_KIT_LOGHI,
-  BRAND_KIT_REGOLE,
 } from "@/lib/brand-kit/contenuti";
 
 /**
@@ -65,7 +64,7 @@ export function BrandKit({ intro, html }: { intro: string; html: string }) {
         </ul>
       </section>
 
-      <div className="blog-prose max-w-3xl" dangerouslySetInnerHTML={{ __html: html + BRAND_KIT_REGOLE }} />
+      <div className="blog-prose max-w-3xl" dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   );
 }

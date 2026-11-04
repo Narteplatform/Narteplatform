@@ -39,7 +39,7 @@ export default async function AdminEventiPage({
   const supabase = createAdminClient();
   let query = supabase
     .from("events")
-    .select("id, slug, title, category, date, city, featured, cover_image")
+    .select("id, slug, title, category, date, city, featured, cover_image, cover_image_home")
     .order("date", { ascending: false });
 
   const today = new Date();
@@ -127,10 +127,10 @@ export default async function AdminEventiPage({
               filtered.map((event) => (
                 <li key={event.id} className="flex gap-3 px-4 py-4">
                   <div className="relative size-14 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
-                    {event.cover_image ? (
+                    {(event.cover_image_home ?? event.cover_image) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={event.cover_image}
+                        src={(event.cover_image_home ?? event.cover_image) ?? undefined}
                         alt={event.title}
                         className="h-full w-full object-cover"
                       />
@@ -198,10 +198,10 @@ export default async function AdminEventiPage({
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="relative size-12 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
-                            {event.cover_image ? (
+                            {(event.cover_image_home ?? event.cover_image) ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={event.cover_image}
+                                src={(event.cover_image_home ?? event.cover_image) ?? undefined}
                                 alt={event.title}
                                 className="h-full w-full object-cover"
                               />

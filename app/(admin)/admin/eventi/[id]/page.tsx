@@ -31,9 +31,9 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="relative size-20 shrink-0 overflow-hidden rounded-2xl border border-border bg-muted">
-              {event.cover_image ? (
+              {(event.cover_image_home ?? event.cover_image) ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={event.cover_image} alt={event.title} className="h-full w-full object-cover" />
+                <img src={(event.cover_image_home ?? event.cover_image) ?? undefined} alt={event.title} className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                   <ImageIcon className="size-6" />

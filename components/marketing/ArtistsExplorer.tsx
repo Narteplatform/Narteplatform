@@ -59,7 +59,20 @@ function FilterDropdown({
   onClear: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  // Da telefono il pannello aperto dal bordo sinistro del pulsante usciva
+  // dallo schermo (il pulsante «Genere» sta a destra): all'apertura si misura
+  // lo spazio e, se non basta, il pannello si allinea al bordo destro.
+  const [alignRight, setAlignRight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  function toggleOpen() {
+    if (!open && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const panelWidth = Math.min(260, window.innerWidth - 32);
+      setAlignRight(rect.left + panelWidth > window.innerWidth - 16);
+    }
+    setOpen((v) => !v);
+  }
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -77,7 +90,7 @@ function FilterDropdown({
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggleOpen}
         aria-haspopup="listbox"
         aria-expanded={open}
         className={[
@@ -103,7 +116,10 @@ function FilterDropdown({
         <div
           role="listbox"
           aria-multiselectable="true"
-          className="absolute left-0 top-full z-50 mt-2 min-w-[200px] max-w-[260px] overflow-hidden rounded-xl border border-border bg-white shadow-lg"
+          className={[
+            "absolute top-full z-50 mt-2 w-max min-w-[min(200px,calc(100vw-2rem))] max-w-[min(260px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-white shadow-lg",
+            alignRight ? "right-0" : "left-0",
+          ].join(" ")}
         >
           {activeCount > 0 && (
             <>
@@ -343,7 +359,7 @@ export function ArtistsExplorer({
         </div>
 
         {/* Dropdown filters */}
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {formazioneOptions.length > 0 && (
             <FilterDropdown
               label="Formazione"
@@ -399,15 +415,16 @@ export function ArtistsExplorer({
 
       {/* Trasparenza sull'ordine (art. 22 c. 4-bis Cod. consumo): sempre
           visibile, anche da telefono, sopra i risultati. */}
-      <p className="mt-3 text-xs text-muted-foreground">
-        Ordine: prima gli artisti con piano Max, poi Pro (abbonamenti a pagamento), poi gli
-        altri{isGuest ? "" : ", in ordine alfabetico"}. I filtri restringono l&rsquo;elenco, non cambiano
-        l&rsquo;ordine.{" "}
+      {/* Il dettaglio dei criteri sta nella pagina linkata, raggiungibile in un
+          clic dai risultati. La sezione è chiara (bianca) dentro un layout
+          data-theme="dark": si usano i colori notte espliciti, non foreground. */}
+      <p className="mt-3 text-xs text-notte/70">
+        Ordine:{" "}
         <Link
           href={urlCriteriPosizionamento()}
-          className="font-medium text-foreground underline underline-offset-4 hover:text-accent"
+          className="underline underline-offset-4 hover:text-notte"
         >
-          Come funziona
+          come funziona
         </Link>
       </p>
 

@@ -64,7 +64,7 @@ export const CONTENUTI = {
     etichetta: "Descrizione sotto il logo",
     tipo: "testo-lungo",
     predefinito:
-      "La community napoletana degli artisti emergenti. Booking professionale di live music dal 2018.",
+      "La community degli artisti emergenti. Live music dal 2018.",
     max: 300,
   },
   "artisti.hero.descrizione": {
