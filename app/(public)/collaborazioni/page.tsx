@@ -4,7 +4,8 @@ import { getPublicEvents } from "@/lib/data/events";
 import { getCollaborations } from "@/lib/data/collaborations";
 import { StaggerList, Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
-import { heroImageFor } from "@/lib/content/hero-images";
+import { heroImageConContenuti } from "@/lib/content/hero-images";
+import { getContenuti } from "@/lib/content/site-settings-server";
 import { EventCard } from "@/components/marketing/EventCard";
 import { LogoMarquee } from "@/components/marketing/LogoMarquee";
 
@@ -22,24 +23,19 @@ export const metadata = {
 const PAST_EVENTS_LIMIT = 24;
 
 export default async function CollaborazioniPage() {
-  const [pastEvents, collaborations] = await Promise.all([
+  const [pastEvents, collaborations, contenuti] = await Promise.all([
     getPublicEvents({ when: "past", limit: PAST_EVENTS_LIMIT }),
     getCollaborations(),
+    getContenuti(),
   ]);
 
   return (
     <>
       <PageHero
-        image={heroImageFor("collaborazioni")}
+        image={await heroImageConContenuti("collaborazioni")}
         label="collaborazioni"
         title="Collaborazioni"
-        description={
-          <>
-            Ogni serata qui sotto è nata insieme a qualcuno: un parco, un
-            ristorante, un comune, un festival. Questo è quello che abbiamo
-            costruito finora.
-          </>
-        }
+        description={contenuti["collaborazioni.intro"]}
       />
 
       {/* ARCHIVIO EVENTI — si aggiorna da solo: la query confronta la data con

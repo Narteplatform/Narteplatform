@@ -2,6 +2,7 @@
 
 import { logger } from "@/lib/logger";
 import { avvisaTeam } from "@/lib/notifications/team";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 import { teamMessageSchema, type TeamMessageInput } from "@/lib/validators/schemas";
 import { creaNotificheAdmin } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
@@ -282,6 +283,13 @@ export async function inviaMessaggioAlTeam(input: TeamMessageInput) {
   if (!role) return { ok: false as const, error: "Funzione riservata ad artisti e organizzatori." };
 
   const attivo = role === "artist" ? await resolveActiveArtist(user.id) : null;
+
+  // Tetto per account indipendente da team_messages: vale anche prima della
+  // 0076, quando parte solo l'email (senza, un invio in loop sommergerebbe
+  // la casella del team).
+  if (!(await checkRateLimit({ scope: "team-message", windowSeconds: 86_400, max: LIMITE_GIORNO }, user.id))) {
+    return { ok: false as const, error: "Hai già scritto più volte oggi: ti risponderemo al più presto." };
+  }
 
   // Limite anti-raffica, letto dalla tabella stessa. Se la lettura fallisce
   // per tabella mancante si prosegue (solo email); per altri errori ci si ferma.

@@ -124,7 +124,8 @@ export function ImageUpload({ label, value, onChange, kind = "artist", beforePic
       const file = new File([blob], "image.jpg", { type: "image/jpeg" });
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("kind", kind);
+      // I ritagli del sito (site_wide, site_square, …) finiscono tutti nella destinazione "site".
+      fd.append("kind", kind.startsWith("site_") ? "site" : kind);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));

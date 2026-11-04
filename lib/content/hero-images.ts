@@ -1,6 +1,7 @@
 import "server-only";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { getContenuti } from "@/lib/content/site-settings-server";
 
 /**
  * Immagine di sfondo dell'intestazione di ogni pagina pubblica.
@@ -92,4 +93,16 @@ export function heroImageFor(key: HeroKey): HeroImage {
   const image: HeroImage = { src: findLocal(key) ?? STOCK[key], alt: "" };
   resolved.set(key, image);
   return image;
+}
+
+/**
+ * Come `heroImageFor`, ma con la foto caricata da /admin/contenuti
+ * (chiave `hero.<pagina>`, trattini → trattini bassi) al primo posto.
+ * Vuota o non leggibile = la foto di sempre.
+ */
+export async function heroImageConContenuti(key: HeroKey): Promise<HeroImage> {
+  const contenuti = await getContenuti();
+  const chiave = `hero.${key.replace(/-/g, "_")}` as keyof typeof contenuti;
+  const caricata = contenuti[chiave];
+  return caricata ? { src: caricata, alt: "" } : heroImageFor(key);
 }

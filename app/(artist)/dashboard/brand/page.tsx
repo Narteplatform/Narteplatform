@@ -1,14 +1,16 @@
 import { requireRole } from "@/lib/auth/guards";
 import { BrandKit } from "@/components/dashboard/BrandKit";
+import { getContenuti } from "@/lib/content/site-settings-server";
 import { BRAND_KIT_ARTISTA } from "@/lib/brand-kit/contenuti";
 
 export const metadata = { title: "Kit brand — N'arte Artist" };
 
 export default async function ArtistBrandKitPage() {
   await requireRole(["artist", "superadmin"]);
+  const c = await getContenuti();
   return (
     <BrandKit
-      intro="Loghi, colori e indicazioni per parlare di N'arte sui tuoi canali e presentarti come artista del roster."
+      intro={c["kitbrand.intro.artista"]}
       html={BRAND_KIT_ARTISTA}
     />
   );

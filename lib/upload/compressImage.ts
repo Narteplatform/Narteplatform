@@ -23,7 +23,20 @@
  * ⚠️ Modulo di SOLO BROWSER: usa canvas, Image e createImageBitmap.
  */
 
-export type ImageKind = "artist" | "event" | "event_home" | "avatar" | "venue" | "format" | "blog";
+export type ImageKind =
+  | "artist"
+  | "event"
+  | "event_home"
+  | "avatar"
+  | "venue"
+  | "format"
+  | "blog"
+  /** Intestazioni delle pagine del sito (/admin/contenuti). */
+  | "site_wide"
+  /** Foto quadrate del sito: fondatore, tappe di Chi siamo. */
+  | "site_square"
+  /** Foto verticali del sito: blocco «Cosa è N'arte» in home. */
+  | "site_portrait";
 
 export type ImageTarget = { w: number; h: number; aspect: string };
 
@@ -39,6 +52,9 @@ export const IMAGE_TARGETS: Readonly<Record<ImageKind, ImageTarget>> = {
   venue: { w: 1600, h: 900, aspect: "16 / 9" },
   format: { w: 900, h: 1200, aspect: "3 / 4" },
   blog: { w: 1600, h: 900, aspect: "16 / 9" },
+  site_wide: { w: 2000, h: 1125, aspect: "16 / 9" },
+  site_square: { w: 900, h: 900, aspect: "1 / 1" },
+  site_portrait: { w: 1200, h: 1500, aspect: "4 / 5" },
 };
 
 /** Qualità JPEG del ritaglio. Identica a prima dell'estrazione: l'output non cambia. */

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ArrowRight, MessageCircle, Phone } from "lucide-react";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
-import { heroImageFor } from "@/lib/content/hero-images";
+import { heroImageConContenuti } from "@/lib/content/hero-images";
 import { CategoryIcon } from "@/lib/help/icons";
 import { HelpSearch } from "@/components/help/HelpSearch";
 import { HELP_CATEGORIES, popularArticles, searchIndex } from "@/lib/help/content";
@@ -25,14 +25,14 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
 };
 
-export default function HelpHomePage() {
+export default async function HelpHomePage() {
   const popular = popularArticles(6);
   const index = searchIndex();
 
   return (
     <div className="bg-background pb-24">
       <PageHero
-        image={heroImageFor("help")}
+        image={await heroImageConContenuti("help")}
         label="aiuto"
         title="Aiuto"
         description={

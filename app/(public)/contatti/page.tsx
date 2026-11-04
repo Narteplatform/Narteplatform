@@ -2,7 +2,7 @@ import { Mail, Instagram, MapPin } from "lucide-react";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
-import { heroImageFor } from "@/lib/content/hero-images";
+import { heroImageConContenuti } from "@/lib/content/hero-images";
 import { TITOLARE } from "@/lib/legal/titolare";
 import { getContenuti } from "@/lib/content/site-settings-server";
 import { handleSocial } from "@/lib/content/site-settings";
@@ -14,7 +14,7 @@ export default async function ContattiPage() {
   return (
     <>
       <PageHero
-        image={heroImageFor("contatti")}
+        image={await heroImageConContenuti("contatti")}
         label="contatti"
         title="Contattaci."
         description={

@@ -3,10 +3,11 @@ import Image from "next/image";
 import { ArrowRight, CalendarDays, Handshake, Megaphone, Users } from "lucide-react";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
-import { heroImageFor } from "@/lib/content/hero-images";
+import { heroImageConContenuti } from "@/lib/content/hero-images";
 import { MilestonesTimeline } from "@/components/marketing/MilestonesTimeline";
 import { Button } from "@/components/ui/Button";
-import { MILESTONES } from "@/lib/content/milestones";
+import { getTappe } from "@/lib/content/milestones-server";
+import { getContenuti } from "@/lib/content/site-settings-server";
 import { NARTE_STATS, NARTE_SINCE } from "@/lib/content/stats";
 
 export const metadata = { title: "Chi siamo — N'arte" };
@@ -81,19 +82,15 @@ function AloneBlu() {
   );
 }
 
-export default function ChiSiamoPage() {
+export default async function ChiSiamoPage() {
+  const [c, tappe] = await Promise.all([getContenuti(), getTappe()]);
   return (
     <>
       <PageHero
-        image={heroImageFor("chi-siamo")}
+        image={await heroImageConContenuti("chi-siamo")}
         label="chi siamo"
         title="Chi siamo"
-        description={
-          <>
-            La piattaforma N&rsquo;arte offre visibilità ad artisti emergenti mettendoli in
-            contatto con gli organizzatori di eventi e locali.
-          </>
-        }
+        description={c["chisiamo.intro"]}
       />
 
       {/* ── BIANCO — IL FONDATORE ─────────────────────────────────────────── */}
@@ -111,8 +108,8 @@ export default function ChiSiamoPage() {
               />
               <div className="relative aspect-square overflow-hidden rounded-full border border-palco-60 bg-palco-80">
                 <Image
-                  src="/brand/fondatore-eduardo.jpg"
-                  alt="Eduardo Castronuovo, fondatore di N'arte, sul palco"
+                  src={c["chisiamo.fondatore.foto"]}
+                  alt={`${c["chisiamo.fondatore.nome"]}, fondatore di N'arte`}
                   fill
                   sizes="(min-width: 1024px) 320px, (min-width: 768px) 288px, 224px"
                   className="object-cover"
@@ -126,13 +123,10 @@ export default function ChiSiamoPage() {
             <div className="text-center md:text-left">
               <p className="accent-label mb-3">il fondatore</p>
               <h2 className="display-xl text-4xl text-notte md:text-5xl">
-                Eduardo Castronuovo
+                {c["chisiamo.fondatore.nome"]}
               </h2>
               <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-notte/70 md:mx-0 md:text-lg">
-                Giovane visionario fondatore di N&rsquo;arte e presente nel settore della musica
-                da oltre 8 anni. Eduardo ha dato la possibilità a tantissimi giovani emergenti
-                di crescere ed esprimersi su migliaia di palchi, gestendo anche la direzione
-                artistica di grandi eventi.
+                {c["chisiamo.fondatore.bio"]}
               </p>
               <ul className="mt-8 flex flex-wrap justify-center gap-2 md:justify-start">
                 {FONDATORE_CHIPS.map((chip) => (
@@ -162,19 +156,18 @@ export default function ChiSiamoPage() {
             </Reveal>
             <Reveal delay={0.1}>
               <h2 className="display-xl text-balance text-4xl md:text-6xl">
-                Come siamo arrivati fin qui.
+                {c["chisiamo.tappe.titolo"]}
               </h2>
             </Reveal>
             <Reveal delay={0.2}>
               <p className="mt-5 text-pretty text-base text-muted-foreground md:text-lg">
-                Otto anni, una città e un mucchio di serate. Tocca una tappa per
-                leggerne la storia.
+                {c["chisiamo.tappe.sottotitolo"]}
               </p>
             </Reveal>
           </div>
 
           <Reveal delay={0.25}>
-            <MilestonesTimeline items={MILESTONES} className="mt-12 md:mt-16" />
+            {tappe.length > 0 && <MilestonesTimeline items={tappe} className="mt-12 md:mt-16" />}
           </Reveal>
         </div>
       </section>
@@ -188,14 +181,12 @@ export default function ChiSiamoPage() {
             </Reveal>
             <Reveal delay={0.1}>
               <h2 className="display-xl text-balance text-4xl text-notte md:text-5xl lg:text-6xl">
-                Dare voce a chi crea cultura.
+                {c["chisiamo.missione.titolo"]}
               </h2>
             </Reveal>
             <Reveal delay={0.2}>
               <p className="mx-auto mt-6 max-w-xl text-pretty text-base leading-relaxed text-notte/70 md:mx-0 md:text-lg">
-                Sosteniamo musicisti, performer e creativi emergenti costruendo occasioni
-                concrete: serate, festival, format originali. Diamo spazio, contesto e
-                visibilità — non solo un palco.
+                {c["chisiamo.missione.testo"]}
               </p>
             </Reveal>
           </div>
@@ -270,13 +261,12 @@ export default function ChiSiamoPage() {
           </Reveal>
           <Reveal delay={0.1}>
             <h2 className="display-xl text-balance text-4xl text-notte md:text-6xl">
-              Vuoi farne parte?
+              {c["chisiamo.cta.titolo"]}
             </h2>
           </Reveal>
           <Reveal delay={0.2}>
             <p className="mx-auto mt-6 max-w-xl text-pretty text-base text-notte/70 md:text-lg">
-              Sei un artista, un organizzatore o una realtà culturale? Costruiamo qualcosa
-              insieme.
+              {c["chisiamo.cta.testo"]}
             </p>
           </Reveal>
           <Reveal delay={0.3}>

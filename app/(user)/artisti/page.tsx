@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { logger } from "@/lib/logger";
 import { ArtistsExplorer, type ExplorerArtist } from "@/components/marketing/ArtistsExplorer";
-import { heroImageFor } from "@/lib/content/hero-images";
+import { heroImageConContenuti } from "@/lib/content/hero-images";
 import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
 import { getRatingsForArtists } from "@/lib/feedback/queries";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
@@ -130,7 +130,7 @@ export default async function ArtistiPage() {
   return (
     <>
       <PageHero
-        image={heroImageFor("artisti")}
+        image={await heroImageConContenuti("artisti")}
         label="roster"
         title="Gli artisti"
         description={

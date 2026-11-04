@@ -281,22 +281,24 @@ export async function getArtistUnreadByProfile(userId: string): Promise<Record<s
   const admin = createAdminClient();
   const owned = await ownedArtistIds(userId);
   if (!owned || owned.length === 0) return {};
-  const { data, error } = await admin
-    .from("messages")
-    .select("id, conversations!inner(artist_id)")
-    .in("conversations.artist_id", owned)
-    .eq("sender_role", "organizer")
-    .is("read_by_artist_at", null);
-  if (error) {
-    console.error("[chat] non letti per profilo:", error);
-    return {};
-  }
-  const out: Record<string, number> = {};
-  for (const row of (data ?? []) as unknown as { conversations: { artist_id: string } }[]) {
-    const id = row.conversations.artist_id;
-    out[id] = (out[id] ?? 0) + 1;
-  }
-  return out;
+  // Un conteggio per profilo (al massimo 5): leggere le righe verrebbe
+  // troncato in silenzio dal tetto di 1000 righe di PostgREST.
+  const conteggi = await Promise.all(
+    owned.map(async (artistId) => {
+      const { count, error } = await admin
+        .from("messages")
+        .select("id, conversations!inner(artist_id)", { count: "exact", head: true })
+        .eq("conversations.artist_id", artistId)
+        .eq("sender_role", "organizer")
+        .is("read_by_artist_at", null);
+      if (error) {
+        console.error("[chat] non letti per profilo:", error);
+        return [artistId, 0] as const;
+      }
+      return [artistId, count ?? 0] as const;
+    }),
+  );
+  return Object.fromEntries(conteggi.filter(([, n]) => n > 0));
 }
 
 export async function getConversationsForOrganizer(userId: string): Promise<ConversationItem[]> {

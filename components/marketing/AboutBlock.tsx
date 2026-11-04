@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/animations/Reveal";
-import { NARTE_SINCE } from "@/lib/content/stats";
+import { getContenuti } from "@/lib/content/site-settings-server";
 
 /**
  * "Cosa è N'arte": testo a sinistra, immagine a destra.
@@ -14,15 +14,15 @@ import { NARTE_SINCE } from "@/lib/content/stats";
  * perché l'occhio ritrova sempre lo stesso margine — e a destra entra la foto.
  *
  * L'immagine è quella dell'hero, ritagliata in verticale: è l'unica foto vera di
- * un artista N'arte sul palco presente nel progetto. Va sostituita appena arriva
- * la definitiva — basta cambiare le tre costanti qui sotto.
+ * un artista N'arte sul palco presente nel progetto. Titolo, testo e foto si
+ * cambiano da /admin/contenuti (gruppo «Home»).
  */
-const FOTO = "/hero-terrazza.webp";
 const FOTO_ALT =
   "Un artista canta con la chitarra durante una serata N'arte";
 const FOTO_PRIORITARIA = false;
 
-export function AboutBlock() {
+export async function AboutBlock() {
+  const c = await getContenuti();
   return (
     <section className="bg-[#F7F5F2] py-20 text-notte md:py-28">
       <div className="container-narte">
@@ -36,15 +36,12 @@ export function AboutBlock() {
               {/* text-balance distribuisce le righe in modo simmetrico da solo:
                   un <br /> fisso si spezzava male alle larghezze intermedie. */}
               <h2 className="display-xl max-w-xl text-balance text-3xl text-notte md:text-5xl">
-                Dal {NARTE_SINCE} diamo palchi agli artisti e musica vera ai
-                locali che la cercano
+                {c["home.about.titolo"]}
               </h2>
             </Reveal>
             <Reveal delay={0.2}>
               <p className="mt-8 max-w-xl text-pretty text-base text-notte/70 md:text-lg">
-                N&rsquo;arte è nata con una missione chiara: fare in modo che
-                anche i talenti emergenti trovino un palco, aumentando la qualità
-                dell&rsquo;offerta musicale di locali e organizzazioni.
+                {c["home.about.testo"]}
               </p>
             </Reveal>
             <Reveal delay={0.3}>
@@ -63,7 +60,7 @@ export function AboutBlock() {
           <Reveal delay={0.15} className="order-1 lg:order-2">
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-notte/5">
               <Image
-                src={FOTO}
+                src={c["home.about.foto"]}
                 alt={FOTO_ALT}
                 fill
                 priority={FOTO_PRIORITARIA}

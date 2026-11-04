@@ -23,6 +23,9 @@ const BUCKETS = {
   "format": "format-covers",
   "format-video": "event-videos",
   "blog": "blog-covers",
+  // Foto e loghi del sito gestiti da /admin/contenuti: bucket editoriale pubblico.
+  "site": "blog-covers",
+  "site-logo": "blog-covers",
 } as const;
 
 type Kind = keyof typeof BUCKETS;
@@ -39,7 +42,13 @@ type Kind = keyof typeof BUCKETS;
  * admin — ma lasciava scrivere nello Storage a spese nostre e in un'area che
  * non ha nulla a che fare con quell'utente.
  */
-const KIND_SOLO_ADMIN: ReadonlySet<Kind> = new Set(["blog", "format", "format-video"]);
+const KIND_SOLO_ADMIN: ReadonlySet<Kind> = new Set(["blog", "format", "format-video", "site", "site-logo"]);
+
+/**
+ * Foto e loghi del sito: solo formati raster. Un SVG puo' contenere script, e
+ * questi file finiscono su una pagina pubblica a nome di N'arte.
+ */
+const SITE_IMAGE_MIME = /^image\/(jpeg|png|webp)$/;
 
 const AUDIO_MIME = /^audio\//;
 const VIDEO_MIME = /^video\/(mp4|webm|quicktime)$/;
@@ -134,6 +143,9 @@ export async function POST(request: Request) {
     }
     if (!file.type.startsWith("image/")) {
       return NextResponse.json({ error: "Formato non supportato" }, { status: 415 });
+    }
+    if ((kind === "site" || kind === "site-logo") && !SITE_IMAGE_MIME.test(file.type)) {
+      return NextResponse.json({ error: "Usa un file JPG, PNG o WebP." }, { status: 415 });
     }
   }
 

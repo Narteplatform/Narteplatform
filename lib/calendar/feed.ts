@@ -101,7 +101,7 @@ export async function linkCalendarioProfilo(
       .eq("artist_id", artistId)
       .maybeSingle();
     if (error) {
-      if (tabellaAssente(error.code)) return linkCalendario(userId, rigenera);
+      if (tabellaAssente(error.code)) return linkCalendario(userId, false);
       logger.error(AREA, "lettura token profilo:", error.message);
       return { ok: false, error: "Non riesco a leggere il tuo link. Riprova tra poco." };
     }
@@ -116,7 +116,13 @@ export async function linkCalendarioProfilo(
       { onConflict: "artist_id" },
     );
   if (error) {
-    if (tabellaAssente(error.code)) return linkCalendario(userId, rigenera);
+    // Rigenerare qui il link dell'account invaliderebbe il calendario di TUTTI
+    // i profili gia' collegato a Google: con la tabella assente ci si ferma.
+    if (tabellaAssente(error.code)) {
+      return rigenera
+        ? { ok: false, nonDisponibile: true, error: "Il link per singolo profilo non è ancora attivo." }
+        : linkCalendario(userId, false);
+    }
     logger.error(AREA, "scrittura token profilo:", error.message);
     return { ok: false, error: "Non riesco a creare il link. Riprova tra poco." };
   }

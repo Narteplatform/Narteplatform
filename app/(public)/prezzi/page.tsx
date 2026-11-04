@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
-import { heroImageFor } from "@/lib/content/hero-images";
+import { heroImageConContenuti } from "@/lib/content/hero-images";
 import { PlanComparison } from "@/components/billing/PlanComparison";
 import { Button } from "@/components/ui/Button";
 import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
@@ -12,11 +12,11 @@ export const metadata = {
     "N'arte Free, Pro e Max: scegli il piano per farti trovare dagli organizzatori. Richieste di booking illimitate su ogni piano.",
 };
 
-export default function PrezziPage() {
+export default async function PrezziPage() {
   return (
     <>
       <PageHero
-        image={heroImageFor("prezzi")}
+        image={await heroImageConContenuti("prezzi")}
         label="piani e prezzi"
         title={
           <>

@@ -51,7 +51,10 @@ const CITIES = [
   { v: "Benevento", label: "Benevento" },
 ];
 
-export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
+/** Testi e foto della hero, modificabili da /admin/contenuti (gruppo «Home»). */
+export type HeroTesti = { riga1: string; riga2: string; sottotitolo: string; sfondo: string };
+
+export function HeroNarteClient({ partners, testi }: { partners: CollabLogo[]; testi: HeroTesti }) {
   const reduce = useReducedMotion();
   const router = useRouter();
   const [q, setQ] = React.useState("");
@@ -169,7 +172,7 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
       {/* Background concerto */}
       <div className="absolute inset-0 -z-10">
         <Image
-          src={HERO_BG}
+          src={testi.sfondo || HERO_BG}
           alt=""
           fill
           priority
@@ -231,10 +234,10 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
               resta una riga da 320px in su; il tetto di 3rem impedisce che sui
               telefoni larghi superi il gradino successivo. */}
           <span className="block text-[clamp(2.1rem,9.6vw,3rem)] font-bold text-palco tracking-[-0.045em] sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-            L&rsquo;artista ideale{" "}
+            {testi.riga1}{" "}
           </span>
           <span className="mt-2 block text-[clamp(2.1rem,9.6vw,3rem)] font-bold text-azzurro-light tracking-[-0.045em] sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-            per il tuo evento
+            {testi.riga2}
           </span>
         </motion.h1>
 
@@ -244,8 +247,7 @@ export function HeroNarteClient({ partners }: { partners: CollabLogo[] }) {
           {...titleAnim(0.2)}
           className="mt-4 max-w-2xl text-pretty text-[1.1rem] text-palco/75 sm:mt-5 sm:text-base md:text-lg"
         >
-          Sfoglia gli artisti per genere e tipologia e contattali per la tua
-          serata!
+          {testi.sottotitolo}
         </motion.p>
 
         {/* Search bar */}

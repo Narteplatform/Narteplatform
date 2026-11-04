@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { CHIAVI_CONTENUTI, CONTENUTI, type ChiaveContenuto, type Contenuti } from "@/lib/content/site-settings";
 import { salvaContenuti } from "@/app/(admin)/admin/contenuti/_actions";
+import { ImageUpload } from "@/components/forms/ImageUpload";
 
 export function ContenutiForm({ valori, salvati }: { valori: Contenuti; salvati: string[] }) {
   const [bozza, setBozza] = useState<Contenuti>(valori);
@@ -57,8 +58,15 @@ export function ContenutiForm({ valori, salvati }: { valori: Contenuti; salvati:
               const diverso = bozza[k] !== def.predefinito;
               return (
                 <div key={k} className="space-y-1.5">
-                  <Label htmlFor={id}>{def.etichetta}</Label>
-                  {def.tipo === "testo-lungo" ? (
+                  {def.tipo !== "immagine" && <Label htmlFor={id}>{def.etichetta}</Label>}
+                  {def.tipo === "immagine" ? (
+                    <ImageUpload
+                      label={def.etichetta}
+                      kind={"formato" in def && def.formato ? def.formato : "site_wide"}
+                      value={bozza[k]}
+                      onChange={(url) => setBozza({ ...bozza, [k]: url })}
+                    />
+                  ) : def.tipo === "testo-lungo" ? (
                     <Textarea
                       id={id}
                       rows={3}
@@ -83,7 +91,7 @@ export function ContenutiForm({ valori, salvati }: { valori: Contenuti; salvati:
                         className="underline-offset-2 hover:text-foreground hover:underline"
                         onClick={() => setBozza({ ...bozza, [k]: def.predefinito })}
                       >
-                        Ripristina il testo originale
+                        {def.tipo === "immagine" ? "Ripristina la foto originale" : "Ripristina il testo originale"}
                       </button>
                     )}
                   </div>

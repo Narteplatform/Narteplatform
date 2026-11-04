@@ -35,11 +35,19 @@ async function leggiDalDatabase(): Promise<Contenuti> {
   return valori;
 }
 
-/** I contenuti del sito, con i predefiniti al posto delle chiavi mai modificate. */
-export const getContenuti = unstable_cache(leggiDalDatabase, ["site-settings-v1"], {
+// v2: dalla 0076 le chiavi sono molte di piu'. Una voce in cache scritta da
+// una versione precedente non le avrebbe, e la home mostrerebbe titoli vuoti.
+const getContenutiInCache = unstable_cache(leggiDalDatabase, ["site-settings-v2"], {
   tags: [TAG_CONTENUTI],
   revalidate: DURATA_CACHE_S,
 });
+
+/** I contenuti del sito, con i predefiniti al posto delle chiavi mai modificate. */
+export async function getContenuti(): Promise<Contenuti> {
+  // Ripiego per chiave: qualunque voce mancante (cache vecchia, chiave nuova)
+  // vale il testo predefinito, mai una stringa vuota non voluta.
+  return { ...contenutiPredefiniti(), ...(await getContenutiInCache()) };
+}
 
 /** Lettura senza cache, per il modulo admin: mostra sempre il valore salvato. */
 export async function getContenutiPerModifica(): Promise<

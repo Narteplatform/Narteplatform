@@ -521,7 +521,11 @@ export async function listPlatformFeedback(filters?: {
 }): Promise<PlatformFeedbackRow[]> {
   const admin = createAdminClient();
   const build = (cols: string) => {
-    let query = admin.from("platform_feedback").select(cols).order("created_at", { ascending: false });
+    let query = admin
+      .from("platform_feedback")
+      .select(cols)
+      .order("created_at", { ascending: false })
+      .limit(200);
     if (filters?.status) query = query.eq("status", filters.status);
     if (filters?.role) query = query.eq("role", filters.role);
     if (filters?.category) query = query.eq("category", filters.category);

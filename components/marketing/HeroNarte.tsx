@@ -1,5 +1,6 @@
 import { HeroNarteClient } from "./HeroNarteClient";
 import { getCollaborations } from "@/lib/data/collaborations";
+import { getContenuti } from "@/lib/content/site-settings-server";
 
 /**
  * Involucro server della hero: la parte interattiva (ricerca con autocomplete)
@@ -9,6 +10,16 @@ import { getCollaborations } from "@/lib/data/collaborations";
  * una query sola.
  */
 export async function HeroNarte() {
-  const partners = await getCollaborations();
-  return <HeroNarteClient partners={partners} />;
+  const [partners, c] = await Promise.all([getCollaborations(), getContenuti()]);
+  return (
+    <HeroNarteClient
+      partners={partners}
+      testi={{
+        riga1: c["home.hero.riga1"],
+        riga2: c["home.hero.riga2"],
+        sottotitolo: c["home.hero.sottotitolo"],
+        sfondo: c["home.hero.foto"],
+      }}
+    />
+  );
 }
