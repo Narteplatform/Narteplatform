@@ -7,6 +7,7 @@ import { deleteObject } from "@/lib/storage/bunny/storage";
 import { deleteStreamVideo } from "@/lib/storage/bunny/stream";
 import { registraDecisione } from "@/lib/moderation/decisioni";
 import { disiscriviNewsletter } from "@/lib/brevo/contacts";
+import { CHIAVI_CONSERVATE } from "@/lib/emails/corpo";
 
 /**
  * Completamento della cancellazione dell'account: la rimozione DEFINITIVA.
@@ -1000,6 +1001,28 @@ export async function eseguiCompletamento(input: {
   } catch (e) {
     avvisi.push(`Cancellazione eseguita, ma il registro non è stato scritto: ${messaggio(e)}`);
     logger.error(AREA, `registro non scritto per utente ${userId}: ${messaggio(e)}`);
+  }
+
+  // ── 9. Registro email ──
+  // Le comunicazioni ordinarie perdono destinatario e testo; restano intatte
+  // solo quelle con valore legale o probatorio (abbonamento, recesso, decisioni,
+  // esiti di segnalazioni), compresa la comunicazione finale appena inviata.
+  // Non bloccante: la cancellazione è già avvenuta.
+  {
+    const conservate = CHIAVI_CONSERVATE.join(",");
+    const indirizzi = [...new Set([piano.email, piano.email.toLowerCase()])];
+    const { data, error } = await admin
+      .from("email_log")
+      .update({ to_addresses: ["[account cancellato]"], body_html: null })
+      .overlaps("to_addresses", indirizzi)
+      .or(`template.is.null,template.not.in.(${conservate})`)
+      .select("id");
+    if (error) {
+      avvisi.push(`Cancellazione eseguita, ma il registro email non è stato anonimizzato: ${error.message}`);
+      logger.error(AREA, `email_log non anonimizzato per utente ${userId}: ${error.message}`);
+    } else {
+      logger.warn(AREA, `email_log: ${data?.length ?? 0} righe anonimizzate`);
+    }
   }
 
   logger.warn(AREA, `COMPLETATA — richiesta=${input.richiestaId} utente=${userId}`);

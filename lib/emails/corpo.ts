@@ -34,7 +34,7 @@ const RISERVATE: ReadonlySet<string> = new Set([
 ]);
 
 /** Chiavi Brevo con valore legale o probatorio: le sole di cui si salva il testo. */
-const CONSERVATE: ReadonlySet<string> = new Set([
+export const CHIAVI_CONSERVATE = [
   "subscription_activated",
   "subscription_cancelled",
   "subscription_withdrawal",
@@ -45,7 +45,8 @@ const CONSERVATE: ReadonlySet<string> = new Set([
   "moderation_decision",
   "report_receipt",
   "report_outcome",
-]);
+] as const;
+const CONSERVATE: ReadonlySet<string> = new Set(CHIAVI_CONSERVATE);
 
 /** Vero se il testo di questa email ha valore legale e va conservato. */
 export function corpoConservato(...chiavi: (string | null | undefined)[]): boolean {
