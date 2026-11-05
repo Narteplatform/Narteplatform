@@ -3,10 +3,10 @@
 Immagini che stanno dietro il titolo in cima a ogni pagina pubblica
 (`components/marketing/PageHero.tsx`), al 20% di opacità.
 
-**Questa cartella è vuota di proposito.** Finché un file non c'è, la pagina usa
-una foto stock da Unsplash: nessuna intestazione resta senza sfondo. Appena
-carichi la tua foto con il nome giusto, sostituisce automaticamente lo stock —
-non serve toccare il codice né aprire un ticket.
+Contiene le copie locali delle foto stock (Unsplash, licenza Unsplash): sono
+servite dal nostro dominio perché il browser dei visitatori non contatti server
+esteri. Per usare una foto vera di N'arte sovrascrivi il file con lo stesso nome,
+oppure caricala da /admin/contenuti.
 
 ## Nomi file attesi
 

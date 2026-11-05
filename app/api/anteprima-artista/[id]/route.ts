@@ -18,14 +18,9 @@ export const runtime = "nodejs";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_BYTES = 15 * 1024 * 1024;
 
-/** Stessi host di `images.remotePatterns` in next.config.ts. */
+/** Host dei media degli artisti (Supabase e bunny.net). */
 function hostAmmesso(host: string): boolean {
-  return (
-    host.endsWith(".supabase.co") ||
-    host.endsWith(".b-cdn.net") ||
-    host === "images.unsplash.com" ||
-    host === "source.unsplash.com"
-  );
+  return host.endsWith(".supabase.co") || host.endsWith(".b-cdn.net");
 }
 
 function nonTrovato() {

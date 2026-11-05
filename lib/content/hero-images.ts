@@ -7,8 +7,8 @@ import { getContenuti } from "@/lib/content/site-settings-server";
  * Immagine di sfondo dell'intestazione di ogni pagina pubblica.
  *
  * Due sorgenti, in ordine di precedenza:
- *  1. `public/hero/<chiave>.jpg` — la foto vera di N'arte, se c'è;
- *  2. l'URL Unsplash di riserva, così nessuna pagina resta senza sfondo.
+ *  1. `public/hero/<chiave>.(jpg|jpeg|webp|png)` — il file presente in cartella;
+ *  2. `/hero/<chiave>.jpg`, la copia locale della foto stock.
  *
  * Il senso è che le foto vere si caricano una alla volta, quando ci sono, senza
  * toccare una riga di codice: appena il file compare in `public/hero/`, prende
@@ -21,9 +21,8 @@ import { getContenuti } from "@/lib/content/site-settings-server";
  *     possibile — qualunque runtime, qualunque motivo — si degrada allo stock:
  *     mai un errore, mai una pagina senza sfondo.
  *
- * Gli URL Unsplash sono stati verificati raggiungibili: un id sbagliato non
- * darebbe un errore, darebbe un'intestazione muta. Se ne cambi uno, controllalo.
- * Il dominio è già in `next.config.ts` → `images.remotePatterns`.
+ * Per sostituire una foto basta sovrascrivere il file in `public/hero/`
+ * oppure caricarla da /admin/contenuti.
  */
 
 export type HeroKey =
@@ -48,21 +47,24 @@ export type HeroImage = {
   alt: "";
 };
 
-const UNSPLASH = (id: string) =>
-  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=2000&q=70`;
-
-/** Foto di riserva, una per pagina, scelte per attinenza al contenuto. */
+/**
+ * Foto di riserva, una per pagina: copie locali in `public/hero/` delle foto
+ * Unsplash usate in origine (licenza Unsplash). Servite dal nostro dominio, così
+ * il browser del visitatore non contatta server negli Stati Uniti (parere
+ * legale, novembre 2026). Un file con estensione diversa, se presente, ha la
+ * precedenza (vedi `findLocal`).
+ */
 const STOCK: Record<HeroKey, string> = {
-  artisti: UNSPLASH("photo-1501281668745-f7f57925c3b4"), // musicista sul palco
-  eventi: UNSPLASH("photo-1459749411175-04bf5292ceea"), // concerto dal palco
-  format: UNSPLASH("photo-1540039155733-5bb30b53aa14"), // luci e palco allestito
-  blog: UNSPLASH("photo-1516450360452-9312f5e86fc7"), // chitarra e appunti
-  help: UNSPLASH("photo-1522071820081-009f0129c71c"), // persone che si confrontano
-  "chi-siamo": UNSPLASH("photo-1493225457124-a3eb161ffa5f"), // band dal vivo
-  collaborazioni: UNSPLASH("photo-1511671782779-c97d3d27a1d4"), // stretta di mano / incontro
-  contatti: UNSPLASH("photo-1514320291840-2e0a9bf2a9ae"), // microfono da vicino
-  prezzi: UNSPLASH("photo-1465146344425-f00d5f5c8f07"), // luce calda, neutra
-  "candidatura-artista": UNSPLASH("photo-1524368535928-5b5e00ddc76b"), // artista che si prepara
+  artisti: "/hero/artisti.jpg",
+  eventi: "/hero/eventi.jpg",
+  format: "/hero/format.jpg",
+  blog: "/hero/blog.jpg",
+  help: "/hero/help.jpg",
+  "chi-siamo": "/hero/chi-siamo.jpg",
+  collaborazioni: "/hero/collaborazioni.jpg",
+  contatti: "/hero/contatti.jpg",
+  prezzi: "/hero/prezzi.jpg",
+  "candidatura-artista": "/hero/candidatura-artista.jpg",
 };
 
 /** Cartella e nomi file attesi per le foto vere. Vedi public/hero/README.md. */

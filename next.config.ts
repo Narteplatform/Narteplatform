@@ -16,8 +16,11 @@ const nextConfig: NextConfig = {
       // bunny.net: sia la pull zone dello storage (immagini, audio) sia quella
       // di Stream (poster e anteprime dei video).
       { protocol: "https", hostname: "*.b-cdn.net" },
+      // Unsplash resta SOLO per l'ottimizzatore lato server: alcune copertine
+      // del blog (seed) puntano ancora lì. Passando da next/image il browser del
+      // visitatore non contatta Unsplash. Va tolto quando quelle copertine
+      // saranno copiate su bunny.net (parere legale, novembre 2026).
       { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "source.unsplash.com" },
     ],
   },
   experimental: {
@@ -91,7 +94,6 @@ const nextConfig: NextConfig = {
       // blob: serve alle anteprime locali degli upload prima dell'invio.
       // GA4 manda ancora parte dei colpi come immagine, e il pixel pure.
       "img-src 'self' data: blob: https://*.supabase.co https://*.b-cdn.net " +
-        "https://images.unsplash.com https://source.unsplash.com " +
         "https://cdn.iubenda.com https://www.google-analytics.com " +
         "https://www.googletagmanager.com https://www.facebook.com",
       "media-src 'self' blob: https://*.supabase.co https://*.b-cdn.net",

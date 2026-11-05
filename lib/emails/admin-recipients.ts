@@ -6,7 +6,10 @@ import { TITOLARE } from "@/lib/legal/titolare";
  * Unisce, senza doppioni e in minuscolo:
  *  - `ADMIN_NOTIFICATION_EMAIL`
  *  - `ADMIN_NOTIFICATION_EXTRA` (lista separata da virgole; se vuota o assente
- *    vale la casella condivisa del team)
+ *    vale il recapito del dominio, `TITOLARE.emailContatti`)
+ *
+ * Niente caselle Gmail gratuite come predefinito: non hanno un accordo sul
+ * trattamento dei dati (art. 28 GDPR). Parere legale, novembre 2026.
  *
  * Con `{ fallback: true }`, se non resta nessun indirizzo si ripiega su
  * `SUPERADMIN_EMAIL` e poi sul recapito pubblico unico: serve ai punti che
@@ -14,7 +17,7 @@ import { TITOLARE } from "@/lib/legal/titolare";
  * `SUPERADMIN_EMAIL` identifica il root, non un destinatario.
  */
 
-const EXTRA_DEFAULT = "narte.official.eventi@gmail.com";
+const EXTRA_DEFAULT = TITOLARE.emailContatti.toLowerCase();
 
 function indirizzi(raw: string | undefined): string[] {
   return (raw ?? "")

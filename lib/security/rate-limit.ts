@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
@@ -23,16 +23,24 @@ import { logger } from "@/lib/logger";
  * e le policy RLS.
  */
 
-/** Sale per l'hash. Riusa quello delle statistiche, che ha già lo stesso scopo. */
+/**
+ * Sale per l'hash. Riusa quello delle statistiche, che ha già lo stesso scopo.
+ *
+ * Senza nessuna delle due variabili NON si usa più un sale fisso scritto nel
+ * codice (ricostruibile da chiunque legga il repository): si genera un sale
+ * casuale per istanza. Il limitatore resta in piedi — un po' meno preciso,
+ * perché istanze diverse producono hash diversi — e l'IP non è ricostruibile.
+ * Va comunque impostata VISIT_HASH_SALT su Vercel: lo segnala il log.
+ */
+let saleDiRipiego: string | null = null;
 function salt(): string {
-  return (
-    process.env.RATE_LIMIT_SALT ||
-    process.env.VISIT_HASH_SALT ||
-    // Ultimo ripiego: senza sale l'hash resta comunque non reversibile a colpo
-    // d'occhio, ma è ricostruibile da chi conosce un IP. Meglio di niente,
-    // molto peggio di un sale vero: va impostata VISIT_HASH_SALT su Vercel.
-    "narte-fallback-salt"
-  );
+  const configurato = process.env.RATE_LIMIT_SALT || process.env.VISIT_HASH_SALT;
+  if (configurato) return configurato;
+  if (!saleDiRipiego) {
+    saleDiRipiego = randomBytes(32).toString("hex");
+    logger.error("rate-limit", "RATE_LIMIT_SALT e VISIT_HASH_SALT mancanti: uso un sale casuale per istanza.");
+  }
+  return saleDiRipiego;
 }
 
 function digest(value: string): string {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Reveal } from "@/components/animations/Reveal";
 import { createAdminClient } from "@/lib/supabase/server";
+import Image from "next/image";
 
 type Post = {
   id: string;
@@ -61,12 +62,14 @@ export async function BlogSection() {
               >
                 <div className="relative aspect-[4/3] w-full overflow-hidden bg-notte-80">
                   {p.cover_image ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
+                    // next/image: la foto passa dal nostro dominio, il browser del
+                    // visitatore non contatta l'host d'origine (es. Unsplash).
+                    <Image
                       src={p.cover_image}
                       alt={p.title}
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      fill
+                      sizes="(min-width: 640px) 360px, 300px"
+                      className="object-cover transition duration-500 group-hover:scale-105"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center font-display text-2xl text-palco/25">
