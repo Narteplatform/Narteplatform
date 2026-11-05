@@ -72,7 +72,7 @@ export default async function AbbonamentoPage({
   // "stai usando il piano gratuito" a chi ha ricevuto un omaggio.
   const { data: overrideRows } = await admin
     .from("artists")
-    .select("tier_override, tier_override_expires_at, tier_override_reason")
+    .select("tier_override, tier_override_expires_at")
     .eq("user_id", user.id)
     .not("tier_override", "is", null)
     .order("tier_override", { ascending: false })
@@ -80,7 +80,6 @@ export default async function AbbonamentoPage({
   const override = ((overrideRows ?? []) as unknown as {
     tier_override: ArtistTier;
     tier_override_expires_at: string | null;
-    tier_override_reason: string | null;
   }[])[0] ?? null;
   const activeOverride =
     override &&
@@ -156,7 +155,7 @@ export default async function AbbonamentoPage({
               {STATUS_LABEL[sub.status] ?? sub.status}
             </Badge>
           ) : isGifted ? (
-            <Badge variant="success">Omaggio</Badge>
+            <Badge variant="success">Attivo</Badge>
           ) : null}
         </CardHeader>
         <CardContent className="space-y-2">
@@ -192,9 +191,6 @@ export default async function AbbonamentoPage({
                 {activeOverride?.tier_override_expires_at
                   ? `Resta attivo fino al ${dt(activeOverride.tier_override_expires_at)}.`
                   : "Non ha scadenza e non prevede alcun addebito."}
-                {activeOverride?.tier_override_reason
-                  ? ` ${activeOverride.tier_override_reason}`
-                  : ""}
               </p>
             </>
           ) : (

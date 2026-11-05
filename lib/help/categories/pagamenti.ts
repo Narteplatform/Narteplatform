@@ -225,8 +225,8 @@ export const PAGAMENTI: HelpCategory = {
 <h2>Se un pagamento non va a buon fine</h2>
 <p>Mentre Stripe riprova l'addebito il piano <strong>resta attivo</strong>. Nella tua area compare un avviso: aggiorna la carta dal portale per non perdere le funzioni.</p>
 
-<h2>Il badge "Omaggio"</h2>
-<p>Se vedi questa etichetta, il piano ti è stato assegnato dal team N'arte: <strong>non ha scadenza e non prevede alcun addebito</strong>. Non devi fare nulla.</p>
+<h2>Un piano assegnato dal team</h2>
+<p>Se nella tua area leggi «Piano assegnato dal team N'arte», il piano <strong>non prevede alcun addebito</strong> e resta attivo fino alla data indicata, se c'è. Non devi fare nulla.</p>
 
 <h2>Ho diritto al ripensamento?</h2>
 <p>I termini d'uso richiamano il diritto di recesso previsto dal Codice del consumo per chi sottoscrive in qualità di consumatore. Per una richiesta concreta <a href="/contatti">scrivici</a> e consulta anche i <a href="/termini">termini d'uso</a>.</p>
