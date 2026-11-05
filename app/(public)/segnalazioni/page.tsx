@@ -1,6 +1,7 @@
 import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
 import { ContentReportForm } from "@/components/forms/ContentReportForm";
+import { PuntoDiContatto } from "@/components/legal/PuntoDiContatto";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { REPORT_REFERENCE_RE, REPORT_TARGET_TYPES, type ReportTargetType } from "@/lib/validators/schemas";
 
@@ -100,6 +101,7 @@ export default async function SegnalazioniPage({
                   </p>
                 </div>
               )}
+              <PuntoDiContatto />
             </div>
           </Reveal>
 

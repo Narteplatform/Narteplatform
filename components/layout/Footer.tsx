@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Instagram, Facebook, Phone } from "lucide-react";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { CookiePreferencesLink } from "@/components/legal/CookiePreferencesLink";
-import { titolareInLinea } from "@/lib/legal/titolare";
+import { TITOLARE, titolareInLinea } from "@/lib/legal/titolare";
 import { LEGAL_V2_ROTTE, legalV2Pubblicato } from "@/lib/legal/v2";
 import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
 import { getContenuti } from "@/lib/content/site-settings-server";
@@ -108,6 +108,9 @@ export async function Footer() {
             e là non possono divergere. L'indirizzo completo sta nei documenti. */}
         <p className="mt-12 border-t border-notte-60 pt-6 text-xs text-notte-40">
           {titolareInLinea()}
+          <span className="block mt-1">
+            Punto di contatto unico (DSA): {TITOLARE.emailContatti} · PEC {TITOLARE.pec}
+          </span>
         </p>
 
         <div className="mt-4 flex flex-col items-start justify-between gap-4 text-xs text-notte-40 md:flex-row md:items-center">

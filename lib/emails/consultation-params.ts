@@ -43,7 +43,7 @@ export async function buildConsultationParams(
     dateLabel: formatDateRome(o.slotAt),
     timeLabel: formatTimeRome(o.slotAt),
     durationLabel: formatMinutes(o.durationMin),
-    modeLabel: "",
+    modeLabel: "Telefonata",
     meetingUrl: "",
     topic: "",
     statusLabel: o.statusLabel,

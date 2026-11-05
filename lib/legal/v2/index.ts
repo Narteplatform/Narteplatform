@@ -20,6 +20,8 @@ export const LEGAL_V2_ROTTE: { slug: string; href: string; etichetta: string }[]
   { slug: "condizioni-organizzatori", href: "/condizioni-organizzatori", etichetta: "Condizioni organizzatori" },
   { slug: "regolamento-recensioni", href: "/regolamento-recensioni", etichetta: "Regolamento recensioni" },
   { slug: "criteri-di-posizionamento", href: "/criteri-di-posizionamento", etichetta: "Criteri di posizionamento" },
+  // Doc. 06: segnalazioni, moderazione e reclami (DSA), consultabile anche dai non registrati.
+  { slug: "segnalazioni-politica", href: "/regolamento-moderazione", etichetta: "Moderazione, segnalazioni e reclami" },
 ];
 
 export function testoV2(slug: string): TestoLegaleV2 | null {

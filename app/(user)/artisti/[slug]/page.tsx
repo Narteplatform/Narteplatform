@@ -388,7 +388,7 @@ export default async function ArtistDetailPage({
   // (vedi il commento in dashboard/feedback), ma si mostrano solo se il piano
   // dell'artista le prevede. Su Free la query non parte nemmeno.
   const reviews = ent.canReceiveReviews
-    ? await getPublicFeedbackForArtist(artist.id)
+    ? await getPublicFeedbackForArtist(artist.id, Number.POSITIVE_INFINITY)
     : { reviews: [], average: 0, count: 0 };
 
   const gallery: string[] = (Array.isArray(artist.gallery) ? artist.gallery : []).slice(

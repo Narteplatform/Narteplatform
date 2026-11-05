@@ -65,6 +65,7 @@ const nextConfig: NextConfig = {
       { source: "/condizioni-organizzatori", destination: "/legale-v2/condizioni-organizzatori" },
       { source: "/regolamento-recensioni", destination: "/legale-v2/regolamento-recensioni" },
       { source: "/criteri-di-posizionamento", destination: "/legale-v2/criteri-di-posizionamento" },
+      { source: "/regolamento-moderazione", destination: "/legale-v2/segnalazioni-politica" },
     ];
   },
 

@@ -4,6 +4,7 @@ import { Reveal } from "@/components/animations/Reveal";
 import { PageHero } from "@/components/marketing/PageHero";
 import { heroImageConContenuti } from "@/lib/content/hero-images";
 import { TITOLARE } from "@/lib/legal/titolare";
+import { PuntoDiContatto } from "@/components/legal/PuntoDiContatto";
 import { getContenuti } from "@/lib/content/site-settings-server";
 import { handleSocial } from "@/lib/content/site-settings";
 
@@ -94,6 +95,9 @@ export default async function ContattiPage() {
                   </div>
                 </li>
               </ul>
+            </Reveal>
+            <Reveal delay={0.25}>
+              <PuntoDiContatto className="mt-6 text-sm leading-relaxed text-muted-foreground" />
             </Reveal>
           </div>
 

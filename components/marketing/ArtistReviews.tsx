@@ -34,6 +34,8 @@ export function ArtistReviews({
   artistSlug: string;
 }) {
   if (data.count === 0) return null;
+  const primi = data.reviews.slice(0, VISIBILI_SUBITO);
+  const altri = data.reviews.slice(VISIBILI_SUBITO);
 
   return (
     <section className="border-t border-border bg-background py-16 md:py-24">
@@ -56,8 +58,7 @@ export function ArtistReviews({
                 {data.average.toFixed(1).replace(".", ",")}
               </span>
               <span className="text-sm text-muted-foreground">
-                su {data.count}{" "}
-                {data.count === 1 ? "recensione" : "recensioni"}
+                su {data.count} {data.count === 1 ? "recensione" : "recensioni"}
               </span>
             </div>
           </Reveal>
@@ -67,19 +68,26 @@ export function ArtistReviews({
             accanto alle recensioni (art. 3.5). */}
         <Reveal delay={0.18}>
           <div className="mt-8 rounded-2xl border border-border bg-muted/40 p-5 text-sm leading-relaxed text-muted-foreground">
-            <p className="font-medium text-foreground">Come funzionano queste recensioni</p>
-            <p className="mt-2">
-              Le scrivono solo gli organizzatori che hanno avuto una data confermata con questo
-              artista su N&rsquo;arte, dopo la data dell&rsquo;evento: una recensione per ogni
-              data. N&rsquo;arte controlla che la data sia stata confermata da entrambe le parti
-              sulla piattaforma, ma non può verificare che l&rsquo;evento si sia svolto né che
-              quanto scritto sia vero.
+            <p className="font-medium text-foreground">
+              Come funzionano queste recensioni
             </p>
             <p className="mt-2">
-              Le recensioni sono in ordine dalla più recente. La media comprende tutte le
-              recensioni visibili. Nessuna recensione è a pagamento e l&rsquo;artista non può
-              scegliere quali mostrare: sono visibili tutte, sui profili con piano Pro o Max.{" "}
-              <Link href="/regolamento-recensioni" className="underline underline-offset-2">
+              Le scrivono solo gli organizzatori che hanno avuto una data
+              confermata con questo artista su N&rsquo;arte, dopo la data
+              dell&rsquo;evento: una recensione per ogni data. N&rsquo;arte
+              controlla che la data sia stata confermata da entrambe le parti
+              sulla piattaforma, ma non può verificare che l&rsquo;evento si sia
+              svolto né che quanto scritto sia vero.
+            </p>
+            <p className="mt-2">
+              Le recensioni sono in ordine dalla più recente. La media comprende
+              tutte le recensioni visibili. Nessuna recensione è a pagamento e
+              l&rsquo;artista non può scegliere quali mostrare: sono visibili
+              tutte, sui profili con piano Pro o Max.{" "}
+              <Link
+                href="/regolamento-recensioni"
+                className="underline underline-offset-2"
+              >
                 Leggi il regolamento
               </Link>
             </p>
@@ -88,60 +96,88 @@ export function ArtistReviews({
 
         <Reveal delay={0.2}>
           <ul className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {data.reviews.map((r) => (
-              <li
+            {primi.map((r) => (
+              <Recensione
                 key={r.id}
-                className="flex flex-col rounded-2xl border border-border bg-card p-5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-display text-base">
-                      {r.organizer_name}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {dataBreve(r.created_at)}
-                    </p>
-                  </div>
-                  <StarRating value={r.rating} size="sm" className="shrink-0" />
-                </div>
-
-                <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                  {r.body}
-                </p>
-
-                {r.artist_reply && (
-                  <div className="mt-4 rounded-xl bg-muted/60 p-3 text-sm">
-                    <p className="text-xs font-medium text-foreground">
-                      Risposta di {artistName}
-                    </p>
-                    <p className="mt-1 whitespace-pre-wrap leading-relaxed text-muted-foreground">
-                      {r.artist_reply}
-                    </p>
-                  </div>
-                )}
-
-                <p className="mt-4 text-xs">
-                  <Link
-                    href={`/segnalazioni?tipo=recensione&url=/artisti/${artistSlug}`}
-                    className="text-muted-foreground underline-offset-2 hover:underline"
-                  >
-                    Segnala
-                  </Link>
-                </p>
-              </li>
+                r={r}
+                artistName={artistName}
+                artistSlug={artistSlug}
+              />
             ))}
           </ul>
         </Reveal>
 
-        {data.count > data.reviews.length && (
-          <Reveal delay={0.25}>
-            <p className="mt-6 text-sm text-muted-foreground">
-              Mostrate le {data.reviews.length} più recenti di {data.count}{" "}
-              recensioni ricevute da {artistName}.
-            </p>
-          </Reveal>
+        {/* Tutte le recensioni restano consultabili: nessuna selezione (Codice del
+            consumo, parere legale di novembre 2026). <details> nativo, senza JS. */}
+        {altri.length > 0 && (
+          <details className="group mt-6">
+            <summary className="cursor-pointer text-sm font-medium underline underline-offset-2">
+              Mostra tutte le {data.count} recensioni ricevute da {artistName}
+            </summary>
+            <ul className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {altri.map((r) => (
+                <Recensione
+                  key={r.id}
+                  r={r}
+                  artistName={artistName}
+                  artistSlug={artistSlug}
+                />
+              ))}
+            </ul>
+          </details>
         )}
       </div>
     </section>
+  );
+}
+
+/** Quante recensioni si vedono subito; le altre sono dietro «Mostra tutte». */
+const VISIBILI_SUBITO = 12;
+
+function Recensione({
+  r,
+  artistName,
+  artistSlug,
+}: {
+  r: PublicReviews["reviews"][number];
+  artistName: string;
+  artistSlug: string;
+}) {
+  return (
+    <li className="flex flex-col rounded-2xl border border-border bg-card p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-display text-base">{r.organizer_name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {dataBreve(r.created_at)}
+          </p>
+        </div>
+        <StarRating value={r.rating} size="sm" className="shrink-0" />
+      </div>
+
+      <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+        {r.body}
+      </p>
+
+      {r.artist_reply && (
+        <div className="mt-4 rounded-xl bg-muted/60 p-3 text-sm">
+          <p className="text-xs font-medium text-foreground">
+            Risposta di {artistName}
+          </p>
+          <p className="mt-1 whitespace-pre-wrap leading-relaxed text-muted-foreground">
+            {r.artist_reply}
+          </p>
+        </div>
+      )}
+
+      <p className="mt-4 text-xs">
+        <Link
+          href={`/segnalazioni?tipo=recensione&url=/artisti/${artistSlug}`}
+          className="text-muted-foreground underline-offset-2 hover:underline"
+        >
+          Segnala
+        </Link>
+      </p>
+    </li>
   );
 }

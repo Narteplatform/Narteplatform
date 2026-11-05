@@ -8,10 +8,10 @@
  * contatterà per confermare l'appuntamento" mentre l'oggetto annuncia
  * l'appuntamento confermato.
  *
- * Righe condizionali: modalità, link e tema non hanno ancora una colonna in
- * `consultations` / `consultant_slots`. Il link è la più importante: senza,
- * l'email annuncia una videochiamata a cui non si può partecipare. Finché
- * non esistono, quelle righe non compaiono.
+ * Le consulenze si svolgono per TELEFONO (decisione del 05/11/2026): la
+ * modalità è sempre «Telefonata» e il link resta vuoto, quindi la riga e il
+ * bottone «Collegati» non compaiono. Restano nel template per un eventuale
+ * ritorno alle videochiamate.
  */
 
 import {
@@ -58,8 +58,8 @@ const CONSULTATION_SAMPLE = {
   dateLabel: "Mercoledì 25 Settembre 2026",
   timeLabel: "15:30",
   durationLabel: "45 minuti",
-  modeLabel: "Videochiamata",
-  meetingUrl: "https://meet.google.com/abc-defg-hij",
+  modeLabel: "Telefonata",
+  meetingUrl: "",
   topic: "Consulenza Profilo Artista",
   statusLabel: "Confermato",
   notes:

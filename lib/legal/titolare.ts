@@ -13,7 +13,11 @@
  */
 
 export const TITOLARE = {
-  /** Ditta individuale: il titolare è la persona fisica. */
+  /**
+   * Libero professionista con partita IVA: il titolare è la persona fisica.
+   * Nessun numero REA né iscrizione CCIAA da indicare (conferma del cliente,
+   * 05/11/2026).
+   */
   denominazione: "Eduardo Castronuovo",
   partitaIva: "IT11071661216",
   indirizzo: "Via Domenico Fontana 27",
@@ -33,6 +37,15 @@ export const TITOLARE = {
 
   /** Indirizzo per le questioni sui dati personali: lo stesso recapito unico. */
   emailPrivacy: "info@narteofficial.it",
+
+  /** Posta elettronica certificata (comunicazioni formali, autorità). */
+  pec: "eduardocastronuovo@pec.it",
+
+  /**
+   * Lingue del punto di contatto unico DSA (artt. 11-12 Reg. UE 2022/2065):
+   * italiano, più l'inglese per le autorità europee.
+   */
+  lingueContatto: ["italiano", "inglese"],
 } as const;
 
 /**

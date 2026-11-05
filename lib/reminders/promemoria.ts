@@ -397,7 +397,7 @@ async function consulenzeDiDomani(
         durationLabel: formatMinutes(s.duration_min),
         // Nessuna colonna per modalità, link e tema: restano vuoti e le righe
         // (e il bottone «Collegati») non compaiono nel template.
-        modeLabel: "",
+        modeLabel: "Telefonata",
         meetingUrl: "",
         topic: "",
         statusLabel: "Confermato",
