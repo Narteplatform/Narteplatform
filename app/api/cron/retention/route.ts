@@ -21,8 +21,8 @@ export const dynamic = "force-dynamic";
  * nessuno. L'informativa promette periodi di conservazione che nella pratica
  * non esistono: tutto è «per sempre».
  *
- * ⛔ PARTE IN SOLA CONTA, E NON È UNA PRUDENZA DI FACCIATA.
- * Con `RETENTION_ENFORCE` diverso da `1` questa rotta **legge e basta**:
+ * ⛔ È PARTITA IN SOLA CONTA, E NON ERA UNA PRUDENZA DI FACCIATA. Dal
+ * 05/11/2026 cancella di default; con `RETENTION_ENFORCE=0` torna a **leggere e basta**:
  * conta quante righe supererebbero il periodo previsto e le scrive nei log.
  * Nient'altro. Serve a rispondere a una domanda che nessuno può rispondere a
  * priori — «quanto stiamo per cancellare?» — prima di autorizzare una
@@ -166,7 +166,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  const cancella = process.env.RETENTION_ENFORCE === "1";
+  // ACCESA dal 05/11/2026 (approvazione del cliente, dopo i conteggi in sola
+  // lettura: nessuna riga oltre i periodi). Per tornare in sola conta:
+  // RETENTION_ENFORCE=0 su Vercel e redeploy.
+  const cancella = process.env.RETENTION_ENFORCE !== "0";
   const admin = createAdminClient();
   const esiti: Array<Record<string, unknown>> = [];
 

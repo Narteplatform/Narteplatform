@@ -28,9 +28,9 @@ export const maxDuration = 300;
  *  3. elimina i vecchi profili rimasti nascosti dopo uno sblocco «profilo
  *     nuovo» (restore_state.profili_vecchi_da_eliminare), allo stesso termine.
  *
- * ⛔ PARTE IN SOLA CONTA. Con `AUTO_CANCELLAZIONE_ENFORCE` diverso da `1` non
- * cancella nulla: elenca cosa farebbe e lo manda al root. Si accende solo dopo
- * aver visto almeno un riepilogo. Al massimo MAX_PER_ESECUZIONE account a
+ * ⛔ INTERRUTTORE. Acceso di default dal 05/11/2026; con
+ * `AUTO_CANCELLAZIONE_ENFORCE=0` non cancella nulla: elenca cosa farebbe e lo
+ * manda al root. Al massimo MAX_PER_ESECUZIONE account a
  * esecuzione: un errore di logica non può svuotare il database in una notte.
  *
  * Una lettura fallita ferma tutto (CLAUDE.md, regola 4): nessuna scrittura
@@ -57,7 +57,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  const esegui = process.env.AUTO_CANCELLAZIONE_ENFORCE === "1";
+  // ACCESA dal 05/11/2026 (approvazione del cliente). Per tornare in sola
+  // conta: AUTO_CANCELLAZIONE_ENFORCE=0 su Vercel e redeploy.
+  const esegui = process.env.AUTO_CANCELLAZIONE_ENFORCE !== "0";
   const admin = createAdminClient();
 
   const root = await trovaRoot();
@@ -205,7 +207,7 @@ export async function GET(req: Request) {
       testo: [
         esegui
           ? "Esito della cancellazione automatica al 30° giorno."
-          : "La cancellazione automatica è in SOLA CONTA (AUTO_CANCELLAZIONE_ENFORCE non è 1): non è stato cancellato nulla. Ecco cosa farebbe.",
+          : "La cancellazione automatica è in SOLA CONTA (AUTO_CANCELLAZIONE_ENFORCE=0): non è stato cancellato nulla. Ecco cosa farebbe.",
         "",
         ...righe,
       ].join("\n"),
