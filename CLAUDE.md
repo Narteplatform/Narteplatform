@@ -21,9 +21,9 @@ Piattaforma italiana che mette in contatto artisti emergenti, organizzatori di e
 - **Next.js 16** (App Router, Server Actions, Turbopack) su **Vercel** (Fluid Compute)
 - **Supabase**: Postgres + Auth + Storage (RLS attivo su tutto)
 - **bunny.net**: Stream (video) + Storage/CDN (immagini, audio) — vedi «Media» qui sotto
-- **Brevo** come unico provider email (decisione del 05/11/2026). **Resend** resta come ripiego in
-  `lib/emails/dispatch.ts` solo finché quattro chiavi (lead_admin, lead_artist, profile_approved_new,
-  artist_profile_pending_admin) non hanno un template Brevo: poi va rimosso
+- **Brevo** come unico provider email (dal 05/11/2026; Resend rimosso). `lib/emails/dispatch.ts` invia
+  solo da Brevo; gli id dei template hanno un predefinito in `lib/brevo/registry.ts` (`ID_PREDEFINITI`):
+  dopo un `npm run email:sync` che CREA un template, aggiungerne lì l'id
 - **Stripe** per gli abbonamenti artista (Free / Pro / Max)
 - **Tailwind CSS v4** + componenti shadcn-style + **Framer Motion** per le animazioni
 - **React Hook Form** + **Zod** per i form

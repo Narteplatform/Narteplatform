@@ -65,3 +65,36 @@ export async function avvisaTeam(input: {
     }
   }
 }
+
+/**
+ * Email interna al team, senza notifica in-app (chi chiama la crea già, se
+ * serve). Passa da Brevo con la chiave `contact_message`, come `avvisaTeam`:
+ * niente template dedicati per gli avvisi interni. Best-effort: non solleva.
+ */
+export async function emailAlTeam(input: {
+  to?: string | string[];
+  oggetto: string;
+  messaggio: string;
+  adminPath: string;
+  replyTo?: string;
+  meta?: Record<string, string>;
+}): Promise<void> {
+  try {
+    await dispatchEmail({
+      key: "contact_message",
+      to: input.to ?? adminRecipients({ fallback: true }),
+      replyTo: input.replyTo,
+      params: {
+        name: "N'arte — avviso interno",
+        email: input.replyTo ?? "",
+        subject: input.oggetto,
+        message: input.messaggio,
+        adminUrl: `${getSiteUrl()}${input.adminPath}`,
+      },
+      subjectPreview: input.oggetto,
+      meta: input.meta,
+    });
+  } catch (e) {
+    logger.error("team", "email al team non riuscita:", e instanceof Error ? e.message : String(e));
+  }
+}

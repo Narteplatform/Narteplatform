@@ -4,9 +4,7 @@
  *
  * APPROVAZIONE. Dalla migration 0071 la revisione promessa da questi design
  * esiste davvero: `organizers.approval_status` parte da `pending` e il team
- * approva da /admin/utenti. Le due email sono quindi veritiere e si possono
- * abilitare aggiungendo le chiavi a BREVO_ENABLED_KEYS. Il codice le invia già
- * (con fallback Resend finché la chiave non è abilitata):
+ * approva da /admin/utenti. Le due email sono quindi veritiere. Le invia:
  *   - organizer_registration_received → lib/organizers/approvazione.ts
  *   - organizer_approved              → app/(admin)/admin/utenti/_actions.ts
  * Il testo «entro 24 ore» è un impegno operativo del team: va rispettato o

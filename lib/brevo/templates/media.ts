@@ -56,4 +56,39 @@ const mediaPendingAdmin = defineTemplate({
   }),
 });
 
-export const MEDIA_TEMPLATES = [mediaPendingAdmin];
+/** Un artista ha creato un profilo aggiuntivo: resta nascosto finché il team non lo approva. */
+const artistProfilePendingAdmin = defineTemplate({
+  key: "artist_profile_pending_admin",
+  name: "N'arte · Nuovo profilo da approvare, copia interna [artist_profile_pending_admin]",
+  subject: "Nuovo profilo da approvare — {{params.profileName}}",
+  sample: {
+    profileName: "Trio Esempio",
+    ownerEmail: "artista@example.com",
+    adminUrl: "https://narteofficial.it/admin/artisti?filter=pending",
+  },
+  html: layout({
+    key: "artist_profile_pending_admin",
+    preheader: "Un artista ha creato un nuovo profilo in attesa di approvazione.",
+    body: [
+      internalBadge(),
+      eyebrow("Moderazione"),
+      title(`Nuovo profilo da ${em("approvare.")}`),
+      paragraph(
+        `Un artista ha creato un profilo aggiuntivo.<br />
+              Resta nascosto dal catalogo finché non lo approvi.`
+      ),
+      card(
+        [
+          sectionTitle("Profilo"),
+          dataTable([
+            { icon: "star", label: "Profilo", value: param("profileName") },
+            { icon: "mail", label: "Account", value: param("ownerEmail"), onlyIf: "ownerEmail" },
+          ]),
+        ].join("\n")
+      ),
+      buttonPair({ href: param("adminUrl"), label: "Apri i profili in attesa" }),
+    ].join("\n"),
+  }),
+});
+
+export const MEDIA_TEMPLATES = [mediaPendingAdmin, artistProfilePendingAdmin];

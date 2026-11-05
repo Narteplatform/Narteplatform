@@ -4,7 +4,7 @@ import { createElement } from "react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { dispatchEmail } from "@/lib/emails/dispatch";
-import { sendEmail } from "@/lib/emails/send";
+import { emailAlTeam } from "@/lib/notifications/team";
 import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
@@ -224,25 +224,18 @@ export async function avvisaRichiestaOrganizzatore(input: {
         }),
       },
     }),
-    adminEmail
-      ? sendEmail({
+    adminEmail.length > 0
+      ? emailAlTeam({
           to: adminEmail,
-          subject: `[N'arte] Nuovo organizzatore da approvare — ${input.nome}`,
-          template: "organizer_registration_admin",
-          react: createElement(NoticeEmail, {
-            preview: "Un nuovo organizzatore attende l'approvazione.",
-            heading: "Nuovo organizzatore da approvare",
-            paragraphs: ["Un nuovo account organizzatore attende la verifica del team."],
-            rows: [
-              { label: "Locale o realtà", value: input.nome },
-              { label: "Città", value: input.citta ?? "" },
-              { label: "Email", value: input.email },
-            ],
-            button: {
-              label: "Apri le richieste in attesa",
-              href: `${base}/admin/utenti?filtro=organizzatori-in-attesa`,
-            },
-          }),
+          oggetto: `Nuovo organizzatore da approvare — ${input.nome}`,
+          messaggio: [
+            "Un nuovo account organizzatore attende la verifica del team.",
+            `Locale o realtà: ${input.nome}`,
+            `Città: ${input.citta ?? "—"}`,
+            `Email: ${input.email}`,
+          ].join("\n"),
+          adminPath: "/admin/utenti?filtro=organizzatori-in-attesa",
+          replyTo: input.email,
         })
       : Promise.resolve(),
   ]);

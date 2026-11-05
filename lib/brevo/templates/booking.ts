@@ -25,6 +25,7 @@ import {
   em,
   eyebrow,
   ifParam,
+  internalBadge,
   layout,
   paragraph,
   param,
@@ -255,4 +256,99 @@ const bookingConfirmed = defineTemplate({
   }),
 });
 
-export const BOOKING_TEMPLATES = [bookingRequestArtist, bookingRequestReceipt, bookingConfirmed];
+/**
+ * Lead dalla pagina pubblica del profilo: lo invia un visitatore senza account,
+ * quindi niente chat. L'artista risponde direttamente ai recapiti indicati
+ * (l'email ha `replyTo` sul mittente).
+ */
+const LEAD_SAMPLE = {
+  artistName: "Marina Blu",
+  organizerName: "",
+  contactName: "",
+  roleLabel: "",
+  eventDate: "Sabato 21 Settembre 2026",
+  eventTime: "",
+  soundcheck: "",
+  eventType: "",
+  city: "Napoli",
+  address: "",
+  budgetLabel: "€450",
+  durationLabel: "",
+  technicalNotes: "",
+  statusLabel: "",
+  message: "Cerchiamo un duo acustico per una festa privata in terrazza.",
+  chatUrl: "",
+  requestUrl: "https://narteofficial.it/dashboard/leads",
+  contactEmail: "marco.esposito@example.com",
+  contactPhone: "+39 333 000 0000",
+  adminUrl: "https://narteofficial.it/admin/leads",
+};
+
+const leadArtist = defineTemplate({
+  key: "lead_artist",
+  name: "N'arte · Richiesta dal profilo pubblico [lead_artist]",
+  subject: "Nuova richiesta booking — {{params.eventDate}}",
+  sample: LEAD_SAMPLE,
+  html: layout({
+    key: "lead_artist",
+    preheader: "Un visitatore del tuo profilo ti ha scritto: rispondi direttamente ai suoi recapiti.",
+    body: [
+      eyebrow("Richiesta ricevuta"),
+      title(`Hey, ${param("artistName")}<br />hai una nuova ${em("richiesta.")}`),
+      paragraph(
+        `Un visitatore del tuo profilo su N'Arte ti ha inviato una richiesta.<br />
+              Rispondi a questa email o usa i recapiti qui sotto: la trattativa è fra voi.`
+      ),
+      card(
+        [
+          sectionTitle("Dettagli della richiesta"),
+          dataTable([
+            { icon: "calendar", label: "Data evento", value: param("eventDate") },
+            { icon: "pin", label: "Luogo", value: param("city"), onlyIf: "city" },
+            { icon: "euro", label: "Budget indicato", value: param("budgetLabel"), onlyIf: "budgetLabel" },
+            { icon: "mail", label: "Email", value: param("contactEmail"), onlyIf: "contactEmail" },
+            { icon: "chat", label: "Telefono", value: param("contactPhone"), onlyIf: "contactPhone" },
+            { icon: "chat", label: "Messaggio", value: param("message"), multiline: true },
+          ]),
+        ].join("\n")
+      ),
+      ifParam("requestUrl", buttonRow(button({ href: param("requestUrl"), label: "Visualizza la richiesta" }), "30px 40px 0 40px")),
+      callout({
+        text: "N'arte non partecipa alla trattativa e non incassa il compenso:<br />accordatevi direttamente.",
+      }),
+    ].join("\n"),
+  }),
+});
+
+const leadAdmin = defineTemplate({
+  key: "lead_admin",
+  name: "N'arte · Richiesta dal profilo pubblico, copia interna [lead_admin]",
+  subject: "Nuovo lead per {{params.artistName}} — {{params.eventDate}}",
+  sample: LEAD_SAMPLE,
+  html: layout({
+    key: "lead_admin",
+    preheader: "Un visitatore ha scritto a un artista dalla pagina pubblica del profilo.",
+    body: [
+      internalBadge(),
+      eyebrow("Nuovo lead"),
+      title(`Richiesta per ${em(param("artistName"))}`),
+      card(
+        [
+          sectionTitle("Dettagli della richiesta"),
+          dataTable([
+            { icon: "star", label: "Artista", value: param("artistName") },
+            { icon: "mail", label: "Email", value: param("contactEmail"), onlyIf: "contactEmail" },
+            { icon: "chat", label: "Telefono", value: param("contactPhone"), onlyIf: "contactPhone" },
+            { icon: "calendar", label: "Data evento", value: param("eventDate") },
+            { icon: "pin", label: "Luogo", value: param("city"), onlyIf: "city" },
+            { icon: "euro", label: "Budget indicato", value: param("budgetLabel"), onlyIf: "budgetLabel" },
+            { icon: "chat", label: "Messaggio", value: param("message"), multiline: true },
+          ]),
+        ].join("\n")
+      ),
+      ifParam("adminUrl", buttonRow(button({ href: param("adminUrl"), label: "Apri nel pannello" }), "30px 40px 0 40px")),
+    ].join("\n"),
+  }),
+});
+
+export const BOOKING_TEMPLATES = [bookingRequestArtist, bookingRequestReceipt, bookingConfirmed, leadArtist, leadAdmin];

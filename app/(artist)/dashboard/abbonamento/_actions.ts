@@ -15,7 +15,7 @@ import { logger } from "@/lib/logger";
 import { registraProvaSuIubendaInBackground } from "@/lib/legal/iubenda-consent";
 import { adminRecipients } from "@/lib/emails/admin-recipients";
 import { statoShooting } from "@/lib/billing/shooting";
-import { avvisaTeam } from "@/lib/notifications/team";
+import { avvisaTeam, emailAlTeam } from "@/lib/notifications/team";
 
 /**
  * Checkout e fatturazione.
@@ -477,33 +477,24 @@ export async function recediAbbonamento(): Promise<
 
   if (esito === "manuale") {
     try {
-      const { sendEmail } = await import("@/lib/emails/send");
-      const { createElement } = await import("react");
-      const { default: NoticeEmail } = await import("@/lib/emails/templates/NoticeEmail");
       const scadenzaLegale = new Date(ricevutoIl.getTime() + GIORNI_RECESSO * GIORNO_MS).toLocaleDateString("it-IT", {
         timeZone: "Europe/Rome",
       });
-      await sendEmail({
-        to: adminRecipients({ fallback: true }),
-        subject: "URGENTE: rimborso da recesso da fare a mano",
-        template: "recesso_rimborso_manuale",
+      await emailAlTeam({
+        oggetto: "URGENTE: rimborso da recesso da fare a mano",
+        messaggio: [
+          `Un consumatore ha esercitato il recesso e il rimborso automatico non è andato a buon fine. Va completato entro il ${scadenzaLegale} (14 giorni dal recesso, art. 56 Cod. consumo).`,
+          erroreRimborso ? `Errore: ${erroreRimborso}` : "",
+          `Da rimborsare: ${formatPrice(daRimborsare)}`,
+          `Totale del rimborso: ${formatPrice(rimborso)}`,
+          `Già rimborsato: ${formatPrice(rimborsato)}`,
+          `Subscription: ${sub.id}`,
+          `Utente: ${user.id}${user.email ? ` (${user.email})` : ""}`,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        adminPath: "/admin/abbonamenti",
         meta: { subscription: sub.id, user: user.id },
-        react: createElement(NoticeEmail, {
-          preview: "Il rimborso automatico non è riuscito.",
-          heading: "Rimborso da recesso da eseguire a mano",
-          paragraphs: [
-            `Un consumatore ha esercitato il recesso e il rimborso automatico non è andato a buon fine. Va completato entro il ${scadenzaLegale} (14 giorni dal recesso, art. 56 Cod. consumo).`,
-            erroreRimborso ? `Errore: ${erroreRimborso}` : "",
-          ].filter(Boolean),
-          rows: [
-            { label: "Da rimborsare", value: formatPrice(daRimborsare) },
-            { label: "Totale del rimborso", value: formatPrice(rimborso) },
-            { label: "Già rimborsato", value: formatPrice(rimborsato) },
-            { label: "Subscription", value: sub.id },
-            { label: "Utente", value: `${user.id}${user.email ? ` (${user.email})` : ""}` },
-            { label: "Scadenza legale", value: scadenzaLegale },
-          ],
-        }),
       });
     } catch (e) {
       logger.error("abbonamento", "email al team per rimborso manuale:", e instanceof Error ? e.message : String(e));

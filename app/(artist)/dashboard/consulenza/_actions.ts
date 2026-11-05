@@ -9,7 +9,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createElement } from "react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { sendEmail } from "@/lib/emails/send";
+import { emailAlTeam } from "@/lib/notifications/team";
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { buildConsultationParams } from "@/lib/emails/consultation-params";
 import ConsultationRequestEmail from "@/lib/emails/templates/ConsultationRequestEmail";
@@ -225,19 +225,12 @@ export async function cancelConsultationAsArtist(consultationId: string) {
   const quando = slot
     ? new Date(slot.slot_at).toLocaleString("it-IT", { dateStyle: "full", timeStyle: "short", timeZone: "Europe/Rome" })
     : "data da definire";
-  // Nessuna chiave Brevo adatta (consultation_confirmed_admin annuncerebbe
-  // una conferma): resta su Resend finché non si crea una chiave dedicata.
-  await sendEmail({
+  await emailAlTeam({
     to: ADMIN_EMAIL,
-    subject: `Consulenza disdetta dall'artista · ${c.name ?? "Artista"} · ${quando}`,
-    template: "ConsultationCancelledByArtist",
-    react: createElement(ConsultationRequestEmail, {
-      toRole: "admin",
-      name: c.name ?? "Artista",
-      slotAt: quando,
-      needs: "L'artista ha disdetto la consulenza dalla propria area. Lo slot è di nuovo libero.",
-    }),
-  }).catch(() => undefined);
+    oggetto: `Consulenza disdetta dall'artista · ${c.name ?? "Artista"} · ${quando}`,
+    messaggio: `${c.name ?? "Artista"} ha disdetto dalla propria area la consulenza del ${quando}. Lo slot è di nuovo libero.`,
+    adminPath: "/admin/consulenza",
+  });
   await creaNotificheAdmin({
     kind: "admin_consulenza",
     title: `Consulenza disdetta: ${c.name ?? "Artista"}`,

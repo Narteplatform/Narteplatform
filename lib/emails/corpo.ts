@@ -69,13 +69,6 @@ export function oscuraLink(html: string): string {
 
 export type CorpoDaSalvare = { body_html: string | null; body_source: EmailBodySource };
 
-/** Corpo di un'email Resend, già trasformata in HTML da chi la invia. */
-export function corpoResend(html: string | null, ...chiavi: (string | null | undefined)[]): CorpoDaSalvare | null {
-  if (corpoRiservato(...chiavi)) return { body_html: null, body_source: "riservato" };
-  if (!html || !corpoConservato(...chiavi)) return null;
-  return { body_html: oscuraLink(html), body_source: "salvato" };
-}
-
 /**
  * Corpo di un'email Brevo. Il testo lo compone Brevo dal template: qui lo si
  * ricostruisce dallo stesso template del codice (quello che `brevo-sync`

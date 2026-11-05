@@ -106,9 +106,6 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
     body: `${data.name} · ${data.genres.join(", ")}`,
     href: "/admin/artisti?filter=pending",
   });
-  // I parametri Brevo e il componente Resend convivono di proposito: finché
-  // la chiave non è elencata in BREVO_ENABLED_KEYS parte il secondo, e se
-  // Brevo fallisce si ricade comunque su di lui. Vedi lib/emails/dispatch.ts.
   const params = {
     applicantName: data.name,
     stageName: data.stageName,

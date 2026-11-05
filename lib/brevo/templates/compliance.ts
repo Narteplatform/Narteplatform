@@ -142,6 +142,40 @@ const profileReactivated = defineTemplate({
   }),
 });
 
+/** Profilo AGGIUNTIVO approvato: stessi parametri di `profile_reactivated`. */
+const profileApprovedNew = defineTemplate({
+  key: "profile_approved_new",
+  name: "N'arte · Nuovo profilo approvato [profile_approved_new]",
+  subject: "Il tuo nuovo profilo è stato approvato — N'Arte",
+  sample: {
+    name: "Marco Esposito",
+    profileName: "Trio Esempio",
+    profileUrl: "https://narteofficial.it/artisti/esempio",
+  },
+  html: layout({
+    key: "profile_approved_new",
+    preheader: "Il tuo nuovo profilo è nel catalogo pubblico.",
+    body: [
+      eyebrow("Profilo approvato"),
+      title(`Il nuovo profilo è ${em("online")}`, { size: "xl" }),
+      paragraph(
+        `Ciao ${param("name")}, abbiamo approvato il tuo nuovo profilo:<br />
+              da ora è visibile nel catalogo pubblico.`
+      ),
+      card(
+        [
+          sectionTitle("Il tuo profilo"),
+          dataTable([
+            { icon: "mic", label: "Profilo", value: param("profileName") },
+            { icon: "link", label: "Indirizzo", value: param("profileUrl"), multiline: true },
+          ]),
+        ].join("\n")
+      ),
+      buttonPair({ href: param("profileUrl"), label: "Guarda il tuo profilo" }),
+    ].join("\n"),
+  }),
+});
+
 const reportReceipt = defineTemplate({
   key: "report_receipt",
   name: "N'arte · Ricevuta segnalazione [report_receipt]",
@@ -366,6 +400,7 @@ export const COMPLIANCE_TEMPLATES = [
   moderationDecision,
   mediaApproved,
   profileReactivated,
+  profileApprovedNew,
   reportReceipt,
   reportAdmin,
   reportOutcome,

@@ -546,6 +546,67 @@ interface RegistryEntry {
   label: string;
 }
 
+/**
+ * ID dei template sull'account Brevo di N'arte, come pubblicati da
+ * `npm run email:sync` il 05/11/2026. Non sono segreti: stanno nel codice
+ * perché Brevo è l'unico provider e un'email non deve sparire solo perché su
+ * Vercel manca una variabile. La env var `BREVO_TEMPLATE_<CHIAVE>`, se c'è,
+ * resta prioritaria. Dopo un `email:sync` che CREA un template, aggiungerne
+ * qui l'id.
+ */
+const ID_PREDEFINITI = {
+  BREVO_TEMPLATE_APPLICATION_RECEIVED: 2,
+  BREVO_TEMPLATE_APPLICATION_RECEIVED_ADMIN: 11,
+  BREVO_TEMPLATE_ARTIST_APPROVED: 3,
+  BREVO_TEMPLATE_ORGANIZER_REGISTRATION_RECEIVED: 4,
+  BREVO_TEMPLATE_ORGANIZER_APPROVED: 5,
+  BREVO_TEMPLATE_BOOKING_REQUEST_ARTIST: 6,
+  BREVO_TEMPLATE_BOOKING_REQUEST_ADMIN: 13,
+  BREVO_TEMPLATE_BOOKING_REQUEST_RECEIPT: 7,
+  BREVO_TEMPLATE_LEAD_ARTIST: 48,
+  BREVO_TEMPLATE_LEAD_ADMIN: 49,
+  BREVO_TEMPLATE_BOOKING_ACCEPTED: 14,
+  BREVO_TEMPLATE_BOOKING_CONFIRMED: 8,
+  BREVO_TEMPLATE_BOOKING_DECLINED: 15,
+  BREVO_TEMPLATE_BOOKING_CANCELLED_ADMIN: 16,
+  BREVO_TEMPLATE_MEDIA_PENDING_ADMIN: 47,
+  BREVO_TEMPLATE_CHAT_NEW_MESSAGE: 9,
+  BREVO_TEMPLATE_CONSULTATION_REQUEST_USER: 21,
+  BREVO_TEMPLATE_CONSULTATION_REQUEST_ADMIN: 22,
+  BREVO_TEMPLATE_CONSULTATION_CONFIRMED_ARTIST: 10,
+  BREVO_TEMPLATE_CONSULTATION_CONFIRMED_ADMIN: 23,
+  BREVO_TEMPLATE_CONTACT_MESSAGE: 29,
+  BREVO_TEMPLATE_APPLICATION_REJECTED: 12,
+  BREVO_TEMPLATE_BOOKING_CANCELLED_ORGANIZER: 17,
+  BREVO_TEMPLATE_CHAT_NEW_OFFER: 18,
+  BREVO_TEMPLATE_PRICE_PROPOSED: 19,
+  BREVO_TEMPLATE_PRICE_CONFIRMED: 20,
+  BREVO_TEMPLATE_CONSULTATION_REMINDER: 24,
+  BREVO_TEMPLATE_SUBSCRIPTION_ACTIVATED: 25,
+  BREVO_TEMPLATE_PAYMENT_FAILED: 26,
+  BREVO_TEMPLATE_SUBSCRIPTION_CANCELLED: 27,
+  BREVO_TEMPLATE_PROFILES_SUSPENDED: 28,
+  BREVO_TEMPLATE_CONTACT_RECEIPT: 30,
+  BREVO_TEMPLATE_PUBLIC_LEAD_ADMIN: 31,
+  BREVO_TEMPLATE_PASSWORD_RESET: 32,
+  BREVO_TEMPLATE_PASSWORD_CHANGED: 33,
+  BREVO_TEMPLATE_WELCOME_USER: 34,
+  BREVO_TEMPLATE_ACCOUNT_DELETION_CONFIRM: 37,
+  BREVO_TEMPLATE_MODERATION_DECISION: 38,
+  BREVO_TEMPLATE_MEDIA_APPROVED: 45,
+  BREVO_TEMPLATE_PROFILE_REACTIVATED: 46,
+  BREVO_TEMPLATE_PROFILE_APPROVED_NEW: 50,
+  BREVO_TEMPLATE_ARTIST_PROFILE_PENDING_ADMIN: 51,
+  BREVO_TEMPLATE_REPORT_RECEIPT: 39,
+  BREVO_TEMPLATE_REPORT_ADMIN: 40,
+  BREVO_TEMPLATE_REPORT_OUTCOME: 41,
+  BREVO_TEMPLATE_RENEWAL_REMINDER: 42,
+  BREVO_TEMPLATE_SUBSCRIPTION_WITHDRAWAL: 43,
+  BREVO_TEMPLATE_TERMS_UPDATE_NOTICE: 52,
+  BREVO_TEMPLATE_EVENT_REMINDER: 35,
+  BREVO_TEMPLATE_FEEDBACK_REQUEST: 36,
+} as const;
+
 function parseTemplateId(raw: string | undefined): number | null {
   if (!raw) return null;
   const n = Number(raw);
@@ -559,210 +620,208 @@ function parseTemplateId(raw: string | undefined): number | null {
  */
 export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
   application_received: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_APPLICATION_RECEIVED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_APPLICATION_RECEIVED || String(ID_PREDEFINITI.BREVO_TEMPLATE_APPLICATION_RECEIVED)),
     label: "Candidatura ricevuta",
   },
   application_received_admin: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_APPLICATION_RECEIVED_ADMIN),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_APPLICATION_RECEIVED_ADMIN || String(ID_PREDEFINITI.BREVO_TEMPLATE_APPLICATION_RECEIVED_ADMIN)),
     label: "Candidatura ricevuta — copia interna",
   },
   // Id di ripiego = quelli pubblicati sull'account Brevo di N'arte: queste due
   // email partono sempre da Brevo (vedi BREVO_SEMPRE in lib/emails/dispatch.ts)
   // e non devono dipendere dall'aver copiato la variabile su Vercel.
   artist_approved: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ARTIST_APPROVED) ?? 3,
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ARTIST_APPROVED || String(ID_PREDEFINITI.BREVO_TEMPLATE_ARTIST_APPROVED)) ?? 3,
     label: "Benvenuto artista",
   },
   organizer_registration_received: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ORGANIZER_REGISTRATION_RECEIVED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ORGANIZER_REGISTRATION_RECEIVED || String(ID_PREDEFINITI.BREVO_TEMPLATE_ORGANIZER_REGISTRATION_RECEIVED)),
     label: "Registrazione organizzatore ricevuta",
   },
   organizer_approved: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ORGANIZER_APPROVED) ?? 5,
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ORGANIZER_APPROVED || String(ID_PREDEFINITI.BREVO_TEMPLATE_ORGANIZER_APPROVED)) ?? 5,
     label: "Benvenuto organizzatore",
   },
   booking_request_artist: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_REQUEST_ARTIST),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_REQUEST_ARTIST || String(ID_PREDEFINITI.BREVO_TEMPLATE_BOOKING_REQUEST_ARTIST)),
     label: "Nuova richiesta — artista",
   },
   booking_request_admin: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_REQUEST_ADMIN),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_REQUEST_ADMIN || String(ID_PREDEFINITI.BREVO_TEMPLATE_BOOKING_REQUEST_ADMIN)),
     label: "Nuova richiesta — copia interna",
   },
   booking_request_receipt: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_REQUEST_RECEIPT),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_REQUEST_RECEIPT || String(ID_PREDEFINITI.BREVO_TEMPLATE_BOOKING_REQUEST_RECEIPT)),
     label: "Richiesta inviata — organizzatore",
   },
   lead_artist: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_LEAD_ARTIST),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_LEAD_ARTIST || String(ID_PREDEFINITI.BREVO_TEMPLATE_LEAD_ARTIST)),
     aliasOf: "booking_request_artist",
     label: "Nuovo lead — artista",
   },
   lead_admin: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_LEAD_ADMIN),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_LEAD_ADMIN || String(ID_PREDEFINITI.BREVO_TEMPLATE_LEAD_ADMIN)),
     aliasOf: "booking_request_admin",
     label: "Nuovo lead — copia interna",
   },
   booking_accepted: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_ACCEPTED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_ACCEPTED || String(ID_PREDEFINITI.BREVO_TEMPLATE_BOOKING_ACCEPTED)),
     label: "Trattativa aperta",
   },
   booking_confirmed: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_CONFIRMED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_CONFIRMED || String(ID_PREDEFINITI.BREVO_TEMPLATE_BOOKING_CONFIRMED)),
     label: "Data confermata",
   },
   booking_declined: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_DECLINED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_DECLINED || String(ID_PREDEFINITI.BREVO_TEMPLATE_BOOKING_DECLINED)),
     label: "Artista non disponibile",
   },
   booking_cancelled_admin: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_CANCELLED_ADMIN),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_CANCELLED_ADMIN || String(ID_PREDEFINITI.BREVO_TEMPLATE_BOOKING_CANCELLED_ADMIN)),
     label: "Data annullata da N'arte",
   },
   media_pending_admin: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_MEDIA_PENDING_ADMIN),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_MEDIA_PENDING_ADMIN || String(ID_PREDEFINITI.BREVO_TEMPLATE_MEDIA_PENDING_ADMIN)),
     label: "Media da approvare — copia interna",
   },
   chat_new_message: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CHAT_NEW_MESSAGE),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CHAT_NEW_MESSAGE || String(ID_PREDEFINITI.BREVO_TEMPLATE_CHAT_NEW_MESSAGE)),
     label: "Nuovo messaggio in chat",
   },
   consultation_request_user: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_REQUEST_USER),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_REQUEST_USER || String(ID_PREDEFINITI.BREVO_TEMPLATE_CONSULTATION_REQUEST_USER)),
     label: "Richiesta consulenza",
   },
   consultation_request_admin: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_REQUEST_ADMIN),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_REQUEST_ADMIN || String(ID_PREDEFINITI.BREVO_TEMPLATE_CONSULTATION_REQUEST_ADMIN)),
     label: "Richiesta consulenza — copia interna",
   },
   consultation_confirmed_artist: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_CONFIRMED_ARTIST),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_CONFIRMED_ARTIST || String(ID_PREDEFINITI.BREVO_TEMPLATE_CONSULTATION_CONFIRMED_ARTIST)),
     label: "Consulenza confermata",
   },
   consultation_confirmed_admin: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_CONFIRMED_ADMIN),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_CONFIRMED_ADMIN || String(ID_PREDEFINITI.BREVO_TEMPLATE_CONSULTATION_CONFIRMED_ADMIN)),
     label: "Consulenza confermata — copia interna",
   },
   contact_message: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONTACT_MESSAGE),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONTACT_MESSAGE || String(ID_PREDEFINITI.BREVO_TEMPLATE_CONTACT_MESSAGE)),
     label: "Messaggio dal form contatti",
   },
   application_rejected: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_APPLICATION_REJECTED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_APPLICATION_REJECTED || String(ID_PREDEFINITI.BREVO_TEMPLATE_APPLICATION_REJECTED)),
     label: "Candidatura non accolta",
   },
   booking_cancelled_organizer: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_CANCELLED_ORGANIZER),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_CANCELLED_ORGANIZER || String(ID_PREDEFINITI.BREVO_TEMPLATE_BOOKING_CANCELLED_ORGANIZER)),
     label: "Richiesta annullata dall'organizzatore",
   },
   chat_new_offer: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CHAT_NEW_OFFER),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CHAT_NEW_OFFER || String(ID_PREDEFINITI.BREVO_TEMPLATE_CHAT_NEW_OFFER)),
     label: "Nuova offerta in chat",
   },
   price_proposed: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PRICE_PROPOSED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PRICE_PROPOSED || String(ID_PREDEFINITI.BREVO_TEMPLATE_PRICE_PROPOSED)),
     label: "Prezzo finale proposto",
   },
   price_confirmed: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PRICE_CONFIRMED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PRICE_CONFIRMED || String(ID_PREDEFINITI.BREVO_TEMPLATE_PRICE_CONFIRMED)),
     label: "Prezzo finale confermato",
   },
   consultation_reminder: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_REMINDER),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_REMINDER || String(ID_PREDEFINITI.BREVO_TEMPLATE_CONSULTATION_REMINDER)),
     label: "Promemoria consulenza",
   },
   subscription_activated: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_ACTIVATED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_ACTIVATED || String(ID_PREDEFINITI.BREVO_TEMPLATE_SUBSCRIPTION_ACTIVATED)),
     label: "Abbonamento attivo",
   },
   payment_failed: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PAYMENT_FAILED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PAYMENT_FAILED || String(ID_PREDEFINITI.BREVO_TEMPLATE_PAYMENT_FAILED)),
     label: "Pagamento non riuscito",
   },
   subscription_cancelled: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_CANCELLED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_CANCELLED || String(ID_PREDEFINITI.BREVO_TEMPLATE_SUBSCRIPTION_CANCELLED)),
     label: "Abbonamento disdetto",
   },
   profiles_suspended: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILES_SUSPENDED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILES_SUSPENDED || String(ID_PREDEFINITI.BREVO_TEMPLATE_PROFILES_SUSPENDED)),
     label: "Profili spubblicati",
   },
   contact_receipt: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONTACT_RECEIPT),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONTACT_RECEIPT || String(ID_PREDEFINITI.BREVO_TEMPLATE_CONTACT_RECEIPT)),
     label: "Messaggio ricevuto — conferma",
   },
   public_lead_admin: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PUBLIC_LEAD_ADMIN),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PUBLIC_LEAD_ADMIN || String(ID_PREDEFINITI.BREVO_TEMPLATE_PUBLIC_LEAD_ADMIN)),
     label: "Nuovo lead dai form pubblici",
   },
   password_reset: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PASSWORD_RESET),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PASSWORD_RESET || String(ID_PREDEFINITI.BREVO_TEMPLATE_PASSWORD_RESET)),
     label: "Recupero password",
   },
   password_changed: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PASSWORD_CHANGED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PASSWORD_CHANGED || String(ID_PREDEFINITI.BREVO_TEMPLATE_PASSWORD_CHANGED)),
     label: "Password modificata",
   },
   welcome_user: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_WELCOME_USER),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_WELCOME_USER || String(ID_PREDEFINITI.BREVO_TEMPLATE_WELCOME_USER)),
     label: "Benvenuto su N'arte",
   },
   account_deletion_confirm: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ACCOUNT_DELETION_CONFIRM),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ACCOUNT_DELETION_CONFIRM || String(ID_PREDEFINITI.BREVO_TEMPLATE_ACCOUNT_DELETION_CONFIRM)),
     label: "Conferma cancellazione account",
   },
   moderation_decision: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_MODERATION_DECISION),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_MODERATION_DECISION || String(ID_PREDEFINITI.BREVO_TEMPLATE_MODERATION_DECISION)),
     label: "Decisione di moderazione",
   },
   media_approved: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_MEDIA_APPROVED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_MEDIA_APPROVED || String(ID_PREDEFINITI.BREVO_TEMPLATE_MEDIA_APPROVED)),
     label: "Contenuti approvati",
   },
   profile_reactivated: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILE_REACTIVATED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILE_REACTIVATED || String(ID_PREDEFINITI.BREVO_TEMPLATE_PROFILE_REACTIVATED)),
     label: "Profilo di nuovo visibile",
   },
-  // Nessun template Brevo: finché non ne esiste uno la mail parte da Resend
-  // (fallback in lib/moderation/approvazioni.ts e lib/artist/nuovo-profilo.ts).
   profile_approved_new: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILE_APPROVED_NEW),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILE_APPROVED_NEW || String(ID_PREDEFINITI.BREVO_TEMPLATE_PROFILE_APPROVED_NEW)),
     label: "Nuovo profilo approvato",
   },
   artist_profile_pending_admin: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ARTIST_PROFILE_PENDING_ADMIN),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_ARTIST_PROFILE_PENDING_ADMIN || String(ID_PREDEFINITI.BREVO_TEMPLATE_ARTIST_PROFILE_PENDING_ADMIN)),
     label: "Nuovo profilo da approvare — copia interna",
   },
   report_receipt: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_REPORT_RECEIPT),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_REPORT_RECEIPT || String(ID_PREDEFINITI.BREVO_TEMPLATE_REPORT_RECEIPT)),
     label: "Ricevuta segnalazione",
   },
   report_admin: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_REPORT_ADMIN),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_REPORT_ADMIN || String(ID_PREDEFINITI.BREVO_TEMPLATE_REPORT_ADMIN)),
     label: "Nuova segnalazione (team)",
   },
   report_outcome: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_REPORT_OUTCOME),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_REPORT_OUTCOME || String(ID_PREDEFINITI.BREVO_TEMPLATE_REPORT_OUTCOME)),
     label: "Esito segnalazione",
   },
   renewal_reminder: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_RENEWAL_REMINDER),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_RENEWAL_REMINDER || String(ID_PREDEFINITI.BREVO_TEMPLATE_RENEWAL_REMINDER)),
     label: "Promemoria rinnovo annuale",
   },
   subscription_withdrawal: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_WITHDRAWAL),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_WITHDRAWAL || String(ID_PREDEFINITI.BREVO_TEMPLATE_SUBSCRIPTION_WITHDRAWAL)),
     label: "Conferma recesso abbonamento",
   },
   terms_update_notice: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_TERMS_UPDATE_NOTICE),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_TERMS_UPDATE_NOTICE || String(ID_PREDEFINITI.BREVO_TEMPLATE_TERMS_UPDATE_NOTICE)),
     label: "Preavviso modifiche ai termini",
   },
   event_reminder: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_EVENT_REMINDER),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_EVENT_REMINDER || String(ID_PREDEFINITI.BREVO_TEMPLATE_EVENT_REMINDER)),
     label: "Promemoria evento",
   },
   feedback_request: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_FEEDBACK_REQUEST),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_FEEDBACK_REQUEST || String(ID_PREDEFINITI.BREVO_TEMPLATE_FEEDBACK_REQUEST)),
     label: "Invito a lasciare una recensione",
   },
 };
@@ -783,7 +842,7 @@ export function getEmailLabel(key: EmailKey): string {
   return BREVO_REGISTRY[key].label;
 }
 
-/** Tutte le chiavi conosciute, utile per validare `BREVO_ENABLED_KEYS`. */
+/** Tutte le chiavi conosciute. */
 export const ALL_EMAIL_KEYS = Object.keys(BREVO_REGISTRY) as EmailKey[];
 
 /** Type guard per le stringhe che arrivano da env o da input esterni. */

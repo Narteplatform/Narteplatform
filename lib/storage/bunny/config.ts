@@ -80,7 +80,7 @@ export function bunnyStorageConfig(): BunnyStorageConfig {
  *
  * È il principale strumento di controllo del rischio di questa integrazione:
  * il ritorno indietro è questa variabile più un redeploy, non un revert di
- * codice. Stesso schema di BREVO_ENABLED_KEYS in lib/emails/dispatch.ts.
+ * codice.
  *
  * Il client non decide mai la destinazione: la sceglie il server e la comunica
  * nella risposta della rotta di firma.
