@@ -8,7 +8,7 @@ import { getContenuti } from "@/lib/content/site-settings-server";
  *
  * Due sorgenti, in ordine di precedenza:
  *  1. `public/hero/<chiave>.(jpg|jpeg|webp|png)` — il file presente in cartella;
- *  2. `/hero/<chiave>.jpg`, la copia locale della foto stock.
+ *  2. `/hero/<chiave>.jpg`, il segnaposto generato.
  *
  * Il senso è che le foto vere si caricano una alla volta, quando ci sono, senza
  * toccare una riga di codice: appena il file compare in `public/hero/`, prende
@@ -48,11 +48,10 @@ export type HeroImage = {
 };
 
 /**
- * Foto di riserva, una per pagina: copie locali in `public/hero/` delle foto
- * Unsplash usate in origine (licenza Unsplash). Servite dal nostro dominio, così
- * il browser del visitatore non contatta server negli Stati Uniti (parere
- * legale, novembre 2026). Un file con estensione diversa, se presente, ha la
- * precedenza (vedi `findLocal`).
+ * Immagini di riserva, una per pagina: SEGNAPOSTO astratti generati da
+ * `scripts/genera-segnaposto.mjs` nei colori di N'arte (niente più Unsplash dal
+ * 05/11/2026). Vanno sostituiti con foto vere: caricandole da /admin/contenuti
+ * oppure sovrascrivendo il file in `public/hero/`.
  */
 const STOCK: Record<HeroKey, string> = {
   artisti: "/hero/artisti.jpg",

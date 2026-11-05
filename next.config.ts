@@ -16,11 +16,6 @@ const nextConfig: NextConfig = {
       // bunny.net: sia la pull zone dello storage (immagini, audio) sia quella
       // di Stream (poster e anteprime dei video).
       { protocol: "https", hostname: "*.b-cdn.net" },
-      // Unsplash resta SOLO per l'ottimizzatore lato server: alcune copertine
-      // del blog (seed) puntano ancora lì. Passando da next/image il browser del
-      // visitatore non contatta Unsplash. Va tolto quando quelle copertine
-      // saranno copiate su bunny.net (parere legale, novembre 2026).
-      { protocol: "https", hostname: "images.unsplash.com" },
     ],
   },
   experimental: {

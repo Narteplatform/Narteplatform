@@ -3,10 +3,10 @@
 Immagini che stanno dietro il titolo in cima a ogni pagina pubblica
 (`components/marketing/PageHero.tsx`), al 20% di opacità.
 
-Contiene le copie locali delle foto stock (Unsplash, licenza Unsplash): sono
-servite dal nostro dominio perché il browser dei visitatori non contatti server
-esteri. Per usare una foto vera di N'arte sovrascrivi il file con lo stesso nome,
-oppure caricala da /admin/contenuti.
+Contiene **segnaposto astratti** generati da `scripts/genera-segnaposto.mjs`
+(colori di N'arte, nessuna foto di terzi). Vanno sostituiti con foto vere: caricale
+da /admin/contenuti, oppure sovrascrivi il file con lo stesso nome. Le copertine
+segnaposto del blog sono in `public/blog/copertine/` e si cambiano dall'editor.
 
 ## Nomi file attesi
 

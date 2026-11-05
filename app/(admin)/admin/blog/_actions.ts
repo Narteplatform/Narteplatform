@@ -28,12 +28,24 @@ const postSchema = z.object({
   title: z.string().trim().min(3, "Titolo troppo corto").max(160),
   slug: z.string().trim().max(120).optional().or(z.literal("").transform(() => undefined)),
   excerpt: z.string().trim().max(400).optional().or(z.literal("").transform(() => undefined)),
-  coverImage: z.string().url("URL non valido").optional().or(z.literal("").transform(() => undefined)),
+  // URL assoluto, oppure percorso interno ("/blog/copertine/…") per le
+  // immagini servite dal sito stesso, come le copertine segnaposto.
+  coverImage: z
+    .string()
+    .url("URL non valido")
+    .or(z.string().regex(/^\/(?!\/)[\w\-./]+$/, "URL non valido"))
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
   content: z.string().min(20, "Contenuto troppo breve"),
   seoTitle: z.string().trim().max(160).optional().or(z.literal("").transform(() => undefined)),
   seoDescription: z.string().trim().max(320).optional().or(z.literal("").transform(() => undefined)),
   keywords: z.array(z.string().trim().min(1).max(60)).max(15).optional(),
-  ogImage: z.string().url("URL non valido").optional().or(z.literal("").transform(() => undefined)),
+  ogImage: z
+    .string()
+    .url("URL non valido")
+    .or(z.string().regex(/^\/(?!\/)[\w\-./]+$/, "URL non valido"))
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
   authorName: z.string().trim().max(120).optional().or(z.literal("").transform(() => undefined)),
   publish: z.boolean().optional(),
 });
