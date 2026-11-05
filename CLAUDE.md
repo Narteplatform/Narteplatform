@@ -21,7 +21,9 @@ Piattaforma italiana che mette in contatto artisti emergenti, organizzatori di e
 - **Next.js 16** (App Router, Server Actions, Turbopack) su **Vercel** (Fluid Compute)
 - **Supabase**: Postgres + Auth + Storage (RLS attivo su tutto)
 - **bunny.net**: Stream (video) + Storage/CDN (immagini, audio) — vedi «Media» qui sotto
-- **Brevo** come provider email principale, **Resend** come rete di sicurezza (vedi `lib/emails/dispatch.ts`)
+- **Brevo** come unico provider email (decisione del 05/11/2026). **Resend** resta come ripiego in
+  `lib/emails/dispatch.ts` solo finché quattro chiavi (lead_admin, lead_artist, profile_approved_new,
+  artist_profile_pending_admin) non hanno un template Brevo: poi va rimosso
 - **Stripe** per gli abbonamenti artista (Free / Pro / Max)
 - **Tailwind CSS v4** + componenti shadcn-style + **Framer Motion** per le animazioni
 - **React Hook Form** + **Zod** per i form
@@ -124,6 +126,14 @@ Verifica della configurazione: `npm run bunny:check` (non stampa segreti).
 
 ## Documenti legali
 
+- **Parere dell'Avv. Madonna (novembre 2026), adeguamenti nel codice:** registro email con testo solo per
+  le comunicazioni legali e leggibile solo dal root; cancellazione automatica al 30° giorno
+  (`/api/cron/cancellazioni`, in sola conta finché `AUTO_CANCELLAZIONE_ENFORCE`≠`1`) e sblocco solo entro 30
+  giorni; preavviso P2B di 30 giorni per sospendere/chiudere artisti con partita IVA
+  (`lib/admin/preavviso.ts`, `/api/cron/misure-programmate`); preavviso di 15 giorni sulle modifiche ai
+  termini (`lib/legal/avviso-modifiche.ts`); shooting Max annuale (`lib/billing/shooting.ts`); consulenze
+  per telefono; omaggi mai indicati sul profilo né all'artista come tali.
+
 - **Online oggi:** `lib/legal/content.ts` (`TERMINI` v1 su `/termini`, `INTEGRAZIONI_NARTE` sotto
   l'informativa iubenda). Bozze non validate da un avvocato, ma allineate ai fatti del prodotto
   al 30/09/2026. `LEGAL_VERSION` si alza a ogni correzione; `LEGAL_CONSENT_VERSION` solo quando
@@ -134,8 +144,10 @@ Verifica della configurazione: `npm run bunny:check` (non stampa segreti).
   `/regolamento-recensioni`, `/criteri-di-posizionamento`, e `/termini` v2): spente finché
   `NEXT_PUBLIC_LEGAL_V2_PUBBLICATO` ≠ `1`. Si accendono solo dopo l'approvazione del legale e la
   compilazione dei segnaposto; insieme si alza `LEGAL_CONSENT_VERSION`.
-- **Modello:** N'arte è solo promozionale. Non partecipa a trattative né contratti; il Max segnala il
-  profilo alle strutture (`profile_referrals`), non candida. Nessun testo del sito deve dire il contrario.
+- **Modello:** N'arte è solo promozionale. Non partecipa a trattative né contratti; con il Max il Team invia
+  FUORI piattaforma materiale pubblicitario dell'artista a strutture (mai privati) e lo registra in
+  `/admin/proposte` (`profile_referrals`): la piattaforma non manda email di segnalazione, non candida, non
+  dice «in linea/adatto». Nessun testo del sito deve dire il contrario (parere legale, 05/11/2026).
 - **Recapito pubblico unico:** `TITOLARE.emailContatti` in `lib/legal/titolare.ts` (info@narteofficial.it).
 - **Decisioni del team:** ogni rifiuto/oscuramento/sospensione passa da `registraDecisione`
   (`lib/moderation/decisioni.ts`): registro `moderation_actions` + email motivata con link di reclamo.
