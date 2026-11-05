@@ -48,6 +48,9 @@ async function loadGuestArtists() {
       .eq("is_public", true)
       // `artist_tier_enum` è dichiarato ('free','pro','max'): `desc` = max → pro → free.
       .order("tier", { ascending: false })
+      // Stesso spareggio del catalogo completo (doc. 07, art. 4.1): il nome non
+      // si mostra all'ospite, ma l'ordine deve essere lo stesso per tutti.
+      .order("stage_name", { ascending: true })
       .returns<ArtistRow[]>();
   let { data, error } = await leggi("id, genre, instruments, tier, formazione");
   if (colonnaAssente(error, "formazione")) ({ data, error } = await leggi("id, genre, instruments, tier"));
