@@ -91,9 +91,9 @@ export const artistApplicationSchema = z.object({
    * N'arte accetta solo maggiorenni: è una scelta di prodotto, non un vincolo
    * di legge, e chiude in partenza tutto il regime speciale dei minori —
    * consenso genitoriale, verifica dell'età, limiti al trattamento. La
-   * dichiarazione non è un consenso e non finisce in `user_consents`: è una
-   * condizione d'accesso, e come tale sta nei Termini che si accettano qui
-   * accanto.
+   * dichiarazione non è un consenso ma una condizione d'accesso; dal 05/11/2026
+   * se ne tiene comunque traccia in `user_consents` (kind `maggiore_eta`) come
+   * prova, secondo il doc. 08.
    */
   acceptedAge: z.literal(true, {
     errorMap: () => ({ message: "Il servizio è riservato ai maggiorenni" }),
@@ -387,15 +387,21 @@ export const authSchema = z.object({
    * N'arte accetta solo maggiorenni: è una scelta di prodotto, non un vincolo
    * di legge, e chiude in partenza tutto il regime speciale dei minori —
    * consenso genitoriale, verifica dell'età, limiti al trattamento. La
-   * dichiarazione non è un consenso e non finisce in `user_consents`: è una
-   * condizione d'accesso, e come tale sta nei Termini che si accettano qui
-   * accanto.
+   * dichiarazione non è un consenso ma una condizione d'accesso; dal 05/11/2026
+   * se ne tiene comunque traccia in `user_consents` (kind `maggiore_eta`) come
+   * prova, secondo il doc. 08.
    */
   acceptedAge: z.literal(true, {
     errorMap: () => ({ message: "Il servizio è riservato ai maggiorenni" }),
   }),
   /** Facoltativo e separato: il consenso al marketing non si può accorpare. */
   acceptedMarketing: z.boolean().optional().default(false),
+  /**
+   * Condizioni per gli organizzatori (doc. 04). La casella compare solo con i
+   * testi v2 pubblicati: l'obbligo lo controlla il modulo, perché lo schema non
+   * conosce l'interruttore.
+   */
+  acceptedRoleTerms: z.boolean().optional().default(false),
 });
 export type AuthInput = z.infer<typeof authSchema>;
 

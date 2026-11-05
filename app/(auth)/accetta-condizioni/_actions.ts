@@ -129,6 +129,17 @@ export async function acceptCurrentLegal(input: AcceptLegalInput) {
     }
   }
 
+  // Dichiarazione di maggiore età: anche nel registro, non solo presso iubenda
+  // (doc. 08). Un errore qui non blocca l'accettazione: la casella è comunque
+  // obbligatoria nel modulo e la prova resta nella copia iubenda.
+  {
+    const errEta = await registraConsensoConContesto(await createClient(), {
+      kind: "maggiore_eta",
+      version: LEGAL_VERSION,
+    });
+    if (errEta) logger.warn("accetta-condizioni", `record_consent(maggiore_eta) fallita: ${errEta}`);
+  }
+
   // Casella del marketing non spuntata = «non si è espresso», non un rifiuto:
   // prima ogni riaccettazione scriveva una riga «marketing = false», che fra
   // l'altro sovrascriveva nel registro un consenso dato in precedenza.

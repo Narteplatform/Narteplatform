@@ -23,6 +23,9 @@ import {
   registraProvaRegistrazione,
 } from "@/app/(auth)/register/_actions";
 
+/** Testi legali v2 pubblicati: valore incorporato al build (NEXT_PUBLIC_). */
+const LEGAL_V2 = process.env.NEXT_PUBLIC_LEGAL_V2_PUBBLICATO === "1";
+
 type AccountKind = "artist" | "organizer";
 
 /**
@@ -70,6 +73,10 @@ export function RegisterForm({ next }: { next?: string | null }) {
     setError(null);
     setInfo(null);
     if (kind !== "organizer") return;
+    if (LEGAL_V2 && values.acceptedRoleTerms !== true) {
+      setError("Per creare l'account devi accettare le Condizioni per gli organizzatori.");
+      return;
+    }
     // Locale e città: obbligatori, validati qui con lo stesso schema usato in /benvenuto.
     const org = datiOrganizzatoreSchema.safeParse({ organizerName, city });
     if (!org.success) {
@@ -104,6 +111,10 @@ export function RegisterForm({ next }: { next?: string | null }) {
           // fallire, e resterebbe un account creato senza traccia del consenso.
           accepted_terms: values.acceptedTerms === true,
           accepted_marketing: values.acceptedMarketing === true,
+          // Non letti dalla trigger: li registra in user_consents
+          // `registraProvaRegistrazione`, subito dopo il signUp.
+          accepted_age: values.acceptedAge === true,
+          accepted_role_terms: LEGAL_V2 && values.acceptedRoleTerms === true,
           legal_version: LEGAL_VERSION,
         },
         emailRedirectTo: `${window.location.origin}/login${suffix}`,
@@ -293,6 +304,20 @@ export function RegisterForm({ next }: { next?: string | null }) {
           register={register("acceptedTerms")}
           error={errors.acceptedTerms?.message}
         />
+        {LEGAL_V2 && (
+          <Checkbox
+            {...register("acceptedRoleTerms")}
+            label={
+              <>
+                Ho letto e accetto le{" "}
+                <a href="/condizioni-organizzatori" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                  Condizioni per gli organizzatori
+                </a>
+                .
+              </>
+            }
+          />
+        )}
         <Checkbox
           {...register("acceptedAge")}
           error={errors.acceptedAge?.message}

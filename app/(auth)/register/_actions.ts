@@ -61,6 +61,7 @@ export async function registraProvaRegistrazione(userId: string): Promise<void> 
 
     const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
 
+    await registraConsensiAggiuntivi(admin, user.id, meta);
     await completaContestoConsensi(admin, user.id, ETA_MAX_MS);
 
     if (meta.accepted_marketing === true && user.email) {
@@ -87,6 +88,39 @@ export async function registraProvaRegistrazione(userId: string): Promise<void> 
   } catch (e) {
     logger.warn("register/iubenda", "prova non inviata:", e instanceof Error ? e.message : String(e));
   }
+}
+
+/**
+ * Righe di `user_consents` che la trigger `record_signup_consents` non scrive:
+ * la dichiarazione di maggiore età e, con i testi v2, le Condizioni per gli
+ * organizzatori (doc. 08, tabella A). Si aggiungono solo se mancano: una
+ * chiamata ripetuta non crea doppioni. Errori nei log, mai rilanciati.
+ */
+async function registraConsensiAggiuntivi(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  meta: Record<string, unknown>
+): Promise<void> {
+  const versione = typeof meta.legal_version === "string" ? meta.legal_version : "sconosciuta";
+  const voluti: ("maggiore_eta" | "condizioni_organizzatori")[] = [];
+  if (meta.accepted_age === true) voluti.push("maggiore_eta");
+  if (meta.accepted_role_terms === true) voluti.push("condizioni_organizzatori");
+  if (voluti.length === 0) return;
+
+  const { data: esistenti, error } = await admin
+    .from("user_consents")
+    .select("kind")
+    .eq("user_id", userId)
+    .in("kind", voluti);
+  if (error) {
+    logger.warn("register/consensi", "consensi aggiuntivi non letti, non scrivo:", error.message);
+    return;
+  }
+  const gia = new Set((esistenti ?? []).map((r) => r.kind));
+  const righe = voluti.filter((k) => !gia.has(k)).map((kind) => ({ user_id: userId, kind, version: versione }));
+  if (righe.length === 0) return;
+  const { error: insErr } = await admin.from("user_consents").insert(righe);
+  if (insErr) logger.warn("register/consensi", "consensi aggiuntivi non scritti:", insErr.message);
 }
 
 /**
