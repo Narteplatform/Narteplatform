@@ -646,8 +646,10 @@ garantire che sia sempre disponibile e privo di errori.</p>
 responsabilità, legge applicabile e foro competente.</em></p>
 
 <h2>Modifiche</h2>
-<p>Questi termini possono cambiare. Le modifiche rilevanti vengono comunicate in
-anticipo a chi ha un account.</p>
+<p>Questi termini possono cambiare. Le modifiche rilevanti vengono comunicate a chi
+ha un account <strong>con almeno 15 giorni di anticipo</strong>, via email e con un
+avviso nell&rsquo;area riservata, indicando la data da cui si applicano. Chi non le
+accetta può chiudere l&rsquo;account prima di quella data.</p>
 `,
 };
 

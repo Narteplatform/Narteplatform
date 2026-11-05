@@ -39,6 +39,7 @@ export const CHIAVI_CONSERVATE = [
   "subscription_cancelled",
   "subscription_withdrawal",
   "renewal_reminder",
+  "terms_update_notice",
   "payment_failed",
   "profiles_suspended",
   "application_rejected",

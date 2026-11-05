@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { ArtistAppShell } from "@/components/dashboard/AppShellData";
 import { ChatDockProvider } from "@/components/chat/ChatDockProvider";
 import { ChatDock } from "@/components/chat/ChatDock";
+import { AvvisoModifiche } from "@/components/legal/AvvisoModifiche";
 import { UnreadToastProvider } from "@/components/chat/UnreadToastProvider";
 
 export default async function ArtistDashboardLayout({
@@ -20,6 +21,7 @@ export default async function ArtistDashboardLayout({
           avatarUrl: user.profile?.avatar_url ?? null,
         }}
       >
+        <AvvisoModifiche />
         {children}
       </ArtistAppShell>
       <ChatDock />

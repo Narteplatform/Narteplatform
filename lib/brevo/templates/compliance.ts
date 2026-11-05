@@ -333,6 +333,35 @@ const subscriptionWithdrawal = defineTemplate({
   }),
 });
 
+const termsUpdateNotice = defineTemplate({
+  key: "terms_update_notice",
+  name: "N'arte · Preavviso modifiche ai termini [terms_update_notice]",
+  subject: "Cambiano le condizioni di N'arte dal {{params.effectiveDate}}",
+  sample: {
+    effectiveDate: "1 dicembre 2026",
+    summary: "Aggiorniamo le Condizioni di abbonamento per descrivere lo shooting del piano Max annuale.",
+    documentsUrl: "https://narteofficial.it/termini",
+  },
+  html: layout({
+    key: "terms_update_notice",
+    preheader: "Ti avvisiamo in anticipo: le nuove condizioni valgono dalla data indicata.",
+    body: [
+      eyebrow("Condizioni d'uso"),
+      title(`Le condizioni ${em("cambiano")}`, { size: "xl" }),
+      paragraph(
+        `Ti scriviamo con almeno 15 giorni di anticipo: dal ${param("effectiveDate")} si applicano<br />
+              le nuove condizioni di N'arte.`
+      ),
+      card([sectionTitle("Cosa cambia"), paragraph(param("summary"))].join("\n")),
+      buttonPair({ href: param("documentsUrl"), label: "Leggi le condizioni" }),
+      callout({
+        heading: "Se non sei d'accordo",
+        text: "Puoi chiudere il tuo account in qualsiasi momento prima di quella data, dalle impostazioni del profilo; se hai un abbonamento puoi disdirlo dalla pagina Abbonamento. Continuando a usare N'arte dopo quella data accetti le nuove condizioni.",
+      }),
+    ].join("\n"),
+  }),
+});
+
 export const COMPLIANCE_TEMPLATES = [
   moderationDecision,
   mediaApproved,
@@ -342,4 +371,5 @@ export const COMPLIANCE_TEMPLATES = [
   reportOutcome,
   renewalReminder,
   subscriptionWithdrawal,
+  termsUpdateNotice,
 ];

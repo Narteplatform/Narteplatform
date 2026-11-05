@@ -80,6 +80,8 @@ export type EmailKey =
   // --- abbonamenti: tutela del consumatore ---
   | "renewal_reminder"
   | "subscription_withdrawal"
+  // --- termini: preavviso delle modifiche (Reg. UE 2019/1150 art. 3) ---
+  | "terms_update_notice"
   // --- ciclo di vita evento ---
   | "event_reminder"
   | "feedback_request";
@@ -411,6 +413,13 @@ export interface RenewalReminderParams {
   manageUrl: string;
 }
 
+/** Preavviso delle modifiche ai documenti contrattuali (almeno 15 giorni). */
+export interface TermsUpdateNoticeParams {
+  effectiveDate: string;
+  summary: string;
+  documentsUrl: string;
+}
+
 /** Conferma di ricezione del recesso dall'abbonamento (art. 54, c. 4 Cod. consumo). */
 export interface SubscriptionWithdrawalParams {
   name: string;
@@ -518,6 +527,7 @@ export interface EmailParamsMap {
   report_outcome: ReportOutcomeParams;
   renewal_reminder: RenewalReminderParams;
   subscription_withdrawal: SubscriptionWithdrawalParams;
+  terms_update_notice: TermsUpdateNoticeParams;
   event_reminder: EventReminderParams;
   feedback_request: FeedbackRequestParams;
 }
@@ -742,6 +752,10 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
   subscription_withdrawal: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_WITHDRAWAL),
     label: "Conferma recesso abbonamento",
+  },
+  terms_update_notice: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_TERMS_UPDATE_NOTICE),
+    label: "Preavviso modifiche ai termini",
   },
   event_reminder: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_EVENT_REMINDER),

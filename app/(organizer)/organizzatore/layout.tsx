@@ -4,6 +4,7 @@ import { leggiStatoOrganizzatore, PERCORSO_IN_ATTESA } from "@/lib/organizers/ap
 import { OrganizerAppShell } from "@/components/dashboard/AppShellData";
 import { ChatDockProvider } from "@/components/chat/ChatDockProvider";
 import { ChatDock } from "@/components/chat/ChatDock";
+import { AvvisoModifiche } from "@/components/legal/AvvisoModifiche";
 import { UnreadToastProvider } from "@/components/chat/UnreadToastProvider";
 
 export default async function OrganizerLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,7 @@ export default async function OrganizerLayout({ children }: { children: React.Re
           avatarUrl: user.profile?.avatar_url ?? null,
         }}
       >
+        <AvvisoModifiche />
         {children}
       </OrganizerAppShell>
       <ChatDock />

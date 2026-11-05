@@ -131,6 +131,23 @@ export default async function ImpostazioniPage() {
           </Link>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Avviso modifiche ai termini</CardTitle>
+          <CardDescription>
+            Preavviso di almeno 15 giorni via email a tutti gli utenti quando cambiano le condizioni.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link
+            href="/admin/impostazioni/avviso-modifiche"
+            className="text-sm font-medium text-azzurro underline-offset-4 hover:underline"
+          >
+            Apri l&apos;avviso modifiche →
+          </Link>
+        </CardContent>
+      </Card>
     </div>
   );
 }
