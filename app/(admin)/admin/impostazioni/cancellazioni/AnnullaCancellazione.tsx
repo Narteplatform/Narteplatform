@@ -58,7 +58,7 @@ export function AnnullaCancellazione({ richiestaId }: { richiestaId: string }) {
   return (
     <div className="w-full max-w-md space-y-2">
       <label className="block text-xs font-semibold" htmlFor={id}>
-        Motivazione (obbligatoria, minimo {MIN} caratteri)
+        Richiesta dell&apos;interessato (obbligatoria, minimo {MIN} caratteri). Solo entro 30 giorni dalla conferma.
       </label>
       <Textarea
         id={id}

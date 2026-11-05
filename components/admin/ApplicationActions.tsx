@@ -82,13 +82,14 @@ export function ApplicationActions({ applicationId }: { applicationId: string })
             <span>
               <strong>Approva come profilo nuovo</strong>. Si crea il profilo da questa candidatura e
               l&apos;artista riceve il benvenuto.
-              {puoRipristinare && " Il profilo precedente resta nascosto: se non serve più, eliminalo da Artisti."}
+              {puoRipristinare &&
+                " Il profilo precedente resta nascosto e viene eliminato al 30° giorno dalla conferma della chiusura."}
             </span>
           </label>
         </fieldset>
         <div className="space-y-1">
           <label className="block text-xs font-semibold" htmlFor={id}>
-            Motivazione (obbligatoria, minimo {REASON_MIN} caratteri)
+            Richiesta dell&apos;interessato: quando e come è arrivata (obbligatoria, minimo {REASON_MIN} caratteri)
           </label>
           <Textarea
             id={id}
@@ -96,7 +97,7 @@ export function ApplicationActions({ applicationId }: { applicationId: string })
             value={reason}
             disabled={pending}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Es. l'artista si è ricandidato e ha chiesto di riattivare l'account."
+            placeholder="Es. nuova candidatura del 12/11 con richiesta di riattivare l'account. Possibile solo entro 30 giorni dalla chiusura."
           />
           <p className="text-xs text-muted-foreground">Resta nel registro delle decisioni.</p>
         </div>

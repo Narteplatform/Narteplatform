@@ -32,6 +32,24 @@ import { registraAzione, registraDecisione, MOTIVAZIONE_MIN } from "@/lib/modera
 /** Quanto vale il collegamento inviato per email. */
 export const SCADENZA_ORE = 48;
 
+/**
+ * Giorni di ripensamento dopo la conferma della chiusura. Entro questo termine
+ * l'account si può sbloccare, solo su richiesta dell'interessato; dopo, i dati
+ * si cancellano (cron /api/cron/cancellazioni). Parere legale di novembre 2026:
+ * un congelamento a tempo indeterminato viola la limitazione della conservazione.
+ */
+export const GIORNI_RIPENSAMENTO = 30;
+
+/** Vero se dalla conferma sono passati meno di GIORNI_RIPENSAMENTO giorni. */
+export function sbloccoAncoraPossibile(confermataIl: string | null): boolean {
+  if (!confermataIl) return false;
+  const giorni = (Date.now() - new Date(confermataIl).getTime()) / 86_400_000;
+  return giorni < GIORNI_RIPENSAMENTO;
+}
+
+const MSG_TERMINE_SCADUTO =
+  "Sono passati più di 30 giorni dalla conferma della chiusura: l'account non si può più sbloccare e i dati vanno cancellati. Se l'interessato vuole tornare, crea un account nuovo.";
+
 /** Il token in chiaro non si conserva: se ne conserva l'impronta. */
 function impronta(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -394,6 +412,7 @@ export async function annullaCancellazioneConfermata({
   if (!richiesta.confirmed_at) return { ok: false, error: "La richiesta non è stata confermata: niente da annullare qui." };
   if (richiesta.completed_at) return { ok: false, error: "La cancellazione è già stata completata: non si può annullare." };
   if (richiesta.cancelled_at) return { ok: false, error: "La richiesta è già stata annullata." };
+  if (!sbloccoAncoraPossibile(richiesta.confirmed_at)) return { ok: false, error: MSG_TERMINE_SCADUTO };
 
   const stato = richiesta.restore_state;
   if (!stato || typeof stato !== "object" || Array.isArray(stato)) {
@@ -559,8 +578,8 @@ export async function leggiCancellazioneAttiva(
  * Serve quando l'interessato, dopo aver chiuso l'account, si ricandida con la
  * stessa email e il Team decide di approvare la candidatura nuova: l'accesso
  * si riapre e la richiesta di cancellazione si chiude come annullata, ma i
- * vecchi profili restano `pending`, cioè fuori dal sito. Nessun dato viene
- * cancellato: se non servono più si eliminano a mano da Artisti.
+ * vecchi profili restano `pending`, cioè fuori dal sito, e vengono eliminati
+ * dal cron allo scadere dei 30 giorni dalla conferma della chiusura.
  *
  * Nessuna email qui: all'interessato arriva il benvenuto dell'approvazione.
  * Stesso ordine di `annullaCancellazioneConfermata`: prima lo sblocco
@@ -583,7 +602,7 @@ export async function sbloccaSenzaRipristino({
 
   const { data: richiesta, error } = await admin
     .from("account_deletion_requests")
-    .select("id, user_id, confirmed_at, cancelled_at, completed_at")
+    .select("id, user_id, confirmed_at, cancelled_at, completed_at, restore_state")
     .eq("id", richiestaId)
     .maybeSingle();
   if (error) {
@@ -594,6 +613,7 @@ export async function sbloccaSenzaRipristino({
   if (!richiesta.confirmed_at || richiesta.cancelled_at || richiesta.completed_at) {
     return { ok: false, error: "La richiesta non è più aperta: ricarica la pagina." };
   }
+  if (!sbloccoAncoraPossibile(richiesta.confirmed_at)) return { ok: false, error: MSG_TERMINE_SCADUTO };
 
   const { data: letto, error: erroreUtente } = await admin.auth.admin.getUserById(richiesta.user_id);
   if (erroreUtente || !letto?.user) {
@@ -617,7 +637,18 @@ export async function sbloccaSenzaRipristino({
 
   const { data: chiusa, error: erroreChiusura } = await admin
     .from("account_deletion_requests")
-    .update({ cancelled_at: new Date().toISOString() })
+    .update({
+      cancelled_at: new Date().toISOString(),
+      // I profili di prima restano nascosti e vanno eliminati allo scadere dei
+      // 30 giorni dalla conferma: l'interessato ne aveva chiesto la
+      // cancellazione. Li elimina il cron /api/cron/cancellazioni.
+      restore_state: {
+        ...(richiesta.restore_state && typeof richiesta.restore_state === "object" && !Array.isArray(richiesta.restore_state)
+          ? (richiesta.restore_state as Record<string, Json | undefined>)
+          : {}),
+        profili_vecchi_da_eliminare: true,
+      } as Json,
+    })
     .eq("id", richiesta.id)
     .is("cancelled_at", null)
     .is("completed_at", null)

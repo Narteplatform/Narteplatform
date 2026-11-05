@@ -11,7 +11,9 @@ const MIN = 10;
 /**
  * «Sblocca account» per un account chiuso e non ancora cancellato in via
  * definitiva: annulla la chiusura, riapre l'accesso e riporta online i profili.
- * Non c'è da aspettare i 30 giorni: quelli valgono solo per la cancellazione.
+ * Possibile solo entro 30 giorni dalla conferma della chiusura e solo su
+ * richiesta dell'interessato (parere legale, novembre 2026): dopo, i dati si
+ * cancellano e lo sblocco è rifiutato dal server.
  */
 export function SbloccoAccount({ userId }: { userId: string }) {
   const router = useRouter();
@@ -69,11 +71,12 @@ export function SbloccoAccount({ userId }: { userId: string }) {
       <p className="text-sm font-semibold">Sbloccare l&apos;account?</p>
       <p className="text-xs text-muted-foreground">
         Annulla la chiusura: l&apos;accesso si riapre e i profili tornano online. L&apos;abbonamento non viene
-        riattivato. Se la persona si è ricandidata, sbloccala dalla candidatura in Artisti: lì puoi scegliere se
+        riattivato. Si può fare solo entro 30 giorni dalla conferma della chiusura e solo se è
+        l&apos;interessato a chiederlo. Se la persona si è ricandidata, sbloccala dalla candidatura in Artisti: lì puoi scegliere se
         tenere il profilo vecchio o quello nuovo.
       </p>
       <label className="block text-xs font-semibold" htmlFor={id}>
-        Motivazione (obbligatoria, minimo {MIN} caratteri)
+        Richiesta dell&apos;interessato: quando e come è arrivata (obbligatoria, minimo {MIN} caratteri)
       </label>
       <Textarea
         id={id}
@@ -81,7 +84,7 @@ export function SbloccoAccount({ userId }: { userId: string }) {
         value={motivo}
         disabled={pending}
         onChange={(e) => setMotivo(e.target.value)}
-        placeholder="Es. l'artista ha chiesto di riattivare l'account."
+        placeholder="Es. email dell'artista del 12/11 a info@narteofficial.it, chiede di riattivare l'account."
       />
       {msg && msg.tone === "err" && (
         <p role="alert" className="text-xs text-corallo">
