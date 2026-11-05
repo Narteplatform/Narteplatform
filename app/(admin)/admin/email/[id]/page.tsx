@@ -4,7 +4,8 @@ import { ArrowLeft, Lock } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { logger } from "@/lib/logger";
-import { corpoRiservato } from "@/lib/emails/corpo";
+import { corpoConservato, corpoRiservato } from "@/lib/emails/corpo";
+import { isRootSuperadminEmail } from "@/lib/admin/permissions";
 import { recuperaCorpoDalProvider } from "@/lib/emails/recupera-corpo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -35,6 +36,7 @@ type Riga = {
 type Contenuto =
   | { tipo: "html"; html: string; nota: string | null }
   | { tipo: "riservato" }
+  | { tipo: "solo_root" }
   | { tipo: "assente"; motivo: string };
 
 export default async function EmailDettaglioPage({ params }: { params: Promise<{ id: string }> }) {
@@ -65,7 +67,11 @@ export default async function EmailDettaglioPage({ params }: { params: Promise<{
         ? "brevo"
         : "resend";
 
-  const contenuto = await caricaContenuto(r, chiave, provider);
+  // Il testo delle email lo legge solo il root (parere legale, novembre 2026):
+  // gli altri membri del Team vedono destinatario, oggetto ed esito.
+  const contenuto: Contenuto = isRootSuperadminEmail(me.email)
+    ? await caricaContenuto(r, chiave, provider)
+    : { tipo: "solo_root" };
   const quando = new Date(r.sent_at).toLocaleString("it-IT", {
     day: "2-digit",
     month: "long",
@@ -140,6 +146,12 @@ export default async function EmailDettaglioPage({ params }: { params: Promise<{
               </span>
             </p>
           )}
+          {contenuto.tipo === "solo_root" && (
+            <p className="flex items-start gap-2 text-sm text-muted-foreground">
+              <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <span>Il testo delle email è consultabile solo dall&apos;amministratore principale.</span>
+            </p>
+          )}
           {contenuto.tipo === "assente" && <p className="text-sm text-muted-foreground">{contenuto.motivo}</p>}
         </CardContent>
       </Card>
@@ -149,6 +161,15 @@ export default async function EmailDettaglioPage({ params }: { params: Promise<{
 
 async function caricaContenuto(r: Riga, chiave: string | null, provider: "brevo" | "resend"): Promise<Contenuto> {
   if (r.body_source === "riservato" || corpoRiservato(r.template, chiave)) return { tipo: "riservato" };
+  // Dalla regola di novembre 2026 si conserva solo il testo delle email con
+  // valore legale; per le altre non lo si recupera nemmeno dal provider.
+  if (!r.body_html && !corpoConservato(r.template, chiave)) {
+    return {
+      tipo: "assente",
+      motivo:
+        "Testo non conservato: si conserva per intero solo il testo delle comunicazioni con valore legale (abbonamento, recesso, decisioni di moderazione, segnalazioni e reclami).",
+    };
+  }
   if (r.body_html) {
     return {
       tipo: "html",

@@ -5,7 +5,7 @@ import type { ReactElement } from "react";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
-import { corpoResend, corpoRiservato, type CorpoDaSalvare } from "@/lib/emails/corpo";
+import { corpoConservato, corpoResend, corpoRiservato, type CorpoDaSalvare } from "@/lib/emails/corpo";
 
 const FROM = process.env.RESEND_FROM_EMAIL || "N'arte <noreply@narteofficial.it>";
 
@@ -109,7 +109,9 @@ export async function sendEmail(opts: SendEmailOpts) {
   // Le email riservate (link d'accesso) non si trasformano nemmeno in HTML.
   const corpo = corpoRiservato(opts.template, chiave)
     ? corpoResend(null, opts.template, chiave)
-    : corpoResend(await toHtml(opts.react));
+    : corpoConservato(opts.template, chiave)
+      ? corpoResend(await toHtml(opts.react), opts.template, chiave)
+      : null;
   try {
     const text = await toPlainText(opts.react);
     const { data, error } = await resend.emails.send({

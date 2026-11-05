@@ -182,7 +182,10 @@ nella propria area il numero e la data degli invii.</p>
 <h3>Il registro delle email inviate</h3>
 <p>Teniamo traccia delle comunicazioni che il sistema invia — destinatario,
 oggetto, esito — per accorgerci quando qualcosa non arriva a destinazione e
-poterlo correggere. È un registro tecnico, consultabile solo dal team.</p>
+poterlo correggere. Del testo conserviamo solo quello delle comunicazioni con
+valore legale o probatorio (attivazione, rinnovo, disdetta e recesso
+dell&rsquo;abbonamento, decisioni di moderazione, esito di segnalazioni e reclami);
+lo consulta solo l&rsquo;amministratore principale. Il registro si conserva per 12 mesi.</p>
 
 <h3>Chi non è registrato</h3>
 <p>Il catalogo e i profili degli artisti sono riservati agli utenti registrati: chi

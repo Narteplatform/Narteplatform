@@ -9,7 +9,12 @@ import type { EmailBodySource } from "@/lib/supabase/types";
  * Testo delle email nel registro (`email_log.body_html`, 0075), per leggerle
  * per intero da /admin/email.
  *
- * DUE REGOLE, perché il registro lo leggono tutti i superadmin:
+ * TRE REGOLE:
+ *  0. Si conserva per intero SOLO il testo delle comunicazioni con valore
+ *     legale o probatorio (abbonamento, recesso, decisioni di moderazione,
+ *     segnalazioni e reclami): parere legale di novembre 2026, principio di
+ *     minimizzazione. Delle altre restano solo i metadati (destinatario,
+ *     oggetto, esito). Il testo lo legge solo il superadmin root.
  *  1. Le email che contengono un link d'accesso NON si salvano: chi legge il
  *     registro potrebbe usare un link ancora valido (impostare la password di
  *     un artista, confermare la cancellazione di un account).
@@ -27,6 +32,25 @@ const RISERVATE: ReadonlySet<string> = new Set([
   "account_deletion_confirm",
   "supabase_invite",
 ]);
+
+/** Chiavi Brevo con valore legale o probatorio: le sole di cui si salva il testo. */
+const CONSERVATE: ReadonlySet<string> = new Set([
+  "subscription_activated",
+  "subscription_cancelled",
+  "subscription_withdrawal",
+  "renewal_reminder",
+  "payment_failed",
+  "profiles_suspended",
+  "application_rejected",
+  "moderation_decision",
+  "report_receipt",
+  "report_outcome",
+]);
+
+/** Vero se il testo di questa email ha valore legale e va conservato. */
+export function corpoConservato(...chiavi: (string | null | undefined)[]): boolean {
+  return chiavi.some((k) => !!k && CONSERVATE.has(k));
+}
 
 export function corpoRiservato(...chiavi: (string | null | undefined)[]): boolean {
   return chiavi.some((k) => !!k && RISERVATE.has(k));
@@ -46,7 +70,7 @@ export type CorpoDaSalvare = { body_html: string | null; body_source: EmailBodyS
 /** Corpo di un'email Resend, già trasformata in HTML da chi la invia. */
 export function corpoResend(html: string | null, ...chiavi: (string | null | undefined)[]): CorpoDaSalvare | null {
   if (corpoRiservato(...chiavi)) return { body_html: null, body_source: "riservato" };
-  if (!html) return null;
+  if (!html || !corpoConservato(...chiavi)) return null;
   return { body_html: oscuraLink(html), body_source: "salvato" };
 }
 
@@ -58,6 +82,7 @@ export function corpoResend(html: string | null, ...chiavi: (string | null | und
  */
 export function corpoBrevo(key: string, params: unknown): CorpoDaSalvare | null {
   if (corpoRiservato(key)) return { body_html: null, body_source: "riservato" };
+  if (!corpoConservato(key)) return null;
   const tpl = findTemplate(key);
   if (!tpl) return null;
   const sicuri: Record<string, unknown> = {};
