@@ -143,7 +143,7 @@ export const COMPARISON: ComparisonRow[] = [
 export const PROFILE_ANNOTATIONS: ProfileAnnotation[] = [
   {
     title: "La foto e il nome d’arte",
-    desc: "È la prima cosa che vede chi sta scorrendo trenta profili. Con Max lo shooting lo facciamo noi.",
+    desc: "È la prima cosa che vede chi sta scorrendo trenta profili. Con il Max annuale lo shooting del primo anno lo facciamo noi.",
   },
   {
     title: "Generi e formazione",

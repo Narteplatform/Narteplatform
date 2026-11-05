@@ -5,6 +5,7 @@ import { formatPrice } from "@/lib/billing/plans";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
+import { aggiornaShooting } from "./_actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Abbonamenti — N'arte Admin" };
@@ -245,6 +246,87 @@ export default async function AdminAbbonamentiPage({
           )}
         </CardContent>
       </Card>
+
+      <ShootingRichiesti />
     </div>
+  );
+}
+
+/** Shooting del Max annuale richiesti dagli account (0077). */
+async function ShootingRichiesti() {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("photo_shoots")
+    .select("id, user_id, artist_id, artist_name, requested_at, scheduled_at, done_at")
+    .order("requested_at", { ascending: false })
+    .limit(100);
+  const mancante = error?.code === "42P01" || error?.code === "PGRST205";
+  if (error && !mancante) logger.error("admin/abbonamenti", "shooting non letti:", error.message);
+  const giorno = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Shooting fotografici (Max annuale)</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <p className="text-muted-foreground">
+          Uno per account, nel primo anno, dal 15° giorno: 1 ora presso Hangarram (Napoli), 5 foto. Fissa la data
+          con l&apos;artista e segnala qui; poi segna l&apos;esecuzione.
+        </p>
+        {mancante ? (
+          <p className="text-muted-foreground">Applica la migration 0077 per attivare le richieste di shooting.</p>
+        ) : error ? (
+          <p role="alert" className="text-destructive">Non riesco a leggere le richieste. Riprova fra un momento.</p>
+        ) : (data ?? []).length === 0 ? (
+          <p className="text-muted-foreground">Nessuna richiesta.</p>
+        ) : (
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs text-muted-foreground">
+              <tr>
+                <th className="py-2 pr-4">Profilo</th>
+                <th className="py-2 pr-4">Richiesto</th>
+                <th className="py-2 pr-4">Fissato per</th>
+                <th className="py-2">Eseguito il</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data ?? []).map((r) => (
+                <tr key={r.id} className="border-t border-border align-top">
+                  <td className="py-2 pr-4 font-medium">
+                    {r.artist_id ? (
+                      <Link href={`/admin/artisti/${r.artist_id}`} className="underline-offset-2 hover:underline">
+                        {r.artist_name}
+                      </Link>
+                    ) : (
+                      r.artist_name
+                    )}
+                  </td>
+                  <td className="py-2 pr-4 whitespace-nowrap">{dataIt(r.requested_at)}</td>
+                  {(["scheduled_at", "done_at"] as const).map((campo) => (
+                    <td key={campo} className="py-2 pr-4">
+                      <form action={aggiornaShooting} className="flex items-center gap-2">
+                        <input type="hidden" name="id" value={r.id} />
+                        <input type="hidden" name="campo" value={campo} />
+                        <input
+                          type="date"
+                          name="data"
+                          defaultValue={giorno(r[campo])}
+                          aria-label={campo === "done_at" ? "Data di esecuzione" : "Data fissata"}
+                          className="h-8 rounded-md border border-border bg-surface px-2 text-sm"
+                        />
+                        <button type="submit" className="text-xs underline underline-offset-2">
+                          Salva
+                        </button>
+                      </form>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </CardContent>
+    </Card>
   );
 }

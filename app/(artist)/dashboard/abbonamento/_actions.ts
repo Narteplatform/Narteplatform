@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type Stripe from "stripe";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -13,6 +14,8 @@ import { registraConsensoConContesto } from "@/lib/legal/consents";
 import { logger } from "@/lib/logger";
 import { registraProvaSuIubendaInBackground } from "@/lib/legal/iubenda-consent";
 import { adminRecipients } from "@/lib/emails/admin-recipients";
+import { statoShooting } from "@/lib/billing/shooting";
+import { avvisaTeam } from "@/lib/notifications/team";
 
 /**
  * Checkout e fatturazione.
@@ -586,4 +589,59 @@ export async function recediAbbonamento(): Promise<
   }
 
   return { ok: true, rimborsoCent: rimborso, rimborsoInCorso };
+}
+
+/**
+ * Richiesta dello shooting del Max annuale, per UN profilo dell'account.
+ * Uno per account (vincolo unico in `photo_shoots`); dal 15° giorno e nel
+ * primo anno: le regole stanno in `statoShooting`.
+ */
+export async function richiediShooting(
+  artistId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await requireArtistUser();
+  if (!user) return { ok: false, error: "Non autorizzato" };
+  if (!z.string().uuid().safeParse(artistId).success) return { ok: false, error: "Scegli un profilo." };
+
+  const stato = await statoShooting(user.id);
+  if (stato.stato === "non_disponibile") return { ok: false, error: "La richiesta dello shooting non è ancora attiva. Scrivici dai contatti." };
+  if (stato.stato === "errore") return { ok: false, error: "Non riusciamo a verificare l'abbonamento. Riprova fra un momento." };
+  if (stato.stato === "richiesto") return { ok: false, error: "Hai già richiesto lo shooting: è uno per account." };
+  if (stato.stato === "troppo_presto") return { ok: false, error: "Lo shooting si può richiedere dal 15° giorno di abbonamento." };
+  if (stato.stato !== "richiedibile") return { ok: false, error: "Lo shooting è incluso solo nel primo anno dell'abbonamento Max annuale." };
+
+  const admin = createAdminClient();
+  const { data: artista, error: aErr } = await admin
+    .from("artists")
+    .select("id, stage_name")
+    .eq("id", artistId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (aErr) return { ok: false, error: "Non riusciamo a leggere il profilo. Riprova." };
+  if (!artista) return { ok: false, error: "Profilo non trovato fra i tuoi." };
+
+  const { error: insErr } = await admin.from("photo_shoots").insert({
+    user_id: user.id,
+    artist_id: artista.id,
+    artist_name: artista.stage_name,
+    subscription_id: stato.subscriptionId,
+  });
+  if (insErr) {
+    if (insErr.code === "23505") return { ok: false, error: "Hai già richiesto lo shooting: è uno per account." };
+    logger.error("shooting", "richiesta non registrata:", insErr.message);
+    return { ok: false, error: "Non siamo riusciti a registrare la richiesta. Riprova." };
+  }
+
+  await avvisaTeam({
+    kind: "shooting_richiesto",
+    titolo: `Shooting richiesto: ${artista.stage_name}`,
+    anteprima: "Da fissare con l'artista: 1 ora da Hangarram, 5 foto.",
+    adminPath: "/admin/abbonamenti",
+    mittente: { nome: artista.stage_name, email: user.email ?? null },
+    oggettoEmail: `Richiesta shooting Max — ${artista.stage_name}`,
+    messaggio: `L'account ha richiesto lo shooting del piano Max annuale per il profilo «${artista.stage_name}». Va fissato con l'artista (1 ora presso Hangarram, Napoli, 5 foto) e segnato in /admin/abbonamenti.`,
+  });
+
+  revalidatePath("/dashboard/abbonamento");
+  return { ok: true };
 }

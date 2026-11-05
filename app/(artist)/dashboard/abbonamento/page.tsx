@@ -17,6 +17,8 @@ import { arePricesConfigured } from "@/lib/stripe/prices";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SubscriptionPanel } from "@/components/billing/SubscriptionPanel";
+import { ShootingCard } from "@/components/billing/ShootingCard";
+import { statoShooting } from "@/lib/billing/shooting";
 import { statoRecesso } from "./_actions";
 import type { ArtistTier } from "@/lib/supabase/types";
 
@@ -90,6 +92,7 @@ export default async function AbbonamentoPage({
   const isGifted = !sub && activeOverride !== null && isPaidTier(ent.tier);
 
   const configured = isStripeConfigured() && arePricesConfigured();
+  const shooting = await statoShooting(user.id);
 
   // Il webhook può arrivare DOPO il redirect di Stripe: la pagina non assume
   // mai che il piano sia già attivo. Se torniamo dal checkout e il ledger non
@@ -177,7 +180,7 @@ export default async function AbbonamentoPage({
               {includesPhotoShoot(ent.tier, sub.billing_interval) && (
                 <p className="flex items-center gap-2 pt-1 text-sm text-accent">
                   <Camera className="size-4" />
-                  Shooting fotografico incluso — scrivici per fissarlo.
+                  Shooting fotografico incluso nel primo anno: vedi sotto.
                 </p>
               )}
             </>
@@ -217,6 +220,11 @@ export default async function AbbonamentoPage({
           )}
         </CardContent>
       </Card>
+
+      <ShootingCard
+        stato={shooting}
+        profili={owned.map((a) => ({ id: a.id, stage_name: a.stage_name }))}
+      />
 
       {!configured ? (
         <Card>

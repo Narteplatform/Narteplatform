@@ -321,7 +321,7 @@ export const PLAN_CARD_HIGHLIGHTS: Record<ArtistTier, string[]> = {
     "Promozione del tuo profilo presso almeno 2 strutture al mese",
     "Statistiche del profilo sull'ultimo anno",
     "Fino a 30 foto e 5 profili artista",
-    "Shooting fotografico incluso (annuale)",
+    "Shooting fotografico incluso nel primo anno (annuale)",
     "Top artist in evidenza e assistenza con precedenza",
   ],
 };
@@ -447,7 +447,7 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
   {
     label: "Shooting fotografico",
     values: { free: false, pro: false, max: "Incluso nell'annuale" },
-    hint: "Una tantum, riservato all'abbonamento Max annuale.",
+    hint: "Uno per account, nel primo anno del Max annuale: 1 ora presso Hangarram (Napoli), 5 foto, per un profilo a scelta. Si richiede dal 15° giorno.",
     primary: true,
   },
   {
