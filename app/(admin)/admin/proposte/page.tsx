@@ -2,7 +2,6 @@ import { AlertTriangle, Megaphone } from "lucide-react";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
-import { elencaPrivati } from "@/lib/referrals/privati";
 import {
   QUOTA_SEGNALAZIONI_MENSILE as QUOTA,
   etichettaMese,
@@ -19,7 +18,7 @@ import {
   type CandidatoDestinatario,
 } from "@/components/admin/ProfileReferralForm";
 
-export const metadata = { title: "Segnalazioni ai locali — N'arte Admin" };
+export const metadata = { title: "Segnalazioni promozionali — N'arte Admin" };
 export const dynamic = "force-dynamic";
 
 function first(v: string | string[] | undefined): string {
@@ -55,7 +54,7 @@ export default async function AdminPropostePage({
   const scorso = spostaMese(corrente, -1);
   const primaDelloScorso = spostaMese(corrente, -2);
 
-  const [artistsRes, referralsRes, storicoRes, privatiRes] = await Promise.all([
+  const [artistsRes, referralsRes, storicoRes] = await Promise.all([
     admin.from("artists").select("id, stage_name, slug, is_public").eq("tier", "max").order("stage_name"),
     admin
       .from("profile_referrals")
@@ -67,9 +66,7 @@ export default async function AdminPropostePage({
       .select("id, created_at, artist_id, sent_by, recipient_name, recipient_email, email_status, period_month, note")
       .order("created_at", { ascending: false })
       .limit(100),
-    elencaPrivati(),
   ]);
-  const privati = privatiRes.ok ? privatiRes.privati : null;
 
   if (artistsRes.error) {
     logger.error("admin/proposte", "lettura artisti Max fallita:", artistsRes.error.message);
@@ -129,32 +126,32 @@ export default async function AdminPropostePage({
         .from("venues")
         .select("id, name, city, email")
         .ilike("name", `%${q}%`)
-        .not("email", "is", null)
         .is("hidden_at", null)
         .order("name")
         .limit(10),
-      admin.from("organizers").select("id, user_id, display_name").ilike("display_name", `%${q}%`).order("display_name").limit(10),
+      // Solo organizzatori professionali: ai privati non si segnala (art. 130 Codice privacy).
+      admin
+        .from("organizers")
+        .select("id, display_name, approval_status")
+        .ilike("display_name", `%${q}%`)
+        .eq("is_private", false)
+        .order("display_name")
+        .limit(10),
     ]);
     if (venuesRes.error || orgsRes.error) {
       logger.error("admin/proposte", "ricerca destinatari fallita:", venuesRes.error?.message ?? orgsRes.error?.message);
       erroreRicerca = "La ricerca non è andata a buon fine. Riprova o inserisci il destinatario a mano.";
     } else {
       for (const v of venuesRes.data ?? []) {
-        if (!v.email) continue;
         candidati.push({
           value: `venue:${v.id}`,
           name: v.name,
-          detail: `struttura${v.city ? ` · ${v.city}` : ""} · ${v.email}`,
+          detail: `struttura${v.city ? ` · ${v.city}` : ""}${v.email ? ` · ${v.email}` : ""}`,
         });
       }
       for (const o of orgsRes.data ?? []) {
-        const { data: u, error } = await admin.auth.admin.getUserById(o.user_id);
-        if (error || !u?.user?.email) continue;
-        candidati.push({
-          value: `org:${o.id}`,
-          name: o.display_name,
-          detail: `organizzatore · ${u.user.email}`,
-        });
+        if ((o.approval_status ?? "approved") !== "approved") continue;
+        candidati.push({ value: `org:${o.id}`, name: o.display_name, detail: "organizzatore professionale" });
       }
     }
   }
@@ -165,11 +162,17 @@ export default async function AdminPropostePage({
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-2xl tracking-tight">Segnalazioni ai locali</h1>
+        <h1 className="font-display text-2xl tracking-tight">Segnalazioni promozionali</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Col piano Max il Team segnala il profilo dell&apos;artista ad almeno {QUOTA} strutture al
-          mese. N&apos;arte segnala e si ferma lì: non partecipa alla trattativa. Il conteggio è sul
-          mese solare, fuso Europe/Rome; contano solo le segnalazioni con email partita.
+          Col piano Max il Team invia, fuori dalla piattaforma, materiale pubblicitario dell&apos;artista
+          ad almeno {QUOTA} strutture del settore al mese. Qui si registra ogni invio: la piattaforma
+          non manda email. Solo strutture e organizzatori professionali, mai privati. Il conteggio è
+          sul mese solare, fuso Europe/Rome.
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Nei messaggi che accompagnano il materiale presenta l&apos;artista, non proporlo per un
+          evento: niente giudizi su quanto sia adatto alla struttura. Se usi l&apos;email, scrivi solo
+          a strutture che hanno chiesto di ricevere proposte.
         </p>
       </header>
 
@@ -243,7 +246,7 @@ export default async function AdminPropostePage({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Megaphone className="size-4" aria-hidden="true" />
-            Segnala questo artista
+            Registra un invio
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -267,7 +270,7 @@ export default async function AdminPropostePage({
           )}
           {q.length >= 2 && !erroreRicerca && candidati.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              Nessun risultato con un&apos;email. Puoi inserire il destinatario a mano.
+              Nessun risultato. Puoi inserire la struttura a mano.
             </p>
           )}
 
@@ -279,7 +282,6 @@ export default async function AdminPropostePage({
               artists={opzioniArtista}
               defaultArtistId={defaultArtista}
               candidates={candidati}
-              privati={privati}
             />
           )}
         </CardContent>
@@ -299,9 +301,9 @@ export default async function AdminPropostePage({
                   <tr>
                     <th className="py-2 pr-4 font-semibold">Data</th>
                     <th className="py-2 pr-4 font-semibold">Artista</th>
-                    <th className="py-2 pr-4 font-semibold">Destinatario</th>
-                    <th className="py-2 pr-4 font-semibold">Email</th>
-                    <th className="py-2 font-semibold">Inviata da</th>
+                    <th className="py-2 pr-4 font-semibold">Struttura</th>
+                    <th className="py-2 pr-4 font-semibold">Esito</th>
+                    <th className="py-2 font-semibold">Registrata da</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -311,11 +313,14 @@ export default async function AdminPropostePage({
                       <td className="py-2 pr-4">{nomiArtista.get(s.artist_id) ?? "—"}</td>
                       <td className="py-2 pr-4">
                         {s.recipient_name}
-                        <span className="block text-xs text-muted-foreground">{s.recipient_email}</span>
+                        {s.recipient_email && (
+                          <span className="block text-xs text-muted-foreground">{s.recipient_email}</span>
+                        )}
+                        {s.note && <span className="block text-xs text-muted-foreground">{s.note}</span>}
                       </td>
                       <td className="py-2 pr-4">
                         <Badge variant={s.email_status === "inviata" ? "success" : "danger"}>
-                          {s.email_status === "inviata" ? "Inviata" : "Non inviata"}
+                          {s.email_status === "inviata" ? "Inviato" : "Non inviato"}
                         </Badge>
                       </td>
                       <td className="py-2">{s.sent_by ? (nomiAutore.get(s.sent_by) ?? "—") : "—"}</td>

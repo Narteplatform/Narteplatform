@@ -100,11 +100,13 @@ export type Entitlements = {
   // --- Strumenti ---
   canSetPercorso: boolean;
   /**
-   * Quante volte al mese il team N'arte SEGNALA il profilo dell'artista a
-   * strutture in linea con lui (almeno 2 sul piano Max).
+   * Quante volte al mese il team N'arte INVIA materiale pubblicitario
+   * dell'artista, per suo conto, a strutture del settore (almeno 2 sul Max).
    *
    * È una PROMESSA OPERATIVA di mezzi, non una funzione software e non una
-   * garanzia di ingaggi: la segnalazione la fa il team a mano. N'arte è solo
+   * garanzia di ingaggi: l'invio lo fa il team fuori dalla piattaforma e lo
+   * registra in /admin/proposte. Mai a privati, mai come proposta per un
+   * evento (parere legale, novembre 2026). N'arte è solo
    * una piattaforma promozionale: non tratta per conto dell'artista, non
    * candida nessuno a eventi e non partecipa alle trattative; se la struttura
    * è interessata contatta l'artista sulla piattaforma.
@@ -316,7 +318,7 @@ export const PLAN_CARD_HIGHLIGHTS: Record<ArtistTier, string[]> = {
   ],
   max: [
     "Tutto del piano Pro",
-    "Segnaliamo il tuo profilo ad almeno 2 strutture al mese",
+    "Promozione del tuo profilo presso almeno 2 strutture al mese",
     "Statistiche del profilo sull'ultimo anno",
     "Fino a 30 foto e 5 profili artista",
     "Shooting fotografico incluso (annuale)",
@@ -425,9 +427,9 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
     hint: "Cover artist, tribute band o progetto inedito sul profilo pubblico.",
   },
   {
-    label: "Segnalazione alle strutture",
+    label: "Promozione presso le strutture",
     values: { free: false, pro: false, max: "Almeno 2 al mese" },
-    hint: "Il team segnala il tuo profilo a strutture in linea con te. N'arte non tratta per te: se la struttura è interessata ti contatta sulla piattaforma.",
+    hint: "Il team invia per tuo conto materiale promozionale a strutture del settore. È pubblicità, non una candidatura: N'arte non tratta per te e se la struttura è interessata ti contatta sulla piattaforma.",
     primary: true,
   },
   {

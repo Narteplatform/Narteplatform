@@ -109,21 +109,23 @@ export default async function PrezziPage() {
                 </div>
 
                 <div>
-                  <p className="font-medium">Cosa vuol dire &ldquo;segnalazione alle strutture&rdquo;?</p>
+                  <p className="font-medium">Cosa vuol dire &ldquo;promozione presso le strutture&rdquo;?</p>
                   <p className="mt-1 text-muted-foreground">
-                    Sul piano Max il team segnala il tuo profilo ad almeno due strutture al mese
-                    in linea con il tuo genere e la tua zona. È un impegno di mezzi: N&rsquo;arte
-                    è una piattaforma promozionale, non partecipa alle trattative, non tratta per
-                    te e non garantisce ingaggi. Se la struttura è interessata ti contatta sulla
-                    piattaforma.
+                    Sul piano Max il team invia ogni mese, per tuo conto, materiale pubblicitario
+                    del tuo profilo ad almeno due strutture del settore. È un invio promozionale,
+                    non una candidatura a eventi, ed è un impegno di mezzi: N&rsquo;arte non
+                    partecipa alle trattative, non tratta per te e non garantisce ingaggi. Se una
+                    struttura è interessata ti contatta sulla piattaforma.
                   </p>
                 </div>
 
                 <div>
                   <p className="font-medium">Lo shooting fotografico del piano Max?</p>
                   <p className="mt-1 text-muted-foreground">
-                    È incluso una tantum nell&rsquo;abbonamento <strong>Max annuale</strong>. Dopo
-                    l&rsquo;attivazione ti scriviamo per organizzarlo.
+                    È incluso una sola volta, nel primo anno dell&rsquo;abbonamento{" "}
+                    <strong>Max annuale</strong>: un&rsquo;ora presso Hangarram (Napoli), 5 foto,
+                    per un solo profilo artista dell&rsquo;account a tua scelta. Puoi richiederlo
+                    dall&rsquo;area riservata dal 15° giorno di abbonamento.
                   </p>
                 </div>
 

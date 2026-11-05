@@ -1,18 +1,25 @@
 "use server";
 
-import { createElement } from "react";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
-import { dispatchEmail } from "@/lib/emails/dispatch";
-import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
-import { getSiteUrl } from "@/lib/site-url";
-import { creaTokenOptout, hashEmail, normalizzaEmail } from "@/lib/referrals/optout";
+import { normalizzaEmail } from "@/lib/referrals/optout";
 import { meseCorrente, tabellaAssente } from "@/lib/referrals/periodo";
 import { logger } from "@/lib/logger";
 import { registraAzione } from "@/lib/moderation/decisioni";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
+
+/**
+ * Registro delle segnalazioni promozionali del piano Max.
+ *
+ * Dal parere legale di novembre 2026 la segnalazione è un INVIO DI MATERIALE
+ * PUBBLICITARIO fatto dal Team fuori dalla piattaforma, per conto dell'artista,
+ * a strutture del settore. La piattaforma non invia nulla: qui si registra
+ * soltanto l'invio, perché è la prova che la quota mensile del Max è stata
+ * rispettata. Niente destinatari privati (persone fisiche): erano il punto
+ * critico dell'art. 130 del Codice privacy.
+ */
 
 export type SegnalazioneState = { error?: string; ok?: string };
 
@@ -20,11 +27,15 @@ const MSG_MIGRATION = "Registro delle segnalazioni assente: applica la migration
 
 const schema = z.object({
   artistId: z.string().uuid("Scegli un artista"),
-  // "venue:<uuid>" | "org:<uuid>" | "user:<uuid>" | "manual"
-  recipient: z.string().min(1, "Scegli il destinatario"),
+  // "venue:<uuid>" | "org:<uuid>" | "manual"
+  recipient: z.string().min(1, "Scegli la struttura"),
   manualName: z.string().trim().max(120).optional(),
   manualEmail: z.string().trim().max(200).optional(),
-  note: z.string().trim().max(500, "La nota può avere al massimo 500 caratteri").optional(),
+  note: z
+    .string()
+    .trim()
+    .min(5, "Descrivi cosa è stato inviato e come (almeno 5 caratteri).")
+    .max(500, "La descrizione può avere al massimo 500 caratteri"),
 });
 
 const emailSchema = z.string().email();
@@ -32,11 +43,10 @@ const uuidSchema = z.string().uuid();
 
 type Destinatario = {
   name: string;
+  /** Facoltativa: l'invio avviene fuori piattaforma. "" se assente. */
   email: string;
   organizerId: string | null;
   venueId: string | null;
-  /** Utente privato registrato (ruolo `user`). */
-  profileId: string | null;
 };
 
 type Risolto = { ok: true; dest: Destinatario } | { ok: false; error: string };
@@ -48,13 +58,15 @@ async function risolviDestinatario(
   if (d.recipient === "manual") {
     const name = (d.manualName ?? "").trim();
     const email = normalizzaEmail(d.manualEmail ?? "");
-    if (name.length < 2) return { ok: false, error: "Inserisci il nome del destinatario." };
-    if (!emailSchema.safeParse(email).success) return { ok: false, error: "Email del destinatario non valida." };
-    return { ok: true, dest: { name, email, organizerId: null, venueId: null, profileId: null } };
+    if (name.length < 2) return { ok: false, error: "Inserisci il nome della struttura." };
+    if (email !== "" && !emailSchema.safeParse(email).success) {
+      return { ok: false, error: "Email della struttura non valida (puoi lasciarla vuota)." };
+    }
+    return { ok: true, dest: { name, email, organizerId: null, venueId: null } };
   }
 
   const [kind, id] = d.recipient.split(":");
-  if (!uuidSchema.safeParse(id).success) return { ok: false, error: "Destinatario non valido." };
+  if (!uuidSchema.safeParse(id).success) return { ok: false, error: "Struttura non valida." };
 
   if (kind === "venue") {
     const { data, error } = await admin
@@ -64,47 +76,42 @@ async function risolviDestinatario(
       .maybeSingle();
     if (error) return { ok: false, error: "Non riesco a leggere la struttura. Riprova." };
     if (!data) return { ok: false, error: "Struttura non trovata." };
-    const email = normalizzaEmail(data.email ?? "");
-    if (!emailSchema.safeParse(email).success) return { ok: false, error: "La struttura non ha un'email valida." };
     return {
       ok: true,
-      dest: { name: data.name, email, organizerId: data.organizer_id, venueId: data.id, profileId: null },
+      dest: {
+        name: data.name,
+        email: normalizzaEmail(data.email ?? ""),
+        organizerId: data.organizer_id,
+        venueId: data.id,
+      },
     };
   }
 
   if (kind === "org") {
-    const { data, error } = await admin
+    let res = await admin
       .from("organizers")
-      .select("id, user_id, display_name")
+      .select("id, display_name, is_private, approval_status")
       .eq("id", id)
       .maybeSingle();
-    if (error) return { ok: false, error: "Non riesco a leggere l'organizzatore. Riprova." };
-    if (!data) return { ok: false, error: "Organizzatore non trovato." };
-    const { data: u, error: uErr } = await admin.auth.admin.getUserById(data.user_id);
-    if (uErr) return { ok: false, error: "Non riesco a leggere l'email dell'organizzatore. Riprova." };
-    const email = normalizzaEmail(u?.user?.email ?? "");
-    if (!emailSchema.safeParse(email).success) return { ok: false, error: "L'organizzatore non ha un'email valida." };
-    return { ok: true, dest: { name: data.display_name, email, organizerId: data.id, venueId: null, profileId: null } };
+    // approval_status arriva con la 0071: senza, sono tutti approvati.
+    if (colonnaAssente(res.error, "approval_status")) {
+      res = (await admin
+        .from("organizers")
+        .select("id, display_name, is_private")
+        .eq("id", id)
+        .maybeSingle()) as typeof res;
+    }
+    if (res.error) return { ok: false, error: "Non riesco a leggere l'organizzatore. Riprova." };
+    const o = res.data;
+    if (!o) return { ok: false, error: "Organizzatore non trovato." };
+    if (o.is_private) return { ok: false, error: "Le segnalazioni vanno solo a strutture, non a privati." };
+    if ("approval_status" in o && (o.approval_status ?? "approved") !== "approved") {
+      return { ok: false, error: "L'organizzatore non è ancora approvato." };
+    }
+    return { ok: true, dest: { name: o.display_name, email: "", organizerId: o.id, venueId: null } };
   }
 
-  if (kind === "user") {
-    const { data, error } = await admin
-      .from("profiles")
-      .select("id, role, full_name")
-      .eq("id", id)
-      .maybeSingle();
-    if (error) return { ok: false, error: "Non riesco a leggere l'utente. Riprova." };
-    if (!data || data.role !== "user") return { ok: false, error: "Utente privato non trovato." };
-    const { data: u, error: uErr } = await admin.auth.admin.getUserById(data.id);
-    if (uErr) return { ok: false, error: "Non riesco a leggere l'email dell'utente. Riprova." };
-    const email = normalizzaEmail(u?.user?.email ?? "");
-    if (!emailSchema.safeParse(email).success) return { ok: false, error: "L'utente non ha un'email valida." };
-    const meta = u?.user?.user_metadata as { full_name?: string } | undefined;
-    const name = data.full_name?.trim() || meta?.full_name?.trim() || email;
-    return { ok: true, dest: { name, email, organizerId: null, venueId: null, profileId: data.id } };
-  }
-
-  return { ok: false, error: "Destinatario non valido." };
+  return { ok: false, error: "Struttura non valida." };
 }
 
 export async function inviaSegnalazioneProfilo(
@@ -125,156 +132,77 @@ export async function inviaSegnalazioneProfilo(
 
   const admin = createAdminClient();
 
-  // 1. L'artista: deve avere il piano Max e un profilo pubblico (il link deve aprirsi).
+  // 1. L'artista deve avere il piano Max.
   const { data: artist, error: aErr } = await admin
     .from("artists")
-    .select("id, stage_name, slug, genre, instruments, city, tier, is_public")
+    .select("id, stage_name, tier")
     .eq("id", data.artistId)
     .maybeSingle();
   if (aErr) return { error: "Non riesco a leggere l'artista. Riprova." };
   if (!artist) return { error: "Artista non trovato." };
   if (artist.tier !== "max") return { error: "L'artista non ha il piano Max." };
-  if (!artist.is_public) return { error: "Il profilo non è pubblico: il link non si aprirebbe." };
 
-  // 2. Il destinatario, riletto dal server: dal client arrivano solo gli id.
+  // 2. La struttura, riletta dal server: dal client arrivano solo gli id.
   const ris = await risolviDestinatario(admin, data);
   if (!ris.ok) return { error: ris.error };
   const dest = ris.dest;
 
-  // 3. Opt-out.
-  const { data: optout, error: oErr } = await admin
-    .from("referral_optouts")
-    .select("email_hash")
-    .eq("email_hash", hashEmail(dest.email))
-    .maybeSingle();
-  if (oErr) {
-    if (tabellaAssente(oErr.code)) return { error: MSG_MIGRATION };
-    logger.error("referrals", "lettura opt-out fallita:", oErr.message);
-    return { error: "Non riesco a verificare le disattivazioni. Non invio nulla: riprova." };
-  }
-  if (optout) {
-    return { error: "Questo destinatario ha disattivato le segnalazioni. Non è possibile inviargliene." };
-  }
-
-  const token = creaTokenOptout(dest.email);
-  if (!token) return { error: "Segreto per il link di disattivazione non configurato (REFERRAL_OPTOUT_SECRET)." };
-
-  // 4. Stessa coppia artista/destinatario già segnalata questo mese: si evita il doppione.
+  // 3. Stessa coppia artista/struttura già registrata questo mese: si evita il doppione.
   const periodo = meseCorrente();
-  const { data: gia, error: gErr } = await admin
+  let doppione = admin
     .from("profile_referrals")
     .select("id")
     .eq("artist_id", artist.id)
     .eq("period_month", periodo)
-    .eq("recipient_email", dest.email)
     .eq("email_status", "inviata")
     .limit(1);
+  doppione = dest.venueId
+    ? doppione.eq("venue_id", dest.venueId)
+    : dest.organizerId
+      ? doppione.eq("organizer_id", dest.organizerId)
+      : doppione.ilike("recipient_name", dest.name);
+  const { data: gia, error: gErr } = await doppione;
   if (gErr) {
     if (tabellaAssente(gErr.code)) return { error: MSG_MIGRATION };
     logger.error("referrals", "controllo doppioni fallito:", gErr.message);
-    return { error: "Non riesco a controllare le segnalazioni già inviate. Riprova." };
+    return { error: "Non riesco a controllare le segnalazioni già registrate. Riprova." };
   }
   if ((gia ?? []).length > 0) {
-    return { error: "Questo destinatario ha già ricevuto la segnalazione di questo artista nel mese in corso." };
+    return { error: "Per questo artista un invio a questa struttura è già registrato nel mese in corso." };
   }
 
-  // 5. Registro prima dell'invio: se l'email parte, la traccia esiste già.
-  const nota = (data.note ?? "").trim();
-  const registro = {
-    artist_id: artist.id,
-    sent_by: user.id,
-    recipient_name: dest.name,
-    recipient_email: dest.email,
-    organizer_id: dest.organizerId,
-    venue_id: dest.venueId,
-    note: nota === "" ? null : nota,
-    period_month: periodo,
-  };
-  const inserisci = (riga: typeof registro & { profile_id?: string }) =>
-    admin.from("profile_referrals").insert(riga).select("id").single();
-  let { data: riga, error: insErr } = await inserisci(
-    dest.profileId ? { ...registro, profile_id: dest.profileId } : registro,
-  );
-  // Migration 0075 non ancora applicata: nome ed email del privato restano nel
-  // registro, manca solo il collegamento al profilo.
-  if (colonnaAssente(insErr, "profile_id")) ({ data: riga, error: insErr } = await inserisci(registro));
+  // 4. Registro. «inviata» = invio fuori piattaforma effettuato: è ciò che conta nella quota.
+  const { data: riga, error: insErr } = await admin
+    .from("profile_referrals")
+    .insert({
+      artist_id: artist.id,
+      sent_by: user.id,
+      recipient_name: dest.name,
+      recipient_email: dest.email,
+      organizer_id: dest.organizerId,
+      venue_id: dest.venueId,
+      note: data.note,
+      period_month: periodo,
+      email_status: "inviata",
+    })
+    .select("id")
+    .single();
   if (insErr || !riga) {
     if (insErr && tabellaAssente(insErr.code)) return { error: MSG_MIGRATION };
     logger.error("referrals", "registrazione segnalazione fallita:", insErr?.message);
-    return { error: "Non sono riuscito a registrare la segnalazione, quindi non l'ho inviata." };
-  }
-
-  // 6. Invio.
-  const siteUrl = getSiteUrl();
-  const profileUrl = `${siteUrl}/artisti/${artist.slug}`;
-  const unsubscribeUrl = `${siteUrl}/segnalazioni/stop?t=${encodeURIComponent(token)}`;
-  const summary = [
-    (artist.genre ?? []).slice(0, 3).join(", "),
-    (artist.instruments ?? []).slice(0, 3).join(", "),
-    artist.city ?? "",
-  ]
-    .filter((s) => s.trim() !== "")
-    .join(" · ");
-
-  const res = await dispatchEmail({
-    key: "profile_referral",
-    to: dest.email,
-    params: {
-      recipientName: dest.name,
-      artistName: artist.stage_name,
-      artistSummary: summary,
-      profileUrl,
-      note: nota,
-      unsubscribeUrl,
-    },
-    meta: { referral_id: riga.id, artist_id: artist.id },
-    fallback: {
-      subject: `Ti segnaliamo ${artist.stage_name} — N'Arte`,
-      template: "profile_referral",
-      react: createElement(NoticeEmail, {
-        preview: "Un profilo che potrebbe interessarvi.",
-        heading: `Vi segnaliamo ${artist.stage_name}`,
-        paragraphs: [
-          `Ciao ${dest.name}, pensiamo che questo profilo possa interessarvi.`,
-          "Se l'artista vi interessa, contattatelo direttamente dalla piattaforma con una richiesta di booking. N'arte non partecipa alla trattativa, non stabilisce il compenso e non è parte dell'accordo. L'artista ha un abbonamento Max, che include questa segnalazione.",
-        ],
-        rows: [
-          { label: "Artista", value: artist.stage_name },
-          { label: "In breve", value: summary },
-          { label: "Nota", value: nota },
-        ],
-        button: { label: "Guarda il profilo", href: profileUrl },
-        footnote: `Non volete ricevere altre segnalazioni? Disattivatele qui: ${unsubscribeUrl}`,
-      }),
-    },
-  });
-
-  if (res.ok) {
-    const { error: upErr } = await admin
-      .from("profile_referrals")
-      .update({ email_status: "inviata" })
-      .eq("id", riga.id);
-    if (upErr) {
-      logger.error("referrals", "esito invio non registrato (email partita):", upErr.message);
-    }
+    return { error: "Non sono riuscito a registrare l'invio. Riprova." };
   }
 
   await registraAzione({
     actorId: user.id,
     targetType: "segnalazione_profilo",
     targetId: riga.id,
-    action: res.ok ? "segnalazione_profilo_inviata" : "segnalazione_profilo_registrata",
-    descrizione: `Profilo «${artist.stage_name}» segnalato a ${dest.name}${res.ok ? "" : " (email non partita)"}.`,
+    action: "segnalazione_profilo_registrata",
+    descrizione: `Materiale promozionale di «${artist.stage_name}» inviato a ${dest.name} (fuori piattaforma).`,
   });
 
   revalidatePath("/admin/proposte");
   revalidatePath("/dashboard/overview");
 
-  if (!res.ok) {
-    return {
-      error:
-        "La segnalazione è registrata ma l'email non è partita. Controlla il registro email e riprova fra un momento.",
-    };
-  }
-  return { ok: `Segnalazione inviata a ${dest.name}.` };
+  return { ok: `Invio a ${dest.name} registrato.` };
 }

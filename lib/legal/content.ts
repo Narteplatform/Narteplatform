@@ -46,7 +46,7 @@ export type LegalDoc = {
 /** Versione dei documenti. È la data dell'ultima modifica, anche minima, ed è
  *  quella che si mostra in pagina e si registra insieme al consenso: serve a
  *  sapere esattamente quale testo l'utente aveva davanti. */
-export const LEGAL_VERSION = "2026-10-01";
+export const LEGAL_VERSION = "2026-11-05";
 
 /**
  * Versione del CONSENSO — deliberatamente separata dalla precedente.
@@ -172,12 +172,12 @@ segnalazione e comunicare l&rsquo;esito. Le decisioni del team su contenuti e
 account (rifiuti, oscuramenti, sospensioni) sono registrate con il motivo e
 comunicate all&rsquo;interessato, che può contestarle.</p>
 
-<h3>La segnalazione dei profili alle strutture</h3>
-<p>Con il piano Max il team segnala il profilo di un artista a strutture e
-organizzatori in linea con lui, inviando un&rsquo;email con il link al profilo.
-Registriamo destinatario e data della segnalazione, che l&rsquo;artista vede nella
-propria area. Chi riceve le segnalazioni può disattivarle con il link in fondo
-all&rsquo;email.</p>
+<h3>La promozione dei profili presso le strutture</h3>
+<p>Con il piano Max il team invia, per conto dell&rsquo;artista e fuori dalla
+piattaforma, materiale pubblicitario del suo profilo a strutture del settore,
+mai a persone fisiche private. Registriamo la struttura, la data e il tipo di
+materiale inviato, come prova del servizio reso all&rsquo;artista; l&rsquo;artista vede
+nella propria area il numero e la data degli invii.</p>
 
 <h3>Il registro delle email inviate</h3>
 <p>Teniamo traccia delle comunicazioni che il sistema invia — destinatario,
@@ -457,8 +457,8 @@ garantisce. In particolare:</p>
 <ul>
 <li>il compenso viene concordato direttamente fra le due parti;</li>
 <li>non candidiamo gli artisti a eventi: con il piano Max ci limitiamo a
-<strong>segnalarne il profilo</strong> a strutture in linea con loro, a scopo
-promozionale; l'eventuale contatto avviene poi direttamente fra le parti;</li>
+<strong>inviare materiale pubblicitario</strong> del loro profilo, per loro conto,
+a strutture del settore; l'eventuale contatto avviene poi direttamente fra le parti;</li>
 <li><strong>il pagamento non passa da N'arte</strong>: non lo incassiamo, non lo
 anticipiamo, non tratteniamo commissioni sull'ingaggio;</li>
 <li>gli obblighi fiscali, contributivi e di eventuale fatturazione restano in

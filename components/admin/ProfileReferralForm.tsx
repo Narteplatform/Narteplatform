@@ -1,8 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import type { Privato } from "@/lib/referrals/privati";
-import { Send } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import {
@@ -11,7 +10,7 @@ import {
 } from "@/app/(admin)/admin/proposte/_actions";
 
 export type CandidatoDestinatario = {
-  /** "venue:<id>", "org:<id>" oppure "user:<id>" */
+  /** "venue:<id>" oppure "org:<id>" */
   value: string;
   name: string;
   detail: string;
@@ -19,24 +18,21 @@ export type CandidatoDestinatario = {
 
 const initial: SegnalazioneState = {};
 
+/**
+ * Registra un invio di materiale promozionale fatto dal Team fuori dalla
+ * piattaforma. Non parte nessuna email.
+ */
 export function ProfileReferralForm({
   artists,
   defaultArtistId,
   candidates,
-  privati,
 }: {
   artists: { id: string; name: string }[];
   defaultArtistId: string;
   candidates: CandidatoDestinatario[];
-  /** Privati registrati, per la tendina. `null` = elenco non leggibile. */
-  privati: Privato[] | null;
 }) {
   const [state, action, pending] = useActionState(inviaSegnalazioneProfilo, initial);
   const [recipient, setRecipient] = useState<string>(candidates[0]?.value ?? "manual");
-  // Valore della tendina dei privati: resta anche se si passa ad altro, così
-  // tornando su «Privato registrato» la scelta non si perde.
-  const [privato, setPrivato] = useState<string>("");
-  const privatoAttivo = recipient === "privato";
 
   return (
     <form action={action} className="space-y-4">
@@ -61,7 +57,7 @@ export function ProfileReferralForm({
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="mb-1.5 text-[12px] font-semibold tracking-[0.02em]">Destinatario *</legend>
+        <legend className="mb-1.5 text-[12px] font-semibold tracking-[0.02em]">Struttura destinataria *</legend>
         {candidates.map((c) => (
           <label key={c.value} className="flex items-start gap-2 text-sm">
             <input
@@ -81,57 +77,13 @@ export function ProfileReferralForm({
         <label className="flex items-start gap-2 text-sm">
           <input
             type="radio"
-            name={privatoAttivo ? undefined : "recipient"}
-            value="privato"
-            checked={privatoAttivo}
-            onChange={() => setRecipient("privato")}
-            className="mt-1"
-          />
-          <span className="font-medium">Privato registrato</span>
-        </label>
-        {privatoAttivo && (
-          <div className="pl-6">
-            {privati === null ? (
-              <p role="alert" className="text-sm text-corallo-dark">
-                Non riesco a leggere l&apos;elenco dei privati. Riprova fra un momento.
-              </p>
-            ) : privati.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nessun privato registrato con un&apos;email.</p>
-            ) : (
-              <>
-                <Label htmlFor="privato">Scegli il privato *</Label>
-                {/* Il valore inviato come «recipient» è quello della tendina. */}
-                <select
-                  id="privato"
-                  name="recipient"
-                  required
-                  value={privato}
-                  onChange={(e) => setPrivato(e.target.value)}
-                  className="h-10 w-full rounded-md border-[1.5px] border-border bg-surface px-3 text-sm focus:border-azzurro focus:outline-none focus:ring-[3px] focus:ring-azzurro/15"
-                >
-                  <option value="" disabled>
-                    Scegli fra {privati.length} privati registrati…
-                  </option>
-                  {privati.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.name} · {p.email} ({p.tipo})
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-          </div>
-        )}
-        <label className="flex items-start gap-2 text-sm">
-          <input
-            type="radio"
             name="recipient"
             value="manual"
             checked={recipient === "manual"}
             onChange={() => setRecipient("manual")}
             className="mt-1"
           />
-          <span className="font-medium">Inserisci a mano</span>
+          <span className="font-medium">Struttura non registrata</span>
         </label>
         {recipient === "manual" && (
           <div className="grid gap-3 pl-6 sm:grid-cols-2">
@@ -140,21 +92,23 @@ export function ProfileReferralForm({
               <Input id="manualName" name="manualName" maxLength={120} required />
             </div>
             <div>
-              <Label htmlFor="manualEmail">Email *</Label>
-              <Input id="manualEmail" name="manualEmail" type="email" maxLength={200} required />
+              <Label htmlFor="manualEmail">Email (facoltativa)</Label>
+              <Input id="manualEmail" name="manualEmail" type="email" maxLength={200} />
             </div>
           </div>
         )}
       </fieldset>
 
       <div>
-        <Label htmlFor="note">Nota (facoltativa, max 500 caratteri)</Label>
+        <Label htmlFor="note">Materiale inviato e canale *</Label>
         <Textarea
           id="note"
           name="note"
+          required
+          minLength={5}
           maxLength={500}
           rows={3}
-          placeholder="Perché pensiamo che sia in linea con la struttura."
+          placeholder="Es. cartella promozionale stampata consegnata a mano il 12/11."
         />
       </div>
 
@@ -170,8 +124,8 @@ export function ProfileReferralForm({
       )}
 
       <Button type="submit" disabled={pending}>
-        <Send className="size-4" aria-hidden="true" />
-        {pending ? "Invio…" : "Segnala questo artista"}
+        <ClipboardCheck className="size-4" aria-hidden="true" />
+        {pending ? "Registro…" : "Registra l'invio"}
       </Button>
     </form>
   );

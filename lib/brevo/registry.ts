@@ -80,8 +80,6 @@ export type EmailKey =
   // --- abbonamenti: tutela del consumatore ---
   | "renewal_reminder"
   | "subscription_withdrawal"
-  // --- piano Max: segnalazione del profilo alle strutture ---
-  | "profile_referral"
   // --- ciclo di vita evento ---
   | "event_reminder"
   | "feedback_request";
@@ -422,19 +420,6 @@ export interface SubscriptionWithdrawalParams {
   refundNote: string;
 }
 
-/**
- * Segnalazione del profilo di un artista Max a una struttura. È una
- * comunicazione promozionale: N'arte non partecipa alla trattativa.
- */
-export interface ProfileReferralParams {
-  recipientName: string;
-  artistName: string;
-  artistSummary: string;
-  profileUrl: string;
-  note: string;
-  unsubscribeUrl: string;
-}
-
 export interface AccountDeletionConfirmParams {
   name: string;
   actionUrl: string;
@@ -533,7 +518,6 @@ export interface EmailParamsMap {
   report_outcome: ReportOutcomeParams;
   renewal_reminder: RenewalReminderParams;
   subscription_withdrawal: SubscriptionWithdrawalParams;
-  profile_referral: ProfileReferralParams;
   event_reminder: EventReminderParams;
   feedback_request: FeedbackRequestParams;
 }
@@ -758,10 +742,6 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
   subscription_withdrawal: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_WITHDRAWAL),
     label: "Conferma recesso abbonamento",
-  },
-  profile_referral: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PROFILE_REFERRAL),
-    label: "Segnalazione profilo a una struttura",
   },
   event_reminder: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_EVENT_REMINDER),

@@ -333,47 +333,6 @@ const subscriptionWithdrawal = defineTemplate({
   }),
 });
 
-const profileReferral = defineTemplate({
-  key: "profile_referral",
-  name: "N'arte · Segnalazione profilo a una struttura [profile_referral]",
-  subject: "Ti segnaliamo {{params.artistName}} — N'Arte",
-  sample: {
-    recipientName: "Staff del Brusco",
-    artistName: "Trio Esempio",
-    artistSummary: "Jazz · trio · Napoli",
-    profileUrl: "https://narteofficial.it/artisti/esempio",
-    note: "Pensiamo che il loro repertorio sia adatto alle vostre serate del giovedì.",
-    unsubscribeUrl: "https://narteofficial.it/segnalazioni/stop?t=esempio",
-  },
-  html: layout({
-    key: "profile_referral",
-    preheader: "Un profilo che potrebbe interessarvi. Se vi interessa, contattate l'artista dalla piattaforma.",
-    body: [
-      eyebrow("Artisti su N'arte"),
-      title(`Vi segnaliamo ${em(param("artistName"))}`, { size: "xl" }),
-      paragraph(`Ciao ${param("recipientName")}, pensiamo che questo profilo possa interessarvi.`),
-      card(
-        [
-          sectionTitle("L'artista"),
-          dataTable([
-            { icon: "mic", label: "Artista", value: param("artistName") },
-            { icon: "star", label: "In breve", value: param("artistSummary") },
-            { icon: "chat", label: "Nota", value: param("note"), onlyIf: "note", multiline: true },
-          ]),
-        ].join("\n")
-      ),
-      buttonPair({ href: param("profileUrl"), label: "Guarda il profilo" }),
-      callout({
-        heading: "Come funziona",
-        text: "Se l'artista vi interessa, contattatelo direttamente dalla piattaforma con una richiesta di booking. N'arte non partecipa alla trattativa, non stabilisce il compenso e non è parte dell'accordo. L'artista ha un abbonamento Max, che include questa segnalazione.",
-      }),
-      paragraph(
-        `Non volete ricevere altre segnalazioni? <a href="${param("unsubscribeUrl")}">Disattivatele qui</a>.`
-      ),
-    ].join("\n"),
-  }),
-});
-
 export const COMPLIANCE_TEMPLATES = [
   moderationDecision,
   mediaApproved,
@@ -383,5 +342,4 @@ export const COMPLIANCE_TEMPLATES = [
   reportOutcome,
   renewalReminder,
   subscriptionWithdrawal,
-  profileReferral,
 ];
