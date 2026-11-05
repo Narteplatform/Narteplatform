@@ -9,22 +9,36 @@ import { chiudiAccountAction } from "@/app/(admin)/admin/utenti/_actions";
 /**
  * «Chiudi account» disposto dal Team. Blocca l'accesso, toglie i profili dal
  * catalogo e disdice l'abbonamento a fine periodo; la cancellazione definitiva
- * dei dati NON parte da qui (resta lo strumento root, dopo 30 giorni).
+ * dei dati NON parte da qui (la esegue il cron dopo 30 giorni). Per gli
+ * artisti con partita IVA la chiusura si programma con 30 giorni di preavviso,
+ * salvo violazione grave o obbligo di legge.
  */
 export function ChiusuraAccount({ userId }: { userId: string }) {
   const router = useRouter();
   const [aperto, setAperto] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [capito, setCapito] = useState(false);
+  const [immediata, setImmediata] = useState(false);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
   function conferma() {
     setMsg(null);
     start(async () => {
-      const res = await chiudiAccountAction(userId, motivo);
+      const res = await chiudiAccountAction(userId, motivo, immediata);
       if (!res.ok) {
         setMsg({ tone: "err", text: res.error });
+        return;
+      }
+      if ("programmataPer" in res && res.programmataPer) {
+        const quando = new Date(res.programmataPer).toLocaleDateString("it-IT", { timeZone: "Europe/Rome" });
+        setMsg({
+          tone: "ok",
+          text: `Artista con partita IVA: misura programmata per il ${quando}, con preavviso${res.notified ? " inviato per email" : " (email non partita: scrivigli a mano)"}.`,
+        });
+        setAperto(false);
+        setMotivo("");
+        router.refresh();
         return;
       }
       setMsg({
@@ -70,7 +84,7 @@ export function ChiusuraAccount({ userId }: { userId: string }) {
       <p className="text-xs text-muted-foreground">
         L&apos;accesso viene bloccato, i profili escono dal catalogo e l&apos;abbonamento viene disdetto
         a fine periodo. I dati non vengono cancellati subito: la cancellazione definitiva avviene
-        dopo 30 giorni, salvo reclamo accolto, con lo strumento root.
+        in automatico dopo 30 giorni, salvo reclamo accolto.
       </p>
       <MotivazioneField
         compact
@@ -79,6 +93,19 @@ export function ChiusuraAccount({ userId }: { userId: string }) {
         onChange={setMotivo}
         hint="Viene inviata all'interessato per email, con il collegamento per presentare reclamo."
       />
+      <label className="flex items-start gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={immediata}
+          disabled={pending}
+          onChange={(e) => setImmediata(e.target.checked)}
+          className="mt-0.5"
+        />
+        <span>
+          Violazione grave o obbligo di legge: effetto immediato. Senza questa spunta, per gli artisti con
+          partita IVA la misura parte dopo 30 giorni di preavviso (Reg. UE 2019/1150).
+        </span>
+      </label>
       <label className="flex items-start gap-2 text-xs">
         <input
           type="checkbox"

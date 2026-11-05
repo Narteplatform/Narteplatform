@@ -11,6 +11,7 @@ import { logger } from "@/lib/logger";
 import { creaNotifica } from "@/lib/notifications";
 import { venueTypeEnum } from "@/lib/validators/schemas";
 import { chiudiAccountDalTeam } from "@/lib/admin/chiusura";
+import { annullaMisura, eArtistaProfessionista, programmaMisura } from "@/lib/admin/preavviso";
 import { annullaCancellazioneConfermata, leggiCancellazioneAttiva } from "@/lib/legal/cancellazione";
 import { createElement } from "react";
 import { dispatchEmail } from "@/lib/emails/dispatch";
@@ -21,8 +22,30 @@ import { getSiteUrl } from "@/lib/site-url";
 // sezione si controlla qui, non solo nella pagina.
 
 export type EsitoSospensioneAzione =
-  | { ok: true; notified: boolean }
+  | { ok: true; notified: boolean; programmataPer?: string }
   | { ok: false; error: string };
+
+/**
+ * Artisti con partita IVA: la misura si programma con 30 giorni di preavviso
+ * (P2B), salvo `immediata` (violazione grave o obbligo di legge). Restituisce
+ * l'esito se ha programmato, `null` se la misura va eseguita subito.
+ */
+async function forseProgramma(
+  tipo: "sospensione" | "chiusura",
+  userId: string,
+  motivo: string,
+  attoreId: string,
+  immediata: boolean,
+): Promise<EsitoSospensioneAzione | null> {
+  if (immediata) return null;
+  const prof = await eArtistaProfessionista(userId);
+  if (!prof.ok) return { ok: false, error: "Non riesco a verificare se l'artista opera con partita IVA. Nessuna modifica fatta." };
+  if (!prof.professionista) return null;
+  const r = await programmaMisura({ tipo, userId, motivo, attoreId });
+  if (!r.ok) return r;
+  revalidatePath("/admin/utenti");
+  return { ok: true, notified: r.notified, programmataPer: r.efficaceDal };
+}
 
 const schema = z.object({
   userId: z.string().uuid(),
@@ -36,12 +59,17 @@ const schema = z.object({
 async function esegui(
   tipo: "sospendi" | "riattiva",
   userId: string,
-  motivo: string
+  motivo: string,
+  immediata = false
 ): Promise<EsitoSospensioneAzione> {
   const attore = await requireAdminPageAccess("utenti");
   const parsed = schema.safeParse({ userId, motivo });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dati non validi." };
+  }
+  if (tipo === "sospendi") {
+    const programmata = await forseProgramma("sospensione", parsed.data.userId, parsed.data.motivo, attore.id, immediata);
+    if (programmata) return programmata;
   }
   const fn = tipo === "sospendi" ? sospendiAccount : riattivaAccount;
   const esito = await fn({ userId: parsed.data.userId, motivo: parsed.data.motivo, attoreId: attore.id });
@@ -51,8 +79,22 @@ async function esegui(
   return { ok: true, notified: esito.notified };
 }
 
-export async function sospendiAccountAction(userId: string, motivo: string) {
-  return esegui("sospendi", userId, motivo);
+export async function sospendiAccountAction(userId: string, motivo: string, immediata = false) {
+  return esegui("sospendi", userId, motivo, immediata);
+}
+
+/** Annulla una sospensione o chiusura programmata e non ancora eseguita. */
+export async function annullaMisuraAction(userId: string, motivo: string): Promise<EsitoSospensioneAzione> {
+  const attore = await requireAdminPageAccess("utenti");
+  const parsed = schema.safeParse({ userId, motivo });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dati non validi." };
+  }
+  const r = await annullaMisura({ userId: parsed.data.userId, motivo: parsed.data.motivo, attoreId: attore.id });
+  if (!r.ok) return r;
+  if (r.annullate === 0) return { ok: false, error: "Non c'è una misura programmata da annullare." };
+  revalidatePath("/admin/utenti");
+  return { ok: true, notified: false };
 }
 
 export async function riattivaAccountAction(userId: string, motivo: string) {
@@ -63,12 +105,18 @@ export async function riattivaAccountAction(userId: string, motivo: string) {
  * Chiusura dell'account da parte del Team. Non esegue la cancellazione
  * definitiva dei dati: resta lo strumento root esistente.
  */
-export async function chiudiAccountAction(userId: string, motivo: string): Promise<EsitoSospensioneAzione> {
+export async function chiudiAccountAction(
+  userId: string,
+  motivo: string,
+  immediata = false
+): Promise<EsitoSospensioneAzione> {
   const attore = await requireAdminPageAccess("utenti");
   const parsed = schema.safeParse({ userId, motivo });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dati non validi." };
   }
+  const programmata = await forseProgramma("chiusura", parsed.data.userId, parsed.data.motivo, attore.id, immediata);
+  if (programmata) return programmata;
   const esito = await chiudiAccountDalTeam({
     userId: parsed.data.userId,
     motivo: parsed.data.motivo,

@@ -175,6 +175,10 @@ policy e pubblicazioni realtime — che PostgREST non espone — le query sono i
   siamo (`site_milestones`, con le 6 attuali), messaggi al team dalla pagina Consulente
   (`team_messages`). **Indipendente dalle altre.** Il codice tollera ogni parte mancante: senza,
   la campanella si aggiorna solo al ritorno sulla scheda e le chat non si raggruppano.
+- `0077_parere_legale_novembre.sql` — parere legale di novembre: `email_log` chiuso ad
+  anon/authenticated (testo leggibile solo dal root, via server), `misure_programmate`
+  (preavviso di 30 giorni P2B per gli artisti con partita IVA), `photo_shoots` (shooting del
+  Max annuale). **Indipendente dalle altre.** Senza, preavviso e shooting chiedono la migration.
 
 ## Comandi
 

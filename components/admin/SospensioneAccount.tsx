@@ -26,6 +26,7 @@ export function SospensioneAccount({
   const router = useRouter();
   const [aperto, setAperto] = useState(false);
   const [motivo, setMotivo] = useState("");
+  const [immediata, setImmediata] = useState(false);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
@@ -37,9 +38,20 @@ export function SospensioneAccount({
     start(async () => {
       const res = sospeso
         ? await riattivaAccountAction(userId, motivo)
-        : await sospendiAccountAction(userId, motivo);
+        : await sospendiAccountAction(userId, motivo, immediata);
       if (!res.ok) {
         setMsg({ tone: "err", text: res.error });
+        return;
+      }
+      if ("programmataPer" in res && res.programmataPer) {
+        const quando = new Date(res.programmataPer).toLocaleDateString("it-IT", { timeZone: "Europe/Rome" });
+        setMsg({
+          tone: "ok",
+          text: `Artista con partita IVA: misura programmata per il ${quando}, con preavviso${res.notified ? " inviato per email" : " (email non partita: scrivigli a mano)"}.`,
+        });
+        setAperto(false);
+        setMotivo("");
+        router.refresh();
         return;
       }
       setMsg({
@@ -85,6 +97,21 @@ export function SospensioneAccount({
         onChange={setMotivo}
         hint="La motivazione viene inviata per email all'interessato, con il collegamento per contestare la decisione."
       />
+      {!sospeso && (
+        <label className="flex items-start gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={immediata}
+            disabled={pending}
+            onChange={(e) => setImmediata(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            Violazione grave o obbligo di legge: effetto immediato. Senza questa spunta, per gli artisti con
+            partita IVA la misura parte dopo 30 giorni di preavviso (Reg. UE 2019/1150).
+          </span>
+        </label>
+      )}
       {msg && msg.tone === "err" && (
         <p role="alert" className="text-xs text-corallo">
           {msg.text}

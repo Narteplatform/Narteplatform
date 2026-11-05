@@ -670,6 +670,71 @@ export interface Database {
         Update: { handled_at?: string | null; handled_by?: string | null };
         Relationships: [];
       };
+      /** Sospensioni/chiusure con preavviso P2B (0077): solo service role. */
+      misure_programmate: {
+        Row: {
+          id: string;
+          user_id: string;
+          tipo: "sospensione" | "chiusura";
+          motivo: string;
+          efficace_dal: string;
+          creata_da: string | null;
+          created_at: string;
+          riferimento: string | null;
+          eseguita_il: string | null;
+          annullata_il: string | null;
+          annullata_da: string | null;
+          esito: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          tipo: "sospensione" | "chiusura";
+          motivo: string;
+          efficace_dal: string;
+          creata_da?: string | null;
+          riferimento?: string | null;
+        };
+        Update: {
+          riferimento?: string | null;
+          eseguita_il?: string | null;
+          annullata_il?: string | null;
+          annullata_da?: string | null;
+          esito?: string | null;
+        };
+        Relationships: [];
+      };
+      /** Shooting del Max annuale (0077): solo service role. */
+      photo_shoots: {
+        Row: {
+          id: string;
+          user_id: string;
+          artist_id: string | null;
+          artist_name: string;
+          subscription_id: string | null;
+          requested_at: string;
+          scheduled_at: string | null;
+          done_at: string | null;
+          note: string | null;
+          updated_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          artist_id?: string | null;
+          artist_name: string;
+          subscription_id?: string | null;
+        };
+        Update: {
+          scheduled_at?: string | null;
+          done_at?: string | null;
+          note?: string | null;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       /** Contenuti del sito modificabili dall'admin (0074): solo service role. */
       site_settings: {
         Row: { key: string; value: string; updated_at: string; updated_by: string | null };

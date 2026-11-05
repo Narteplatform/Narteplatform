@@ -10,6 +10,7 @@ import { sendBookingCancelledByAdminEmail } from "@/lib/emails/booking-notify";
 import { preparaAccessoArtista, inviaBenvenutoArtista } from "@/lib/admin/accesso-artista";
 import { getAllowedAdminPages, requireAdminPageAccess } from "@/lib/admin/permissions";
 import { chiudiAccountDalTeam } from "@/lib/admin/chiusura";
+import { eArtistaProfessionista } from "@/lib/admin/preavviso";
 import { creaNotifichePerArtista } from "@/lib/notifications";
 import { registraDecisione, registraAzione, MOTIVAZIONE_MIN } from "@/lib/moderation/decisioni";
 import { notificaProfiloApprovato, profiloMaiPubblicato } from "@/lib/moderation/approvazioni";
@@ -645,6 +646,16 @@ export async function deleteArtist(artistId: string, reason: string, chiudiAccou
       return {
         ok: false as const,
         error: `Il proprietario ha altri ${altri} profili: elimina questo senza chiudere l'account. Nessuna modifica fatta.`,
+      };
+    }
+    // Artisti con partita IVA: la chiusura richiede 30 giorni di preavviso (P2B),
+    // che si gestisce da Utenti. Qui non si aggira.
+    const prof = await eArtistaProfessionista(artist.user_id);
+    if (!prof.ok) return { ok: false as const, error: "Non riesco a verificare se l'artista opera con partita IVA. Nessuna modifica fatta." };
+    if (prof.professionista) {
+      return {
+        ok: false as const,
+        error: "L'artista opera con partita IVA: la chiusura dell'account va disposta da Utenti, con 30 giorni di preavviso o, per violazioni gravi, con effetto immediato. Nessuna modifica fatta.",
       };
     }
   }

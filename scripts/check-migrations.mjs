@@ -408,6 +408,17 @@ const MIGRATION = [
       ["privilegi anonimi revocati su team_messages", () => privilegioAnonRevocato("team_messages")],
     ],
   },
+  {
+    file: "0077_parere_legale_novembre.sql",
+    cosa: "Parere legale: registro email solo service role, misure con preavviso P2B, shooting Max",
+    controlli: [
+      ["privilegi anonimi revocati su email_log", () => privilegioAnonRevocato("email_log")],
+      ["tabella misure_programmate", () => tabella("misure_programmate")],
+      ["privilegi anonimi revocati su misure_programmate", () => privilegioAnonRevocato("misure_programmate")],
+      ["tabella photo_shoots", () => tabella("photo_shoots")],
+      ["privilegi anonimi revocati su photo_shoots", () => privilegioAnonRevocato("photo_shoots")],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };

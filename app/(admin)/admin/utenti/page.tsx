@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { SospensioneAccount } from "@/components/admin/SospensioneAccount";
 import { ChiusuraAccount } from "@/components/admin/ChiusuraAccount";
 import { SbloccoAccount } from "@/components/admin/SbloccoAccount";
+import { MisuraProgrammata } from "@/components/admin/MisuraProgrammata";
 import { ApprovazioneOrganizzatore } from "@/components/admin/ApprovazioneOrganizzatore";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { contaOrganizzatoriInAttesa } from "@/lib/organizers/approvazione";
@@ -372,9 +373,10 @@ export default async function AdminUtentiPage({
   const artisti = new Map<string, { id: string; stage_name: string }[]>();
   const organizzatori = new Map<string, string>();
   const cancellazioni = new Set<string>();
+  const misure = new Map<string, { tipo: "sospensione" | "chiusura"; efficace_dal: string }>();
 
   if (ids.length > 0) {
-    const [pr, ar, org, canc] = await Promise.all([
+    const [pr, ar, org, canc, mis] = await Promise.all([
       admin.from("profiles").select("id, role, full_name").in("id", ids),
       admin.from("artists").select("id, stage_name, user_id").in("user_id", ids),
       admin.from("organizers").select("display_name, user_id").in("user_id", ids),
@@ -384,6 +386,12 @@ export default async function AdminUtentiPage({
         .in("user_id", ids)
         .not("confirmed_at", "is", null)
         .is("cancelled_at", null),
+      admin
+        .from("misure_programmate")
+        .select("user_id, tipo, efficace_dal")
+        .in("user_id", ids)
+        .is("eseguita_il", null)
+        .is("annullata_il", null),
     ]);
     if (pr.error || ar.error || org.error) {
       const m = pr.error?.message ?? ar.error?.message ?? org.error?.message ?? "";
@@ -403,6 +411,12 @@ export default async function AdminUtentiPage({
       logger.warn("admin/utenti", `richieste di cancellazione non leggibili: ${canc.error.message}`);
     } else {
       for (const c of canc.data ?? []) cancellazioni.add(c.user_id);
+    }
+    if (mis.error) {
+      // Tabella assente finché la migration 0077 non è applicata: non è bloccante.
+      logger.warn("admin/utenti", `misure programmate non leggibili: ${mis.error.message}`);
+    } else {
+      for (const m of mis.data ?? []) misure.set(m.user_id, { tipo: m.tipo, efficace_dal: m.efficace_dal });
     }
   }
 
@@ -496,6 +510,13 @@ export default async function AdminUtentiPage({
                       <td className="px-2 py-2">
                         {puoAgire && (sospensione || !bloccato) ? (
                           <div className="space-y-2">
+                            {misure.has(u.id) && (
+                              <MisuraProgrammata
+                                userId={u.id}
+                                tipo={misure.get(u.id)!.tipo}
+                                efficaceDal={misure.get(u.id)!.efficace_dal}
+                              />
+                            )}
                             <SospensioneAccount userId={u.id} sospeso={!!sospensione} />
                             {!cancellazioni.has(u.id) && <ChiusuraAccount userId={u.id} />}
                             {org && (

@@ -17,6 +17,24 @@ funzionalità nuove restano spente finché non si arriva in fondo.
 
 ---
 
+## `0077_parere_legale_novembre.sql` — adeguamenti al parere legale
+
+Indipendente dalle altre, additiva e idempotente. Non modifica né cancella righe.
+
+- `email_log`: tolta la policy che apriva il registro a ogni superadmin via PostgREST e
+  revocati i privilegi ad anon/authenticated. Il codice lo legge solo con la service role;
+  il testo delle email lo vede solo il root.
+- `misure_programmate`: sospensioni e chiusure con 30 giorni di preavviso per gli artisti
+  con partita IVA (P2B). Le esegue `/api/cron/misure-programmate`.
+- `photo_shoots`: richieste di shooting del Max annuale, una per account.
+
+Senza la 0077: la sospensione/chiusura di un artista professionista chiede di applicarla
+(o di scegliere l'effetto immediato), e la richiesta di shooting risulta non disponibile.
+
+Verifica: `npm run db:check-migrations`.
+
+---
+
 ## `0076_modifiche_cliente_novembre.sql` — notifiche in tempo reale e profili autonomi
 
 Indipendente dalle altre, additiva e idempotente. Non modifica righe esistenti.
