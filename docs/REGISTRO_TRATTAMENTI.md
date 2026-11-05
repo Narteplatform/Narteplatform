@@ -2,7 +2,7 @@
 
 > Articolo 30 GDPR. Versione 1.1 — 27 ottobre 2026 (la 1.0 era del 29 settembre 2026).
 > Novità della 1.1: testo delle email nel registro (T11), segnalazioni Max ai privati
-> registrati (T16), feed del calendario e notifiche in-app (T17), fornitori Google e Unsplash (§3).
+> registrati (T16), feed del calendario e notifiche in-app (T17), fornitori Google (§3); Resend e Unsplash dismessi il 05/11/2026.
 > Redatto sull'analisi del codice sorgente, dello schema del database e dei
 > flussi applicativi. **Da validare dall'avvocato incaricato.**
 
@@ -49,7 +49,7 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Dove | `auth.users`, `profiles` |
 | Destinatari | Supabase (banca dati e autenticazione), Vercel (esecuzione) |
 | Extra-UE | Sì — Supabase Inc. e Vercel Inc. sono statunitensi |
-| Conservazione | Finché l'account resta attivo; *proposta:* chiusura dopo 24 mesi di inattività, con avviso preventivo |
+| Conservazione | Finché l'account resta attivo; chiusura dopo 24 mesi di inattività, con avviso preventivo |
 
 ### T2 — Registro dei consensi
 
@@ -76,7 +76,7 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Dove | `artists` (incluso `personnel` jsonb), `artist_videos`, `media_assets` |
 | Destinatari | Supabase, bunny.net (archiviazione e distribuzione), Vercel |
 | Extra-UE | Supabase e Vercel sì; bunny.net ha sede in Slovenia (UE) ma distribuisce da nodi mondiali per i contenuti pubblici |
-| Conservazione | Finché il profilo resta pubblicato; *proposta:* rimozione entro 30 giorni dalla chiusura dell'account, **file archiviati inclusi** |
+| Conservazione | Finché il profilo resta pubblicato; rimozione entro 30 giorni dalla chiusura dell'account, **file archiviati inclusi** |
 | Rischio specifico | I dati dei componenti della formazione sono raccolti **indirettamente**, dall'artista e non dall'interessato: si applica l'art. 14. È coperto dalla dichiarazione che l'artista rende accettando i termini, e dall'informativa che lo descrive |
 
 ### T4 — Anagrafica di organizzatori e strutture
@@ -102,9 +102,9 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Interessati | Artisti, organizzatori, utenti richiedenti |
 | Dati | Data, fascia oraria, luogo, budget, messaggi di testo liberi, **allegati** (immagini, PDF, documenti), **note vocali registrate dal microfono**, offerte economiche, prezzo annotato |
 | Dove | `booking_requests`, `conversations`, `messages`, bucket privato `chat-attachments` |
-| Destinatari | Supabase; Brevo e Resend per le notifiche |
-| Extra-UE | Supabase sì; Resend (USA) sì; Brevo no (Francia) |
-| Conservazione | *Proposta:* 36 mesi dalla chiusura della richiesta — è il tempo in cui può servire come prova in una contestazione fra le parti. Allegati e note vocali per la stessa durata della conversazione |
+| Destinatari | Supabase; Brevo per le notifiche |
+| Extra-UE | Supabase sì; Brevo no (Francia) |
+| Conservazione | 36 mesi dalla chiusura della richiesta — è il tempo in cui può servire come prova in una contestazione fra le parti. Allegati e note vocali per la stessa durata della conversazione |
 | Rischio specifico | **Il team N'arte può leggere il contenuto integrale delle conversazioni.** Va circoscritto ai casi di assistenza, contestazione e verifica di una segnalazione, e ogni accesso andrebbe motivato e registrato. È l'elemento che più espone la piattaforma e il solo che apra la discussione sulla valutazione d'impatto |
 | Nota tecnica | Gli allegati stanno in un bucket privato e si raggiungono solo con indirizzi firmati che scadono in un'ora |
 
@@ -117,9 +117,9 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Interessati | Candidati, anche non registrati |
 | Dati | Nome, email, nome d'arte, generi, strumenti, biografia, social, **video caricato**, versione dell'informativa accettata e istante |
 | Dove | `artist_applications`, bucket privato `application-videos` |
-| Destinatari | Supabase, Brevo, Resend |
-| Extra-UE | Resend sì |
-| Conservazione | *Proposta:* 12 mesi per le candidature non approvate, **video incluso** |
+| Destinatari | Supabase, Brevo |
+| Extra-UE | No |
+| Conservazione | 12 mesi per le candidature non approvate, **video incluso** |
 
 ### T7 — Richieste dai moduli pubblici
 
@@ -130,9 +130,9 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Interessati | Visitatori non registrati |
 | Dati | Nome, email, telefono, oggetto, messaggio; per la richiesta evento anche tipo, data, luogo e budget; per la consulenza una **descrizione libera delle proprie necessità** |
 | Dove | `contact_messages`, `leads`, `consultations` — ciascuna con `consent_version` e `consent_at` sulla stessa riga |
-| Destinatari | Supabase, Brevo, Resend, iubenda (copia della prova) |
-| Extra-UE | Resend sì |
-| Conservazione | *Proposta:* 24 mesi per i contatti non convertiti e per le consulenze |
+| Destinatari | Supabase, Brevo, iubenda (copia della prova) |
+| Extra-UE | No |
+| Conservazione | 24 mesi per i contatti non convertiti e per le consulenze |
 | Rischio specifico | Il campo «necessità» della consulenza è testo libero: una persona può scriverci spontaneamente informazioni che noi non chiediamo. Non va trattato come un campo qualunque |
 
 ### T8 — Recensioni post-evento
@@ -158,7 +158,7 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Dati | **Nessun dato identificativo conservato.** L'indirizzo IP viene letto in memoria e trasformato in un codice irreversibile con un sale segreto e la data del giorno; **non viene mai salvato**. Il codice cambia ogni notte, quindi non permette di seguire nessuno nel tempo |
 | Dove | `artist_profile_views` |
 | Destinatari | Supabase |
-| Conservazione | *Proposta:* 14 mesi |
+| Conservazione | 14 mesi |
 | Note | Nessun cookie, nessun user agent, nessun referrer. Le visite del team sono scartate in scrittura. Se il sale non è configurato la raccolta si disattiva da sé |
 
 ### T10 — Abbonamenti degli artisti
@@ -172,7 +172,7 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Dove | `billing_customers`, `subscriptions`, `stripe_webhook_events` |
 | Destinatari | Stripe Payments Europe (Irlanda) / Stripe Inc. (USA) |
 | Extra-UE | Sì |
-| Conservazione | *Proposta:* 24 mesi per gli eventi tecnici; i documenti contabili secondo i termini fiscali |
+| Conservazione | 24 mesi per gli eventi tecnici; i documenti contabili secondo i termini fiscali |
 | Nota | `stripe_webhook_events` conserva il messaggio integrale ricevuto da Stripe, che può contenere nome ed email. Va sottoposto a scadenza |
 
 ### T11 — Comunicazioni di servizio
@@ -183,9 +183,9 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Base giuridica | Esecuzione del contratto (art. 6.1.b) — sono parte del servizio e non si disattivano separatamente |
 | Interessati | Tutti |
 | Dati | Indirizzo del destinatario, nome, e i dati del fatto che ha generato il messaggio |
-| Dove | Brevo (principale), Resend (riserva); registro degli invii in `email_log` |
-| Extra-UE | Resend sì |
-| Conservazione | *Proposta:* 12 mesi per il registro degli invii (regola `email_log` 365 giorni nel cron di conservazione, **oggi in sola conta** finché `RETENTION_ENFORCE` ≠ 1) |
+| Dove | Brevo (unico fornitore dal 05/11/2026); registro degli invii in `email_log` |
+| Extra-UE | No |
+| Conservazione | 12 mesi per il registro degli invii (regola `email_log` 365 giorni nel cron di conservazione, **oggi in sola conta** finché `RETENTION_ENFORCE` ≠ 1) |
 | Nota | `email_log.to_addresses` conserva gli indirizzi in chiaro di chiunque abbia mai ricevuto una comunicazione, ed è consultabile dal pannello amministrativo. Va sottoposto a scadenza |
 
 #### T11-bis — Testo delle email nel registro degli invii *(estensione di T11, dal 27/10/2026, migration 0075)*
@@ -193,16 +193,16 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Voce | Valore |
 |---|---|
 | Finalità | Assistenza agli utenti («non mi è arrivata», «cosa diceva l'email»), verifica del contenuto delle comunicazioni dovute, prova di quanto comunicato |
-| Base giuridica | *Proposta:* legittimo interesse (art. 6.1.f) — **da confermare dall'avvocato** insieme alla necessità di conservare il testo integrale |
+| Base giuridica | Legittimo interesse (art. 6.1.f), confermato dal parere legale di novembre 2026 per le sole comunicazioni con valore legale o probatorio |
 | Interessati | Tutti i destinatari delle email della piattaforma |
 | Dati | HTML completo dell'email inviata: nome, date, importi delle offerte, motivazioni delle decisioni del team, dati delle consulenze e degli abbonamenti. **Non** il testo dei messaggi di chat (le email della chat non lo riportano) |
 | Esclusioni | Le email con link d'accesso **non si conservano** (`body_source = riservato`): approvazione artista/organizzatore con impostazione della password, recupero password, conferma della cancellazione, inviti. Negli altri link i token sono oscurati (es. link di disattivazione delle segnalazioni, feed iCal) |
 | Dove | `email_log.body_html`, `email_log.body_source` (`salvato` / `provider` / `riservato`); lettura da `/admin/email/[id]` in un riquadro isolato |
-| Chi vi accede | Tutti i superadmin (pagina «Ultimi invii»). *Da valutare:* limitarlo a chi ha la delega |
-| Invii precedenti alla 0075 | Il testo non è salvato: si legge in sola lettura dal fornitore (Brevo o Resend) finché lo conserva (`lib/emails/recupera-corpo.ts`) |
-| Destinatari | Supabase; Brevo e Resend per i propri registri |
-| Extra-UE | Supabase e Resend sì |
-| Conservazione | 365 giorni, come il resto del registro — **cancellazione automatica oggi spenta**: finché resta spenta il testo non scade |
+| Chi vi accede | Solo il superadmin root (gli altri vedono destinatario, oggetto ed esito); accesso diretto al DB chiuso dalla 0077 |
+| Invii precedenti alla 0075 | Il testo non è salvato: si legge in sola lettura da Brevo finché lo conserva (gli invii Resend non sono più recuperabili) (`lib/emails/recupera-corpo.ts`) |
+| Destinatari | Supabase; Brevo per i propri registri. Testo integrale solo per le comunicazioni legali, leggibile solo dal root (05/11/2026) |
+| Extra-UE | Supabase sì |
+| Conservazione | 365 giorni, come il resto del registro; cancellazione automatica accesa dal 05/11/2026. Testo salvato solo per le chiavi legali (`CHIAVI_CONSERVATE` in `lib/emails/corpo.ts`); i 41 testi non legali già salvati sono stati svuotati il 05/11/2026 |
 | Stato | Codice online; la colonna esiste solo dopo l'applicazione della 0075 (senza, il testo non si salva) |
 | Da fare | Correggere il doc. 09 del fascicolo (§5.1 dice che il testo non è registrato) e l'informativa |
 
@@ -262,7 +262,7 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Interessati | Destinatari (anche persone fisiche); l'artista segnalato |
 | Dati | Nome ed email del destinatario, collegamento a struttura/organizzatore/profilo (`profile_id`, 0075), artista, data, nota del team |
 | Dove | `profile_referrals`, `referral_optouts` (impronta dell'email di chi ha disattivato) |
-| Destinatari | Supabase, Brevo/Resend |
+| Destinatari | Supabase, Brevo |
 | Opt-out | Link firmato (`REFERRAL_OPTOUT_SECRET`) in ogni email; controllato prima di ogni invio |
 | Riservatezza | L'artista vede il conteggio mensile e il nome delle strutture, non quello dei privati; la 0075 toglie la policy che gli faceva leggere via API le email dei destinatari |
 | Conservazione | *Da definire* |
@@ -290,7 +290,7 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Vercel | Pubblicazione ed esecuzione | USA, elaborazione a Francoforte | Nomina a responsabile | Pannello Vercel |
 | bunny.net (BunnyWay d.o.o.) | Archiviazione e distribuzione dei file, streaming | **Slovenia — UE** | Nomina a responsabile | Pannello bunny.net |
 | Brevo (Sendinblue) | Email di servizio | **Francia — UE** | Nomina a responsabile | Pannello Brevo |
-| Resend | Email di servizio, canale di riserva | USA | Nomina a responsabile | Pannello Resend |
+| ~~Resend~~ | **Dismesso il 05/11/2026**: nessun invio. Chiudere l'account e revocare la chiave | — | — | Pannello Resend |
 | Stripe Payments Europe | Abbonamenti | **Irlanda — UE** | Nomina a responsabile | Pannello Stripe |
 | iubenda | Documenti legali, gestione e archivio dei consensi | **Italia — UE** | Nomina a responsabile | Pannello iubenda |
 | Google — Analytics 4 | Statistiche di navigazione (**spento**) | Irlanda / USA | Termini per il trattamento dei dati | Amministrazione della proprietà GA4 |
@@ -300,10 +300,10 @@ dati, cambia una finalità, cambia un periodo di conservazione.
 | Google — Gmail | ~~Casella condivisa `narte.official.eventi@gmail.com`~~ **dismessa il 05/11/2026** come destinatario predefinito delle notifiche interne: ora `info@narteofficial.it` (`lib/emails/admin-recipients.ts`). Verificare che `ADMIN_NOTIFICATION_EXTRA` su Vercel non la contenga più | — | Chiuso lato codice (parere legale, art. 28 GDPR) | Impostazioni dell'account |
 | Feed iCal personale | Non è un fornitore: link con token segreto (32 byte) che espone le date confermate a chi lo conosce | — | Unica protezione il token; rigenerabile | `calendar_feeds` (0074) |
 | Meta | Misurazione e remarketing — **contitolare** (**spento**) | Irlanda / USA | Addendum per la contitolarità | Impostazioni di Business Manager |
-| Unsplash | Immagini remote decorative (`lib/content/hero-images.ts`): il browser del visitatore contatta i server Unsplash (IP, user agent) | USA | — | *da valutare: sostituibile ospitando le immagini* |
+| ~~Unsplash~~ | **Eliminato il 05/11/2026**: testate e copertine del blog sono segnaposto generati e serviti dal sito (`scripts/genera-segnaposto.mjs`) | — | — | — |
 
 **Da confermare dall'avvocato:** l'adeguatezza dei meccanismi di trasferimento
-dichiarati da Supabase, Vercel, Resend, Google (accesso, Calendar, Meet, Gmail, Analytics), Meta e Unsplash.
+dichiarati da Supabase, Vercel, Google (accesso, Calendar, Meet, Gmail, Analytics), Meta.
 
 ---
 
