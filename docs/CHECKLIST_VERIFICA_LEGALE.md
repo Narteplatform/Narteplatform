@@ -135,3 +135,17 @@ Segna ✅ o ❌ e annota cosa non torna.
 - [ ] Disiscrizione dal link di un'email Brevo: in `/account/i-miei-dati` il marketing risulta revocato (richiede il webhook registrato).
 - [ ] Una recensione di un organizzatore che ha chiesto la cancellazione mostra «Organizzatore — account chiuso».
 - [ ] Il log del cron `/api/cron/retention` (Vercel → Logs) riporta i conteggi delle nuove regole (chat 36 mesi, registro 5 anni, candidature 12 mesi) **senza cancellare nulla** finché `RETENTION_ENFORCE` è spento.
+
+## Adeguamenti al parere legale (05/11/2026) — prove manuali
+
+Nessuna di queste prove va fatta scrivendo su account reali senza averlo deciso prima.
+
+- [ ] `/admin/proposte`: registrare un invio non manda email; la ricerca non mostra organizzatori privati; la card «Promozione del tuo profilo» dell'artista mostra solo numero e date.
+- [ ] Sblocco di un account chiuso da più di 30 giorni: rifiutato con il messaggio del termine scaduto (Utenti, Cancellazioni, candidatura).
+- [ ] `/api/cron/cancellazioni` con `AUTO_CANCELLAZIONE_ENFORCE` vuota: il root riceve il riepilogo «sola conta», nessuna riga cancellata. Leggere il riepilogo prima di accendere l'interruttore.
+- [ ] `/admin/email/<id>`: un superadmin non root vede solo destinatario, oggetto ed esito; per una notifica ordinaria il testo risulta «non conservato».
+- [ ] Sospensione/chiusura di un artista con partita IVA (consenso `clausole_specifiche`): senza la spunta «violazione grave» viene programmata a 30 giorni, compare in Utenti ed è annullabile (serve la 0077).
+- [ ] Shooting: la card non permette la richiesta prima del 15° giorno né dopo il primo anno, e una sola volta per account (serve la 0077).
+- [ ] Nessuna traccia di «omaggio» nel profilo pubblico, nel catalogo, nell'area abbonamento dell'artista.
+- [ ] `/segnalazioni`, `/contatti` e il footer mostrano email, PEC e lingue del punto di contatto.
+- [ ] Profilo con più di 12 recensioni: «Mostra tutte» le mostra tutte.
