@@ -32,7 +32,7 @@ export default async function AdminOverviewPage() {
       supabase.from("artists").select("id", { count: "exact", head: true }).eq("status", "pending"),
       supabase
         .from("events")
-        .select("id, slug, title, city, date, cover_image, category, featured")
+        .select("id, slug, title, city, date, cover_image, cover_image_home, category, featured")
         .order("date", { ascending: false })
         .limit(8),
       supabase
@@ -133,10 +133,10 @@ export default async function AdminOverviewPage() {
                       className="group flex w-[220px] shrink-0 flex-col gap-3 snap-start"
                     >
                       <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-border bg-muted">
-                        {event.cover_image ? (
+                        {(event.cover_image_home ?? event.cover_image) ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={event.cover_image}
+                            src={(event.cover_image_home ?? event.cover_image) ?? undefined}
                             alt={event.title}
                             className="h-full w-full object-cover transition group-hover:scale-105"
                           />

@@ -46,6 +46,7 @@ function primoErrore(error: z.ZodError): string {
 
 function revalidateAll() {
   revalidatePath("/admin/eventi");
+  revalidatePath("/admin");
   revalidatePath("/eventi");
   revalidatePath("/");
 }

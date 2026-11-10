@@ -119,7 +119,7 @@ export function GalleryUpload({ label, value, onChange, kind = "artist", beforeP
                 type="button"
                 onClick={() => remove(i)}
                 aria-label="Rimuovi"
-                className="absolute right-1 top-1 inline-flex size-7 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                className="absolute right-1 top-1 inline-flex size-8 items-center justify-center rounded-full bg-black/70 text-white transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
               >
                 <X className="size-3.5" />
               </button>
