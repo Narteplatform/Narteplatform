@@ -171,7 +171,7 @@ In `.claude/agents/`:
 ## Migration
 
 Si applicano dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md).
-**Al 04/11/2026 sono applicate tutte, fino alla 0075** (verificato con lo script qui sotto).
+**Al 12/11/2026 sono applicate tutte fino alla 0078, tranne la 0077** (verificato con lo script qui sotto).
 Per ogni nuova migration: intestazione CONTESTO in italiano, additiva dove possibile, RLS +
 `revoke all … from anon, authenticated` sulle tabelle nuove, voce in
 `scripts/check-migrations.mjs` e in `docs/MIGRATION_DA_APPLICARE.md`, e una riga qui sotto
@@ -187,19 +187,10 @@ policy e pubblicazioni realtime — che PostgREST non espone — le query sono i
 
 **In attesa:**
 
-- `0076_modifiche_cliente_novembre.sql` — notifiche raggruppate (`notifications.ref_key`) e in
-  tempo reale (tabella nella pubblicazione `supabase_realtime`), profilo nel feedback
-  (`platform_feedback.artist_id`), link iCal per profilo (`artist_calendar_feeds`), tappe di Chi
-  siamo (`site_milestones`, con le 6 attuali), messaggi al team dalla pagina Consulente
-  (`team_messages`). **Indipendente dalle altre.** Il codice tollera ogni parte mancante: senza,
-  la campanella si aggiorna solo al ritorno sulla scheda e le chat non si raggruppano.
 - `0077_parere_legale_novembre.sql` — parere legale di novembre: `email_log` chiuso ad
   anon/authenticated (testo leggibile solo dal root, via server), `misure_programmate`
   (preavviso di 30 giorni P2B per gli artisti con partita IVA), `photo_shoots` (shooting del
   Max annuale). **Indipendente dalle altre.** Senza, preavviso e shooting chiedono la migration.
-- `0078_inviti_artisti.sql` — «Invita un artista»: `invite_codes`, `artist_invites`, `invite_rewards`,
-  `artist_applications.invite_code`, `account_tier()` con i giorni di Pro dei premi. **Indipendente
-  dalle altre.** Senza, la funzione resta spenta anche con `INVITI_ATTIVI` acceso.
 
 ## Comandi
 
