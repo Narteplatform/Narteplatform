@@ -69,6 +69,39 @@ export const ETICHETTA_STATO: Record<InviteStatus, string> = {
   oltre_limite: "Oltre i 12 mesi dell'anno",
 };
 
+/** Invito escluso dal Team (abuso, dati falsi...): motivato all'artista via registraDecisione. */
+export const MOTIVO_ESCLUSO = "escluso";
+
+/** Etichetta di un invito annullato vista da chi invita, secondo il motivo. */
+export function etichettaAnnullato(motivo: string | null): string {
+  if (motivo === MOTIVO_ESCLUSO) return "Non riconosciuto dal team";
+  if (motivo === "rimborso") return "Pagamento rimborsato";
+  return ETICHETTA_STATO.annullato;
+}
+
+/** Etichette del pannello admin: più tecniche di quelle per l'artista. */
+export const STATO_ADMIN: Record<InviteStatus, string> = {
+  candidatura: "Candidatura in valutazione",
+  approvato: "Entrato, non abbonato",
+  in_attesa: "Pagato, in attesa (14 gg)",
+  confermato: "Premio assegnato",
+  annullato: "Annullato",
+  oltre_limite: "Oltre il tetto annuale",
+};
+
+export const MOTIVO_ANNULLO_ADMIN: Record<string, string> = {
+  non_approvata: "candidatura non approvata",
+  auto_invito: "auto-invito",
+  account_non_nuovo: "account già esistente",
+  gia_invitato: "già invitato da altri",
+  recesso: "recesso dell'invitato",
+  rimborso: "pagamento rimborsato",
+  [MOTIVO_ESCLUSO]: "escluso dal team",
+};
+
+/** Stati da cui il team può ancora escludere un invito (prima del premio). */
+export const STATI_ESCLUDIBILI: readonly InviteStatus[] = ["candidatura", "approvato", "in_attesa"];
+
 export type VarianteBadge = "muted" | "outline" | "warning" | "success";
 
 export const BADGE_STATO: Record<InviteStatus, VarianteBadge> = {

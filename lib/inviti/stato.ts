@@ -5,7 +5,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import type { InviteStatus } from "@/lib/supabase/types";
 import { modalitaInviti } from "@/lib/inviti/modalita";
 import { ottieniOCreaCodice, tabellaInvitiAssente } from "@/lib/inviti/codice";
-import { TETTO_ANNUO, inizioAnnoItalia } from "@/lib/inviti/regole";
+import { MOTIVO_ESCLUSO, TETTO_ANNUO, inizioAnnoItalia } from "@/lib/inviti/regole";
 
 export type InvitoVista = {
   id: string;
@@ -13,6 +13,7 @@ export type InvitoVista = {
   status: InviteStatus;
   creatoIl: string;
   confermaIl: string | null;
+  motivo: string | null;
 };
 
 export type StatoInviti =
@@ -65,7 +66,15 @@ export async function statoInviti(userId: string): Promise<StatoInviti> {
 
   const righe = (inviti.data ?? []).filter(
     // Candidature non approvate e inviti scartati dai controlli: non si mostrano.
-    (i) => !(i.status === "annullato" && i.cancel_reason !== "recesso" && i.cancel_reason !== "rimborso"),
+    // Restano quelli che l'artista ha visto progredire: recesso, rimborso e
+    // l'esclusione del team (motivata per email, quindi non va nascosta).
+    (i) =>
+      !(
+        i.status === "annullato" &&
+        i.cancel_reason !== "recesso" &&
+        i.cancel_reason !== "rimborso" &&
+        i.cancel_reason !== MOTIVO_ESCLUSO
+      ),
   );
   const listaPremi = premi.data ?? [];
   const inizioAnno = inizioAnnoItalia().getTime();
@@ -90,6 +99,7 @@ export async function statoInviti(userId: string): Promise<StatoInviti> {
       status: i.status,
       creatoIl: i.created_at,
       confermaIl: i.confirm_after,
+      motivo: i.cancel_reason,
     })),
     premiTotali: listaPremi.length,
     inAttesa: righe.filter((i) => i.status === "in_attesa").length,

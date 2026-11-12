@@ -17,6 +17,23 @@ funzionalità nuove restano spente finché non si arriva in fondo.
 
 ---
 
+## `0079_inviti_visite.sql` — Invita un artista: aperture del link
+
+Richiede la 0078 (già applicata). Additiva e idempotente, non modifica né cancella righe.
+
+- `invite_link_visits`: una riga per (link, giorno, visitatore pseudonimo, tipo `visita`/`clic`).
+  Nessun IP né user_id: solo l'hash giornaliero con `VISIT_HASH_SALT`, come le statistiche del
+  profilo (0046). RLS attiva e nessun privilegio ad anon/authenticated.
+- `inviti_registra_visita()`: scarta chi possiede il link e i superadmin, deduplica sulla PK.
+- `inviti_conteggi_visite()`: totali e ultimi 30 giorni per link, per `/admin/inviti`.
+
+Senza la 0079: `/admin/inviti` funziona con candidature, pagamenti e premi, e mostra «—» nelle
+colonne delle aperture; le aperture del link non vengono registrate.
+
+Verifica: `npm run db:check-migrations`.
+
+---
+
 ## `0078_inviti_artisti.sql` — Invita un artista
 
 Indipendente dalle altre (richiede solo la 0044, già applicata), additiva e idempotente.

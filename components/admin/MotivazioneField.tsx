@@ -49,6 +49,7 @@ export function MotivazioneField({
   compact = false,
   onDark = false,
   className,
+  regole = REGOLE_APPLICATE,
 }: {
   onChange: (motivazione: string) => void;
   label?: string;
@@ -63,6 +64,8 @@ export function MotivazioneField({
   /** Per i riquadri su fondo scuro (visualizzatore a schermo intero). */
   onDark?: boolean;
   className?: string;
+  /** Le regole fra cui scegliere, se diverse da quelle generali (es. un programma con regole proprie). */
+  regole?: readonly string[];
 }) {
   const uid = useId();
   const [regola, setRegola] = useState("");
@@ -100,7 +103,7 @@ export function MotivazioneField({
           )}
         >
           <option value="">Scegli la regola…</option>
-          {REGOLE_APPLICATE.map((r) => (
+          {regole.map((r) => (
             <option key={r} value={r}>
               {r}
             </option>

@@ -366,6 +366,11 @@ async function loadAdminShell(opts?: {
       label: "Proposte Max",
       icon: <Send className="size-4" />,
     },
+    inviti: {
+      href: "/admin/inviti",
+      label: "Inviti tra artisti",
+      icon: <UserPlus className="size-4" />,
+    },
     utenti: {
       href: "/admin/utenti",
       label: "Utenti",
@@ -426,6 +431,7 @@ async function loadAdminShell(opts?: {
     "recensioni",
     "abbonamenti",
     "proposte",
+    "inviti",
     "utenti",
     "registro",
     "contenuti",

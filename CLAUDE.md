@@ -84,7 +84,8 @@ Non erano documentate ma sono costruite e attive:
   `conta` = traccia ma il cron non assegna premi, `1` = attivo): link `/invito/{codice}` → cookie →
   candidatura → approvazione → primo pagamento > 0 → dopo 14 giorni `/api/cron/inviti` assegna 1 mese di
   Pro (30 giorni se Free, 9,99 € di credito Stripe se abbonato), max 12 l'anno. NON si chiama «referral»:
-  quel nome è delle proposte Max alle strutture (`profile_referrals`). I testi per Termini e informativa
+  quel nome è delle proposte Max alle strutture (`profile_referrals`). Pannello: `/admin/inviti` (aperture del link
+  dalla 0079, imbuto per artista, disattivazione link ed esclusione inviti motivate via `registraDecisione`). I testi per Termini e informativa
   sono bozze in `lib/legal/inviti.ts`: si pubblicano col preavviso di 15 giorni, prima di accendere `1`
 
 ## Sicurezza — aggiunte del 28/08/2026
@@ -171,7 +172,7 @@ In `.claude/agents/`:
 ## Migration
 
 Si applicano dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md).
-**Al 12/11/2026 sono applicate tutte fino alla 0078, tranne la 0077** (verificato con lo script qui sotto).
+**Al 12/11/2026 sono applicate tutte fino alla 0078, tranne la 0077** (verificato con lo script qui sotto). La 0079 è nuova.
 Per ogni nuova migration: intestazione CONTESTO in italiano, additiva dove possibile, RLS +
 `revoke all … from anon, authenticated` sulle tabelle nuove, voce in
 `scripts/check-migrations.mjs` e in `docs/MIGRATION_DA_APPLICARE.md`, e una riga qui sotto
@@ -187,6 +188,9 @@ policy e pubblicazioni realtime — che PostgREST non espone — le query sono i
 
 **In attesa:**
 
+- `0079_inviti_visite.sql` — aperture del link «Invita un artista» (visitatori unici pseudonimi,
+  stesso schema della 0046) per `/admin/inviti`. **Richiede la 0078.** Senza, il pannello mostra
+  «—» nelle colonne delle aperture.
 - `0077_parere_legale_novembre.sql` — parere legale di novembre: `email_log` chiuso ad
   anon/authenticated (testo leggibile solo dal root, via server), `misure_programmate`
   (preavviso di 30 giorni P2B per gli artisti con partita IVA), `photo_shoots` (shooting del

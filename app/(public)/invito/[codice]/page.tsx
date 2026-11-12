@@ -6,6 +6,7 @@ import { Reveal } from "@/components/animations/Reveal";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { ArtistBenefits } from "@/components/marketing/ArtistBenefits";
+import { BeaconInvito } from "@/components/inviti/BeaconInvito";
 import { risolviCodice } from "@/lib/inviti/codice";
 import { invitiVisibili } from "@/lib/inviti/modalita";
 
@@ -50,6 +51,7 @@ export default async function InvitoPage({ params }: { params: Promise<{ codice:
 
   return (
     <>
+      {chi && <BeaconInvito codice={chi.code} />}
       <section className="relative overflow-hidden border-b border-border pt-24 pb-14 md:pt-32 md:pb-20">
         <div
           aria-hidden="true"

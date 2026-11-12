@@ -434,6 +434,16 @@ const MIGRATION = [
       ["funzione inviti_sync_scaduti", () => funzione("inviti_sync_scaduti")],
     ],
   },
+  {
+    file: "0079_inviti_visite.sql",
+    cosa: "Invita un artista: aperture del link (visitatori unici pseudonimi) per il pannello admin",
+    controlli: [
+      ["tabella invite_link_visits", () => tabella("invite_link_visits")],
+      ["privilegi anonimi revocati su invite_link_visits", () => privilegioAnonRevocato("invite_link_visits")],
+      ["funzione inviti_registra_visita", () => funzione("inviti_registra_visita")],
+      ["funzione inviti_conteggi_visite", () => funzione("inviti_conteggi_visite")],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };

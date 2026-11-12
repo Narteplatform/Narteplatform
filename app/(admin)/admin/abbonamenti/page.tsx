@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 import { aggiornaShooting } from "./_actions";
-import type { InviteStatus } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Abbonamenti — N'arte Admin" };
@@ -255,129 +254,20 @@ export default async function AdminAbbonamentiPage({
   );
 }
 
-const STATO_INVITO: Record<InviteStatus, string> = {
-  candidatura: "Candidatura",
-  approvato: "Approvato, non abbonato",
-  in_attesa: "In attesa (14 gg)",
-  confermato: "Premio assegnato",
-  annullato: "Annullato",
-  oltre_limite: "Oltre il tetto annuale",
-};
-
-const MOTIVO_ANNULLO: Record<string, string> = {
-  non_approvata: "candidatura non approvata",
-  auto_invito: "auto-invito",
-  account_non_nuovo: "account già esistente",
-  gia_invitato: "già invitato da altri",
-  recesso: "recesso",
-  rimborso: "rimborso",
-};
-
-/** «Invita un artista» (0078): ultimi inviti e premi. Sola lettura. */
-async function InvitiTraArtisti() {
-  const admin = createAdminClient();
-  const [inviti, premi] = await Promise.all([
-    admin
-      .from("artist_invites")
-      .select("id, inviter_user_id, invitee_stage_name, status, cancel_reason, created_at, paid_at, confirm_after, confirmed_at")
-      .order("created_at", { ascending: false })
-      .limit(50),
-    admin.from("invite_rewards").select("invite_id, kind, pro_until, amount_cents, converted_cents"),
-  ]);
-  const errore = inviti.error ?? premi.error;
-  const mancante = errore?.code === "42P01" || errore?.code === "PGRST205";
-  if (errore && !mancante) logger.error("admin/abbonamenti", "inviti non letti:", errore.message);
-
-  const righe = inviti.data ?? [];
-  const premioPer = new Map((premi.data ?? []).map((p) => [p.invite_id, p]));
-
-  // Nome di chi invita: il primo profilo dell'account.
-  const nomi = new Map<string, string>();
-  const ids = [...new Set(righe.map((r) => r.inviter_user_id))];
-  if (ids.length > 0) {
-    const { data: profili, error: pErr } = await admin
-      .from("artists")
-      .select("user_id, stage_name, created_at")
-      .in("user_id", ids)
-      .order("created_at", { ascending: true });
-    if (pErr) logger.warn("admin/abbonamenti", "nomi di chi invita non letti:", pErr.message);
-    for (const p of profili ?? []) if (p.user_id && !nomi.has(p.user_id)) nomi.set(p.user_id, p.stage_name);
-  }
-
-  const conteggi = righe.reduce<Partial<Record<InviteStatus, number>>>((acc, r) => {
-    acc[r.status] = (acc[r.status] ?? 0) + 1;
-    return acc;
-  }, {});
-  const premioLabel = (inviteId: string): string => {
-    const p = premioPer.get(inviteId);
-    if (!p) return "—";
-    if (p.kind === "credito_stripe") return `${formatPrice(p.amount_cents ?? 0)} di credito`;
-    const conv = p.converted_cents ? ` (convertiti ${formatPrice(p.converted_cents)})` : "";
-    return `30 gg Pro fino al ${dataIt(p.pro_until)}${conv}`;
-  };
-
+/** «Invita un artista»: il riepilogo completo vive in /admin/inviti. */
+function InvitiTraArtisti() {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Invita un artista</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 text-sm">
+      <CardContent className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
         <p className="text-muted-foreground">
-          Un artista invitato che si abbona fa guadagnare a chi l&apos;ha invitato 1 mese di Pro (30 giorni, o 9,99 €
-          di credito Stripe se ha già un abbonamento), confermato 14 giorni dopo il primo pagamento. Massimo 12 premi
-          per anno solare. Interruttore: <code>INVITI_ATTIVI</code>.
+          Link degli artisti, aperture, candidature, paganti e mesi di Pro guadagnati hanno una sezione dedicata.
         </p>
-        {mancante ? (
-          <p className="text-muted-foreground">Applica la migration 0078 per attivare il programma inviti.</p>
-        ) : errore ? (
-          <p role="alert" className="text-destructive">Non riesco a leggere gli inviti. Riprova fra un momento.</p>
-        ) : righe.length === 0 ? (
-          <p className="text-muted-foreground">Nessun invito ancora.</p>
-        ) : (
-          <>
-            <p className="text-xs text-muted-foreground">
-              Ultimi {righe.length}:{" "}
-              {(Object.keys(STATO_INVITO) as InviteStatus[])
-                .filter((k) => conteggi[k])
-                .map((k) => `${STATO_INVITO[k].toLowerCase()} ${conteggi[k]}`)
-                .join(" · ")}
-            </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="text-xs text-muted-foreground">
-                  <tr>
-                    <th className="py-2 pr-4">Chi invita</th>
-                    <th className="py-2 pr-4">Invitato</th>
-                    <th className="py-2 pr-4">Stato</th>
-                    <th className="py-2 pr-4">Pagato il</th>
-                    <th className="py-2">Premio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {righe.map((r) => (
-                    <tr key={r.id} className="border-t border-border align-top">
-                      <td className="py-2 pr-4">{nomi.get(r.inviter_user_id) ?? r.inviter_user_id.slice(0, 8)}</td>
-                      <td className="py-2 pr-4 font-medium">{r.invitee_stage_name}</td>
-                      <td className="py-2 pr-4">
-                        {STATO_INVITO[r.status]}
-                        {r.status === "annullato" && r.cancel_reason && (
-                          <span className="block text-xs text-muted-foreground">
-                            {MOTIVO_ANNULLO[r.cancel_reason] ?? r.cancel_reason}
-                          </span>
-                        )}
-                        {r.status === "in_attesa" && r.confirm_after && (
-                          <span className="block text-xs text-muted-foreground">conferma dal {dataIt(r.confirm_after)}</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{dataIt(r.paid_at)}</td>
-                      <td className="py-2">{premioLabel(r.id)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+        <Link href="/admin/inviti" className="shrink-0 font-medium underline underline-offset-4">
+          Apri «Inviti tra artisti»
+        </Link>
       </CardContent>
     </Card>
   );

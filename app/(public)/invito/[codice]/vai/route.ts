@@ -1,8 +1,10 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, after, type NextRequest } from "next/server";
 import { risolviCodice } from "@/lib/inviti/codice";
 import { invitiVisibili } from "@/lib/inviti/modalita";
+import { registraAperturaInvito } from "@/lib/inviti/visite";
 import { COOKIE_INVITO, COOKIE_INVITO_GIORNI } from "@/lib/inviti/regole";
 
+export const runtime = "nodejs"; // l'hash delle aperture usa node:crypto
 export const dynamic = "force-dynamic";
 
 /**
@@ -27,6 +29,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ codi
       path: "/",
       maxAge: COOKIE_INVITO_GIORNI * 24 * 60 * 60,
     });
+    // Clic su «Invia la candidatura», per /admin/inviti (0079). Dopo la
+    // risposta: il redirect non aspetta il database.
+    const headers = new Headers(req.headers);
+    after(() => registraAperturaInvito({ codice: chi.code, kind: "clic", headers }));
   }
   return risposta;
 }

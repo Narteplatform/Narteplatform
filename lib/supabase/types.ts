@@ -27,6 +27,7 @@ export type ArtistFormation = "solista" | "band";
 /** Stati di un invito «Invita un artista» (0078). */
 export type InviteStatus = "candidatura" | "approvato" | "in_attesa" | "confermato" | "annullato" | "oltre_limite";
 export type InviteRewardKind = "giorni_pro" | "credito_stripe";
+export type InviteVisitKind = "visita" | "clic";
 /** Origine del corpo salvato in email_log (0075). */
 export type EmailBodySource = "salvato" | "provider" | "riservato";
 export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "privato" | "altro";
@@ -716,6 +717,13 @@ export interface Database {
         Row: { user_id: string; code: string; created_at: string; disabled_at: string | null };
         Insert: { user_id: string; code: string; created_at?: string; disabled_at?: string | null };
         Update: { code?: string; disabled_at?: string | null };
+        Relationships: [];
+      };
+      /** «Invita un artista» (0079): aperture del link, visitatori pseudonimi. Solo service role. */
+      invite_link_visits: {
+        Row: { code_user_id: string; visited_on: string; visitor_hash: string; kind: InviteVisitKind; first_seen_at: string };
+        Insert: { code_user_id: string; visited_on: string; visitor_hash: string; kind: InviteVisitKind; first_seen_at?: string };
+        Update: Record<string, never>;
         Relationships: [];
       };
       /** «Invita un artista» (0078): un invito per candidatura. Solo service role. */
@@ -2279,6 +2287,22 @@ export interface Database {
       inviti_sync_scaduti: {
         Args: Record<string, never>;
         Returns: number;
+      };
+      inviti_registra_visita: {
+        Args: { p_code: string; p_visitor_hash: string; p_kind: InviteVisitKind; p_viewer_user_id?: string | null };
+        /** `true` se ha contato un visitatore nuovo per la giornata. */
+        Returns: boolean;
+      };
+      inviti_conteggi_visite: {
+        Args: Record<string, never>;
+        Returns: {
+          user_id: string;
+          visite: number;
+          clic: number;
+          visite_30gg: number;
+          clic_30gg: number;
+          ultima_visita: string | null;
+        }[];
       };
       sync_artist_tier: {
         Args: { p_artist_id: string };

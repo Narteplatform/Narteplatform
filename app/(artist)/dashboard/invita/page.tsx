@@ -15,6 +15,7 @@ import {
   ETICHETTA_STATO,
   GIORNI_ATTESA,
   TETTO_ANNUO,
+  etichettaAnnullato,
   formatData,
   formatEuro,
 } from "@/lib/inviti/regole";
@@ -143,7 +144,9 @@ export default async function InvitaPage() {
                       <Badge variant={BADGE_STATO[i.status]} className="self-start sm:self-auto">
                         {i.status === "in_attesa" && i.confermaIl
                           ? `Abbonato · premio il ${formatData(i.confermaIl)}`
-                          : ETICHETTA_STATO[i.status]}
+                          : i.status === "annullato"
+                            ? etichettaAnnullato(i.motivo)
+                            : ETICHETTA_STATO[i.status]}
                       </Badge>
                     </li>
                   ))}

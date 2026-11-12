@@ -28,6 +28,7 @@ const PAGE_LABELS: Record<AdminPageKey, string> = {
   utenti: "Utenti",
   registro: "Registro",
   contenuti: "Contenuti del sito",
+  inviti: "Inviti tra artisti",
 };
 
 const FORCED: AdminPageKey[] = ["overview", "profilo"];
