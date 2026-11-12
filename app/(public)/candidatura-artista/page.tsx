@@ -133,8 +133,9 @@ export default async function CandidaturaPage() {
         description={
           <>
             Con il piano gratuito hai la pagina pubblica, il calendario e
-            richieste di booking illimitate. I piani a pagamento servono se vuoi
-            rispondere in chat, caricare più materiale e comparire più in alto.
+            richieste di booking illimitate, e tratti via email con chi ti
+            scrive. I piani a pagamento servono se vuoi la chat con le offerte a
+            compenso, caricare più materiale e comparire più in alto.
           </>
         }
         ctaHref="#candidatura"

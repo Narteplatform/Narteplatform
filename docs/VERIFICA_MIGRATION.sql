@@ -331,3 +331,14 @@ select tablename from pg_publication_tables
  where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'notifications';
 select indexname from pg_indexes
  where schemaname = 'public' and indexname = 'notifications_user_ref_unread_uidx';
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 0080 — offerta in chat: proposta + accettazione confermano la data al prezzo
+-- ═══════════════════════════════════════════════════════════════════════════
+select
+  case when prosrc like '%final_price_confirmed_by%' and prosrc like '%piano Free%'
+       then 'OK — accept_offer_v2 della 0080'
+       else 'DA APPLICARE — accept_offer_v2 precedente (0070)' end as stato
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'accept_offer_v2';

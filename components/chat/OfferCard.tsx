@@ -6,6 +6,7 @@ import { CalendarDays, Check, CheckCheck, Clock, Euro, ExternalLink, Loader2, X 
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { respondToOffer } from "@/lib/chat/actions";
+import { confirmBookingRequest } from "@/app/(organizer)/organizzatore/_actions";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/chat/queries";
 
@@ -55,6 +56,7 @@ export function OfferCard({
   isOwn = false,
   tick = "delivered",
   viewerRole,
+  onChange,
 }: {
   msg: ChatMessage;
   canRespond: boolean;
@@ -63,8 +65,10 @@ export function OfferCard({
   bookingHref?: string;
   isOwn?: boolean;
   tick?: TickState;
-  /** Chi sta guardando: decide il testo della conferma (doppia conferma, 0070). */
+  /** Chi sta guardando: decide i testi e chi conferma le offerte «accettata». */
   viewerRole?: "artist" | "organizer" | "superadmin";
+  /** Dopo una risposta: rilegge i messaggi, così il widget vede lo stato della richiesta. */
+  onChange?: () => void;
 }) {
   const [busy, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -80,8 +84,26 @@ export function OfferCard({
       const res = await respondToOffer(msg.id, action);
       if (!res.ok) setError(res.error);
       setConfirming(false);
+      onChange?.();
     });
   }
+
+  // Solo richieste precedenti alla 0080: l'artista ha accettato l'offerta e
+  // manca il sì dell'organizzatore, che lo dà da qui al prezzo dell'offerta.
+  const [confermaFinale, setConfermaFinale] = useState(false);
+  function confermaData() {
+    if (!msg.offerBookingRequestId) return;
+    const id = msg.offerBookingRequestId;
+    setError(null);
+    startTransition(async () => {
+      const res = await confirmBookingRequest(id);
+      if (!res.ok) setError(res.error);
+      setConfermaFinale(false);
+      onChange?.();
+    });
+  }
+  const daConfermare = status === "accepted" && msg.offerBookingStatus === "accettata";
+  const confermata = status === "accepted" && msg.offerBookingStatus === "confermata";
 
   const isRejected = status === "rejected" || status === "superseded";
 
@@ -120,7 +142,7 @@ export function OfferCard({
           </div>
           <div className="flex flex-col gap-0.5">
             <span className={cn("inline-flex items-center gap-1 text-[10px] uppercase tracking-wider", isOwn ? "text-white/70" : "text-muted-foreground")}>
-              <Euro className="size-3" /> Budget
+              <Euro className="size-3" /> Compenso
             </span>
             <span className={cn("font-semibold text-sm", isOwn ? "text-white" : "text-notte", isRejected && "line-through opacity-70")}>
               {formatBudgetCents(msg.offerBudgetCents)}
@@ -139,18 +161,13 @@ export function OfferCard({
               isOwn ? "bg-white/10 text-white" : "bg-white text-foreground border border-azzurro/30",
             )}
           >
-            {viewerRole === "artist" ? (
-              <p>
-                Accettando dichiari di aver raggiunto un accordo <strong>direttamente</strong> con
-                l&rsquo;organizzatore. La data sarà confermata e bloccata solo quando
-                l&rsquo;organizzatore la confermerà.
-              </p>
-            ) : (
-              <p>
-                Accettando confermi di aver raggiunto un accordo <strong>direttamente</strong> con
-                l&rsquo;artista: la data viene confermata e bloccata nel calendario di entrambi.
-              </p>
-            )}
+            <p>
+              Accettando confermi l&rsquo;accordo raggiunto <strong>direttamente</strong> con
+              {viewerRole === "artist" ? " l\u2019organizzatore" : " l\u2019artista"}:{" "}
+              <strong>{formatDateIt(msg.offerEventDate)}</strong> a{" "}
+              <strong>{formatBudgetCents(msg.offerBudgetCents)}</strong>. La data viene confermata e
+              bloccata nel calendario di entrambi.
+            </p>
             <p className="mt-1.5">
               L&rsquo;accordo è solo fra voi. N&rsquo;arte non è parte del contratto e non
               gestisce il pagamento.
@@ -199,8 +216,58 @@ export function OfferCard({
             </Button>
           </div>
         )}
-        {status === "accepted" && bookingHref && (
-          <Button asChild size="sm" variant={isOwn ? "outline" : "default"} className={cn("mt-3 w-full", isOwn && "bg-white/10 text-white border-white/30 hover:bg-white/20")}>
+        {daConfermare && viewerRole === "organizer" && !readOnly && (
+          confermaFinale ? (
+            <div
+              className={cn(
+                "mt-3 rounded-xl p-3 text-xs leading-relaxed",
+                isOwn ? "bg-white/10 text-white" : "bg-white text-foreground border border-azzurro/30",
+              )}
+            >
+              <p>
+                L&rsquo;artista ha accettato. Confermando, la data è bloccata nel calendario di
+                entrambi a <strong>{formatBudgetCents(msg.offerBudgetCents)}</strong>. L&rsquo;accordo
+                è solo fra voi: N&rsquo;arte non è parte del contratto e non gestisce il pagamento.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" disabled={busy} onClick={confermaData} className="flex-1 min-h-10">
+                  {busy ? <Loader2 className="size-4 animate-spin" /> : (<><Check className="size-4" /> Confermo l&rsquo;accordo</>)}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => setConfermaFinale(false)}
+                  className={cn("flex-1 min-h-10", isOwn && "bg-white/10 text-white border-white/30 hover:bg-white/20")}
+                >
+                  Indietro
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              variant={isOwn ? "outline" : "default"}
+              disabled={busy}
+              onClick={() => setConfermaFinale(true)}
+              className={cn("mt-3 w-full min-h-10", isOwn && "bg-white text-azzurro border-white hover:bg-white/90")}
+            >
+              <Check className="size-4" /> Conferma data a {formatBudgetCents(msg.offerBudgetCents)}
+            </Button>
+          )
+        )}
+        {daConfermare && viewerRole !== "organizer" && (
+          <p className={cn("mt-3 text-xs", isOwn ? "text-white/90" : "text-muted-foreground")}>
+            Offerta accettata: manca la conferma dell&rsquo;organizzatore.
+          </p>
+        )}
+        {confermata && (
+          <p className={cn("mt-3 inline-flex items-center gap-1.5 text-xs font-semibold", isOwn ? "text-white" : "text-[#1F7A46]")}>
+            <CheckCheck className="size-3.5" /> Data confermata da entrambi a {formatBudgetCents(msg.offerBudgetCents)}
+          </p>
+        )}
+        {confermata && bookingHref && (
+          <Button asChild size="sm" variant={isOwn ? "outline" : "default"} className={cn("mt-2 w-full", isOwn && "bg-white/10 text-white border-white/30 hover:bg-white/20")}>
             <Link href={bookingHref}>
               <ExternalLink className="size-3.5" /> Vedi booking confermato
             </Link>

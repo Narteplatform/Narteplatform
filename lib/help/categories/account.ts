@@ -1,6 +1,6 @@
 import type { HelpCategory } from "@/lib/help/types";
 
-const UPDATED = "2026-10-09";
+const UPDATED = "2026-11-12";
 
 export const ACCOUNT: HelpCategory = {
   slug: "account",
@@ -82,15 +82,17 @@ export const ACCOUNT: HelpCategory = {
 <ul>
   <li><strong>Nuova richiesta di booking</strong> — all'artista.</li>
   <li><strong>Richiesta inviata</strong> — all'organizzatore, come ricevuta.</li>
-  <li><strong>L'artista ha accettato</strong> — all'organizzatore, quando la richiesta passa in trattativa.</li>
+  <li><strong>L'artista ha iniziato la trattativa</strong> — all'organizzatore, quando la richiesta passa in trattativa.</li>
   <li><strong>L'artista non è disponibile</strong> — all'organizzatore, in caso di rifiuto.</li>
-  <li><strong>Data confermata</strong> — a entrambi.</li>
+  <li><strong>Conferma l'accordo</strong> — all'artista con il piano Free, quando l'organizzatore registra l'accordo raggiunto via email. Lo trovi anche come avviso nel pannello Richieste.</li>
+  <li><strong>Data confermata</strong> — a entrambi, quando la data è confermata: un'offerta accettata in chat oppure l'accordo confermato dall'artista.</li>
   <li><strong>Richiesta annullata dall'organizzatore</strong> — all'artista.</li>
   <li><strong>Data annullata da N'arte</strong> — a entrambi, con la motivazione.</li>
-  <li><strong>Compenso proposto</strong> e <strong>compenso confermato</strong> — quando una delle due parti propone o conferma la cifra finale.</li>
+  <li><strong>Compenso proposto</strong> e <strong>compenso confermato</strong> — quando, dopo la conferma, una delle due parti propone o conferma una cifra nel riquadro del promemoria.</li>
   <li><strong>Promemoria della data</strong> — il giorno prima della serata, a entrambi.</li>
   <li><strong>Invito a lasciare una recensione</strong> — all'organizzatore, il giorno dopo la serata.</li>
 </ul>
+<p>Un avviso arriva <strong>solo in piattaforma</strong>, senza email: <strong>Accordo non confermato</strong>, all'organizzatore, quando l'artista risponde «Non corrisponde» a un accordo registrato.</p>
 
 <h3>Chat</h3>
 <ul>

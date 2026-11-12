@@ -48,6 +48,7 @@ export type EmailKey =
   | "chat_new_offer"
   | "price_proposed"
   | "price_confirmed"
+  | "booking_agreement_proposed"
   // --- consulenze ---
   | "consultation_request_user"
   | "consultation_request_admin"
@@ -191,6 +192,12 @@ export interface BookingStatusParams {
   message: string;
   chatUrl: string;
   bookingUrl: string;
+  /**
+   * Solo in `booking_accepted` quando l'artista è sul piano Free: la trattativa
+   * prosegue via email e l'organizzatore riceve l'indirizzo dell'artista.
+   * Stringa vuota negli altri casi (la riga non viene stampata).
+   */
+  artistEmail: string;
 }
 
 /** Notifica di un messaggio non letto in chat. */
@@ -516,6 +523,7 @@ export interface EmailParamsMap {
   chat_new_offer: ChatNewOfferParams;
   price_proposed: PriceParams;
   price_confirmed: PriceParams;
+  booking_agreement_proposed: PriceParams;
   consultation_request_user: ConsultationParams;
   consultation_request_admin: ConsultationParams;
   consultation_confirmed_artist: ConsultationParams;
@@ -744,6 +752,13 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
   price_confirmed: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PRICE_CONFIRMED || String(ID_PREDEFINITI.BREVO_TEMPLATE_PRICE_CONFIRMED)),
     label: "Prezzo finale confermato",
+  },
+  // Nuovo (novembre 2026): nessun id predefinito finché `npm run email:sync`
+  // non crea il template su Brevo. Fino ad allora l'invio risulta «skipped» in
+  // /admin/email e all'artista resta la notifica in campanella.
+  booking_agreement_proposed: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_AGREEMENT_PROPOSED),
+    label: "Accordo registrato — da confermare",
   },
   consultation_reminder: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_CONSULTATION_REMINDER || String(ID_PREDEFINITI.BREVO_TEMPLATE_CONSULTATION_REMINDER)),

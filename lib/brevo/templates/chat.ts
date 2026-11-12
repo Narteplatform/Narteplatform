@@ -85,7 +85,7 @@ const chatNewOffer = defineTemplate({
       highlight("Offerta ricevuta", param("priceLabel")),
       buttonPair({ href: param("chatUrl"), label: "Vedi l'offerta in chat" }),
       callout({
-        text: "Accettando l'offerta la data viene confermata<br />e bloccata nel calendario di entrambi.",
+        text: "Accettando l'offerta la data viene confermata<br />e bloccata nel calendario di entrambi, a questo compenso.",
       }),
     ].join("\n"),
   }),
@@ -174,4 +174,56 @@ const priceConfirmed = defineTemplate({
   }),
 });
 
-export const CHAT_TEMPLATES = [chatNewMessage, chatNewOffer, priceProposed, priceConfirmed];
+/**
+ * Artista sul piano Free: l'organizzatore ha registrato l'accordo preso via
+ * email (data, fascia, compenso). La data si blocca solo con la conferma
+ * dell'artista, dal pannello Richieste.
+ */
+const bookingAgreementProposed = defineTemplate({
+  key: "booking_agreement_proposed",
+  name: "N'arte · Accordo da confermare [booking_agreement_proposed]",
+  subject: "Conferma l'accordo con {{params.organizerName}}: {{params.priceLabel}}",
+  sample: {
+    ...priceSample,
+    bookingUrl: "https://narteofficial.it/dashboard/leads",
+    chatUrl: "",
+  },
+  html: layout({
+    key: "booking_agreement_proposed",
+    preheader: "L'organizzatore ha registrato l'accordo: confermalo per bloccare la data.",
+    body: [
+      eyebrow("Accordo da confermare"),
+      title(`Conferma l'${em("accordo.")}`),
+      paragraph(
+        `${param("organizerName")} ha registrato su N'arte l'accordo preso con te<br />
+              per la data del ${param("eventDate")}.<br />
+              La data si blocca nel tuo calendario solo quando lo confermi tu.<br />
+              L'accordo è fra voi: N'arte non ne è parte e non gestisce pagamenti.`
+      ),
+      highlight("Compenso concordato", param("priceLabel")),
+      card(
+        [
+          sectionTitle("Accordo registrato"),
+          dataTable([
+            { icon: "star", label: "Artista", value: param("artistName") },
+            { icon: "building", label: "Locale / Organizzatore", value: param("organizerName") },
+            { icon: "calendar", label: "Data evento", value: param("eventDate") },
+            { icon: "euro", label: "Compenso", value: param("priceLabel") },
+          ]),
+        ].join("\n")
+      ),
+      buttonPair({ href: param("bookingUrl"), label: "Conferma o rispondi" }),
+      callout({
+        text: "Se i dati non corrispondono a quanto vi siete detti,<br />indica «Non corrisponde» e scrivi all'organizzatore.",
+      }),
+    ].join("\n"),
+  }),
+});
+
+export const CHAT_TEMPLATES = [
+  chatNewMessage,
+  chatNewOffer,
+  priceProposed,
+  priceConfirmed,
+  bookingAgreementProposed,
+];

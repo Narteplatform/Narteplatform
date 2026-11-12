@@ -495,6 +495,8 @@ pubblicazioni realtime. Vanno controllate a mano nel SQL editor:
   • 0062 / 0064 / 0066 / 0067       vincoli, policy e chiavi esterne ricreate
   • 0069_booking_accettata.sql      nuovo valore dell'enum (verificato dalla 0070)
   • 0070 (artists per anon)         privilegi di COLONNA: query in VERIFICA_MIGRATION
+  • 0080_offerta_conferma_diretta   corpo di accept_offer_v2 (stesso nome): query
+                                    in VERIFICA_MIGRATION
 
 Le query per queste sono in docs/VERIFICA_MIGRATION.sql.
 `);

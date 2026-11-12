@@ -1,12 +1,12 @@
 import type { HelpCategory } from "@/lib/help/types";
 
-const UPDATED = "2026-10-09";
+const UPDATED = "2026-11-12";
 
 export const ORGANIZZATORI: HelpCategory = {
   slug: "organizzatori",
   title: "Per organizzatori",
   description:
-    "Cercare artisti, inviare richieste, scrivere in chat con gli artisti e gestire le date confermate. Per locali, festival, brand e privati.",
+    "Cercare artisti, inviare richieste, trattare con gli artisti in chat o via email e gestire le date confermate. Per locali, festival, brand e privati.",
   icon: "users",
   audience: "organizer",
   articles: [
@@ -87,9 +87,10 @@ export const ORGANIZZATORI: HelpCategory = {
 <ol>
   <li>L'artista riceve un'email con il riepilogo della richiesta.</li>
   <li>La richiesta compare in <strong>/organizzatore/richieste</strong>, scheda "In attesa".</li>
-  <li>L'artista <strong>accetta</strong> la trattativa (anche con una controproposta) oppure <strong>rifiuta</strong>. In entrambi i casi ti arriva un'email.</li>
-  <li>Se accetta e ha il piano Pro o Max si apre la <strong>chat</strong>, dove concordate i dettagli fra voi (N'arte non partecipa alla trattativa). Con un artista sul piano Free non c'è chat: ricevi comunque la risposta via email.</li>
-  <li>Quando siete d'accordo, <strong>la conferma finale la dai tu</strong>.</li>
+  <li>L'artista preme <strong>"Inizia trattativa"</strong> oppure <strong>"Rifiuta"</strong>. In entrambi i casi ti arriva un'email. Iniziare la trattativa non conferma nulla: la data resta libera.</li>
+  <li>Se l'artista ha il piano <strong>Pro o Max</strong> si apre la <strong>chat</strong>, dove concordate i dettagli fra voi (N'arte non partecipa alla trattativa). Prima di questo momento la chat con quell'artista non è disponibile.</li>
+  <li>Se l'artista ha il piano <strong>Free</strong> la chat non c'è: la richiesta passa "In trattativa via email" e sulla pagina della richiesta trovi il suo indirizzo email (lui vede il tuo). Vi accordate scrivendovi direttamente.</li>
+  <li>La data è <strong>confermata</strong> quando c'è il sì di entrambi: in chat, quando uno dei due accetta l'offerta dell'altro; via email, quando l'artista conferma l'accordo che hai registrato. Vedi <a href="/help/organizzatori/gestire-trattativa">come gestire la trattativa</a>.</li>
 </ol>
 
 <h2>Quanto si aspetta una risposta</h2>
@@ -102,45 +103,49 @@ export const ORGANIZZATORI: HelpCategory = {
 
     {
       slug: "gestire-trattativa",
-      title: "Come gestire la trattativa in chat",
+      title: "Come gestire la trattativa",
       excerpt:
-        "Offerte tracciate, controproposte e conferma finale: come si arriva a una data confermata senza equivoci.",
+        "In chat con gli artisti Pro e Max, via email con quelli Free: offerte, accordi registrati e doppia conferma, per arrivare a una data confermata senza equivoci.",
       updatedAt: UPDATED,
       related: ["prezzo-definitivo", "booking/dopo-la-conferma", "richiedere-booking"],
       content: `
-<h2>Una chat per artista</h2>
-<p>La conversazione la trovi in <strong>/organizzatore/chat</strong>. È <strong>una per ogni artista</strong>, non una per richiesta: se lo stesso artista lavora con te più volte, lo storico resta in un unico posto.</p>
-<p>Come organizzatore <strong>non hai alcuna limitazione</strong>: puoi sempre scrivere e fare offerte. Se un artista non ti risponde in chat, forse ha il piano gratuito, con cui riceve i messaggi ma non può rispondere. In quel caso il canale valido resta l'email che gli arriva.</p>
+<h2>Quando inizia</h2>
+<p>La trattativa comincia quando l'artista risponde alla tua richiesta con <strong>"Inizia trattativa"</strong>. Da lì le strade sono due, a seconda del piano dell'artista: <strong>chat</strong> se ha Pro o Max, <strong>email</strong> se ha Free. Se nel frattempo l'artista passa a Pro, la chat si apre anche sulla trattativa già avviata via email.</p>
 
-<h2>Messaggi e allegati</h2>
+<h2>Con un artista Pro o Max: la chat</h2>
+<p>La conversazione la trovi in <strong>/organizzatore/chat</strong>. Puoi entrarci <strong>solo dopo che l'artista ha iniziato la trattativa</strong>: prima la richiesta è in attesa e la chat non è disponibile. È <strong>una per ogni artista</strong>, non una per richiesta: se lo stesso artista lavora con te più volte, lo storico resta in un unico posto.</p>
+
+<h3>Messaggi e allegati</h3>
 <p>Puoi mandare messaggi fino a 2.000 caratteri, foto, documenti (PDF, Word, Excel, testo, ZIP) fino a <strong>25 MB</strong> e note vocali. È il posto giusto per la piantina del locale, la scheda tecnica o l'accordo che avete scritto.</p>
 
-<h2>Le offerte</h2>
-<p>Oltre ai messaggi liberi puoi inviare un'<strong>offerta</strong>: una proposta formale con <strong>data</strong>, <strong>fascia oraria</strong> e <strong>budget</strong>, più una descrizione facoltativa. L'artista la accetta o la rifiuta con un pulsante.</p>
-<p>Gli stati sono <strong>In sospeso</strong>, <strong>Accettata</strong>, <strong>Rifiutata</strong> e <strong>Sostituita</strong>. Se mandi una nuova offerta, quella precedente ancora in sospeso viene sostituita in automatico: non restano mai due proposte valide insieme.</p>
+<h3>Le offerte</h3>
+<p>Oltre ai messaggi liberi tu e l'artista potete inviare un'<strong>offerta</strong>: una proposta formale con <strong>data</strong>, <strong>fascia oraria</strong> e <strong>compenso</strong> (obbligatorio), più una descrizione facoltativa. Chi la riceve la accetta o la rifiuta con un pulsante.</p>
+<p>Gli stati sono <strong>In sospeso</strong>, <strong>Accettata</strong>, <strong>Rifiutata</strong> e <strong>Sostituita</strong>. Se viene mandata una nuova offerta, quella precedente ancora in sospeso viene sostituita in automatico: non restano mai due proposte valide insieme.</p>
 
-<h3>Attenzione: un'offerta accettata conferma la data</h3>
-<p>Se l'artista accetta la tua offerta, <strong>la data è confermata all'istante</strong>: viene bloccata sul suo calendario, compare fra le tue date confermate e partono le email, senza altri passaggi.</p>
+<h3>Un'offerta accettata conferma la data</h3>
+<p>Quando una parte propone un'offerta e l'altra la accetta, <strong>chiunque dei due abbia proposto</strong>, la data è <strong>confermata</strong>: viene bloccata sul calendario dell'artista a quel compenso, compare fra le tue date confermate e partono le email. Non serve nessun altro passaggio.</p>
 <p>Per questo conviene mandarla solo quando i termini sono definitivi; per sondare il terreno basta un messaggio normale.</p>
 
-<h2>L'altra strada: il pulsante "Conferma data"</h2>
-<p>Se la trattativa è nata da una richiesta e l'artista ha accettato, la richiesta è <strong>in trattativa</strong>. Quando siete d'accordo vai in <strong>/organizzatore/richieste</strong>, apri la richiesta e premi <strong>"Conferma data"</strong>.</p>
-<p>Questo passaggio spetta <strong>solo a te</strong>: l'artista non può confermare al posto tuo. Se vi siete accordati e non confermi, per lui la data resta in sospeso.</p>
+<h2>Con un artista Free: via email</h2>
+<p>Con un artista sul piano Free la chat non è disponibile, né per lui né per te. Dopo "Inizia trattativa" la richiesta risulta <strong>"In trattativa via email"</strong> e sulla sua pagina in <strong>/organizzatore/richieste</strong> trovi l'<strong>indirizzo email dell'artista</strong>; lui vede il tuo. Vi scrivete direttamente e concordate data, orari e compenso.</p>
+<p>Quando vi siete accordati, apri la richiesta e usa <strong>"Registra l'accordo"</strong>, indicando data, fascia oraria e compenso. L'artista lo ritrova nel suo pannello Richieste e lo conferma oppure segnala che non corrisponde. <strong>Solo dopo la sua conferma</strong> la data è confermata e bloccata a quel compenso; se non corrisponde, vi riallineate e registri di nuovo l'accordo.</p>
 
 <h2>Cosa cambia alla conferma</h2>
 <ul>
-  <li>La data viene <strong>bloccata sul calendario</strong> dell'artista: nessun altro può prenotarlo in quel giorno.</li>
+  <li>La data viene <strong>bloccata sul calendario</strong> dell'artista, al compenso concordato: nessun altro può prenotarlo in quel giorno.</li>
   <li>Entrambi ricevete un'email di conferma.</li>
   <li>L'evento compare nel tuo <a href="/help/organizzatori/calendario-organizzatore">calendario</a>.</li>
   <li>Si sblocca il box del <a href="/help/organizzatori/prezzo-definitivo">compenso concordato – promemoria</a>.</li>
   <li>Dopo la data potrai <a href="/help/organizzatori/lasciare-recensione">lasciare una recensione</a>.</li>
 </ul>
+<p>Il compenso concordato resta un accordo fra te e l'artista: N'arte non intermedia pagamenti e non è parte del contratto.</p>
+<p>Nelle richieste meno recenti puoi trovare lo stato <em>"Offerta accettata dall'artista: conferma tu la data"</em>: è un'offerta accettata prima del nuovo flusso, e la data la confermi tu dal widget dell'offerta.</p>
 
 <h2>Annullare</h2>
-<p>Puoi annullare una richiesta finché è in attesa o in trattativa, con il pulsante <strong>"Annulla richiesta"</strong>. Per una data <em>già confermata</em> il percorso è diverso: vedi <a href="/help/organizzatori/annullare-data">annullare una data confermata</a>.</p>
+<p>Puoi annullare una richiesta finché è in attesa o in trattativa, con il pulsante <strong>"Annulla richiesta"</strong>. Una data <em>già confermata</em> si annulla solo scrivendo al team: vedi <a href="/help/organizzatori/annullare-data">annullare una data confermata</a>.</p>
 
-<h2>Perché conviene tenere tutto in chat</h2>
-<p>Passare a WhatsApp o al telefono sembra più rapido, ma se poi nasce un disaccordo su quanto pattuito non resta niente da rileggere. In chat invece è tutto scritto, ed è la prima cosa che il team guarda in caso di contestazione.</p>
+<h2>Perché conviene tenere tutto per iscritto</h2>
+<p>Passare a WhatsApp o al telefono sembra più rapido, ma se poi nasce un disaccordo su quanto pattuito non resta niente da rileggere. In chat è tutto scritto, ed è la prima cosa che il team guarda in caso di contestazione; via email, conserva i messaggi che vi siete scambiati.</p>
 `,
     },
 
@@ -204,7 +209,7 @@ export const ORGANIZZATORI: HelpCategory = {
 <p>Una data <strong>confermata</strong> non si annulla con un click, ed è una scelta precisa: quel giorno è bloccato sul calendario dell'artista, che ha rifiutato altre proposte per tenerlo libero.</p>
 <p>Se devi annullare:</p>
 <ol>
-  <li><strong>Scrivilo subito in chat</strong> all'artista, spiegando cosa è successo. È la cosa più importante e va fatta per prima.</li>
+  <li><strong>Scrivilo subito all'artista</strong>, in chat o via email, spiegando cosa è successo. È la cosa più importante e va fatta per prima.</li>
   <li><strong>Accordatevi</strong> su come chiudere: spostare la data, sostituire l'artista, riconoscere un rimborso spese se aveva già sostenuto costi.</li>
   <li><strong><a href="/contatti">Scrivi al team</a></strong> indicando artista e data: è il team ad annullare la data sulla piattaforma, registrando la motivazione, e così il calendario torna libero.</li>
 </ol>
@@ -242,7 +247,7 @@ export const ORGANIZZATORI: HelpCategory = {
 <p>Chiederlo non è una pretesa, serve ad assicurarsi che la serata funzioni. Gran parte dei problemi dell'ultimo minuto nasce da un rider che nessuno si è scambiato.</p>
 
 <h2>Dove trovarlo su N'arte</h2>
-<p>Molti artisti compilano il campo <strong>requisiti tecnici</strong> nella scheda. Se è vuoto o generico, chiedilo in chat: è una domanda normale, nessuno ci resta male.</p>
+<p>Molti artisti compilano il campo <strong>requisiti tecnici</strong> nella scheda. Se è vuoto o generico, chiedilo durante la trattativa: è una domanda normale, nessuno ci resta male.</p>
 
 <h2>Cosa serve, indicativamente</h2>
 <p>Un'idea di massima per capire se lo spazio è adatto, prima ancora di scrivere.</p>
@@ -290,7 +295,7 @@ export const ORGANIZZATORI: HelpCategory = {
 <p>Le richieste in attesa o in trattativa <strong>non compaiono</strong>, ed è voluto: finché non è confermata, una data non è ancora un impegno, e mescolarla alle altre falserebbe la tua programmazione. Per seguirle c'è <a href="/organizzatore/richieste">/organizzatore/richieste</a>.</p>
 
 <h2>Come si popola</h2>
-<p>In automatico. Una data compare qui appena viene confermata, con il pulsante "Conferma data" oppure perché l'artista ha accettato una tua offerta in chat. Nello stesso momento viene bloccata anche sul calendario dell'artista.</p>
+<p>In automatico. Una data compare qui appena viene confermata: in chat, quando una delle due parti accetta l'offerta dell'altra; via email, quando l'artista conferma l'accordo che hai registrato. Nello stesso momento viene bloccata anche sul calendario dell'artista, al compenso concordato.</p>
 
 <h2>Se gestisci più strutture</h2>
 <p>C'è un selettore che filtra il calendario per struttura: comodo se hai due locali con programmazioni distinte. Vedi <a href="/help/organizzatori/strutture-multiple">gestire le tue strutture</a>.</p>
@@ -341,7 +346,7 @@ export const ORGANIZZATORI: HelpCategory = {
 <p>Anche una recensione negativa è legittima: le recensioni servono pure a questo. Tieni conto di due cose:</p>
 <ul>
   <li><strong>Attieniti ai fatti</strong>: cosa è successo, non giudizi sulla persona.</li>
-  <li><strong>Parlane prima con l'artista</strong>, in chat. A volte c'è una spiegazione, o un modo per rimediare.</li>
+  <li><strong>Parlane prima con l'artista</strong>, in chat o via email. A volte c'è una spiegazione, o un modo per rimediare.</li>
 </ul>
 <p>Le recensioni offensive o riferite a fatti estranei alla serata possono essere <strong>nascoste dal team</strong>. Vedi il <a href="/help/policy/codice-condotta">codice di condotta</a>.</p>
 
@@ -367,7 +372,7 @@ export const ORGANIZZATORI: HelpCategory = {
       content: `
 <h2>Cos'è</h2>
 <p>Sulle date <strong>confermate</strong> compare il riquadro <strong>«Compenso concordato – promemoria»</strong>, dove annotare il compenso pattuito. Lo vedete entrambi, artista e organizzatore. È un'<strong>annotazione fra le parti</strong>: N'arte non è parte dell'accordo e non gestisce pagamenti.</p>
-<p>Serve perché il budget della richiesta iniziale è quasi sempre una fascia indicativa, che poi cambia durante la trattativa. Qui mettete per iscritto la cifra su cui vi siete accordati.</p>
+<p>Una data si conferma sempre con un compenso: quello dell'offerta accettata in chat o quello dell'accordo registrato e confermato. Il riquadro serve a tenere traccia della cifra anche quando, dopo la conferma, gli accordi cambiano: per esempio se aggiungete un set o rivedete il rimborso viaggio.</p>
 
 <h2>Come funziona la doppia conferma</h2>
 <ol>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Flag, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Flag, Mail, ShieldAlert } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { MessageList } from "./MessageList";
 import { MessageComposer } from "./MessageComposer";
@@ -72,12 +72,18 @@ export function ChatPanel({
     markConversationRead(meta.conversationId).catch(() => {});
   }, [meta.conversationId, readOnly, viewerRole, messages.length]);
 
-  const canWrite = !readOnly && viewerRole !== "superadmin" && !isBlocked;
+  // La chat è dei piani Pro e Max dell'artista, per entrambe le parti. Se
+  // l'artista torna al piano Free la conversazione resta leggibile ma ferma:
+  // la trattativa prosegue via email (il server rifiuta comunque l'invio).
+  const chatAttiva = meta.artist.tier != null && meta.artist.tier !== "free";
+  const canWrite = !readOnly && viewerRole !== "superadmin" && !isBlocked && chatAttiva;
   const canOffer = canWrite;
   const disabledReason = isBlocked
     ? `Sei stato bloccato in questa conversazione da un amministratore. Motivo: ${myBlock!.reason}`
     : viewerRole === "superadmin"
     ? "Vista superadmin (sola lettura)"
+    : !chatAttiva
+    ? "Chat non disponibile: l'artista è sul piano Free"
     : undefined;
 
   return (
@@ -155,9 +161,36 @@ export function ChatPanel({
         messages={messages}
         currentUserId={currentUserId}
         viewerRole={viewerRole}
-        readOnly={readOnly || viewerRole === "superadmin"}
+        readOnly={readOnly || viewerRole === "superadmin" || !chatAttiva}
         moderazione={canModerate && viewerRole === "superadmin" ? { conversationId: meta.conversationId } : undefined}
+        onOfferChange={resync}
       />
+      {!chatAttiva && viewerRole !== "superadmin" && (
+        <div className="flex items-start gap-2 border-t border-[#E8A030]/40 bg-[#E8A030]/[0.08] px-3.5 py-2.5 text-xs text-foreground">
+          <Mail className="size-4 shrink-0 mt-0.5 text-[#B87020]" aria-hidden="true" />
+          <p>
+            {viewerRole === "organizer" ? (
+              <>
+                <span className="font-semibold">L&apos;artista è sul piano Free: la chat non è disponibile.</span>{" "}
+                Proseguite la trattativa via email: trovi il suo indirizzo nella{" "}
+                <Link href="/organizzatore/richieste?status=in_trattativa" className="font-medium underline underline-offset-2">
+                  richiesta
+                </Link>
+                .
+              </>
+            ) : (
+              <>
+                <span className="font-semibold">La chat è inclusa nei piani Pro e Max.</span>{" "}
+                Con il piano Free tratti via email: trovi l&apos;indirizzo dell&apos;organizzatore in{" "}
+                <Link href="/dashboard/leads?status=in_trattativa" className="font-medium underline underline-offset-2">
+                  Richieste
+                </Link>
+                .
+              </>
+            )}
+          </p>
+        </div>
+      )}
       {isBlocked && (
         <div className="flex items-start gap-2 border-t border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
           <ShieldAlert className="size-4 shrink-0 mt-0.5" />

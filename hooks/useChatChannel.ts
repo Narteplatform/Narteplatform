@@ -141,7 +141,13 @@ export function useChatChannel(
               setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
             } else if (payload.eventType === "UPDATE") {
               const m = fromRaw(payload.new as Raw);
-              setMessages((prev) => prev.map((x) => (x.id === m.id ? m : x)));
+              // La riga grezza non porta lo stato della richiesta collegata
+              // all'offerta: si tiene quello noto e, se è un'offerta (accettata,
+              // rifiutata…), si rilegge dal server per aggiornare il widget.
+              setMessages((prev) =>
+                prev.map((x) => (x.id === m.id ? { ...m, offerBookingStatus: x.offerBookingStatus } : x)),
+              );
+              if (m.kind === "offer") void resync();
             } else if (payload.eventType === "DELETE") {
               const id = (payload.old as { id?: string }).id;
               if (id) setMessages((prev) => prev.filter((x) => x.id !== id));

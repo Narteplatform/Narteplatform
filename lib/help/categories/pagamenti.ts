@@ -2,7 +2,7 @@ import type { HelpCategory } from "@/lib/help/types";
 import { PLAN_LABELS, PLAN_PRICES_CENTS, formatPrice } from "@/lib/billing/plans";
 import { CREDITO_PREMIO_CENT, GIORNI_ATTESA, GIORNI_PREMIO, TETTO_ANNUO } from "@/lib/inviti/regole";
 
-const UPDATED = "2026-10-09";
+const UPDATED = "2026-11-12";
 
 export const PAGAMENTI: HelpCategory = {
   slug: "pagamenti",
@@ -38,7 +38,8 @@ export const PAGAMENTI: HelpCategory = {
 <h2>Cosa fa comunque la piattaforma</h2>
 <p>Non gestisce il denaro, ma tiene traccia di quello che avete deciso:</p>
 <ul>
-  <li>La <strong>chat</strong> (disponibile con gli artisti Pro o Max) conserva quello che vi siete scritti, e potete consultarla entrambi.</li>
+  <li>La <strong>chat</strong> (disponibile con gli artisti Pro o Max) conserva quello che vi siete scritti, e potete consultarla entrambi. Con gli artisti Free la trattativa passa per email: l'accordo lo registra l'organizzatore e lo conferma l'artista.</li>
+  <li>Ogni data confermata riporta il <strong>compenso</strong> su cui vi siete accordati: quello dell'offerta accettata in chat o dell'accordo registrato e confermato.</li>
   <li>Il <a href="/help/organizzatori/prezzo-definitivo"><strong>compenso concordato – promemoria</strong></a> annota il compenso pattuito con la conferma di entrambe le parti. Non è un pagamento e N'arte non ne è parte. Una proposta non ancora confermata si può ritirare; un importo confermato da entrambi, invece, non si cancella da soli: si può solo proporre un nuovo importo, che l'altra parte deve confermare.</li>
 </ul>
 
@@ -46,7 +47,7 @@ export const PAGAMENTI: HelpCategory = {
 <p>Prima della serata mettetevi d'accordo almeno su <strong>cifra</strong>, <strong>quando</strong> viene pagata, <strong>come</strong>, se è per il gruppo o a persona e se il rimborso viaggio è compreso. La lista completa è in <a href="/help/booking/contratto-modello">cosa mettere per iscritto prima di una data</a>.</p>
 
 <h2>E se non vengo pagato?</h2>
-<p>Siccome non siamo parte dell'accordo, non possiamo intervenire sul pagamento né recuperare somme per conto di nessuno. Possiamo però <strong>leggere la conversazione</strong> e valutare il comportamento di chi usa la piattaforma, fino a limitarne l'account. Anche per questo conviene trattare in chat e non altrove: vedi <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
+<p>Siccome non siamo parte dell'accordo, non possiamo intervenire sul pagamento né recuperare somme per conto di nessuno. Possiamo però <strong>leggere la conversazione</strong> e valutare il comportamento di chi usa la piattaforma, fino a limitarne l'account. Anche per questo conviene trattare per iscritto: in chat, se l'artista ha Pro o Max, oppure via email conservando i messaggi, e non al telefono: vedi <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
 
 <h2>L'unica somma che incassiamo</h2>
 <p>L'<a href="/help/pagamenti/abbonamento-artista">abbonamento degli artisti</a>, che è facoltativo. Nient'altro.</p>
@@ -165,7 +166,7 @@ export const PAGAMENTI: HelpCategory = {
 <p>Il terzo punto evita le discussioni peggiori, eppure quasi nessuno lo mette per iscritto.</p>
 
 <h2>Il modo più semplice di tutelarsi</h2>
-<p>Più dell'acconto, conta <strong>scrivere tutto in chat</strong>: la conversazione resta tracciata, consultabile da entrambi e non si può modificare a posteriori. Annotate anche il <a href="/help/organizzatori/prezzo-definitivo">compenso concordato – promemoria</a>, che richiede la conferma di entrambe le parti.</p>
+<p>Più dell'acconto, conta <strong>scrivere tutto</strong>: in chat la conversazione resta tracciata, consultabile da entrambi e non si può modificare a posteriori; con un artista Free, che tratta via email, conservate i messaggi. Annotate anche il <a href="/help/organizzatori/prezzo-definitivo">compenso concordato – promemoria</a>, che richiede la conferma di entrambe le parti.</p>
 <p>Un messaggio di riepilogo dopo la conferma vale più di qualunque accordo a voce.</p>
 
 <h2>Se la data salta</h2>
@@ -220,7 +221,7 @@ export const PAGAMENTI: HelpCategory = {
 
 <h2>Cosa succede quando disdici</h2>
 <p>L'abbonamento <strong>resta attivo fino alla fine del periodo già pagato</strong>, quindi non perdi i giorni versati; la data di scadenza è indicata nella tua area.</p>
-<p>Dopo, il profilo torna al piano ${PLAN_LABELS.free}: <strong>resta online</strong> e le richieste continuano ad arrivare, ma perdi chat, recensioni visibili, badge e posizione prioritaria.</p>
+<p>Dopo, il profilo torna al piano ${PLAN_LABELS.free}: <strong>resta online</strong> e le richieste continuano ad arrivare, e le nuove trattative si svolgono via email; perdi chat e offerte con compenso, recensioni visibili, badge e posizione prioritaria.</p>
 <p><strong>Nessun contenuto viene cancellato.</strong> Foto, video e profili in eccesso smettono di essere pubblici ma restano nella tua area, e ricompaiono se risali di piano.</p>
 
 <h2>Se un pagamento non va a buon fine</h2>

@@ -12,7 +12,8 @@ import {
   type ChatMessageInput,
   type ChatOfferInput,
 } from "@/lib/validators/schemas";
-import { sendBookingAcceptedEmail, sendBookingConfirmedEmail } from "@/lib/emails/booking-notify";
+import { sendBookingConfirmedEmail } from "@/lib/emails/booking-notify";
+import { chatAttivaPerArtista, chatAttivaPerArtisti } from "@/lib/chat/accesso";
 import { logger } from "@/lib/logger";
 import { notifyNewChatMessage, notifyNewChatOffer } from "@/lib/chat/notify";
 import {
@@ -20,7 +21,6 @@ import {
   creaNotifichePerArtista,
   creaNotifichePerOrganizzatore,
 } from "@/lib/notifications";
-import { getEntitlements } from "@/lib/billing/entitlements";
 import type { Role } from "@/lib/supabase/types";
 import {
   getConversationsForArtist,
@@ -97,30 +97,32 @@ async function assertNotBlocked(conversationId: string, userId: string): Promise
 }
 
 /**
- * Paywall della chat: la negoziazione è inclusa nei piani Pro e Max.
+ * Paywall della chat: la trattativa in chat è inclusa nei piani Pro e Max
+ * dell'ARTISTA e vale per ENTRAMBE le parti (novembre 2026).
  *
- * Vale SOLO per l'artista. L'organizzatore non paga mai e non va mai fermato:
- * la conversazione si apre comunque, lui scrive senza attriti e l'artista Free
- * riceve la mail di notifica. Il paywall scatta quando l'artista prova a
- * rispondere — cioè nel momento di massimo valore percepito, con un ingaggio
- * vero dall'altra parte del messaggio.
+ * Con un artista Free non si chatta: la trattativa si svolge via email e
+ * l'accordo si registra dalla pagina della richiesta. Prima l'organizzatore
+ * poteva scrivere a un artista Free che non poteva rispondere: una
+ * conversazione a senso unico che la piattaforma stessa aveva aperto.
  *
- * Usa il tier dell'ARTISTA e non quello dell'account, così un omaggio del
+ * Usa il tier del PROFILO e non quello dell'account, così un omaggio del
  * superadmin su un singolo profilo (tier_override) sblocca la chat per quel
- * profilo.
+ * profilo. Il superadmin non scrive mai in chat, quindi non passa di qui.
  */
 async function assertArtistCanChat(
   role: Role | null,
   artistId: string | null,
   isSuperadmin: boolean,
 ): Promise<ActionResult | null> {
-  if (role !== "artist" || isSuperadmin || !artistId) return null;
-  const ent = await getEntitlements(artistId);
-  if (ent.canUseChat) return null;
+  if (isSuperadmin || !artistId) return null;
+  if (role !== "artist" && role !== "organizer") return null;
+  if (await chatAttivaPerArtista(artistId)) return null;
   return {
     ok: false,
     error:
-      "La chat con locali e organizzatori è inclusa nei piani Pro e Max. Passa a Pro per rispondere.",
+      role === "artist"
+        ? "La chat con locali e organizzatori è inclusa nei piani Pro e Max. Con il piano Free tratti via email: trovi l'indirizzo dell'organizzatore nella richiesta."
+        : "Questo artista è sul piano Free: la chat non è disponibile e la trattativa prosegue via email. Trovi il suo indirizzo nella richiesta.",
   };
 }
 
@@ -154,8 +156,45 @@ export async function openOrCreateConversation(
   }
 
   // Verifica esistenza artista
-  const { data: a } = await admin.from("artists").select("id").eq("id", artistId).maybeSingle();
+  const { data: a, error: aErr } = await admin
+    .from("artists")
+    .select("id, user_id")
+    .eq("id", artistId)
+    .maybeSingle();
+  if (aErr) return { ok: false, error: aErr.message };
   if (!a) return { ok: false, error: "Artista non trovato" };
+  const chiamaArtista = a.user_id === user.id;
+
+  // La chat è dei piani Pro e Max dell'artista, per entrambe le parti.
+  if (!(await chatAttivaPerArtista(artistId))) {
+    return {
+      ok: false,
+      error: chiamaArtista
+        ? "La chat è inclusa nei piani Pro e Max. Con il piano Free tratti con l'organizzatore via email."
+        : "Questo artista è sul piano Free: la trattativa si svolge via email, non in chat.",
+    };
+  }
+
+  // L'organizzatore entra in chat solo dopo che l'artista ha avviato la
+  // trattativa («Inizia trattativa»), o se la conversazione esiste già.
+  if (!chiamaArtista) {
+    const esistente = await getConversationByPair(artistId, orgId);
+    if (!esistente) {
+      const { count, error: cErr } = await admin
+        .from("booking_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("artist_id", artistId)
+        .eq("organizer_id", orgId)
+        .in("status", ["in_trattativa", "accettata", "confermata"]);
+      if (cErr) return { ok: false, error: cErr.message };
+      if ((count ?? 0) === 0) {
+        return {
+          ok: false,
+          error: "La chat si apre quando l'artista avvia la trattativa sulla tua richiesta.",
+        };
+      }
+    }
+  }
 
   // RPC security definer
   const userClient = await createClient();
@@ -446,26 +485,35 @@ export async function respondToOffer(
     return { ok: true };
   }
 
-  // Accettare un'offerta crea un booking confermato: è l'atto conclusivo della
-  // negoziazione, quindi passa dallo stesso paywall del resto della chat.
-  // accept_offer_v2 è security definer e non conosce i piani: il gate va qui.
+  // Accettare un'offerta conferma la data al prezzo dell'offerta: è l'atto
+  // conclusivo della trattativa, quindi passa dallo stesso paywall del resto
+  // della chat (dalla 0080 lo controlla anche accept_offer_v2).
   let acceptConvId: string | null = null;
   let acceptRole: Role | null = null;
+  let offerta: { budgetCents: number | null; senderId: string | null; createdAt: string } | null = null;
   {
-    const { data: msg } = await admin
+    const { data: msg, error: msgErr } = await admin
       .from("messages")
-      .select("conversation_id")
+      .select("conversation_id, offer_budget_cents, sender_id, created_at")
       .eq("id", messageId)
       .maybeSingle();
+    if (msgErr) return { ok: false, error: msgErr.message };
     if (!msg) return { ok: false, error: "Offerta non trovata" };
-    const convId = (msg as { conversation_id: string }).conversation_id;
+    const convId = msg.conversation_id;
     const { role, isSuperadmin, artistId } = await resolveConversationRole(convId, user.id);
     acceptConvId = convId;
     acceptRole = role;
+    offerta = { budgetCents: msg.offer_budget_cents, senderId: msg.sender_id, createdAt: msg.created_at };
     const blocked = await assertNotBlocked(convId, user.id);
     if (blocked) return blocked;
     const gate = await assertArtistCanChat(role, artistId, isSuperadmin);
     if (gate) return gate;
+    if (msg.offer_budget_cents == null) {
+      return {
+        ok: false,
+        error: "L'offerta non indica un compenso: chiedi di inviarne una con il prezzo.",
+      };
+    }
   }
 
   // Accept via RPC security definer
@@ -480,28 +528,52 @@ export async function respondToOffer(
     } | null) ?? null;
   if (!res || !res.ok) return { ok: false, error: res?.error ?? "Errore nell'accettazione" };
 
-  // Doppia conferma (0070): se ha accettato l'artista la richiesta è
-  // «accettata» e l'organizzatore riceve l'invito a confermare la data; se ha
-  // accettato l'organizzatore la data è confermata e partono le conferme.
-  // Senza `stato` (DB ancora alla 0061) vale il comportamento precedente.
-  if (res.booking_request_id) {
-    const invio =
-      res.stato === "accettata"
-        ? sendBookingAcceptedEmail(res.booking_request_id)
-        : sendBookingConfirmedEmail(res.booking_request_id);
-    await invio.catch((e) =>
+  // Dalla 0080 chi accetta conferma sempre la data e la funzione registra il
+  // compenso. Prima della 0080, se accetta l'artista la richiesta resta
+  // «accettata» e l'organizzatore conferma dal widget («Conferma data a …»);
+  // se accetta l'organizzatore la data è confermata ma il compenso no: lo si
+  // completa qui, solo se ancora vuoto e solo su quella richiesta confermata.
+  const confermata = res.stato !== "accettata";
+  if (res.booking_request_id && confermata && offerta?.budgetCents != null) {
+    const { error: fpErr } = await admin
+      .from("booking_requests")
+      .update({
+        final_price: offerta.budgetCents / 100,
+        final_price_proposed_by: offerta.senderId,
+        final_price_proposed_at: offerta.createdAt,
+        final_price_confirmed_by: user.id,
+        final_price_confirmed_at: new Date().toISOString(),
+      })
+      .eq("id", res.booking_request_id)
+      .eq("status", "confermata")
+      .is("final_price", null);
+    if (fpErr) logger.error("chat", "compenso dopo accettazione offerta:", fpErr.message);
+  }
+
+  if (res.booking_request_id && confermata) {
+    await sendBookingConfirmedEmail(res.booking_request_id).catch((e) =>
       logger.error("chat", "email dopo accettazione offerta:", e instanceof Error ? e.message : String(e)),
     );
+  } else if (acceptConvId && !confermata) {
+    // Solo prima della 0080: l'organizzatore deve confermare dal widget.
+    const convId = acceptConvId;
+    const ruolo = acceptRole;
+    if (ruolo) {
+      after(() =>
+        notifyNewChatMessage(convId, ruolo).catch((e) =>
+          console.error("[chat] notifica offerta accettata:", e),
+        ),
+      );
+    }
   }
 
   if (acceptConvId) {
     void notificaControparte(acceptConvId, acceptRole, {
       kind: "offerta_accettata",
-      title: res.stato === "accettata" ? "Offerta accettata: manca la tua conferma" : "Offerta accettata, data confermata",
-      body:
-        res.stato === "accettata"
-          ? "L'artista ha accettato la tua offerta. Conferma la data per chiudere il booking."
-          : "La tua offerta è stata accettata e la data è confermata.",
+      title: confermata ? "Offerta accettata: data confermata" : "Offerta accettata: conferma la data",
+      body: confermata
+        ? "L'accordo è confermato da entrambi e la data è bloccata nel calendario al prezzo dell'offerta."
+        : "L'artista ha accettato la tua offerta. Conferma la data dal riquadro dell'offerta in chat.",
     });
   }
 
@@ -511,6 +583,8 @@ export async function respondToOffer(
   revalidatePath("/organizzatore/chat");
   revalidatePath("/admin/chat");
   revalidatePath("/artisti");
+  revalidatePath("/dashboard/leads");
+  revalidatePath("/organizzatore/richieste");
   return { ok: true, bookingRequestId: res.booking_request_id };
 }
 
@@ -652,10 +726,14 @@ export async function fetchDockConversations(
     .maybeSingle();
   if (profile?.role === "artist") {
     const active = await resolveActiveArtist(user.id);
-    const conversations = await getConversationsForArtist(
+    const tutte = await getConversationsForArtist(
       user.id,
       scope === "active" && active ? { artistId: active.id } : {},
     );
+    // La chat è dei profili Pro/Max: quelle di un profilo Free non compaiono
+    // nel dock né nei toast (l'artista Free tratta via email).
+    const attive = await chatAttivaPerArtisti(tutte.map((c) => c.artistId));
+    const conversations = tutte.filter((c) => attive.get(c.artistId) === true);
     return { ok: true, conversations, role: "artist", activeArtistId: active?.id ?? null };
   }
   if (profile?.role === "organizer") {
@@ -684,6 +762,9 @@ export async function fetchDockConversation(
 
   const meta = await getConversationMeta(conversationId);
   if (!meta) return { ok: false, error: "Conversazione non trovata" };
+  if (role === "artist" && !(await chatAttivaPerArtista(meta.artist.id))) {
+    return { ok: false, error: "La chat è inclusa nei piani Pro e Max." };
+  }
   const messages = await getMessages(conversationId);
   return { ok: true, meta, messages, currentUserId: user.id, viewerRole: role };
 }

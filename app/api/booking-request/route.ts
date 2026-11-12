@@ -321,7 +321,7 @@ export async function POST(req: Request) {
     void creaNotifichePerArtista(artist.id, {
       kind: "booking_nuova",
       title: "Nuova richiesta di booking",
-      body: `Per il ${data.date}. Aprila per rispondere.`,
+      body: `Per il ${data.date}. Aprila e premi «Inizia trattativa» o «Rifiuta».`,
       href: "/dashboard/leads?status=pending",
     }).catch(() => undefined);
 

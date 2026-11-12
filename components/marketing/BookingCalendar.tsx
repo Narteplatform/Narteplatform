@@ -238,7 +238,7 @@ export function BookingCalendar({
         setSubmitted(true);
         return;
       }
-      toast.success("Richiesta inviata. L'artista la valuterà entro 48h.");
+      toast.success("Richiesta inviata: la trovi in attesa nelle tue Richieste finché l'artista non avvia la trattativa.");
       reset();
       setSubmitted(true);
       // Se signup, redirect al pannello organizzatore

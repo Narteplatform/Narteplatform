@@ -1,6 +1,6 @@
 import { resolveMediaUrls } from "@/lib/storage/signed";
 import { createAdminClient } from "@/lib/supabase/server";
-import type { ArtistTier, ChatMessageKind, ChatOfferStatus, Role } from "@/lib/supabase/types";
+import type { ArtistTier, BookingStatus, ChatMessageKind, ChatOfferStatus, Role } from "@/lib/supabase/types";
 
 export type ChatViewerRole = "artist" | "organizer" | "superadmin";
 
@@ -50,6 +50,13 @@ export type ChatMessage = {
   offerStatus: ChatOfferStatus | null;
   offerRespondedAt: string | null;
   offerBookingRequestId: string | null;
+  /**
+   * Stato della richiesta collegata all'offerta (solo sulle offerte, letto da
+   * getMessages). Serve al widget: «accettata» = manca la conferma
+   * dell'organizzatore (prima della 0080), «confermata» = data bloccata.
+   * Assente sui messaggi arrivati dal canale realtime finché non si riallinea.
+   */
+  offerBookingStatus?: BookingStatus | null;
   readByArtistAt: string | null;
   readByOrganizerAt: string | null;
   attachmentUrl: string | null;
@@ -356,6 +363,21 @@ export async function getMessages(conversationId: string): Promise<ChatMessage[]
     (data ?? []).map((m) => m.attachment_url)
   );
 
+  // Stato delle richieste collegate alle offerte, per il widget. Sola lettura:
+  // se fallisce il widget mostra l'offerta senza lo stato della richiesta.
+  const idRichieste = [
+    ...new Set((data ?? []).map((m) => m.offer_booking_request_id).filter((x): x is string => Boolean(x))),
+  ];
+  const statoRichiesta = new Map<string, BookingStatus>();
+  if (idRichieste.length > 0) {
+    const { data: br, error: brErr } = await admin
+      .from("booking_requests")
+      .select("id, status")
+      .in("id", idRichieste);
+    if (brErr) console.error("[chat] stato richieste delle offerte:", brErr.message);
+    for (const r of br ?? []) statoRichiesta.set(r.id, r.status);
+  }
+
   return (data ?? []).map((m) => ({
     id: m.id,
     conversationId: m.conversation_id,
@@ -370,6 +392,9 @@ export async function getMessages(conversationId: string): Promise<ChatMessage[]
     offerStatus: m.offer_status,
     offerRespondedAt: m.offer_responded_at,
     offerBookingRequestId: m.offer_booking_request_id,
+    offerBookingStatus: m.offer_booking_request_id
+      ? statoRichiesta.get(m.offer_booking_request_id) ?? null
+      : null,
     readByArtistAt: m.read_by_artist_at,
     readByOrganizerAt: m.read_by_organizer_at,
     attachmentUrl: m.attachment_url

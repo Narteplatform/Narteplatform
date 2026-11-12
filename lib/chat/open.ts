@@ -45,6 +45,8 @@ export async function openChatAndRedirect(formData: FormData): Promise<void> {
   }
 
   const res = await openOrCreateConversation(artistId, organizerId);
-  if (!res.ok) throw new Error(res.error);
+  // Chat non disponibile (artista Free, trattativa non ancora avviata…): si
+  // torna alla lista con il motivo, invece di una pagina d'errore.
+  if (!res.ok) redirect(`${basePath}?avviso=${encodeURIComponent(res.error)}`);
   redirect(`${basePath}/${res.conversationId}`);
 }

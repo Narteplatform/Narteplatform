@@ -35,12 +35,15 @@ export function MessageList({
   viewerRole,
   readOnly,
   moderazione,
+  onOfferChange,
 }: {
   messages: ChatMessage[];
   currentUserId: string | null;
   viewerRole: "artist" | "organizer" | "superadmin";
   readOnly: boolean;
   moderazione?: { conversationId: string };
+  /** Dopo una risposta a un'offerta: rilegge i messaggi (stato della richiesta). */
+  onOfferChange?: () => void;
 }) {
   // Ogni ruolo ha una destinazione diversa per lo stesso booking: l'organizer
   // ha una pagina di dettaglio, artista e superadmin hanno solo la lista, dove
@@ -111,6 +114,7 @@ export function MessageList({
                     isOwn={isOwn}
                     tick={tick}
                     viewerRole={viewerRole}
+                    onChange={onOfferChange}
                   />
                 );
               }

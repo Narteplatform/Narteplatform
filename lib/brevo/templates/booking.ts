@@ -99,7 +99,8 @@ const bookingRequestArtist = defineTemplate({
       title(`Hey, ${param("artistName")}<br />hai una nuova ${em("richiesta.")}`),
       paragraph(
         `Un locale/organizzatore ti ha inviato una nuova richiesta tramite N'Arte.<br />
-              Controlla i dettagli qui sotto e avvia subito la chat per definire la trattativa.`
+              Controlla i dettagli e rispondi dal pannello Richieste: premi «Inizia trattativa»<br />
+              oppure «Rifiuta». Con Pro e Max si apre la chat, con il piano Free tratti via email.`
       ),
       card(
         [
@@ -115,13 +116,9 @@ const bookingRequestArtist = defineTemplate({
           ]),
         ].join("\n")
       ),
-      // Il bottone della chat esiste solo se `chatUrl` è valorizzato: i lead dalla
-      // pagina pubblica arrivano da visitatori senza chat, quindi lì resta solo
-      // «Visualizza la richiesta» (primario). Righe composte a mano (buttonPair non sa
-      // rendere un bottone condizionale) e senza `{% else %}`, che la preview
-      // locale non risolve.
-      buttonRow(button({ href: param("requestUrl"), label: "Visualizza la richiesta" }), "30px 40px 0 40px"),
-      ifParam("chatUrl", buttonRow(button({ href: param("chatUrl"), label: "Avvia la chat con il locale" }, "secondary"), "12px 40px 0 40px")),
+      // Niente bottone della chat: la conversazione si apre solo quando l'artista
+      // preme «Inizia trattativa», e solo con i piani Pro e Max (novembre 2026).
+      buttonRow(button({ href: param("requestUrl"), label: "Rispondi alla richiesta" }), "30px 40px 0 40px"),
       callout({
         text: "Rispondi il prima possibile per aumentare<br />le possibilità di chiudere la collaborazione.",
       }),
@@ -164,7 +161,7 @@ const bookingRequestReceipt = defineTemplate({
       title(`La tua richiesta è stata ${em("inviata.")}`),
       paragraph(
         `La tua richiesta è stata inviata correttamente all'artista tramite N'Arte.<br />
-              Puoi avviare subito la chat per iniziare la trattativa, oppure attendere una risposta dall'artista.`
+              Resta in attesa finché l'artista non avvia la trattativa: ti avvisiamo via email.`
       ),
       card(
         [
@@ -180,12 +177,9 @@ const bookingRequestReceipt = defineTemplate({
           ]),
         ].join("\n")
       ),
-      buttonPair(
-        { href: param("chatUrl"), label: "Avvia la chat con l'artista" },
-        { href: param("requestUrl"), label: "Visualizza la richiesta" }
-      ),
+      buttonPair({ href: param("requestUrl"), label: "Visualizza la richiesta" }),
       callout({
-        text: "Puoi scrivere subito all'artista in chat, ma anche l'artista<br />può avviare la conversazione quando visualizza la richiesta.",
+        text: "Con gli artisti Pro e Max vi accorderete in chat, con un'offerta;<br />con gli artisti Free via email. La data si blocca solo<br />quando entrambi avete confermato data e compenso.",
       }),
     ].join("\n"),
   }),
@@ -193,10 +187,11 @@ const bookingRequestReceipt = defineTemplate({
 
 /**
  * Il design si intitola "ARTISTA HA ACCETTATO RICHIESTA" ma il corpo dice
- * "la data è ora confermata" e lo stato mostrato è "Confermata". Nel codice
- * l'accettazione dell'artista porta lo stato a `in_trattativa`, non a
- * `confermata`: questa email è quindi agganciata alla conferma vera
- * (`booking_confirmed`), l'unico momento in cui il testo è corretto.
+ * "la data è ora confermata" e lo stato mostrato è "Confermata". È agganciata
+ * alla conferma vera (`booking_confirmed`): «Inizia trattativa» porta la
+ * richiesta a `in_trattativa` (email `booking_accepted`), e la data è
+ * confermata solo con la doppia conferma del prezzo — offerta accettata in
+ * chat (Pro/Max) o accordo registrato e confermato dall'artista (Free).
  */
 const bookingConfirmed = defineTemplate({
   key: "booking_confirmed",
@@ -220,6 +215,7 @@ const bookingConfirmed = defineTemplate({
       "L'artista ha confermato la disponibilità per la data richiesta. Potete continuare a confrontarvi in chat per eventuali ultimi dettagli operativi.",
     chatUrl: "https://narteofficial.it/organizzatore/chat",
     bookingUrl: "https://narteofficial.it/organizzatore/richieste",
+    artistEmail: "",
   },
   html: layout({
     key: "booking_confirmed",

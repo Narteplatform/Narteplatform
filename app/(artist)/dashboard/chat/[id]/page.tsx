@@ -3,6 +3,8 @@ import { requireRole } from "@/lib/auth/guards";
 import { getOwnedArtists, resolveActiveArtist } from "@/lib/artist/current";
 import { ConversationList } from "@/components/chat/ConversationList";
 import { ChatPanel } from "@/components/chat/ChatPanel";
+import { ChatPaywall } from "@/components/chat/ChatPaywall";
+import { chatAttivaPerArtista } from "@/lib/chat/accesso";
 import {
   getConversationMeta,
   getConversationsForArtist,
@@ -38,6 +40,11 @@ export default async function ArtistChatDetailPage({
         `/dashboard/profili/passa?to=${meta.artist.id}&next=${encodeURIComponent(`/dashboard/chat/${id}`)}`,
       );
     }
+  }
+
+  // La chat è dei profili Pro/Max: un profilo Free tratta via email.
+  if (isOwn && !(await chatAttivaPerArtista(meta.artist.id))) {
+    return <ChatPaywall />;
   }
 
   const [messages, conversations] = await Promise.all([

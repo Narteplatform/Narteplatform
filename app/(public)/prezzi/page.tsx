@@ -27,8 +27,9 @@ export default async function PrezziPage() {
         description={
           <>
             Le richieste di booking sono <strong>illimitate su ogni piano</strong>, anche quello
-            gratuito: non blocchiamo mai un organizzatore che ti sta cercando. Con Pro e Max
-            sblocchi la chat, le recensioni e la visibilità.
+            gratuito: non blocchiamo mai un organizzatore che ti sta cercando. Con Free ricevi le
+            richieste e tratti via email con l&rsquo;organizzatore; con Pro e Max sblocchi la chat
+            con le offerte a compenso, le recensioni e la visibilità.
           </>
         }
       />
@@ -65,8 +66,10 @@ export default async function PrezziPage() {
                 <div>
                   <p className="font-medium">Con il piano gratuito ricevo comunque richieste?</p>
                   <p className="mt-1 text-muted-foreground">
-                    Sì, illimitate, e ti avvisiamo via email a ogni richiesta. Per rispondere in
-                    chat e negoziare serve Pro.
+                    Sì, illimitate, e ti avvisiamo via email a ogni richiesta. Quando avvii la
+                    trattativa vedi l&rsquo;email dell&rsquo;organizzatore e vi accordate
+                    scrivendovi; lui registra l&rsquo;accordo e tu lo confermi per bloccare la
+                    data. Chat e offerte con compenso sono incluse in Pro e Max.
                   </p>
                 </div>
 

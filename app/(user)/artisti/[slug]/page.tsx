@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import { Instagram, Globe, Facebook, Youtube, MapPin, MessageCircle, Lock, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
-import { openChatAndRedirect } from "@/lib/chat/open";
 import { leggiStatoOrganizzatore, type StatoOrganizzatore } from "@/lib/organizers/approvazione";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/guards";
@@ -280,6 +279,10 @@ export default async function ArtistDetailPage({
   const viewerRole: ViewerRole =
     (viewer?.profile?.role as ViewerRole | undefined) ?? "anon";
   let organizerVenues: { id: string; name: string }[] = [];
+  // La chat si apre solo dopo che l'artista ha avviato la trattativa, e solo
+  // con artisti Pro/Max: dal profilo si raggiunge una conversazione già
+  // esistente, non se ne crea una. Il primo contatto è la richiesta.
+  let conversazioneEsistente: string | null = null;
   // Approvazione del team (0071): un organizzatore in attesa o rifiutato vede un
   // avviso al posto di form e chat. Lettura tollerante: in dubbio, «approved».
   const statoOrganizzatore: StatoOrganizzatore =
@@ -292,6 +295,16 @@ export default async function ArtistDetailPage({
       .eq("user_id", viewer.id)
       .maybeSingle();
     if (org) {
+      if (viewerRole === "organizer") {
+        const { data: conv, error: convErr } = await supabase
+          .from("conversations")
+          .select("id")
+          .eq("artist_id", artist.id)
+          .eq("organizer_id", org.id)
+          .maybeSingle();
+        if (convErr) console.error("[ArtistDetailPage] conversazione esistente:", convErr.message);
+        conversazioneEsistente = conv?.id ?? null;
+      }
       // Le strutture nascoste dal team non si propongono. Prima della 0070 la
       // colonna non esiste: si ripiega sull'elenco completo.
       const conFiltro = await supabase
@@ -590,18 +603,17 @@ export default async function ArtistDetailPage({
                   variant="hero"
                   label="Aggiungi ai preferiti"
                 />
-                {viewerRole === "organizer" && !organizzatoreBloccato && (
-                  <form action={openChatAndRedirect} className="inline-flex">
-                    <input type="hidden" name="artist_id" value={artist.id} />
-                    <input type="hidden" name="base_path" value="/organizzatore/chat" />
-                    <button
-                      type="submit"
+                {viewerRole === "organizer" &&
+                  !organizzatoreBloccato &&
+                  conversazioneEsistente &&
+                  entitlementsFor(artist.tier ?? "free").canUseChat && (
+                    <Link
+                      href={`/organizzatore/chat/${conversazioneEsistente}`}
                       className="inline-flex items-center gap-1.5 rounded-full border border-azzurro bg-azzurro px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white hover:bg-azzurro-dark transition"
                     >
-                      <MessageCircle className="size-3.5" /> Contatta artista
-                    </button>
-                  </form>
-                )}
+                      <MessageCircle className="size-3.5" /> Apri la chat
+                    </Link>
+                  )}
               </div>
             </Reveal>
 

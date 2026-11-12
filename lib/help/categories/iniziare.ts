@@ -1,6 +1,6 @@
 import type { HelpCategory } from "@/lib/help/types";
 
-const UPDATED = "2026-10-09";
+const UPDATED = "2026-11-12";
 
 export const INIZIARE: HelpCategory = {
   slug: "iniziare",
@@ -25,7 +25,7 @@ export const INIZIARE: HelpCategory = {
 <ul>
   <li><strong>Sfogliare il roster</strong> degli artisti approvati dal team, cercando per nome o città e filtrando per categoria e genere su <a href="/artisti">/artisti</a>.</li>
   <li><strong>Inviare una richiesta di booking</strong> direttamente all'artista, indicando data, fascia oraria, budget e che tipo di serata hai in mente.</li>
-  <li><strong>Scrivere in chat</strong> con l'artista e scambiarvi offerte tracciate. La chat è disponibile se l'artista ha il piano Pro o Max; con il piano Free la richiesta e l'email gli arrivano comunque. La trattativa resta fra voi due e N'arte non vi partecipa.</li>
+  <li><strong>Trattare con l'artista</strong> quando lui avvia la trattativa: in chat, con offerte tracciate, se ha il piano Pro o Max; via email, vedendo ciascuno l'indirizzo dell'altro, se ha il piano Free. La trattativa resta fra voi due e N'arte non vi partecipa.</li>
   <li><strong>Candidarti come artista</strong> da <a href="/candidatura-artista">/candidatura-artista</a> per entrare nel roster pubblico.</li>
   <li><strong>Scoprire gli eventi</strong> in programma e quelli passati su <a href="/eventi">/eventi</a>, e i <a href="/format">format N'arte</a> già pronti per il tuo locale.</li>
 </ul>
@@ -35,8 +35,8 @@ export const INIZIARE: HelpCategory = {
 <p>Ne parliamo per esteso in <a href="/help/iniziare/cosa-fa-e-non-fa-narte">cosa fa e cosa non fa N'arte</a>.</p>
 
 <h2>Quanto costa</h2>
-<p>La piattaforma è <strong>gratuita per il pubblico, per gli utenti registrati e per gli organizzatori</strong>. Nessun costo per cercare artisti, inviare richieste, scrivere in chat (con artisti Pro o Max) o confermare una data.</p>
-<p>Per gli artisti esiste un profilo gratuito che non scade, e due piani a pagamento facoltativi che sbloccano chat, recensioni e visibilità. Il listino è su <a href="/prezzi">/prezzi</a>.</p>
+<p>La piattaforma è <strong>gratuita per il pubblico, per gli utenti registrati e per gli organizzatori</strong>. Nessun costo per cercare artisti, inviare richieste, trattare (in chat con artisti Pro o Max, via email con artisti Free) o confermare una data.</p>
+<p>Per gli artisti esiste un profilo gratuito che non scade, e due piani a pagamento facoltativi che sbloccano chat e offerte con compenso, recensioni e visibilità. Con il profilo gratuito si ricevono le richieste e si tratta via email. Il listino è su <a href="/prezzi">/prezzi</a>.</p>
 
 <h2>Da dove cominciare</h2>
 <ul>
@@ -64,7 +64,7 @@ export const INIZIARE: HelpCategory = {
 
 <h3>1. Hai bisogno di un artista</h3>
 <p>Vai su <a href="/register">/register</a> e scegli <strong>«Ho bisogno di un artista»</strong>. Servono nome, email, una password di <strong>almeno 8 caratteri</strong>, il nome del locale o della realtà che rappresenti e la città. In alternativa puoi iscriverti con il tuo account Google.</p>
-<p>Il team N'arte verifica ogni nuovo account organizzatore: finché non è approvato puoi già sfogliare i profili, mentre richieste, chat e calendario si attivano dopo l'approvazione. Ti avvisiamo via email.</p>
+<p>Il team N'arte verifica ogni nuovo account organizzatore: finché non è approvato puoi già sfogliare i profili, mentre richieste, trattative e calendario si attivano dopo l'approvazione. Ti avvisiamo via email.</p>
 
 <h3>2. Candidatura artista</h3>
 <p>Se sei un musicista e vuoi entrare nel roster, <strong>non usare il modulo di registrazione</strong>: passa da <a href="/candidatura-artista">/candidatura-artista</a>.</p>
@@ -100,7 +100,7 @@ export const INIZIARE: HelpCategory = {
 <p>Sblocca i profili completi degli artisti e salva i preferiti sul proprio account, ritrovandoli su qualunque dispositivo. Per inviare richieste di booking può chiedere di diventare organizzatore: la richiesta passa dall'approvazione del team.</p>
 
 <h3>Organizzatore</h3>
-<p>Locale, festival, brand, agenzia o privato che cerca artisti. Area: <strong>/organizzatore</strong>, attiva dopo l'approvazione del team. Può registrare le proprie strutture, inviare richieste di booking, scrivere in chat con offerte tracciate (con gli artisti che hanno Pro o Max), confermare la data finale, vedere il calendario delle date confermate e recensire l'artista dopo l'evento. <strong>È tutto gratuito</strong>, non esistono abbonamenti per gli organizzatori.</p>
+<p>Locale, festival, brand, agenzia o privato che cerca artisti. Area: <strong>/organizzatore</strong>, attiva dopo l'approvazione del team. Può registrare le proprie strutture, inviare richieste di booking, trattare con l'artista quando lui avvia la trattativa (in chat con offerte tracciate se ha Pro o Max, via email registrando poi l'accordo se ha Free), vedere il calendario delle date confermate e recensire l'artista dopo l'evento. <strong>È tutto gratuito</strong>, non esistono abbonamenti per gli organizzatori.</p>
 
 <h3>Artista</h3>
 <p>Musicista approvato dal team. Area: <strong>/dashboard</strong>. Gestisce profilo pubblico, galleria, video, audio, calendario delle disponibilità, richieste ricevute, chat, recensioni, consulenza e abbonamento. Con i piani superiori può gestire <a href="/help/artisti/profili-multipli">più profili artista</a> dallo stesso account.</p>
@@ -178,7 +178,7 @@ export const INIZIARE: HelpCategory = {
 <ul>
   <li><strong>Cura il roster</strong>: ogni candidatura di ingresso viene letta e approvata a mano.</li>
   <li><strong>Promuove gli artisti</strong> e li mette in contatto con gli organizzatori, con un profilo pubblico e un canale di richiesta. Col piano Max il team può anche segnalare il profilo a strutture in linea, senza garantire ingaggi.</li>
-  <li><strong>Offre lo strumento della chat</strong> (con artisti Pro o Max): offerte con data, fascia oraria e budget, che le parti si scambiano lasciando una traccia consultabile. N'arte non partecipa alla trattativa.</li>
+  <li><strong>Offre gli strumenti per chiudere l'accordo</strong>: con artisti Pro o Max la chat, con offerte che indicano data, fascia oraria e compenso e che le parti si scambiano lasciando una traccia consultabile; con artisti Free la registrazione dell'accordo raggiunto via email, che l'artista conferma. N'arte non partecipa alla trattativa e non è parte del contratto.</li>
   <li><strong>Sincronizza i calendari</strong>: quando una data è confermata, viene bloccata in automatico su quello dell'artista.</li>
   <li><strong>Notifica via email</strong> i passaggi che contano: nuova richiesta, risposta, conferma, annullamento.</li>
   <li><strong>Raccoglie le recensioni</strong> lasciate dopo una data confermata e passata. Sul profilo pubblico sono visibili solo se l'artista ha il piano Pro o Max; gli utenti registrati le vedono.</li>
@@ -216,8 +216,9 @@ export const INIZIARE: HelpCategory = {
 <h2>Booking e trattativa</h2>
 <ul>
   <li><strong>Richiesta di booking</strong> — la proposta che un organizzatore invia a un artista per una data specifica. Attraversa cinque stati, descritti in <a href="/help/booking/stati-richiesta">stati di una richiesta</a>.</li>
-  <li><strong>Trattativa</strong> — la fase in cui l'artista ha accettato di discutere e si concordano i dettagli in chat. Non è ancora una conferma.</li>
-  <li><strong>Offerta</strong> — una proposta strutturata inviata in chat con tre valori vincolanti: data, fascia oraria e budget. Si accetta o si rifiuta; una nuova offerta sostituisce quella ancora in sospeso.</li>
+  <li><strong>Trattativa</strong> — la fase che si apre quando l'artista preme "Inizia trattativa": si concordano i dettagli in chat (artisti Pro o Max) o via email (artisti Free). Non è ancora una conferma.</li>
+  <li><strong>Offerta</strong> — una proposta strutturata inviata in chat con data, fascia oraria e compenso. Si accetta o si rifiuta; se viene accettata la data è confermata a quel compenso. Una nuova offerta sostituisce quella ancora in sospeso.</li>
+  <li><strong>Accordo registrato</strong> — con un artista Free, il riepilogo (data, fascia oraria e compenso) che l'organizzatore inserisce dopo essersi accordato via email. La data è confermata quando l'artista lo conferma.</li>
   <li><strong>Conferma</strong> — il passo finale, che spetta all'organizzatore. Blocca la data sul calendario dell'artista.</li>
   <li><strong>Compenso concordato – promemoria</strong> — l'importo che le parti annotano sulla richiesta confermata con una doppia conferma. È un'annotazione fra loro: N'arte non ne è parte. Vedi <a href="/help/organizzatori/prezzo-definitivo">compenso concordato – promemoria</a>.</li>
   <li><strong>Lead</strong> — una richiesta di contatto che non nasce dal flusso strutturato: arriva dal modulo contatti, dalla pagina di un format o dal vecchio modulo del profilo artista. Vedi <a href="/help/booking/differenze-lead-booking">lead e richiesta a confronto</a>.</li>

@@ -512,7 +512,13 @@ export const chatOfferSchema = z.object({
   conversation_id: z.string().uuid(),
   event_date: z.string().min(1, "Data richiesta"),
   time_slot: chatTimeSlotEnum,
-  budget_cents: z.coerce.number().int().min(0, "Budget non valido").max(100_000_000),
+  // Il compenso è obbligatorio: quando l'altra parte accetta, la data si blocca
+  // a questo prezzo (0080). Un'offerta senza importo non chiude nulla.
+  budget_cents: z.coerce
+    .number({ message: "Indica il compenso: è il prezzo a cui si blocca la data" })
+    .int()
+    .min(100, "Indica il compenso: è il prezzo a cui si blocca la data")
+    .max(100_000_000, "Compenso non valido"),
   description: z
     .string()
     .max(1000)
@@ -520,6 +526,22 @@ export const chatOfferSchema = z.object({
     .or(z.literal("").transform(() => undefined)),
 });
 export type ChatOfferInput = z.infer<typeof chatOfferSchema>;
+
+/**
+ * Accordo preso via email con un artista sul piano Free, registrato
+ * dall'organizzatore: data, fascia e compenso. La data si blocca solo quando
+ * l'artista lo conferma dal pannello Richieste.
+ */
+export const registraAccordoSchema = z.object({
+  request_id: z.string().uuid(),
+  event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
+  time_slot: chatTimeSlotEnum,
+  price: z.coerce
+    .number({ message: "Indica il compenso concordato" })
+    .min(1, "Indica il compenso concordato")
+    .max(1_000_000, "Compenso non valido"),
+});
+export type RegistraAccordoInput = z.infer<typeof registraAccordoSchema>;
 
 /**
  * Motivazione per blocco/sblocco di un utente in una conversazione (Feature C,

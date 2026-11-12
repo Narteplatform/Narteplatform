@@ -207,7 +207,7 @@ export const FAQ: FaqItem[] = [
     id: "costo",
     question: "Quanto costa stare su N’arte?",
     answer:
-      "Il profilo è gratuito e non scade. Con il piano Free hai la pagina pubblica, il calendario e richieste di booking illimitate: ricevi tutto e ti avvisiamo via email. I piani a pagamento servono se vuoi rispondere in chat, caricare più materiale o avere priorità nei risultati.",
+      "Il profilo è gratuito e non scade. Con il piano Free hai la pagina pubblica, il calendario e richieste di booking illimitate: ricevi tutto, ti avvisiamo via email e tratti con l’organizzatore via email. I piani a pagamento servono se vuoi la chat con le offerte a compenso, caricare più materiale o avere priorità nei risultati.",
   },
   {
     id: "commissioni",

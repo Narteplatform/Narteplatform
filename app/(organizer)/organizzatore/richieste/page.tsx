@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Mail, MessageSquare } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth/guards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -9,6 +9,14 @@ import type { BookingStatus } from "@/lib/supabase/types";
 import { minToBudgetLabel } from "@/lib/constants/budget-ranges";
 import { FinalPriceBox } from "@/components/booking/FinalPriceBox";
 import { oggiRoma } from "@/lib/date/roma";
+import { openChatAndRedirect } from "@/lib/chat/open";
+import { chatAttivaPerArtisti } from "@/lib/chat/accesso";
+import {
+  accordoInAttesa,
+  etichettaFascia,
+  etichettaStatoOrganizzatore,
+  formatDataIt,
+} from "@/lib/booking/etichette";
 
 export const dynamic = "force-dynamic";
 
@@ -34,21 +42,12 @@ const TABS: { value: Scheda; label: string }[] = [
 const VUOTO: Record<Scheda, string> = {
   pending: "Nessuna richiesta in attesa per date future.",
   pending_passate: "Nessuna richiesta in attesa con la data dell'evento già passata.",
-  in_trattativa: "Nessuna trattativa aperta. Una richiesta passa qui quando tu o l'artista scrivete in chat.",
-  accettata: "Nessuna data da confermare. Quando un artista accetta la tua offerta la trovi qui, pronta per la tua conferma.",
+  in_trattativa: "Nessuna trattativa aperta. Una richiesta passa qui quando l'artista avvia la trattativa.",
+  accettata: "Nessuna data da confermare.",
   confermata: "Nessuna data confermata per ora.",
   rifiutata: "Nessuna richiesta rifiutata.",
   annullata: "Nessuna richiesta annullata.",
   all: "Non hai ancora inviato richieste.",
-};
-
-const STATUS_LABEL: Record<BookingStatus, string> = {
-  pending: "In attesa di conferma dell'artista",
-  in_trattativa: "In trattativa",
-  accettata: "Accettata dall'artista — conferma tu la data",
-  confermata: "Confermata",
-  rifiutata: "Rifiutata",
-  annullata: "Annullata",
 };
 
 const STATUS_VARIANT: Record<BookingStatus, "accent" | "default"> = {
@@ -119,14 +118,18 @@ export default async function OrganizerRequestsPage({
   ]);
   const artists = new Map((artistsRes.data ?? []).map((a) => [a.id, a]));
   const venues = new Map((venuesRes.data ?? []).map((v) => [v.id, v]));
+  // Chat (artista Pro/Max) o email (artista Free), dal piano attuale di ciascuno.
+  const chatPerArtista = await chatAttivaPerArtisti(artistIds);
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="font-display text-3xl">Richieste inviate</h1>
         <p className="text-sm text-muted-foreground">
-          Tutte le date richieste agli artisti. L'artista accetta la trattativa, poi confermi
-          tu la prenotazione finale.
+          La richiesta resta in attesa finché l&apos;artista non avvia la trattativa. Con gli artisti
+          Pro e Max vi accordate in chat con un&apos;offerta; con gli artisti Free via email, e
+          registri tu l&apos;accordo. La data si blocca solo quando entrambi avete confermato data e
+          compenso.
         </p>
       </div>
 
@@ -178,6 +181,10 @@ export default async function OrganizerRequestsPage({
             const priceConfirmed =
               r.status === "confermata" && r.final_price_confirmed_at != null;
             const dataPassata = r.status === "pending" && r.event_date < oggi;
+            const chat = chatPerArtista.get(r.artist_id) === true;
+            const canale = chat ? "chat" : "email";
+            const attendeArtista = accordoInAttesa(r);
+            const trattativaAperta = r.status === "in_trattativa" || r.status === "accettata";
             return (
               <Card
                 key={r.id}
@@ -202,17 +209,17 @@ export default async function OrganizerRequestsPage({
                         {artist?.stage_name ?? "Artista"}
                       </CardTitle>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(r.event_date).toLocaleDateString("it-IT", {
-                          day: "2-digit",
-                          month: "long",
-                          year: "numeric",
-                        })}
-                        {r.time_slot ? ` · ${r.time_slot}` : ""}
+                        {formatDataIt(r.event_date)}
+                        {r.time_slot ? ` · ${etichettaFascia(r.time_slot)}` : ""}
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</Badge>
+                    <Badge variant={STATUS_VARIANT[r.status]} className="max-w-[220px] whitespace-normal text-right leading-tight">
+                      {attendeArtista
+                        ? "Accordo registrato: attende la conferma dell'artista"
+                        : etichettaStatoOrganizzatore(r.status, canale)}
+                    </Badge>
                     {dataPassata && (
                       <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                         Data passata
@@ -246,6 +253,24 @@ export default async function OrganizerRequestsPage({
                     />
                   )}
                   <div className="flex flex-wrap gap-2 pt-1">
+                    {chat && (trattativaAperta || r.status === "confermata") && (
+                      <form action={openChatAndRedirect}>
+                        <input type="hidden" name="artist_id" value={r.artist_id} />
+                        <input type="hidden" name="base_path" value="/organizzatore/chat" />
+                        <Button type="submit" size="sm" variant={r.status === "confermata" ? "outline" : "default"}>
+                          <MessageSquare className="size-4" />
+                          {r.status === "accettata" ? "Conferma in chat" : "Apri chat"}
+                        </Button>
+                      </form>
+                    )}
+                    {!chat && r.status === "in_trattativa" && (
+                      <Button asChild size="sm">
+                        <Link href={`/organizzatore/richieste/${r.id}`}>
+                          <Mail className="size-4" />
+                          {attendeArtista ? "Vedi l'accordo" : "Trattativa via email"}
+                        </Link>
+                      </Button>
+                    )}
                     <Button asChild size="sm" variant="outline">
                       <Link href={`/organizzatore/richieste/${r.id}`}>Dettagli</Link>
                     </Button>

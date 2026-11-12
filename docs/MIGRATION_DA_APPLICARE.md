@@ -17,6 +17,27 @@ funzionalità nuove restano spente finché non si arriva in fondo.
 
 ---
 
+## `0080_offerta_conferma_diretta.sql` — Trattativa: l'offerta accettata conferma la data al prezzo
+
+Indipendente dalle altre (ridefinisce solo `accept_offer_v2`, come la 0070). Non modifica né
+cancella righe; idempotente.
+
+- Chi accetta un'offerta in chat (artista o organizzatore) porta la richiesta a `confermata`:
+  proposta + accettazione sono la doppia conferma. Niente più passaggio intermedio `accettata`.
+- Il compenso dell'offerta diventa il compenso concordato (`final_price`, proposto da chi ha
+  inviato l'offerta e confermato da chi l'ha accettata).
+- Offerta senza compenso: non si può accettare. Artista sul piano Free: la funzione rifiuta (la
+  chat è di Pro e Max; con Free la trattativa è via email e l'accordo si registra fuori chat).
+
+Senza la 0080: il codice funziona lo stesso. Se accetta l'artista, la richiesta resta
+`accettata` e l'organizzatore conferma dal widget in chat («Conferma data a …»); il compenso
+viene registrato dall'azione server.
+
+Verifica: query «0080» in `docs/VERIFICA_MIGRATION.sql` (PostgREST non espone il corpo delle
+funzioni, quindi `db:check-migrations` non la vede).
+
+---
+
 ## `0079_inviti_visite.sql` — Invita un artista: aperture del link
 
 Richiede la 0078 (già applicata). Additiva e idempotente, non modifica né cancella righe.

@@ -172,7 +172,7 @@ In `.claude/agents/`:
 ## Migration
 
 Si applicano dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md).
-**Al 12/11/2026 sono applicate tutte fino alla 0078, tranne la 0077** (verificato con lo script qui sotto). La 0079 è nuova.
+**Al 12/11/2026 sono applicate tutte fino alla 0078, tranne la 0077** (verificato con lo script qui sotto). Le 0079 e 0080 sono nuove.
 Per ogni nuova migration: intestazione CONTESTO in italiano, additiva dove possibile, RLS +
 `revoke all … from anon, authenticated` sulle tabelle nuove, voce in
 `scripts/check-migrations.mjs` e in `docs/MIGRATION_DA_APPLICARE.md`, e una riga qui sotto
@@ -187,6 +187,11 @@ policy e pubblicazioni realtime — che PostgREST non espone — le query sono i
 `docs/VERIFICA_MIGRATION.sql`.
 
 **In attesa:**
+
+- `0080_offerta_conferma_diretta.sql` — trattativa: chi accetta un'offerta in chat conferma la data
+  a quel prezzo (`final_price` già confermato), niente più `accettata` intermedia; rifiuta con
+  artista Free. **Indipendente.** Senza, l'accettazione dell'artista resta `accettata` e
+  l'organizzatore conferma dal widget. Verifica: query 0080 in `docs/VERIFICA_MIGRATION.sql`.
 
 - `0079_inviti_visite.sql` — aperture del link «Invita un artista» (visitatori unici pseudonimi,
   stesso schema della 0046) per `/admin/inviti`. **Richiede la 0078.** Senza, il pannello mostra

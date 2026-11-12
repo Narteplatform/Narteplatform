@@ -53,7 +53,7 @@ export function OfferDialog({
       return;
     }
     if (budgetCents <= 0) {
-      setError("Inserisci un budget");
+      setError("Indica il compenso: è il prezzo a cui si blocca la data");
       return;
     }
     startTransition(async () => {
@@ -141,13 +141,13 @@ export function OfferDialog({
           </div>
           <div>
             <Label htmlFor="offer-budget" className="inline-flex items-center gap-1.5">
-              <Euro className="size-3.5" /> Budget proposto
+              <Euro className="size-3.5" /> Compenso proposto
             </Label>
             <div className="relative">
               <Input
                 id="offer-budget"
                 type="number"
-                min={0}
+                min={1}
                 step={10}
                 inputMode="numeric"
                 value={budgetEur}
@@ -174,7 +174,8 @@ export function OfferDialog({
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            Quando l&apos;altra parte accetta, la data viene confermata e bloccata sui calendari.
+            Il compenso è obbligatorio: quando l&apos;altra parte accetta, la data è confermata e
+            bloccata nel calendario di entrambi a questo prezzo. L&apos;accordo è solo fra voi.
           </p>
           {error && <p className="text-sm text-[var(--color-error)]">{error}</p>}
         </form>

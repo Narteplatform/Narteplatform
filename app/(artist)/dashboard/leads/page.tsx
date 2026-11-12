@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, Mail, Phone, Building2, MapPin } from "lucide-react";
+import { Clock, Mail, Phone, Building2, MapPin, MessageSquare, Lock } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { resolveActiveArtist } from "@/lib/artist/current";
@@ -13,6 +13,15 @@ import type { BookingStatus } from "@/lib/supabase/types";
 import { minToBudgetLabel } from "@/lib/constants/budget-ranges";
 import { openChatAndRedirect } from "@/lib/chat/open";
 import { FinalPriceBox } from "@/components/booking/FinalPriceBox";
+import { TrattativaEmail } from "@/components/booking/TrattativaEmail";
+import { ConfermaAccordo } from "@/components/booking/ConfermaAccordo";
+import { chatAttivaPerArtista, emailAccounts } from "@/lib/chat/accesso";
+import {
+  accordoInAttesa,
+  etichettaFascia,
+  etichettaStatoArtista,
+  formatDataIt,
+} from "@/lib/booking/etichette";
 
 export const dynamic = "force-dynamic";
 
@@ -119,14 +128,19 @@ export default async function ArtistLeadsPage({
   const orgs = new Map((orgsRes.data ?? []).map((o) => [o.id, o]));
   const vens = new Map((vensRes.data ?? []).map((v) => [v.id, v]));
 
-  const BOOKING_LABEL: Record<BookingStatus, string> = {
-    pending: "Nuova richiesta",
-    in_trattativa: "In trattativa",
-    accettata: "Hai accettato: in attesa della conferma dell'organizzatore",
-    confermata: "Confermata",
-    rifiutata: "Rifiutata",
-    annullata: "Annullata",
-  };
+  // Chat (Pro/Max) o email (Free): decide il piano ATTUALE del profilo.
+  const chatAttiva = await chatAttivaPerArtista(artist.id);
+  const canale = chatAttiva ? "chat" : "email";
+
+  // Con la trattativa via email servono gli indirizzi degli organizzatori,
+  // solo per le richieste in cui la trattativa è già stata avviata.
+  const emailOrganizzatori = chatAttiva
+    ? new Map<string, string>()
+    : await emailAccounts(
+        bookings
+          .filter((b) => b.status === "in_trattativa" || b.status === "accettata")
+          .map((b) => orgs.get(b.organizer_id)?.user_id),
+      );
 
   return (
     <div className="space-y-6">
@@ -136,6 +150,29 @@ export default async function ArtistLeadsPage({
           Tutte le richieste di booking ricevute tramite la piattaforma.
         </p>
       </header>
+
+      {chatAttiva ? (
+        <p className="rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+          <MessageSquare className="mr-1.5 inline size-4 align-[-3px] text-azzurro" aria-hidden="true" />
+          Premi <strong className="text-foreground">Inizia trattativa</strong> per aprire la chat con
+          l&apos;organizzatore. La data si blocca quando uno dei due accetta l&apos;offerta
+          dell&apos;altro, al prezzo indicato.
+        </p>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E8A030]/40 bg-[#E8A030]/[0.06] p-3 text-sm">
+          <p className="text-muted-foreground">
+            <Mail className="mr-1.5 inline size-4 align-[-3px] text-[#B87020]" aria-hidden="true" />
+            Con il piano <strong className="text-foreground">Free</strong> tratti con organizzatori e
+            locali <strong className="text-foreground">via email</strong>: dopo «Inizia trattativa»
+            trovi qui il loro indirizzo. La chat con offerte è inclusa in Pro e Max.
+          </p>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/dashboard/abbonamento">
+              <Lock className="size-4" aria-hidden="true" /> Passa a Pro
+            </Link>
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-1 rounded-full bg-muted p-1 w-fit">
         {TABS.map((t) => {
@@ -175,7 +212,7 @@ export default async function ArtistLeadsPage({
             {activeTab === "pending"
               ? "Nessuna nuova richiesta."
               : activeTab === "in_trattativa"
-                ? "Nessuna trattativa aperta."
+                ? "Nessuna trattativa aperta. Una richiesta passa qui quando premi «Inizia trattativa»."
                 : "Nessuna data confermata."}
           </CardContent>
         </Card>
@@ -185,6 +222,8 @@ export default async function ArtistLeadsPage({
             {bookings.map((b) => {
               const org = orgs.get(b.organizer_id);
               const ven = b.venue_id ? vens.get(b.venue_id) : null;
+              const daConfermare = accordoInAttesa(b);
+              const trattativaAperta = b.status === "in_trattativa" || b.status === "accettata";
               return (
                 <HighlightedBooking key={b.id} id={b.id} active={highlightId === b.id}>
                 <Card>
@@ -194,12 +233,8 @@ export default async function ArtistLeadsPage({
                         {new Date(b.created_at).toLocaleString("it-IT")}
                       </p>
                       <CardTitle className="text-lg">
-                        {new Date(b.event_date).toLocaleDateString("it-IT", {
-                          day: "2-digit",
-                          month: "long",
-                          year: "numeric",
-                        })}
-                        {b.time_slot ? ` · ${b.time_slot}` : ""}
+                        {formatDataIt(b.event_date)}
+                        {b.time_slot ? ` · ${etichettaFascia(b.time_slot)}` : ""}
                       </CardTitle>
                       {b.budget_offer != null && (
                         <p className="text-sm text-muted-foreground">
@@ -209,16 +244,18 @@ export default async function ArtistLeadsPage({
                     </div>
                     <Badge
                       variant={
-                        b.status === "confermata"
-                          ? "success"
-                          : b.status === "in_trattativa" || b.status === "accettata"
-                            ? "warning"
-                            : "muted"
+                        daConfermare
+                          ? "accent"
+                          : b.status === "confermata"
+                            ? "success"
+                            : trattativaAperta
+                              ? "warning"
+                              : "muted"
                       }
                       dot
                       className="max-w-[260px] whitespace-normal text-right leading-tight"
                     >
-                      {BOOKING_LABEL[b.status]}
+                      {daConfermare ? "Accordo da confermare" : etichettaStatoArtista(b.status, canale)}
                     </Badge>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -306,14 +343,54 @@ export default async function ArtistLeadsPage({
                       />
                     )}
 
-                    <ArtistRequestActions requestId={b.id} status={b.status} />
+                    {daConfermare && (
+                      <ConfermaAccordo
+                        requestId={b.id}
+                        organizzatore={org?.display_name ?? "L'organizzatore"}
+                        data={b.event_date}
+                        fascia={b.time_slot}
+                        prezzo={Number(b.final_price)}
+                      />
+                    )}
 
-                    <form action={openChatAndRedirect}>
-                      <input type="hidden" name="artist_id" value={artist.id} />
-                      <input type="hidden" name="organizer_id" value={b.organizer_id} />
-                      <input type="hidden" name="base_path" value="/dashboard/chat" />
-                      <Button type="submit">Apri chat con l&apos;organizzatore</Button>
-                    </form>
+                    <ArtistRequestActions requestId={b.id} status={b.status} canale={canale} />
+
+                    {trattativaAperta && !chatAttiva && (
+                      <TrattativaEmail
+                        ruolo="artist"
+                        controparte={{
+                          nome: org?.display_name ?? "l'organizzatore",
+                          email: org?.user_id ? emailOrganizzatori.get(org.user_id) ?? null : null,
+                          telefono: org?.phone ?? null,
+                        }}
+                        oggetto={`Booking ${formatDataIt(b.event_date)} — ${artist.stage_name}`}
+                      />
+                    )}
+
+                    {chatAttiva && b.status !== "pending" && b.status !== "rifiutata" && b.status !== "annullata" && (
+                      <div className="space-y-2">
+                        {b.status === "in_trattativa" && (
+                          <p className="text-xs text-muted-foreground">
+                            La data si conferma in chat: proponi un&apos;offerta con data e compenso, o
+                            accetta quella dell&apos;organizzatore.
+                          </p>
+                        )}
+                        {b.status === "accettata" && (
+                          <p className="text-xs text-muted-foreground">
+                            Hai accettato l&apos;offerta: la data si blocca quando l&apos;organizzatore
+                            la conferma dal riquadro dell&apos;offerta in chat.
+                          </p>
+                        )}
+                        <form action={openChatAndRedirect}>
+                          <input type="hidden" name="artist_id" value={artist.id} />
+                          <input type="hidden" name="organizer_id" value={b.organizer_id} />
+                          <input type="hidden" name="base_path" value="/dashboard/chat" />
+                          <Button type="submit" size="sm" variant={b.status === "confermata" ? "outline" : "default"}>
+                            <MessageSquare className="size-4" /> Apri chat con l&apos;organizzatore
+                          </Button>
+                        </form>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
                 </HighlightedBooking>

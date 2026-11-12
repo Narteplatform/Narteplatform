@@ -149,3 +149,26 @@ Nessuna di queste prove va fatta scrivendo su account reali senza averlo deciso 
 - [ ] Nessuna traccia di «omaggio» nel profilo pubblico, nel catalogo, nell'area abbonamento dell'artista.
 - [ ] `/segnalazioni`, `/contatti` e il footer mostrano email, PEC e lingue del punto di contatto.
 - [ ] Profilo con più di 12 recensioni: «Mostra tutte» le mostra tutte.
+
+## Trattativa: «Inizia trattativa», chat Pro/Max, Free via email (12/11/2026)
+
+Prove su una richiesta di PROVA fra account indicati da Luigi (scrivono sul DB di produzione).
+
+**Artista Pro/Max**
+1. L'organizzatore invia la richiesta → nelle sue Richieste è «In attesa: l'artista deve avviare la
+   trattativa»; nessun pulsante chat, né nel dettaglio né sul profilo pubblico.
+2. L'artista, in Richieste → «Inizia trattativa» → viene portato in chat; l'organizzatore riceve
+   l'email «… ha iniziato la trattativa» con il pulsante «Entra in chat».
+3. Un'offerta senza compenso non si invia. Offerta con compenso → l'altra parte «Accetta» →
+   «Confermo l'accordo» → data «Confermata», bloccata nei due calendari e nel feed iCal, compenso
+   concordato già confermato (box compenso verde), email «Data confermata» a entrambi.
+4. Prima della 0080: se accetta l'artista, l'offerta mostra all'organizzatore «Conferma data a …».
+
+**Artista Free**
+5. «Chat» nel menu ha il lucchetto «Pro»; /dashboard/chat mostra la pagina «La chat è inclusa in Pro e Max».
+6. «Inizia trattativa» → scheda «In trattativa» con l'email dell'organizzatore e «Scrivi via email»;
+   l'organizzatore vede l'email dell'artista e il modulo «Registra l'accordo».
+7. L'organizzatore registra data, fascia e compenso → l'artista vede «Accordo da confermare» →
+   «Confermo, blocca la data» → data confermata a quel prezzo. «Non corrisponde» azzera solo la
+   proposta e avvisa l'organizzatore.
+8. L'organizzatore non può aprire né scrivere in una chat con un artista Free (sola lettura con avviso).

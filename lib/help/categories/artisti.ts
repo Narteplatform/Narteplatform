@@ -11,7 +11,7 @@ import {
   MAX_VIDEO_PER_ARTIST,
 } from "@/lib/upload/video-limits";
 
-const UPDATED = "2026-10-27";
+const UPDATED = "2026-11-12";
 
 /** Megabyte leggibili a partire dai byte della fonte unica. */
 const MB = (bytes: number) => `${Math.round(bytes / 1024 / 1024)} MB`;
@@ -80,7 +80,7 @@ export const ARTISTI: HelpCategory = {
 <p>No. Una band si candida come <strong>un solo progetto</strong>, con un nome d'arte e un referente. I nomi dei componenti li aggiungi poi nel profilo, nel campo formazione.</p>
 
 <h2>Quanto costa</h2>
-<p>La candidatura è gratuita e il profilo ${PLAN_LABELS.free} non scade. I piani a pagamento sono facoltativi e sbloccano chat, recensioni e visibilità: trovi tutto in <a href="/help/artisti/tier-pro-max">le differenze tra i piani</a>.</p>
+<p>La candidatura è gratuita e il profilo ${PLAN_LABELS.free} non scade. I piani a pagamento sono facoltativi e sbloccano chat e offerte con compenso, recensioni e visibilità: trovi tutto in <a href="/help/artisti/tier-pro-max">le differenze tra i piani</a>.</p>
 `,
     },
 
@@ -136,7 +136,7 @@ export const ARTISTI: HelpCategory = {
       slug: "gestire-richieste",
       title: "Come gestire le richieste di booking",
       excerpt:
-        "Cosa fare quando arriva una proposta: accettare, rifiutare, fare una controproposta. E chi dà la conferma finale.",
+        "Cosa fare quando arriva una richiesta: iniziare la trattativa o rifiutare. Come si tratta in chat o via email e quando la data diventa confermata.",
       updatedAt: UPDATED,
       related: ["chat-e-offerte", "booking/stati-richiesta", "booking/dopo-la-conferma"],
       content: `
@@ -146,19 +146,24 @@ export const ARTISTI: HelpCategory = {
 
 <h2>Le tue due possibilità su una richiesta nuova</h2>
 
-<h3>Accettare la trattativa</h3>
-<p>Al primo click su <strong>"Accetta proposta"</strong> si apre un campo facoltativo per una <strong>nota o controproposta</strong>, dove puoi scrivere per esempio "disponibile ma alle 22, non alle 21" o "il cachet per quella distanza sarebbe più alto". Con il secondo click confermi.</p>
-<p>Accettare vuol dire <strong>"parliamone"</strong>, non ancora "è fatta": la richiesta passa in trattativa, si apre la chat con l'organizzatore e la data resta libera.</p>
+<h3>Iniziare la trattativa</h3>
+<p>Con <strong>"Inizia trattativa"</strong> rispondi all'organizzatore che ti interessa parlarne. Vuol dire <strong>"parliamone"</strong>, non ancora "è fatta": la richiesta passa in trattativa e la data resta libera sul tuo calendario.</p>
 
 <h3>Rifiutare</h3>
 <p>Con un click su <strong>"Rifiuta"</strong> la richiesta si chiude e l'organizzatore riceve un'email di avviso. Non devi dare una motivazione, ma rispondere in fretta gli fa un vero favore: così può cercare altrove finché è in tempo.</p>
 
-<h2>La conferma finale non è tua</h2>
-<p>Qui nascono spesso aspettative sbagliate. Dopo l'accordo in chat <strong>è l'organizzatore a premere "Conferma data"</strong>, e finché non lo fa la richiesta resta in trattativa, anche se vi siete già detti tutto.</p>
-<p>Se avete chiuso l'accordo e la conferma non arriva, ricordaglielo in chat. Nel frattempo la tua scheda mostra <em>"In attesa della conferma definitiva dell'organizzatore"</em>.</p>
+<h2>Come si tratta, secondo il tuo piano</h2>
 
-<h2>La scorciatoia: accettare un'offerta</h2>
-<p>Se l'organizzatore ti manda in chat un'<strong>offerta</strong> con data, fascia oraria e budget e tu la accetti, la data è <strong>confermata immediatamente</strong>, senza altri passaggi. È la strada più rapida e anche la più chiara. Vedi <a href="/help/artisti/chat-e-offerte">chat e offerte</a>.</p>
+<h3>Con ${PLAN_LABELS.pro} o ${PLAN_LABELS.max}: in chat</h3>
+<p>Quando inizi la trattativa si apre la <strong>chat</strong> con l'organizzatore. Lì vi accordate e, quando siete pronti, uno dei due manda un'<strong>offerta</strong> con data, fascia oraria e compenso. Se l'altro la accetta, la data è <strong>confermata e bloccata</strong> sul calendario di entrambi a quel compenso, chiunque dei due l'abbia proposta. Vedi <a href="/help/artisti/chat-e-offerte">chat e offerte</a>.</p>
+
+<h3>Con ${PLAN_LABELS.free}: via email</h3>
+<p>La chat non è disponibile, ma la trattativa sì. Dopo "Inizia trattativa" nella richiesta trovi l'<strong>indirizzo email dell'organizzatore</strong> (e il telefono, se l'ha indicato) con il pulsante <strong>"Scrivi via email"</strong>; anche l'organizzatore vede la tua email. Vi scrivete direttamente e vi accordate.</p>
+<p>Quando siete d'accordo, l'organizzatore <strong>registra l'accordo</strong> (data, fascia oraria e compenso) e tu lo ritrovi nel pannello Richieste. Se è quello che avete concordato premi <strong>"Confermo, blocca la data"</strong>; se qualcosa non torna premi <strong>"Non corrisponde"</strong> e vi riallineate. <strong>Solo dopo la tua conferma</strong> la data è confermata e bloccata a quel compenso.</p>
+<p>Se passi a ${PLAN_LABELS.pro}, la chat si apre anche sulle trattative già avviate via email.</p>
+
+<h2>Il compenso è un accordo fra voi</h2>
+<p>La cifra della conferma è quella che avete concordato tu e l'organizzatore: N'arte non intermedia pagamenti e non è parte del contratto. Una data confermata si annulla solo scrivendo al team: vedi <a href="/help/organizzatori/annullare-data">annullare una data confermata</a>.</p>
 
 <h2>Non ci sono scadenze automatiche</h2>
 <p>Una richiesta non scade da sola: resta aperta finché rispondi o finché l'organizzatore la annulla. Aspettare però non conviene. Gli organizzatori scrivono a più artisti insieme, e la data la chiude quasi sempre chi risponde entro <strong>24-48 ore</strong>.</p>
@@ -167,7 +172,7 @@ export const ARTISTI: HelpCategory = {
 <p>Il calendario in <strong>/dashboard/calendario</strong> è pubblico: segnando le date occupate eviti richieste impossibili e fate prima tutti e due. Le date confermate tramite N'arte si bloccano in automatico.</p>
 
 <h2>Se hai il piano ${PLAN_LABELS.free}</h2>
-<p>Ricevi tutte le richieste e tutte le email, e puoi accettarle o rifiutarle. <strong>Per rispondere in chat</strong> serve invece ${PLAN_LABELS.pro}: il limite riguarda la chat, non le richieste.</p>
+<p>Ricevi tutte le richieste e tutte le email, e puoi iniziare la trattativa o rifiutare. Tratti via email; <strong>chat e offerte con compenso</strong> sono incluse in ${PLAN_LABELS.pro} e ${PLAN_LABELS.max}. Il limite riguarda la chat, non le richieste.</p>
 `,
     },
 
@@ -255,12 +260,12 @@ export const ARTISTI: HelpCategory = {
       slug: "chat-e-offerte",
       title: "Chat e offerte: come si chiude una data",
       excerpt:
-        "Come funziona la conversazione con l'organizzatore, cosa sono le offerte tracciate e perché la chat richiede un piano a pagamento.",
+        "Come funziona la conversazione con l'organizzatore, come un'offerta accettata conferma la data e perché la chat richiede un piano a pagamento.",
       updatedAt: UPDATED,
       related: ["gestire-richieste", "tier-pro-max", "booking/dopo-la-conferma"],
       content: `
 <h2>Quando si apre la chat</h2>
-<p>La conversazione si apre quando accetti una richiesta di booking, ma puoi anche avviarla tu dal pulsante <strong>"Apri chat con l'organizzatore"</strong>.</p>
+<p>La conversazione si apre quando, su una richiesta di booking, premi <strong>"Inizia trattativa"</strong>. Prima di quel momento la chat non è disponibile, nemmeno per l'organizzatore.</p>
 <p>C'è <strong>una chat per ogni organizzatore</strong>, non una per richiesta: se lo stesso locale ti scrive per tre date diverse, la conversazione resta una sola e ci trovi tutto lo storico.</p>
 
 <h2>Cosa puoi mandare</h2>
@@ -272,18 +277,18 @@ export const ARTISTI: HelpCategory = {
 </ul>
 
 <h2>Le offerte</h2>
-<p>Un'offerta è una proposta formale, diversa da un semplice messaggio: contiene <strong>data</strong>, <strong>fascia oraria</strong> e <strong>budget</strong>, più una descrizione facoltativa. Chi la riceve può accettarla o rifiutarla con un pulsante.</p>
+<p>Un'offerta è una proposta formale, diversa da un semplice messaggio: contiene <strong>data</strong>, <strong>fascia oraria</strong> e <strong>compenso</strong> (obbligatorio), più una descrizione facoltativa. Puoi mandarla tu o l'organizzatore; chi la riceve può accettarla o rifiutarla con un pulsante.</p>
 <p>Gli stati sono quattro: <strong>In sospeso</strong>, <strong>Accettata</strong>, <strong>Rifiutata</strong> e <strong>Sostituita</strong>. L'ultimo merita due parole: quando qualcuno manda una nuova offerta, quella ancora in sospeso viene sostituita in automatico. Così non ci sono mai due proposte valide nello stesso momento e non rischi di accettare quella vecchia.</p>
 
-<h3>Accettare un'offerta conferma la data</h3>
-<p>È il passaggio più importante. Quando accetti un'offerta <strong>la data è confermata</strong>: si blocca sul tuo calendario, compare in quello dell'organizzatore e partono le email a entrambi, senza altri passaggi.</p>
-<p>Per questo accetta solo quando sei d'accordo su tutto. Se un dettaglio non ti convince, rifiuta e manda tu una controproposta, che sarà a sua volta un'offerta da accettare o rifiutare.</p>
+<h3>Un'offerta accettata conferma la data</h3>
+<p>È il passaggio più importante. Quando una parte propone un'offerta e l'altra la accetta, <strong>la data è confermata</strong>: si blocca sul tuo calendario a quel compenso, compare in quello dell'organizzatore e partono le email a entrambi, senza altri passaggi. Vale allo stesso modo se l'offerta l'hai proposta tu e l'ha accettata l'organizzatore.</p>
+<p>Per questo proponi o accetta solo quando sei d'accordo su tutto. Se un dettaglio non ti convince, rifiuta e manda tu una controproposta, che sarà a sua volta un'offerta da accettare o rifiutare.</p>
+<p>Il compenso dell'offerta è un accordo fra te e l'organizzatore: N'arte non intermedia pagamenti e non è parte del contratto.</p>
 
-<h2>Perché non riesco a scrivere?</h2>
-<p>La chat è inclusa nei piani <strong>${PLAN_LABELS.pro}</strong> e <strong>${PLAN_LABELS.max}</strong>. Con ${PLAN_LABELS.free} ricevi le richieste e le email e vedi la conversazione, ma per rispondere serve un piano a pagamento.</p>
-<p>L'abbiamo deciso apposta: le <strong>richieste di booking non sono mai limitate</strong>, su nessun piano, perché bloccarle penalizzerebbe l'organizzatore che ti sta cercando. Il limite arriva un passo dopo, sulla trattativa.</p>
-<p>L'organizzatore invece non ha limitazioni: può sempre scrivere e fare offerte.</p>
-
+<h2>Perché non vedo la chat?</h2>
+<p>La chat è inclusa nei piani <strong>${PLAN_LABELS.pro}</strong> e <strong>${PLAN_LABELS.max}</strong>. Con ${PLAN_LABELS.free} non è disponibile, né per te né per l'organizzatore: ricevi le richieste e le email e, quando inizi la trattativa, vi scrivete via email. L'accordo lo registra l'organizzatore e tu lo confermi dal pannello Richieste: vedi <a href="/help/artisti/gestire-richieste">come gestire le richieste</a>.</p>
+<p>L'abbiamo deciso apposta: le <strong>richieste di booking non sono mai limitate</strong>, su nessun piano, perché bloccarle penalizzerebbe l'organizzatore che ti sta cercando. Il limite arriva un passo dopo, sullo strumento con cui trattate.</p>
+<p>Se passi a ${PLAN_LABELS.pro}, la chat si apre anche sulle trattative già avviate via email.</p>
 <h2>Notifiche</h2>
 <p>Ricevi un'email quando arriva un messaggio che non hai ancora letto (al massimo una ogni mezz'ora, per non riempirti la casella) e <strong>sempre</strong> quando arriva un'offerta. Per riservatezza l'email non riporta mai il testo del messaggio: per leggerlo devi entrare in piattaforma.</p>
 
@@ -434,7 +439,7 @@ ${PLAN_TABLE_ROWS}
 <p>Qui trovi le differenze principali; l'elenco completo è su <a href="/prezzi">/prezzi</a>.</p>
 
 <h2>Le richieste non sono mai limitate</h2>
-<p>Non lo sono su nessun piano, nemmeno su quello gratuito: bloccare una richiesta vorrebbe dire penalizzare l'organizzatore che ti sta cercando, senza vantaggi per nessuno. <strong>Il limite riguarda la chat</strong>: con ${PLAN_LABELS.free} ricevi la richiesta e l'email, mentre per scrivere in chat serve ${PLAN_LABELS.pro} o ${PLAN_LABELS.max}.</p>
+<p>Non lo sono su nessun piano, nemmeno su quello gratuito: bloccare una richiesta vorrebbe dire penalizzare l'organizzatore che ti sta cercando, senza vantaggi per nessuno. <strong>Il limite riguarda la chat</strong>: con ${PLAN_LABELS.free} ricevi la richiesta e l'email e tratti via email con l'organizzatore, mentre chat e offerte con compenso sono incluse in ${PLAN_LABELS.pro} e ${PLAN_LABELS.max}.</p>
 
 <h2>Cosa giustifica il salto a ${PLAN_LABELS.max}</h2>
 <p>Soprattutto le <strong>statistiche</strong>, l'etichetta <strong>TOP Artist</strong> con la fascia in evidenza e i <strong>${ENTITLEMENTS.max.artistProfilesMax} profili</strong>. In più hai le consulenze sul booking senza limite mensile (in base agli slot disponibili), l'invio di materiale promozionale del tuo profilo ad almeno due strutture al mese, fatto dal team per tuo conto (è pubblicità e un impegno di mezzi: N'arte non tratta per te e non garantisce ingaggi), e, nel primo anno dell'abbonamento annuale, uno <strong>shooting fotografico</strong> incluso (un'ora da Hangarram a Napoli, 5 foto, per un profilo a scelta).</p>
@@ -533,7 +538,7 @@ ${PLAN_TABLE_ROWS}
 <p>Se le cifre cambiano molto a seconda della formazione, conviene usare <a href="/help/artisti/profili-multipli">più profili</a>: il duo acustico e la band completa non hanno lo stesso cachet.</p>
 
 <h2>Cosa considerare oltre al compenso</h2>
-<p>Perché sulla cifra non restino equivoci, prima di accettare verifica:</p>
+<p>Perché sulla cifra non restino equivoci, prima di proporre o accettare un compenso verifica:</p>
 <ul>
   <li>Se il compenso è <strong>per il gruppo o a persona</strong>.</li>
   <li>Chi paga <strong>viaggio e trasferta</strong>.</li>

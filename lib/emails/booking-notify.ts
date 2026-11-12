@@ -104,6 +104,7 @@ async function loadContext(requestId: string) {
     message: "",
     chatUrl: "",
     bookingUrl: "",
+    artistEmail: "",
   };
 
   return {
@@ -179,6 +180,9 @@ async function notifyStatus(
     cancellationReason?: string;
     recipients: { email: string; role: "artist" | "organizer" }[];
     meta: Record<string, string>;
+    /** Parametri che sostituiscono quelli calcolati (es. `chatUrl` vuoto). */
+    override?: Partial<BookingStatusParams>;
+    replyTo?: string;
   }
 ) {
   const results = await Promise.all(
@@ -186,7 +190,13 @@ async function notifyStatus(
       dispatchEmail({
         key: opts.key,
         to: r.email,
-        params: { ...ctx.params, message: opts.message, ...linksFor(ctx.base, r.role, ctx.requestId) },
+        params: {
+          ...ctx.params,
+          message: opts.message,
+          ...linksFor(ctx.base, r.role, ctx.requestId),
+          ...opts.override,
+        },
+        replyTo: opts.replyTo,
         meta: opts.meta,
         fallback: {
           subject: opts.subject,
@@ -211,19 +221,53 @@ function bothRecipients(ctx: BookingContext) {
 }
 
 /**
- * Artista ha accettato (richiesta o offerta in chat) → all'organizzatore, che
- * deve confermare la data dalla propria area.
+ * L'artista ha premuto «Inizia trattativa» → all'organizzatore.
+ *
+ * - `chat`  (artista Pro/Max): l'email porta in chat, dove si tratta con le offerte;
+ * - `email` (artista Free): niente chat. L'email riporta l'indirizzo dell'artista
+ *   e ha l'artista come reply-to, così rispondere apre già la trattativa.
  */
-export async function sendBookingAcceptedEmail(requestId: string) {
+export async function sendBookingAcceptedEmail(
+  requestId: string,
+  opts: { canale: "chat" | "email" } = { canale: "chat" }
+) {
   const ctx = await loadContext(requestId);
   if (!ctx?.organizerEmail) return { ok: false as const };
+  const viaEmail = opts.canale === "email" && Boolean(ctx.artistEmail);
   return notifyStatus(ctx, {
     key: "booking_accepted",
     kind: "accepted",
-    subject: `${ctx.raw.artistName} ha accettato: conferma la data`,
+    subject: `${ctx.raw.artistName} ha iniziato la trattativa`,
     template: "BookingAccepted",
     message: ctx.notesArtist,
     recipients: [{ email: ctx.organizerEmail, role: "organizer" }],
+    meta: { requestId, artistId: ctx.artistId, canale: opts.canale },
+    override: viaEmail ? { chatUrl: "", artistEmail: ctx.artistEmail ?? "" } : undefined,
+    replyTo: viaEmail ? (ctx.artistEmail ?? undefined) : undefined,
+  });
+}
+
+/**
+ * Artista Free: l'organizzatore ha registrato l'accordo preso via email →
+ * all'artista, che lo conferma (e blocca la data) dal pannello Richieste.
+ */
+export async function sendAgreementProposedEmail(requestId: string) {
+  const ctx = await loadContext(requestId);
+  if (!ctx?.artistEmail) return { ok: false as const };
+  return dispatchEmail({
+    key: "booking_agreement_proposed",
+    to: ctx.artistEmail,
+    params: {
+      artistName: ctx.params.artistName,
+      organizerName: ctx.params.organizerName,
+      eventDate: ctx.params.eventDate,
+      priceLabel: ctx.params.priceLabel,
+      proposedBy: ctx.params.organizerName,
+      bookingUrl: `${ctx.base}/dashboard/leads?status=in_trattativa&highlight=${encodeURIComponent(requestId)}`,
+      chatUrl: "",
+    },
+    replyTo: ctx.organizerEmail ?? undefined,
+    subjectPreview: `Accordo da confermare: ${ctx.params.organizerName} · ${ctx.params.eventDate}`,
     meta: { requestId, artistId: ctx.artistId },
   });
 }

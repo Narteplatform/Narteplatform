@@ -14,6 +14,7 @@ import {
   Mail,
   Megaphone,
   MessageCircle,
+  Lock,
   CreditCard,
   Phone,
   ScrollText,
@@ -556,6 +557,7 @@ async function loadArtistShell(userId: string): Promise<{
   let newLeads = 0;
   let negotiatingRequests = 0;
   let confirmedRequests = 0;
+  const chatAttiva = activeArtist ? entitlementsFor(activeArtist.tier ?? "free").canUseChat : true;
   let unreadChat = 0;
   // Badge del selettore = notifiche non lette del profilo, come la campanella
   // (ogni nuova richiesta e ogni chat ne genera una). Se le notifiche non sono
@@ -662,8 +664,14 @@ async function loadArtistShell(userId: string): Promise<{
     {
       href: "/dashboard/chat",
       label: "Chat",
-      icon: <MessageCircle className="size-4" />,
-      badge: unreadChat > 0 ? { label: String(unreadChat), variant: "accent" } : undefined,
+      // La chat è dei piani Pro e Max: con il Free la voce resta visibile (porta
+      // alla pagina che spiega la trattativa via email) ma con l'indicazione «Pro».
+      icon: chatAttiva ? <MessageCircle className="size-4" /> : <Lock className="size-4" />,
+      badge: !chatAttiva
+        ? { label: "Pro", variant: "default" }
+        : unreadChat > 0
+          ? { label: String(unreadChat), variant: "accent" }
+          : undefined,
     },
     {
       href: "/dashboard/feedback",

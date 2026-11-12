@@ -5,13 +5,26 @@ import { CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { confirmBookingRequest, cancelBookingRequest } from "@/app/(organizer)/organizzatore/_actions";
 import type { BookingStatus } from "@/lib/supabase/types";
+import { formatEuroIt } from "@/lib/booking/etichette";
 
+/**
+ * Azioni dell'organizzatore sulla richiesta.
+ *
+ * Non c'è una conferma «senza prezzo»: con un artista Pro/Max la data si
+ * conferma accettando un'offerta in chat, con un artista Free registrando
+ * l'accordo che l'artista conferma. Resta qui solo la conferma delle richieste
+ * «accettata» (offerta accettata dall'artista prima della 0080), al prezzo
+ * dell'offerta.
+ */
 export function RequestActions({
   requestId,
   status,
+  prezzo,
 }: {
   requestId: string;
   status: BookingStatus;
+  /** Compenso dell'offerta accettata (solo per «accettata»). */
+  prezzo?: number | string | null;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +41,8 @@ export function RequestActions({
       <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-3 text-sm">
         <p>
           Confermando dichiari di aver raggiunto un accordo <strong>direttamente</strong> con
-          l&rsquo;artista. La data viene bloccata nel suo calendario.
+          l&rsquo;artista{prezzo != null ? <> a <strong>{formatEuroIt(prezzo)}</strong></> : null}. La
+          data viene bloccata nel calendario di entrambi.
         </p>
         <p className="text-muted-foreground">
           L&rsquo;accordo è solo fra voi: N&rsquo;arte non è parte del contratto e non gestisce il
@@ -62,9 +76,10 @@ export function RequestActions({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        {(status === "in_trattativa" || status === "accettata") && (
+        {status === "accettata" && (
           <Button size="sm" disabled={pending} onClick={() => setConfirming(true)}>
-            <CheckCircle2 className="size-4" /> Conferma data
+            <CheckCircle2 className="size-4" />
+            {prezzo != null ? `Conferma data a ${formatEuroIt(prezzo)}` : "Conferma data"}
           </Button>
         )}
         <Button

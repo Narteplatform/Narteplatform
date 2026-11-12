@@ -61,6 +61,7 @@ const STATUS_SAMPLE = {
   message: "",
   chatUrl: "https://narteofficial.it/organizzatore/chat",
   bookingUrl: "https://narteofficial.it/organizzatore/richieste",
+  artistEmail: "",
 };
 
 /** Copia interna della nuova richiesta: dati di contatto e link al pannello. */
@@ -120,36 +121,59 @@ const bookingRequestAdmin = defineTemplate({
 });
 
 /**
- * L'artista ha accettato (richiesta o offerta in chat): la data NON è ancora
- * confermata. Con la doppia conferma serve il passaggio dell'organizzatore.
+ * L'artista ha premuto «Inizia trattativa»: la data NON è confermata.
+ *
+ * Due varianti nello stesso template, decise dai parametri:
+ *   - `chatUrl` valorizzato  → artista Pro/Max: si tratta in chat con le offerte;
+ *   - `artistEmail` valorizzato → artista Free: niente chat, si tratta via email
+ *     e l'accordo si registra dalla pagina della richiesta.
  */
 const bookingAccepted = defineTemplate({
   key: "booking_accepted",
   name: "N'arte · Trattativa aperta [booking_accepted]",
-  subject: "{{params.artistName}} ha accettato: conferma la data",
-  sample: { ...STATUS_SAMPLE, statusLabel: "Accettata dall'artista, in attesa di conferma" },
+  subject: "{{params.artistName}} ha iniziato la trattativa",
+  sample: { ...STATUS_SAMPLE, statusLabel: "In trattativa", artistEmail: "" },
   html: layout({
     key: "booking_accepted",
-    preheader: "L'artista ha accettato: per bloccare la data devi confermarla dalla tua area.",
+    preheader: "L'artista ha risposto alla tua richiesta e ha avviato la trattativa.",
     body: [
-      eyebrow("Da confermare"),
-      title(`${param("artistName")} ha ${em("accettato.")}`),
+      eyebrow("Trattativa aperta"),
+      title(`${param("artistName")} vuole ${em("trattare.")}`),
       paragraph(
-        `L'artista ha accettato la tua richiesta.<br />
-              La data non è ancora bloccata: per confermarla devi farlo tu, dalla tua area organizzatore.`
+        `L'artista ha risposto alla tua richiesta e ha avviato la trattativa.<br />
+              La data non è ancora confermata: si blocca quando vi accordate su data e compenso.`
       ),
-      card([sectionTitle("Dettagli della richiesta"), dataTable(statusRows("Compenso annotato dalle parti"))].join("\n")),
+      card([sectionTitle("Dettagli della richiesta"), dataTable(statusRows("Budget indicato"))].join("\n")),
       ifParam(
         "message",
-        callout({ heading: "Note dall'artista", text: param("message") })
+        callout({ heading: "Messaggio dall'artista", text: param("message") })
       ),
-      buttonPair(
-        { href: param("bookingUrl"), label: "Conferma la data" },
-        { href: param("chatUrl"), label: "Continua in chat" }
+      ifParam(
+        "chatUrl",
+        [
+          buttonPair(
+            { href: param("chatUrl"), label: "Entra in chat" },
+            { href: param("bookingUrl"), label: "Vedi la richiesta" }
+          ),
+          callout({
+            text: "In chat proponete un'offerta con data e compenso:<br />quando uno dei due accetta l'offerta dell'altro,<br />la data è confermata e bloccata a quel prezzo.",
+          }),
+        ].join("\n")
       ),
-      callout({
-        text: "Finché non confermi la data resta libera:<br />confermala appena avete chiuso l'accordo.",
-      }),
+      ifParam(
+        "artistEmail",
+        [
+          callout({
+            tone: "warning",
+            heading: "Trattativa via email",
+            text: `L'artista è sul piano Free: la chat non è disponibile.<br />
+                  Scrivigli a <strong>${param("artistEmail")}</strong> o rispondi a questa email.<br />
+                  Quando vi siete accordati, registra data e compenso dalla pagina della richiesta:<br />
+                  la data si blocca quando l'artista conferma.`,
+          }),
+          buttonPair({ href: param("bookingUrl"), label: "Vedi la richiesta" }),
+        ].join("\n")
+      ),
     ].join("\n"),
   }),
 });
@@ -175,10 +199,8 @@ const bookingDeclined = defineTemplate({
         "message",
         callout({ tone: "warning", heading: "Note dall'artista", text: param("message") })
       ),
-      buttonPair(
-        { href: param("bookingUrl"), label: "Proponi un'altra data" },
-        { href: param("chatUrl"), label: "Scrivi all'artista" }
-      ),
+      // Niente bottone della chat: senza una trattativa avviata la chat non si apre.
+      buttonPair({ href: param("bookingUrl"), label: "Vedi la richiesta" }),
     ].join("\n"),
   }),
 });

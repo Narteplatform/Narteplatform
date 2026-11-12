@@ -24,8 +24,11 @@
  * richieste in entrata sono domanda che la piattaforma fatica ad attrarre, e
  * bloccarle punirebbe l'organizzatore che scrive e non riceve risposta. Il
  * paywall scatta un passo dopo, sulla CHAT: l'artista Free riceve la richiesta
- * e la mail, ma per negoziare passa a Pro. È il momento di massimo valore
- * percepito — c'è un lavoro vero dall'altra parte del messaggio.
+ * e la mail, avvia la trattativa e la conduce via email (si vedono gli indirizzi
+ * a vicenda; l'organizzatore registra l'accordo, l'artista lo conferma). Chat e
+ * offerte con compenso sono di Pro e Max. È il momento di massimo valore
+ * percepito — c'è un lavoro vero dall'altra parte del messaggio — e il passaggio
+ * a Pro apre la chat anche sulle trattative già avviate via email.
  */
 
 import type { ArtistTier } from "@/lib/supabase/types";
@@ -69,10 +72,12 @@ export type Entitlements = {
 
   // --- Relazione con gli organizzatori ---
   /**
-   * Chat e negoziazione. È il paywall principale.
-   * Free NON può rispondere: la conversazione si apre lo stesso (l'organizzatore
-   * non deve mai sbattere contro un muro), l'artista riceve la mail di notifica,
-   * e per leggere/rispondere passa a Pro.
+   * Chat e offerte con compenso. È il paywall principale.
+   * Con Free la chat non c'è, né per l'artista né per l'organizzatore con
+   * quell'artista: dopo «Inizia trattativa» le parti si scrivono via email
+   * (l'organizzatore non sbatte mai contro un muro), l'organizzatore registra
+   * l'accordo e l'artista lo conferma. Con Pro/Max la chat si apre all'avvio
+   * della trattativa e l'offerta accettata conferma la data.
    */
   canUseChat: boolean;
   /** Ricevere e mostrare recensioni post-evento sul profilo pubblico. */
@@ -305,12 +310,13 @@ export const PLAN_CARD_HIGHLIGHTS: Record<ArtistTier, string[]> = {
   free: [
     "Profilo artista pubblico",
     "Calendario e richieste di booking illimitate",
+    "Trattativa via email con l'organizzatore",
     "3 foto e 1 video",
     "Supporto community",
   ],
   pro: [
     "Tutto del piano Free",
-    "Chat privata con locali e organizzatori",
+    "Chat e offerte con compenso con locali e organizzatori",
     "Recensioni e badge Artista Pro",
     "Fino a 10 foto e 3 video, 2 profili",
     "Priorità nei risultati di ricerca",
@@ -387,9 +393,9 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
     values: { free: false, pro: "1", max: "1" },
   },
   {
-    label: "Chat privata con locali e organizzatori",
+    label: "Chat e offerte con compenso",
     values: { free: false, pro: true, max: true },
-    hint: "Con il piano Free ricevi la richiesta e la mail, ma per negoziare in chat serve Pro.",
+    hint: "Con Free ricevi le richieste e tratti via email con l'organizzatore; chat e offerte con compenso sono incluse in Pro e Max.",
     primary: true,
   },
   {

@@ -1,6 +1,6 @@
 import type { HelpCategory } from "@/lib/help/types";
 
-const UPDATED = "2026-10-09";
+const UPDATED = "2026-11-12";
 
 export const POLICY: HelpCategory = {
   slug: "policy",
@@ -161,10 +161,10 @@ export const POLICY: HelpCategory = {
 <p>Riceverai risposta entro <strong>1-2 giorni lavorativi</strong>.</p>
 
 <h2>Prima di segnalare, prova a parlarne</h2>
-<p>Gran parte dei casi che ci arrivano si chiude con un messaggio diretto: un ritardo nel pagamento, per esempio, è spesso una svista amministrativa e non un rifiuto. Scrivi in chat, con calma: se la cosa non si sistema, quella conversazione sarà la prova migliore che hai.</p>
+<p>Gran parte dei casi che ci arrivano si chiude con un messaggio diretto: un ritardo nel pagamento, per esempio, è spesso una svista amministrativa e non un rifiuto. Scrivi in chat o via email, con calma: se la cosa non si sistema, quella conversazione sarà la prova migliore che hai.</p>
 
 <h2>Perché conviene restare in piattaforma</h2>
-<p>Se la trattativa si è svolta in chat, possiamo leggerla. Se è avvenuta al telefono o su WhatsApp, <strong>non abbiamo nulla</strong> su cui basarci e possiamo fare ben poco per aiutarti.</p>
+<p>Se la trattativa si è svolta in chat, possiamo leggerla. Se si è svolta via email, come avviene con gli artisti Free, inoltraci i messaggi: l'accordo registrato e confermato sulla piattaforma lo vediamo comunque. Se è avvenuta al telefono o su WhatsApp, <strong>non abbiamo nulla</strong> su cui basarci e possiamo fare ben poco per aiutarti.</p>
 
 <h2>Quando serve altro</h2>
 <p>Per le questioni economiche fra le parti — un compenso non pagato, un danno subito — <strong>la strada è quella ordinaria</strong>: un legale, o gli strumenti di tutela previsti dalla legge. Possiamo fornirti ciò che risulta sulla piattaforma riguardo alla tua vicenda, ma non sostituirci a un procedimento.</p>
@@ -208,7 +208,7 @@ export const POLICY: HelpCategory = {
 </ul>
 
 <h2>Perché conviene restare in chat</h2>
-<p>La trattativa in piattaforma resta tracciata e consultabile. Se nasce una contestazione su cosa era stato pattuito, quella conversazione è la prima cosa che il team guarda: con uno scambio su WhatsApp non sarebbe possibile.</p>
+<p>La trattativa in chat resta tracciata e consultabile (con gli artisti Free si tratta via email: conservate i messaggi). Se nasce una contestazione su cosa era stato pattuito, quella conversazione è la prima cosa che il team guarda: con uno scambio su WhatsApp non sarebbe possibile.</p>
 
 <h2>Se sospetti un accesso non tuo</h2>
 <ol>
