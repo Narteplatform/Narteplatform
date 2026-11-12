@@ -621,6 +621,7 @@ const ID_PREDEFINITI = {
   BREVO_TEMPLATE_TERMS_UPDATE_NOTICE: 52,
   BREVO_TEMPLATE_EVENT_REMINDER: 35,
   BREVO_TEMPLATE_FEEDBACK_REQUEST: 36,
+  BREVO_TEMPLATE_INVITE_REWARD_GRANTED: 53,
 } as const;
 
 function parseTemplateId(raw: string | undefined): number | null {
@@ -828,9 +829,8 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_WITHDRAWAL || String(ID_PREDEFINITI.BREVO_TEMPLATE_SUBSCRIPTION_WITHDRAWAL)),
     label: "Conferma recesso abbonamento",
   },
-  // Id da aggiungere a ID_PREDEFINITI dopo il primo `npm run email:sync`.
   invite_reward_granted: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_INVITE_REWARD_GRANTED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_INVITE_REWARD_GRANTED || String(ID_PREDEFINITI.BREVO_TEMPLATE_INVITE_REWARD_GRANTED)),
     label: "Invita un artista: premio accreditato",
   },
   terms_update_notice: {
