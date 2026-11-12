@@ -87,6 +87,35 @@ export default async function AdminArtistsPage({
     if (url) videoCandidature.set(a.id as string, url);
   }
 
+  // «Invita un artista» (0078): chi ha invitato ciascuna candidatura. Lettura
+  // best-effort: senza la migration o se fallisce, la scheda non lo mostra.
+  const invitatoDa = new Map<string, string>();
+  const idCandidature = (applications ?? []).map((a) => a.id as string);
+  if (idCandidature.length > 0) {
+    const { data: inviti, error: invErr } = await supabase
+      .from("artist_invites")
+      .select("application_id, inviter_user_id")
+      .in("application_id", idCandidature);
+    if (invErr) {
+      if (invErr.code !== "42P01" && invErr.code !== "PGRST205") {
+        logger.warn("admin/artisti", `inviti delle candidature non letti: ${invErr.message}`);
+      }
+    } else if ((inviti ?? []).length > 0) {
+      const { data: nomi, error: nomiErr } = await supabase
+        .from("artists")
+        .select("user_id, stage_name, created_at")
+        .in("user_id", [...new Set((inviti ?? []).map((i) => i.inviter_user_id))])
+        .order("created_at", { ascending: true });
+      if (nomiErr) logger.warn("admin/artisti", `nomi di chi invita non letti: ${nomiErr.message}`);
+      const nomePer = new Map<string, string>();
+      for (const n of nomi ?? []) if (n.user_id && !nomePer.has(n.user_id)) nomePer.set(n.user_id, n.stage_name);
+      for (const i of inviti ?? []) {
+        const nome = nomePer.get(i.inviter_user_id);
+        if (i.application_id && nome) invitatoDa.set(i.application_id, nome);
+      }
+    }
+  }
+
   // Profili in attesa il cui proprietario è sospeso: tornano `pending` con la
   // sospensione e non vanno riapprovati a mano. Lettura best-effort: se fallisce
   // il badge manca, ma approvazione e cambio di stato controllano comunque.
@@ -151,6 +180,7 @@ export default async function AdminArtistsPage({
                 key={a.id}
                 candidatura={a}
                 videoUrl={videoCandidature.get(a.id) ?? null}
+                invitatoDa={invitatoDa.get(a.id) ?? null}
               />
             ))}
           </CardContent>

@@ -18,6 +18,11 @@ import { getSiteUrl } from "@/lib/site-url";
 import ApplicationReceivedEmail from "@/lib/emails/templates/ApplicationReceivedEmail";
 import { adminRecipients } from "@/lib/emails/admin-recipients";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
+import { cookies } from "next/headers";
+import type { ArtistFormation } from "@/lib/supabase/types";
+import { invitoDaCookie } from "@/lib/inviti/cookie";
+import { registraCandidatura } from "@/lib/inviti/ciclo";
+import { COOKIE_INVITO } from "@/lib/inviti/regole";
 
 /** Per dire in quale campo è l'errore quando il controllo lato server non passa. */
 const ETICHETTE_CAMPI: Record<string, string> = {
@@ -54,6 +59,9 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
   });
   if (!guard.ok) return { ok: false as const, error: guard.error };
 
+  const chi = await invitoDaCookie();
+  let applicationId: string | null = null;
+
   try {
     const supabase = createAdminClient();
 
@@ -75,19 +83,47 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
       // non approvata verrà cancellata, se ne andrà con lei.
       ...publicFormConsent(),
     };
-    const formazione = {
+    let formazione: { formazione?: ArtistFormation; componenti?: number | null } = {
       formazione: data.formazione,
       componenti: data.formazione === "band" ? (data.componenti ?? null) : null,
     };
-    let { error } = await supabase.from("artist_applications").insert({ ...riga, ...formazione });
-    // Migration 0075 non ancora applicata: la candidatura si salva comunque,
-    // senza la formazione (il limite di strumenti è già stato controllato).
-    if (colonnaAssente(error, "formazione") || colonnaAssente(error, "componenti")) {
-      ({ error } = await supabase.from("artist_applications").insert(riga));
+    // «Invita un artista»: il codice arriva dal cookie del link, mai dal client.
+    let invito: { invite_code?: string } = chi ? { invite_code: chi.code } : {};
+
+    let salvata: { id: string } | null = null;
+    // Al massimo tre giri: ogni giro toglie una colonna di una migration non
+    // ancora applicata (0075 formazione, 0078 codice d'invito). La candidatura
+    // si salva comunque.
+    for (let giro = 0; giro < 3; giro++) {
+      const { data: riga_, error } = await supabase
+        .from("artist_applications")
+        .insert({ ...riga, ...formazione, ...invito })
+        .select("id")
+        .single();
+      if (!error) {
+        salvata = riga_;
+        break;
+      }
+      if (colonnaAssente(error, "formazione") || colonnaAssente(error, "componenti")) {
+        formazione = {};
+        continue;
+      }
+      if (colonnaAssente(error, "invite_code")) {
+        invito = {};
+        continue;
+      }
+      return { ok: false as const, error: "Errore salvataggio candidatura" };
     }
-    if (error) return { ok: false as const, error: "Errore salvataggio candidatura" };
+    if (!salvata) return { ok: false as const, error: "Errore salvataggio candidatura" };
+    applicationId = salvata.id;
   } catch {
     return { ok: false as const, error: "Errore server" };
+  }
+
+  if (chi && applicationId) {
+    await registraCandidatura({ applicationId, chi, email: data.email, stageName: data.stageName });
+    // Usato: il cookie non deve attribuire anche una candidatura futura.
+    (await cookies()).delete(COOKIE_INVITO);
   }
 
   registraProvaSuIubendaInBackground({

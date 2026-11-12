@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Camera, Clock, ExternalLink, Gift } from "lucide-react";
+import { AlertTriangle, Camera, Clock, ExternalLink, Gift, UserPlus } from "lucide-react";
 import { requireRole } from "@/lib/auth/guards";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getOwnedArtists } from "@/lib/artist/current";
@@ -21,6 +21,10 @@ import { ShootingCard } from "@/components/billing/ShootingCard";
 import { statoShooting } from "@/lib/billing/shooting";
 import { statoRecesso } from "./_actions";
 import type { ArtistTier } from "@/lib/supabase/types";
+import { Button } from "@/components/ui/Button";
+import { invitiVisibili } from "@/lib/inviti/modalita";
+import { premioInviti } from "@/lib/inviti/stato";
+import { CREDITO_PREMIO_CENT, TETTO_ANNUO, formatEuro } from "@/lib/inviti/regole";
 
 export const metadata = { title: "Abbonamento — N'arte" };
 export const dynamic = "force-dynamic";
@@ -90,6 +94,10 @@ export default async function AbbonamentoPage({
       ? override
       : null;
   const isGifted = !sub && activeOverride !== null && isPaidTier(ent.tier);
+  // Pro ottenuto con «Invita un artista» (0078): distinto dall'omaggio del team,
+  // che all'artista non si presenta mai come tale.
+  const inviti = invitiVisibili() ? await premioInviti(user.id) : null;
+  const daInviti = !sub && !isGifted && Boolean(inviti?.proFinoAl) && ent.tier === "pro";
 
   const configured = isStripeConfigured() && arePricesConfigured();
   const shooting = await statoShooting(user.id);
@@ -157,7 +165,7 @@ export default async function AbbonamentoPage({
             <Badge variant={sub.status === "past_due" ? "warning" : "success"}>
               {STATUS_LABEL[sub.status] ?? sub.status}
             </Badge>
-          ) : isGifted ? (
+          ) : isGifted || daInviti ? (
             <Badge variant="success">Attivo</Badge>
           ) : null}
         </CardHeader>
@@ -177,6 +185,13 @@ export default async function AbbonamentoPage({
                   ? `Disdetto: resta attivo fino al ${dt(sub.current_period_end)}.`
                   : `Si rinnova il ${dt(sub.current_period_end)}.`}
               </p>
+              {inviti && inviti.creditoCent > 0 && (
+                <p className="flex items-center gap-2 pt-1 text-sm text-accent">
+                  <Gift className="size-4" />
+                  {formatEuro(inviti.creditoCent)} di credito dai tuoi inviti, scalati in automatico
+                  dalle fatture.
+                </p>
+              )}
               {includesPhotoShoot(ent.tier, sub.billing_interval) && (
                 <p className="flex items-center gap-2 pt-1 text-sm text-accent">
                   <Camera className="size-4" />
@@ -194,6 +209,17 @@ export default async function AbbonamentoPage({
                 {activeOverride?.tier_override_expires_at
                   ? `Resta attivo fino al ${dt(activeOverride.tier_override_expires_at)}.`
                   : "Non ha scadenza e non prevede alcun addebito."}
+              </p>
+            </>
+          ) : daInviti && inviti?.proFinoAl ? (
+            <>
+              <p className="flex items-center gap-2 text-sm text-accent">
+                <Gift className="size-4" />
+                Pro guadagnato con i tuoi inviti.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Resta attivo fino al {dt(inviti.proFinoAl)}, senza alcun addebito. Ogni nuovo artista che
+                si abbona dal tuo link aggiunge un altro mese.
               </p>
             </>
           ) : (
@@ -220,6 +246,31 @@ export default async function AbbonamentoPage({
           )}
         </CardContent>
       </Card>
+
+      {invitiVisibili() && (
+        <Card>
+          <CardContent className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+                <UserPlus className="size-4" />
+              </span>
+              <div>
+                <p className="font-medium">
+                  {sub ? "Abbassa le prossime fatture invitando artisti" : "Pro gratis invitando artisti"}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {sub
+                    ? `Per ogni artista che si abbona dal tuo link ricevi ${formatEuro(CREDITO_PREMIO_CENT)} di credito, fino a ${TETTO_ANNUO} l'anno.`
+                    : `Per ogni artista che si abbona dal tuo link ricevi 1 mese di Pro. I mesi si sommano, fino a ${TETTO_ANNUO} l'anno.`}
+                </p>
+              </div>
+            </div>
+            <Button asChild variant="outline" size="sm" className="shrink-0">
+              <Link href="/dashboard/invita">Invita un artista</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <ShootingCard
         stato={shooting}

@@ -16,6 +16,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { FAQ } from "@/lib/content/artist-landing";
 import { NARTE_STATS } from "@/lib/content/stats";
 import { getContenuti } from "@/lib/content/site-settings-server";
+import { invitoDaCookie } from "@/lib/inviti/cookie";
+import { BannerInvito } from "@/components/inviti/BannerInvito";
 
 export const metadata = {
   title: "Sei un artista? — N'arte",
@@ -63,7 +65,7 @@ function faqJsonLd() {
 }
 
 export default async function CandidaturaPage() {
-  const [genreOptions, c] = await Promise.all([getGenreOptions(), getContenuti()]);
+  const [genreOptions, c, invito] = await Promise.all([getGenreOptions(), getContenuti(), invitoDaCookie()]);
 
   return (
     <>
@@ -81,6 +83,7 @@ export default async function CandidaturaPage() {
         description={c["artisti.hero.descrizione"]}
       >
         <div className="flex flex-col items-center gap-8">
+          {invito && <BannerInvito chi={invito} />}
           <div className="flex flex-wrap justify-center gap-3">
             <Button asChild variant="accent" size="lg">
               <Link href="#candidatura">Candidati, è gratis</Link>
@@ -208,7 +211,7 @@ export default async function CandidaturaPage() {
                 e gestire le disponibilità.
               </p>
               <div className="mt-6">
-                <ArtistApplicationForm genreOptions={genreOptions} />
+                <ArtistApplicationForm genreOptions={genreOptions} invitatoDa={invito?.stageName ?? null} />
               </div>
             </div>
           </Reveal>

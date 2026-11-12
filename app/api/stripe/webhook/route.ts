@@ -6,6 +6,7 @@ import { resolvePriceId } from "@/lib/stripe/prices";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
 import { notificaEventoAbbonamento } from "@/lib/billing/notify";
+import { invitiDaFatturaPagata } from "@/lib/inviti/webhook";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -151,7 +152,7 @@ async function upsertSubscription(sub: Stripe.Subscription, event: Stripe.Event)
     .upsert(row, { onConflict: "stripe_subscription_id" });
   if (error) throw new Error(`Upsert subscription fallito: ${error.message}`);
 
-  return { skipped: false as const, tier: plan.tier, status: sub.status };
+  return { skipped: false as const, tier: plan.tier, status: sub.status, userId };
 }
 
 export async function POST(request: Request) {
@@ -257,6 +258,12 @@ export async function POST(request: Request) {
     // posta non deve far ritentare Stripe.
     await notificaEventoAbbonamento(event, sub, ("tier" in result ? result.tier : null) ?? null);
 
+    // «Invita un artista»: primo pagamento dell'invitato e conversione dei
+    // giorni di Pro in credito. Best-effort, come le email.
+    if (event.type === "invoice.paid" && !result.skipped && result.userId) {
+      await invitiDaFatturaPagata(event.data.object as Stripe.Invoice, result.userId);
+    }
+
     await admin
       .from("stripe_webhook_events")
       .update({ processed_at: new Date().toISOString(), error: null })
@@ -266,7 +273,12 @@ export async function POST(request: Request) {
     revalidatePath("/dashboard/profili");
     revalidatePath("/artisti");
 
-    return NextResponse.json({ received: true, ...result });
+    // Senza l'id utente: la risposta finisce nei log di Stripe.
+    return NextResponse.json({
+      received: true,
+      skipped: result.skipped,
+      ...("tier" in result ? { tier: result.tier, status: result.status } : {}),
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error("[stripe/webhook] elaborazione fallita", event.type, message);

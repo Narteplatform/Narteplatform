@@ -26,6 +26,9 @@ import { PlanBadge } from "@/components/billing/PlanBadge";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import { ImageLightbox } from "@/components/marketing/ImageLightbox";
 import { ProfileReferralsCard } from "@/components/dashboard/ProfileReferralsCard";
+import { InvitoTeaser } from "@/components/inviti/InvitoTeaser";
+import { invitiVisibili } from "@/lib/inviti/modalita";
+import { premioInviti } from "@/lib/inviti/stato";
 
 export const metadata = { title: "Dashboard — N'arte" };
 export const dynamic = "force-dynamic";
@@ -169,6 +172,9 @@ export default async function ArtistOverviewPage() {
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
     .slice(0, 5);
 
+  // «Invita un artista»: il richiamo resta finché non arriva il primo premio.
+  const mostraInvito = invitiVisibili() && (await premioInviti(user.id)) === null;
+
   return (
     <div className="space-y-8">
       <HeroGreeting
@@ -252,6 +258,8 @@ export default async function ArtistOverviewPage() {
           />
         )}
       </div>
+
+      {mostraInvito && <InvitoTeaser />}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">

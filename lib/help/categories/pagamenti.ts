@@ -1,5 +1,6 @@
 import type { HelpCategory } from "@/lib/help/types";
 import { PLAN_LABELS, PLAN_PRICES_CENTS, formatPrice } from "@/lib/billing/plans";
+import { CREDITO_PREMIO_CENT, GIORNI_ATTESA, GIORNI_PREMIO, TETTO_ANNUO } from "@/lib/inviti/regole";
 
 const UPDATED = "2026-10-09";
 
@@ -178,7 +179,7 @@ export const PAGAMENTI: HelpCategory = {
       excerpt:
         "L'unica somma che N'arte incassa: come si sottoscrive, dove si trovano le fatture, come si cambia piano e come si disdice.",
       updatedAt: UPDATED,
-      related: ["artisti/tier-pro-max", "modalita-pagamento", "artisti/profili-multipli"],
+      related: ["artisti/tier-pro-max", "modalita-pagamento", "artisti/profili-multipli", "invita-un-artista"],
       content: `
 <h2>L'unica cosa che paghi a N'arte</h2>
 <p>L'abbonamento artista è facoltativo e <strong>indipendente dalle date che fai</strong>: non è una commissione sui tuoi ingaggi, ed è l'unica somma che la piattaforma incassa.</p>
@@ -230,6 +231,45 @@ export const PAGAMENTI: HelpCategory = {
 
 <h2>Ho diritto al ripensamento?</h2>
 <p>I termini d'uso richiamano il diritto di recesso previsto dal Codice del consumo per chi sottoscrive in qualità di consumatore. Per una richiesta concreta <a href="/contatti">scrivici</a> e consulta anche i <a href="/termini">termini d'uso</a>.</p>
+`,
+    },
+    {
+      // Visibile solo con INVITI_ATTIVI acceso: vedi il filtro in lib/help/content.ts.
+      slug: "invita-un-artista",
+      title: "Invita un artista e guadagna mesi di Pro",
+      excerpt:
+        "Il tuo link personale, quando arriva il premio, come si sommano i mesi e cosa succede se hai già un abbonamento.",
+      updatedAt: "2026-11-12",
+      related: ["abbonamento-artista", "artisti/tier-pro-max"],
+      content: `
+<h2>Come funziona</h2>
+<p>Nella tua area, alla voce <strong>«Invita un artista»</strong>, trovi un link personale. Mandalo agli artisti che conosci: su WhatsApp, per email o dove preferisci.</p>
+<ol>
+  <li>L'artista apre il tuo link e <strong>invia la candidatura</strong>.</li>
+  <li>Il team la valuta come tutte le altre: l'invito non cambia l'esito.</li>
+  <li>Quando l'artista, ammesso su N'arte, <strong>si abbona a un piano a pagamento</strong>, il tuo premio è in arrivo.</li>
+</ol>
+
+<h2>Il premio: 1 mese di ${PLAN_LABELS.pro}</h2>
+<ul>
+  <li><strong>Se sei sul piano ${PLAN_LABELS.free}</strong> ricevi ${GIORNI_PREMIO} giorni di ${PLAN_LABELS.pro}. Se ne hai già, i nuovi si aggiungono in coda: tre artisti abbonati valgono tre mesi di fila.</li>
+  <li><strong>Se hai già un abbonamento</strong> ricevi ${formatPrice(CREDITO_PREMIO_CENT)} di credito, scalati in automatico dalle tue prossime fatture.</li>
+</ul>
+<p>Se ti abboni mentre hai ancora giorni di ${PLAN_LABELS.pro} dagli inviti, quelli che restano <strong>diventano credito</strong>: non perdi nulla.</p>
+
+<h2>Quando arriva</h2>
+<p>Il premio si conferma <strong>${GIORNI_ATTESA} giorni dopo il primo pagamento</strong> dell'artista che hai invitato: è il periodo in cui chi si abbona può ancora recedere. Se recede, o il pagamento viene rimborsato, il premio non scatta. Ti avvisiamo con una notifica a ogni passaggio e con un'email quando il mese è tuo.</p>
+
+<h2>Le regole</h2>
+<ul>
+  <li>Fino a <strong>${TETTO_ANNUO} premi per anno solare</strong>. Gli inviti oltre il limite restano visibili ma non danno altri mesi; dal 1° gennaio si riparte.</li>
+  <li>Vale per <strong>artisti nuovi</strong> su N'arte: non per te stesso, per un account che esisteva già o che un altro artista ha già invitato.</li>
+  <li>Conta il <strong>primo pagamento reale</strong>: un abbonamento interamente coperto da un codice promozionale non fa scattare il premio finché non c'è un pagamento.</li>
+  <li>Il premio non si converte in denaro e non si cede.</li>
+</ul>
+
+<h2>Cosa vede chi inviti, e cosa vedi tu</h2>
+<p>Chi apre il tuo link vede solo il tuo <strong>nome d'arte</strong>. Tu, nella pagina «Invita un artista», vedi il nome d'arte di chi si è candidato dal tuo link e a che punto è: candidatura inviata, ingresso su N'arte, abbonamento. Non vedi i suoi contatti né i dati di pagamento, e se la candidatura non viene accolta l'invito sparisce dalla tua pagina.</p>
 `,
     },
   ],

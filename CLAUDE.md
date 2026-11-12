@@ -80,6 +80,12 @@ Non erano documentate ma sono costruite e attive:
   testi predefiniti in `lib/content/site-settings.ts`, tabella `site_settings` (0074)
 - **Collegamento a Google Calendar**: feed iCal personale delle date confermate (`lib/calendar/`,
   `/api/calendario/[token]`, tabella `calendar_feeds`)
+- **Invita un artista** (`lib/inviti/`, migration 0078, interruttore `INVITI_ATTIVI`: vuoto = spento,
+  `conta` = traccia ma il cron non assegna premi, `1` = attivo): link `/invito/{codice}` → cookie →
+  candidatura → approvazione → primo pagamento > 0 → dopo 14 giorni `/api/cron/inviti` assegna 1 mese di
+  Pro (30 giorni se Free, 9,99 € di credito Stripe se abbonato), max 12 l'anno. NON si chiama «referral»:
+  quel nome è delle proposte Max alle strutture (`profile_referrals`). I testi per Termini e informativa
+  sono bozze in `lib/legal/inviti.ts`: si pubblicano col preavviso di 15 giorni, prima di accendere `1`
 
 ## Sicurezza — aggiunte del 28/08/2026
 
@@ -191,6 +197,9 @@ policy e pubblicazioni realtime — che PostgREST non espone — le query sono i
   anon/authenticated (testo leggibile solo dal root, via server), `misure_programmate`
   (preavviso di 30 giorni P2B per gli artisti con partita IVA), `photo_shoots` (shooting del
   Max annuale). **Indipendente dalle altre.** Senza, preavviso e shooting chiedono la migration.
+- `0078_inviti_artisti.sql` — «Invita un artista»: `invite_codes`, `artist_invites`, `invite_rewards`,
+  `artist_applications.invite_code`, `account_tier()` con i giorni di Pro dei premi. **Indipendente
+  dalle altre.** Senza, la funzione resta spenta anche con `INVITI_ATTIVI` acceso.
 
 ## Comandi
 

@@ -42,8 +42,11 @@ const DRAFT_FIELDS = [
 
 export function ArtistApplicationForm({
   genreOptions = [],
+  invitatoDa = null,
 }: {
   genreOptions?: string[];
+  /** Nome d'arte di chi ha invitato («Invita un artista»), se si arriva dal suo link. */
+  invitatoDa?: string | null;
 }) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -256,6 +259,13 @@ export function ArtistApplicationForm({
         />
       </Field>
       <PrivacyNotice />
+      {invitatoDa && (
+        <p className="text-xs text-muted-foreground">
+          Arrivi dall&apos;invito di <strong className="font-medium text-foreground">{invitatoDa}</strong>:
+          vedrà il tuo nome d&apos;arte e a che punto è la tua iscrizione su N&apos;arte, mai i tuoi
+          contatti né i dati di pagamento.
+        </p>
+      )}
       <Checkbox
         {...register("acceptedAge")}
         error={errors.acceptedAge?.message}

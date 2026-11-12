@@ -80,6 +80,8 @@ export type EmailKey =
   // --- abbonamenti: tutela del consumatore ---
   | "renewal_reminder"
   | "subscription_withdrawal"
+  // --- Invita un artista ---
+  | "invite_reward_granted"
   // --- termini: preavviso delle modifiche (Reg. UE 2019/1150 art. 3) ---
   | "terms_update_notice"
   // --- ciclo di vita evento ---
@@ -293,6 +295,19 @@ export interface SubscriptionCancelledParams {
   planName: string;
   endDate: string;
   billingUrl: string;
+}
+
+/**
+ * «Invita un artista»: premio confermato a chi ha invitato. `rewardDetail` dice
+ * come arriva il mese (giorni di Pro o credito sulla prossima fattura),
+ * `yearLabel` quanti premi restano nell'anno.
+ */
+export interface InviteRewardGrantedParams {
+  artistName: string;
+  inviteeName: string;
+  rewardDetail: string;
+  yearLabel: string;
+  invitesUrl: string;
 }
 
 /**
@@ -527,6 +542,7 @@ export interface EmailParamsMap {
   report_outcome: ReportOutcomeParams;
   renewal_reminder: RenewalReminderParams;
   subscription_withdrawal: SubscriptionWithdrawalParams;
+  invite_reward_granted: InviteRewardGrantedParams;
   terms_update_notice: TermsUpdateNoticeParams;
   event_reminder: EventReminderParams;
   feedback_request: FeedbackRequestParams;
@@ -811,6 +827,11 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
   subscription_withdrawal: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_SUBSCRIPTION_WITHDRAWAL || String(ID_PREDEFINITI.BREVO_TEMPLATE_SUBSCRIPTION_WITHDRAWAL)),
     label: "Conferma recesso abbonamento",
+  },
+  // Id da aggiungere a ID_PREDEFINITI dopo il primo `npm run email:sync`.
+  invite_reward_granted: {
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_INVITE_REWARD_GRANTED),
+    label: "Invita un artista: premio accreditato",
   },
   terms_update_notice: {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_TERMS_UPDATE_NOTICE || String(ID_PREDEFINITI.BREVO_TEMPLATE_TERMS_UPDATE_NOTICE)),

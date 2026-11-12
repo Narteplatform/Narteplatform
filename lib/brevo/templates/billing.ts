@@ -192,9 +192,53 @@ const profilesSuspended = defineTemplate({
   }),
 });
 
+/**
+ * «Invita un artista»: il premio è confermato. È l'unica email del programma:
+ * le altre tappe (candidatura, ingresso, abbonamento) passano dalla campanella.
+ */
+const inviteRewardGranted = defineTemplate({
+  key: "invite_reward_granted",
+  name: "N'arte · Invita un artista, premio [invite_reward_granted]",
+  subject: "Hai guadagnato 1 mese di Pro — N'Arte",
+  sample: {
+    artistName: "Marina Blu",
+    inviteeName: "Marco Rossi",
+    rewardDetail: "Pro attivo fino al 14 febbraio 2027",
+    yearLabel: "3 premi su 12 quest'anno",
+    invitesUrl: "https://narteofficial.it/dashboard/invita",
+  },
+  html: layout({
+    key: "invite_reward_granted",
+    preheader: "Un artista che hai invitato si è abbonato: il tuo mese di Pro è arrivato.",
+    body: [
+      eyebrow("Invita un artista"),
+      title(`Hai guadagnato ${em("1 mese di Pro.")}`),
+      paragraph(
+        `Ciao ${param("artistName")}, ${param("inviteeName")} è entrato su N'arte dal tuo link<br />
+              e si è abbonato. Grazie per aver fatto crescere la community.`
+      ),
+      card(
+        [
+          sectionTitle("Il tuo premio"),
+          dataTable([
+            { icon: "star", label: "Premio", value: "1 mese di N'arte Pro" },
+            { icon: "calendar", label: "Come arriva", value: param("rewardDetail") },
+            { icon: "check", label: "Quest'anno", value: param("yearLabel") },
+          ]),
+        ].join("\n")
+      ),
+      buttonPair({ href: param("invitesUrl"), label: "Invita un altro artista" }),
+      callout({
+        text: "I mesi si sommano: ogni artista che si abbona dal tuo link<br />vale un altro mese, fino a 12 l'anno.",
+      }),
+    ].join("\n"),
+  }),
+});
+
 export const BILLING_TEMPLATES = [
   subscriptionActivated,
   paymentFailed,
   subscriptionCancelled,
   profilesSuspended,
+  inviteRewardGranted,
 ];

@@ -419,6 +419,21 @@ const MIGRATION = [
       ["privilegi anonimi revocati su photo_shoots", () => privilegioAnonRevocato("photo_shoots")],
     ],
   },
+  {
+    file: "0078_inviti_artisti.sql",
+    cosa: "Invita un artista: codici, inviti, premi in mesi di Pro o credito Stripe",
+    controlli: [
+      ["tabella invite_codes", () => tabella("invite_codes")],
+      ["privilegi anonimi revocati su invite_codes", () => privilegioAnonRevocato("invite_codes")],
+      ["tabella artist_invites", () => tabella("artist_invites")],
+      ["privilegi anonimi revocati su artist_invites", () => privilegioAnonRevocato("artist_invites")],
+      ["tabella invite_rewards", () => tabella("invite_rewards")],
+      ["privilegi anonimi revocati su invite_rewards", () => privilegioAnonRevocato("invite_rewards")],
+      ["colonna artist_applications.invite_code", () => colonna("artist_applications", "invite_code")],
+      ["funzione inviti_assegna_giorni_pro", () => funzione("inviti_assegna_giorni_pro")],
+      ["funzione inviti_sync_scaduti", () => funzione("inviti_sync_scaduti")],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };

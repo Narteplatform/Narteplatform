@@ -17,6 +17,25 @@ funzionalità nuove restano spente finché non si arriva in fondo.
 
 ---
 
+## `0078_inviti_artisti.sql` — Invita un artista
+
+Indipendente dalle altre (richiede solo la 0044, già applicata), additiva e idempotente.
+Non modifica né cancella righe esistenti.
+
+- `invite_codes`, `artist_invites`, `invite_rewards`: codice del link, inviti e premi. Tutte e tre
+  con RLS attiva e nessun privilegio ad anon/authenticated (le legge e scrive solo il server).
+- `artist_applications.invite_code`: il codice con cui è arrivata la candidatura.
+- `account_tier()` ridefinita: considera anche i 30 giorni di Pro dei premi attivi.
+- `inviti_assegna_giorni_pro()` accoda i giorni in modo atomico; `inviti_sync_scaduti()` ricalcola
+  il piano degli account con un premio o un omaggio scaduto da poco (la usa `/api/cron/inviti`).
+
+Senza la 0078: la funzione resta invisibile anche a interruttore acceso (la pagina dice di
+applicarla), le candidature si salvano normalmente senza codice.
+
+Verifica: `npm run db:check-migrations`.
+
+---
+
 ## `0077_parere_legale_novembre.sql` — adeguamenti al parere legale
 
 Indipendente dalle altre, additiva e idempotente. Non modifica né cancella righe.

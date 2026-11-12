@@ -24,6 +24,9 @@ export type ConsentKind =
 export type ArtistPath = "cover_artist" | "tribute_band" | "progetto_inedito";
 /** Solista o band (0075). Null = non indicato. */
 export type ArtistFormation = "solista" | "band";
+/** Stati di un invito «Invita un artista» (0078). */
+export type InviteStatus = "candidatura" | "approvato" | "in_attesa" | "confermato" | "annullato" | "oltre_limite";
+export type InviteRewardKind = "giorni_pro" | "credito_stripe";
 /** Origine del corpo salvato in email_log (0075). */
 export type EmailBodySource = "salvato" | "provider" | "riservato";
 export type VenueType = "club" | "pub" | "festival" | "teatro" | "locale" | "privato" | "altro";
@@ -511,6 +514,7 @@ export interface Database {
           created_at: string;
           consent_version: string | null;
           consent_at: string | null;
+          invite_code: string | null;
         };
         Insert: {
           id?: string;
@@ -529,6 +533,7 @@ export interface Database {
           created_at?: string;
           consent_version?: string | null;
           consent_at?: string | null;
+          invite_code?: string | null;
         };
         Update: {
           id?: string;
@@ -547,6 +552,7 @@ export interface Database {
           created_at?: string;
           consent_version?: string | null;
           consent_at?: string | null;
+          invite_code?: string | null;
         };
         Relationships: [];
       };
@@ -705,6 +711,90 @@ export interface Database {
         Relationships: [];
       };
       /** Shooting del Max annuale (0077): solo service role. */
+      /** «Invita un artista» (0078): codice del link, uno per account. Solo service role. */
+      invite_codes: {
+        Row: { user_id: string; code: string; created_at: string; disabled_at: string | null };
+        Insert: { user_id: string; code: string; created_at?: string; disabled_at?: string | null };
+        Update: { code?: string; disabled_at?: string | null };
+        Relationships: [];
+      };
+      /** «Invita un artista» (0078): un invito per candidatura. Solo service role. */
+      artist_invites: {
+        Row: {
+          id: string;
+          inviter_user_id: string;
+          application_id: string | null;
+          invitee_user_id: string | null;
+          invitee_stage_name: string;
+          status: InviteStatus;
+          stripe_invoice_id: string | null;
+          paid_at: string | null;
+          confirm_after: string | null;
+          confirmed_at: string | null;
+          cancel_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          inviter_user_id: string;
+          application_id?: string | null;
+          invitee_user_id?: string | null;
+          invitee_stage_name: string;
+          status?: InviteStatus;
+          stripe_invoice_id?: string | null;
+          paid_at?: string | null;
+          confirm_after?: string | null;
+          confirmed_at?: string | null;
+          cancel_reason?: string | null;
+        };
+        Update: {
+          invitee_user_id?: string | null;
+          status?: InviteStatus;
+          stripe_invoice_id?: string | null;
+          paid_at?: string | null;
+          confirm_after?: string | null;
+          confirmed_at?: string | null;
+          cancel_reason?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      /** «Invita un artista» (0078): registro dei premi. Solo service role. */
+      invite_rewards: {
+        Row: {
+          id: string;
+          invite_id: string;
+          user_id: string;
+          kind: InviteRewardKind;
+          pro_from: string | null;
+          pro_until: string | null;
+          amount_cents: number | null;
+          stripe_balance_txn_id: string | null;
+          converted_at: string | null;
+          converted_cents: number | null;
+          converted_balance_txn_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          invite_id: string;
+          user_id: string;
+          kind: InviteRewardKind;
+          pro_from?: string | null;
+          pro_until?: string | null;
+          amount_cents?: number | null;
+          stripe_balance_txn_id?: string | null;
+        };
+        Update: {
+          pro_until?: string | null;
+          stripe_balance_txn_id?: string | null;
+          converted_at?: string | null;
+          converted_cents?: number | null;
+          converted_balance_txn_id?: string | null;
+        };
+        Relationships: [];
+      };
       photo_shoots: {
         Row: {
           id: string;
@@ -2181,6 +2271,14 @@ export interface Database {
       sync_account_tiers: {
         Args: { p_user_id: string };
         Returns: undefined;
+      };
+      inviti_assegna_giorni_pro: {
+        Args: { p_invite_id: string; p_user_id: string; p_giorni: number };
+        Returns: Database["public"]["Tables"]["invite_rewards"]["Row"];
+      };
+      inviti_sync_scaduti: {
+        Args: Record<string, never>;
+        Returns: number;
       };
       sync_artist_tier: {
         Args: { p_artist_id: string };

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { annullaPerRecesso } from "@/lib/inviti/ciclo";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type Stripe from "stripe";
@@ -519,6 +520,9 @@ export async function recediAbbonamento(): Promise<
       });
     if (regErr) logger.warn("abbonamento", "recesso non registrato in subscription_withdrawals:", regErr.message);
   }
+
+  // «Invita un artista»: chi ha invitato questo account non riceve il premio.
+  await annullaPerRecesso(user.id);
 
   // 4. Conferma di ricezione su supporto durevole (art. 54, c. 4 Cod. consumo).
   const piano = PLAN_LABELS[riga.tier as PaidTier] ?? "Abbonamento N'arte";

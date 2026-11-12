@@ -25,6 +25,7 @@ import {
   Tags,
   User,
   UserCog,
+  UserPlus,
   UserX,
   Users,
 } from "lucide-react";
@@ -38,6 +39,7 @@ import { contaNonLettePerProfilo, leggiNotifiche } from "@/lib/notifications";
 import type { AreaNotifiche } from "@/lib/notifications/types";
 import type { NotificheIniziali } from "@/lib/notifications/types";
 import { logger } from "@/lib/logger";
+import { invitiVisibili } from "@/lib/inviti/modalita";
 import { AppShell, type AppShellStorage, type NavSection } from "@/components/layout/AppShell";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -678,6 +680,15 @@ async function loadArtistShell(userId: string): Promise<{
       href: "/dashboard/statistiche",
       label: "Statistiche",
       icon: <BarChart3 className="size-4" />,
+    });
+  }
+
+  // «Invita un artista»: visibile solo con l'interruttore INVITI_ATTIVI acceso.
+  if (invitiVisibili()) {
+    navSections.push({
+      href: "/dashboard/invita",
+      label: "Invita un artista",
+      icon: <UserPlus className="size-4" />,
     });
   }
 

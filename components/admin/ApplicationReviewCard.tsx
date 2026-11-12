@@ -72,9 +72,12 @@ const dataFmt = new Intl.DateTimeFormat("it-IT", {
 export function ApplicationReviewCard({
   candidatura: a,
   videoUrl,
+  invitatoDa = null,
 }: {
   candidatura: CandidaturaDaRivedere;
   videoUrl: string | null;
+  /** «Invita un artista»: nome d'arte di chi ha invitato, se c'è. */
+  invitatoDa?: string | null;
 }) {
   const links = linkDi(a.links);
   const strumenti = (a.instruments ?? []).filter(Boolean);
@@ -101,6 +104,7 @@ export function ApplicationReviewCard({
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Inviata il {dataFmt.format(new Date(a.created_at))}
+              {invitatoDa && <> · invitato da <strong className="font-medium">{invitatoDa}</strong></>}
             </p>
           </div>
         </div>

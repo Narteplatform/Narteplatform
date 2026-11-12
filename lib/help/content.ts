@@ -27,6 +27,7 @@ import { ACCOUNT } from "@/lib/help/categories/account";
 import { PAGAMENTI } from "@/lib/help/categories/pagamenti";
 import { POLICY } from "@/lib/help/categories/policy";
 import { BRAND } from "@/lib/help/categories/brand";
+import { invitiVisibili } from "@/lib/inviti/modalita";
 
 export type {
   HelpArticle,
@@ -43,7 +44,7 @@ export type HelpArticleRef = { category: HelpCategory; article: HelpArticle };
  * L'ordine di questo array è l'ordine mostrato in pagina e nella barra
  * laterale: dal generale allo specifico, con le regole in fondo.
  */
-export const HELP_CATEGORIES: HelpCategory[] = [
+const TUTTE_LE_CATEGORIE: HelpCategory[] = [
   INIZIARE,
   ARTISTI,
   ORGANIZZATORI,
@@ -54,6 +55,24 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   POLICY,
   BRAND,
 ];
+
+/**
+ * Articoli che descrivono funzioni dietro un interruttore: finché è spento non
+ * si pubblicano (né pagina, né ricerca, né sitemap). Lo stato si legge al build
+ * e al rendering lato server; i contenuti non arrivano mai al browser se non
+ * come indice di ricerca già filtrato.
+ */
+const ARTICOLI_CON_INTERRUTTORE: Record<string, () => boolean> = {
+  "pagamenti/invita-un-artista": invitiVisibili,
+};
+
+export const HELP_CATEGORIES: HelpCategory[] = TUTTE_LE_CATEGORIE.map((c) => ({
+  ...c,
+  articles: c.articles.filter((a) => {
+    const acceso = ARTICOLI_CON_INTERRUTTORE[`${c.slug}/${a.slug}`];
+    return acceso ? acceso() : true;
+  }),
+}));
 
 // ============================================
 // LOOKUP

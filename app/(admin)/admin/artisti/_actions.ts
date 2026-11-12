@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { chiudiCandidaturaNonApprovata, collegaApprovazione } from "@/lib/inviti/ciclo";
 import { slugify } from "@/lib/utils";
 import { artistSchema, type ArtistInput } from "@/lib/validators/schemas";
 import { sendBookingCancelledByAdminEmail } from "@/lib/emails/booking-notify";
@@ -207,6 +208,10 @@ export async function approveApplication(applicationId: string) {
 
   await admin.from("artist_applications").update({ status: "approved" }).eq("id", applicationId);
 
+  // «Invita un artista»: se la candidatura è arrivata da un link d'invito, lo
+  // si collega al nuovo account. Best-effort: non blocca mai l'approvazione.
+  await collegaApprovazione({ applicationId, userId });
+
   await registraAzione({
     actorId: user.id,
     targetType: "candidatura",
@@ -339,6 +344,7 @@ export async function rejectApplication(applicationId: string, reason: string) {
     .update({ status: "rejected" })
     .eq("id", applicationId);
   if (error) return { ok: false as const, error: error.message };
+  await chiudiCandidaturaNonApprovata(applicationId);
 
   // Nessun account esiste ancora: si scrive all'indirizzo della candidatura.
   const esito = await registraDecisione({
