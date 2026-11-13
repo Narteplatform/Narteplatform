@@ -18,6 +18,7 @@ import { LEGAL_VERSION } from "@/lib/legal/content";
 import { OAuthButtons, SeparatoreOppure } from "@/components/forms/OAuthButtons";
 import { datiOrganizzatoreSchema } from "@/lib/validators/organizzatore";
 import { PERCORSO_IN_ATTESA } from "@/lib/organizers/stato";
+import { percorsoSicuro } from "@/lib/auth/percorso";
 import {
   notificaRegistrazioneOrganizzatore,
   registraProvaRegistrazione,
@@ -92,7 +93,8 @@ export function RegisterForm({ next }: { next?: string | null }) {
     const supabase = createClient();
     // La destinazione sopravvive al giro di conferma via email: senza, chi si
     // iscrive da un profilo bloccato torna in home e deve ricercarlo.
-    const suffix = next ? `?next=${encodeURIComponent(next)}` : "";
+    const destinazione = percorsoSicuro(next ?? null);
+    const suffix = destinazione ? `?next=${encodeURIComponent(destinazione)}` : "";
     const { data, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
@@ -117,7 +119,9 @@ export function RegisterForm({ next }: { next?: string | null }) {
           accepted_role_terms: LEGAL_V2 && values.acceptedRoleTerms === true,
           legal_version: LEGAL_VERSION,
         },
-        emailRedirectTo: `${window.location.origin}/login${suffix}`,
+        // /auth/confirm gestisce sia il `code` PKCE sia il `token_hash`:
+        // /login il codice lo ignorava e la conferma restava senza esito.
+        emailRedirectTo: `${window.location.origin}/auth/confirm${suffix}`,
       },
     });
     if (error) {

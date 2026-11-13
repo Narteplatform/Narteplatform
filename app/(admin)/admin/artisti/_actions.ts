@@ -179,8 +179,32 @@ export async function approveApplication(applicationId: string) {
     return { ok: false as const, error: proprietario.error };
   }
 
+  // Ruolo: si promuove SOLO un account 'user'. Un organizzatore, un consulente
+  // o un superadmin con la stessa email non va declassato in silenzio (prima
+  // l'update era incondizionato e senza controllo dell'errore): ci si ferma
+  // prima di creare il profilo e lo si dice all'admin.
   if (userId) {
-    await admin.from("profiles").update({ role: "artist" }).eq("id", userId);
+    const { data: attuale, error: ruoloErr } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+    if (ruoloErr) return { ok: false as const, error: `Ruolo dell'account non leggibile: ${ruoloErr.message}` };
+    const ruolo = attuale?.role ?? null;
+    if (ruolo !== null && ruolo !== "user" && ruolo !== "artist") {
+      return {
+        ok: false as const,
+        error: `L'email ${app.email} appartiene a un account con ruolo «${ruolo}»: non lo trasformo in artista. Usa un'altra email per il profilo artista o cambia il ruolo a mano.`,
+      };
+    }
+    if (ruolo !== "artist") {
+      const { error: promErr } = await admin
+        .from("profiles")
+        .update({ role: "artist" })
+        .eq("id", userId)
+        .eq("role", "user");
+      if (promErr) return { ok: false as const, error: `Ruolo artista non impostato: ${promErr.message}` };
+    }
   }
 
   const slugBase = slugify(app.stage_name);

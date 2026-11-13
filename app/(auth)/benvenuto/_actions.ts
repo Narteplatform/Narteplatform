@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/guards";
 import { datiOrganizzatoreSchema } from "@/lib/validators/organizzatore";
 import { PERCORSO_IN_ATTESA, richiediAccessoOrganizzatore } from "@/lib/organizers/approvazione";
+import { hasAcceptedCurrentLegal } from "@/lib/legal/consents";
 
 export type BenvenutoState = { error?: string; fieldErrors?: { organizerName?: string; city?: string } };
 
@@ -30,6 +31,20 @@ export async function richiediOrganizzatoreAction(
       if ((k === "organizerName" || k === "city") && !fieldErrors[k]) fieldErrors[k] = issue.message;
     }
     return { fieldErrors };
+  }
+
+  // La richiesta (e l'avviso al team) parte solo DOPO i consensi. Il gate del
+  // middleware li chiede già prima di mostrare /benvenuto, ma le Server Action
+  // ne sono esenti: qui lo si ricontrolla. Un errore di lettura non blocca
+  // (stessa scelta del gate: fallire aperti).
+  let consensiDati = true;
+  try {
+    consensiDati = await hasAcceptedCurrentLegal(user.id);
+  } catch {
+    consensiDati = true;
+  }
+  if (!consensiDati) {
+    redirect(`/accetta-condizioni?next=${encodeURIComponent("/benvenuto?ruolo=organizer")}`);
   }
 
   const esito = await richiediAccessoOrganizzatore({

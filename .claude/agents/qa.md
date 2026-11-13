@@ -31,7 +31,7 @@ Vedi la sezione omonima in `CLAUDE.md` per il precedente reale che ha originato 
 | # | Flusso | Step |
 |---|--------|------|
 | 1 | Registrazione utente | `/register` → email + password → conferma → login |
-| 2 | Richiesta artista | login user → `/artisti/[slug]` → form → verifica DB `leads` + 2 email Resend |
+| 2 | Richiesta artista | login user → `/artisti/[slug]` → form → verifica DB `leads` + 2 email Brevo (registro in /admin/email) |
 | 3 | Candidatura artista | `/candidatura-artista` → form → verifica `artist_applications.status=pending` + email admin |
 | 4 | Approvazione artista | login admin → `/admin/artisti` → approva → verifica magic link inviato + record `artists` con `status=approved` |
 | 5 | Creazione evento | login admin → `/admin/eventi/new` → submit → evento appare in `/eventi` e in home |

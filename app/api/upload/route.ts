@@ -3,10 +3,17 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { allowByIp, LIMITI } from "@/lib/security/rate-limit";
 import { bunnyUploadsEnabled } from "@/lib/storage/bunny/config";
 import { putObject } from "@/lib/storage/bunny/storage";
-import { imageExtForMime, mediaKey } from "@/lib/storage/bunny/paths";
+import { audioExtForMime, imageExtForMime, mediaKey } from "@/lib/storage/bunny/paths";
 import { storageCdnUrl } from "@/lib/storage/bunny/urls";
 import { recordMediaAsset } from "@/lib/storage/bunny/registry";
 import { logger } from "@/lib/logger";
+import {
+  SIGNATURE_BYTES,
+  detectImageMime,
+  looksLikeAudio,
+  looksLikeVideo,
+} from "@/lib/security/file-signature";
+import { checkCollectionLimit, getEntitlementsForUser } from "@/lib/billing/entitlements";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,8 +57,12 @@ const KIND_SOLO_ADMIN: ReadonlySet<Kind> = new Set(["blog", "format", "format-vi
  */
 const SITE_IMAGE_MIME = /^image\/(jpeg|png|webp)$/;
 
-const AUDIO_MIME = /^audio\//;
 const VIDEO_MIME = /^video\/(mp4|webm|quicktime)$/;
+const VIDEO_EXT: Readonly<Record<string, string>> = {
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
+};
 const AUDIO_MAX = 25 * 1024 * 1024; // 25MB
 const VIDEO_MAX = 50 * 1024 * 1024; // 50MB
 /**
@@ -120,14 +131,23 @@ export async function POST(request: Request) {
     }
   }
 
+  const isVideo = kind === "artist-video" || kind === "event-video" || kind === "format-video";
+  const isImage = kind !== "audio" && !isVideo;
+
+  // Prima della lettura del file: per i limiti bastano dimensione e tipo
+  // dichiarato, e un file già fuori misura non va nemmeno caricato in memoria.
   if (kind === "audio") {
     if (file.size > AUDIO_MAX) {
       return NextResponse.json({ error: "Audio troppo grande (max 25MB)" }, { status: 413 });
     }
-    if (!AUDIO_MIME.test(file.type)) {
-      return NextResponse.json({ error: "Formato audio non supportato" }, { status: 415 });
+    // Stesso elenco chiuso della rotta di firma Bunny: prima bastava `audio/*`.
+    if (!audioExtForMime(file.type)) {
+      return NextResponse.json(
+        { error: "Formato audio non supportato (MP3, WAV, M4A, AAC, OGG o FLAC)." },
+        { status: 415 }
+      );
     }
-  } else if (kind === "artist-video" || kind === "event-video" || kind === "format-video") {
+  } else if (isVideo) {
     if (file.size > VIDEO_MAX) {
       return NextResponse.json({ error: "Video troppo grande (max 50MB)" }, { status: 413 });
     }
@@ -139,18 +159,83 @@ export async function POST(request: Request) {
     }
   } else {
     if (file.size > IMAGE_MAX) {
-      return NextResponse.json({ error: "Immagine troppo grande (max 5MB)" }, { status: 413 });
+      return NextResponse.json({ error: "Immagine troppo grande (max 4MB)" }, { status: 413 });
     }
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Formato non supportato" }, { status: 415 });
-    }
-    if ((kind === "site" || kind === "site-logo") && !SITE_IMAGE_MIME.test(file.type)) {
-      return NextResponse.json({ error: "Usa un file JPG, PNG o WebP." }, { status: 415 });
+    // Elenco chiuso su ENTRAMBI i rami (Bunny e Supabase). Prima il ramo
+    // Supabase accettava qualunque `image/*`, SVG compreso: un SVG può
+    // contenere script ed era servito da un dominio pubblico.
+    if (!imageExtForMime(file.type)) {
+      return NextResponse.json(
+        { error: "Formato immagine non supportato (JPEG, PNG, WebP, AVIF o GIF)." },
+        { status: 415 }
+      );
     }
   }
 
-  const isImage = kind !== "audio" && !kind.endsWith("-video");
+  // Tetto di piano PRIMA del salvataggio, per l'audio: senza, il file finisce
+  // nello Storage anche quando il salvataggio del profilo verrà poi rifiutato.
+  // Stesso controllo della rotta di firma /api/upload/audio/sign; qui il client
+  // non manda l'artista, quindi vale il profilo attivo dell'account. Il
+  // superadmin (che carica per conto di altri) e chi non ha profili artista non
+  // hanno un piano da applicare: decide comunque la Server Action al salvataggio.
+  if (kind === "audio") {
+    const gate = createAdminClient();
+    const { data: ruolo, error: ruoloErr } = await gate
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (ruoloErr) {
+      logger.error("api/upload", "lettura ruolo fallita", ruoloErr);
+      return NextResponse.json({ error: "Caricamento non riuscito, riprova" }, { status: 503 });
+    }
+    if (ruolo?.role !== "superadmin") {
+      const attivo = await getEntitlementsForUser(user.id);
+      if (attivo) {
+        const { data: artista, error: artistaErr } = await gate
+          .from("artists")
+          .select("audio_files")
+          .eq("id", attivo.artistId)
+          .maybeSingle();
+        // Una lettura fallita non è «zero tracce»: farebbe passare il gate.
+        if (artistaErr || !artista) {
+          logger.error("api/upload", "lettura tracce audio fallita", artistaErr);
+          return NextResponse.json({ error: "Caricamento non riuscito, riprova" }, { status: 503 });
+        }
+        const attuali = Array.isArray(artista.audio_files) ? artista.audio_files.length : 0;
+        const verifica = checkCollectionLimit(attivo.entitlements, "audio", attuali, attuali + 1);
+        if (!verifica.ok) {
+          return NextResponse.json({ error: verifica.error }, { status: 409 });
+        }
+      }
+    }
+  }
+
   const arrayBuffer = await file.arrayBuffer();
+  const head = new Uint8Array(arrayBuffer, 0, Math.min(SIGNATURE_BYTES, arrayBuffer.byteLength));
+
+  // Il tipo con cui il file verrà SERVITO lo decidono i suoi byte, non il
+  // browser che lo dichiara (vedi lib/security/file-signature.ts).
+  let contentType = file.type;
+  if (isImage) {
+    const reale = detectImageMime(head);
+    if (!reale) {
+      return NextResponse.json(
+        { error: "Il file non è un'immagine valida (JPEG, PNG, WebP, AVIF o GIF)." },
+        { status: 415 }
+      );
+    }
+    if ((kind === "site" || kind === "site-logo") && !SITE_IMAGE_MIME.test(reale)) {
+      return NextResponse.json({ error: "Usa un file JPG, PNG o WebP." }, { status: 415 });
+    }
+    contentType = reale;
+  } else if (kind === "audio") {
+    if (!looksLikeAudio(head)) {
+      return NextResponse.json({ error: "Il file non è un audio valido." }, { status: 415 });
+    }
+  } else if (!looksLikeVideo(head)) {
+    return NextResponse.json({ error: "Il file non è un video valido." }, { status: 415 });
+  }
 
   // -------------------------------------------------------------------------
   // Ramo Bunny Storage — solo le immagini
@@ -160,7 +245,7 @@ export async function POST(request: Request) {
   // possono attraversare una funzione Vercel. Restano su questa rotta solo
   // finché l'interruttore è spento, cioè come percorso di ripiego.
   if (bunnyUploadsEnabled() && isImage) {
-    const bunnyExt = imageExtForMime(file.type);
+    const bunnyExt = imageExtForMime(contentType);
     if (!bunnyExt) {
       return NextResponse.json(
         { error: "Formato immagine non supportato (JPEG, PNG, WebP, AVIF o GIF)." },
@@ -174,7 +259,7 @@ export async function POST(request: Request) {
     const key = mediaKey({ scope: "users", ownerId: user.id, kind, ext: bunnyExt });
 
     try {
-      await putObject({ key, body: arrayBuffer, contentType: file.type });
+      await putObject({ key, body: arrayBuffer, contentType });
     } catch (e) {
       logger.error("api/upload", "putObject su Bunny fallita", e);
       return NextResponse.json({ error: "Caricamento non riuscito" }, { status: 500 });
@@ -188,7 +273,7 @@ export async function POST(request: Request) {
       kind: "image",
       ownerUserId: user.id,
       bytes: file.size,
-      mimeType: file.type,
+      mimeType: contentType,
     });
 
     // Stessa forma di risposta del ramo Supabase: ImageUpload, GalleryUpload,
@@ -199,27 +284,27 @@ export async function POST(request: Request) {
       bucket: null,
       name: file.name,
       size: file.size,
-      contentType: file.type,
+      contentType,
     });
   }
 
   // -------------------------------------------------------------------------
   // Ramo Supabase Storage — il percorso di sempre, invariato
   // -------------------------------------------------------------------------
-  const defaultExt =
-    kind === "audio"
-      ? "mp3"
-      : kind === "artist-video" || kind === "event-video" || kind === "format-video"
-      ? "mp4"
-      : "jpg";
-  const ext =
-    (file.type.split("/")[1] || defaultExt).replace(/[^a-z0-9]/gi, "").slice(0, 5) || defaultExt;
+  // Estensione da elenchi chiusi, non dal tipo dichiarato dal client: prima
+  // `file.type.split("/")[1]` lasciava scegliere a lui con che estensione il
+  // file sarebbe stato servito (es. `svg+xml` → `.svgxml`).
+  const ext = isImage
+    ? imageExtForMime(contentType) ?? "jpg"
+    : kind === "audio"
+    ? audioExtForMime(contentType) ?? "mp3"
+    : VIDEO_EXT[contentType] ?? "mp4";
   const safeKind = kind.replace(/[^a-z0-9_-]/gi, "_");
   const path = `${user.id}/${Date.now()}-${safeKind}.${ext}`;
 
   const admin = createAdminClient();
   const { error: upErr } = await admin.storage.from(bucket).upload(path, arrayBuffer, {
-    contentType: file.type,
+    contentType,
     upsert: false,
   });
   if (upErr) {
@@ -233,6 +318,6 @@ export async function POST(request: Request) {
     bucket,
     name: file.name,
     size: file.size,
-    contentType: file.type,
+    contentType,
   });
 }

@@ -6,6 +6,35 @@ import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { formatPrice, PLAN_LABELS, PLAN_PRICES_CENTS, type PaidTier } from "@/lib/billing/plans";
 import { logger } from "@/lib/logger";
+import { getStripe, isStripeConfigured } from "@/lib/stripe/client";
+
+/**
+ * Importo del rinnovo secondo Stripe: anteprima della prossima fattura (con
+ * gli sconti in corso), poi il price della riga, e solo come
+ * ultima risorsa il listino. Sola lettura.
+ */
+async function importoRinnovo(subscriptionId: string, priceId: string | null, tier: PaidTier): Promise<number> {
+  if (isStripeConfigured()) {
+    const stripe = getStripe();
+    try {
+      const anteprima = await stripe.invoices.createPreview({ subscription: subscriptionId });
+      // `total`: prezzo con gli sconti, prima dell'eventuale credito del
+      // cliente (es. premi inviti), che si scala a parte.
+      if (typeof anteprima.total === "number") return anteprima.total;
+    } catch (e) {
+      logger.warn("rinnovi", "anteprima fattura non disponibile:", e instanceof Error ? e.message : String(e));
+    }
+    if (priceId) {
+      try {
+        const price = await stripe.prices.retrieve(priceId);
+        if (typeof price.unit_amount === "number") return price.unit_amount;
+      } catch (e) {
+        logger.warn("rinnovi", "price non leggibile:", e instanceof Error ? e.message : String(e));
+      }
+    }
+  }
+  return PLAN_PRICES_CENTS[tier]?.year ?? 0;
+}
 
 /**
  * Promemoria del rinnovo annuale, almeno 30 giorni prima (doc. 02, art. 5.2).
@@ -30,7 +59,7 @@ export async function inviaPromemoriaRinnovi(): Promise<{ inviati: number; salta
 
   const { data: subs, error } = await admin
     .from("subscriptions")
-    .select("user_id, stripe_subscription_id, tier, billing_interval, current_period_end, cancel_at_period_end, status")
+    .select("user_id, stripe_subscription_id, stripe_price_id, tier, billing_interval, current_period_end, cancel_at_period_end, status")
     .eq("billing_interval", "year")
     .in("status", ["active", "trialing"])
     .eq("cancel_at_period_end", false)
@@ -77,7 +106,7 @@ export async function inviaPromemoriaRinnovi(): Promise<{ inviati: number; salta
         year: "numeric",
         timeZone: "Europe/Rome",
       });
-      const importo = formatPrice(PLAN_PRICES_CENTS[tier]?.year ?? 0);
+      const importo = formatPrice(await importoRinnovo(sub.stripe_subscription_id, sub.stripe_price_id, tier));
       const manageUrl = `${getSiteUrl()}/dashboard/abbonamento`;
 
       const res = await dispatchEmail({

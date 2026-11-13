@@ -175,6 +175,13 @@ export function MobileMenu({ isLoggedIn, role }: Props) {
                       )}
                       {dashLabel}
                     </Link>
+                    <Link
+                      href="/account"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-medium transition-colors hover:border-foreground"
+                    >
+                      <User className="size-4" /> Account
+                    </Link>
                     <form action="/logout" method="post">
                       <button
                         type="submit"

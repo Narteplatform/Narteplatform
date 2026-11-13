@@ -9,7 +9,7 @@ export default function UserArtistsLayout({ children }: { children: React.ReactN
       {/* Vedi app/(public)/layout.tsx: stesso montaggio, stesse ragioni. */}
       <FavoritesRoot>
         <Header />
-        <main>{children}</main>
+        <main id="contenuto">{children}</main>
       </FavoritesRoot>
       <Footer />
       <Toaster

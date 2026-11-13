@@ -20,13 +20,15 @@ import {
   type PlayableArtistVideo,
 } from "@/components/media/ArtistVideoPlayer";
 import { ProfileViewBeacon } from "@/components/analytics/ProfileViewBeacon";
-import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
+import type { ArtistTier } from "@/lib/supabase/types";
 import { entitlementsFor } from "@/lib/billing/plans";
 import { JsonLd, musicGroupJsonLd, breadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { ArtistReviews } from "@/components/marketing/ArtistReviews";
 import { getPublicFeedbackForArtist } from "@/lib/feedback/queries";
 import { etichettaFormazione, isFormazione } from "@/lib/constants/formazione";
 import { hrefLink } from "@/lib/social-url";
+import { PERCORSO_LABEL, isPercorso } from "@/components/marketing/ArtistCard";
+import { logger } from "@/lib/logger";
 
 type SocialLinks = {
   instagram?: string | null;
@@ -194,6 +196,8 @@ export default async function ArtistDetailPage({
     slug: string;
     stage_name: string;
     status: string;
+    user_id?: string | null;
+    percorso_artistico?: string | null;
     bio?: string | null;
     genre?: string[] | null;
     instruments?: string[] | null;
@@ -205,7 +209,6 @@ export default async function ArtistDetailPage({
     videos?: string[] | null;
     audio_files?: { url: string; title: string }[] | null;
     social_links?: SocialLinks | string | null;
-    price_band?: PriceBand | null;
     tier?: ArtistTier | null;
     price_range?: string | null;
     gig_min_minutes?: number | null;
@@ -279,6 +282,9 @@ export default async function ArtistDetailPage({
   const viewerRole: ViewerRole =
     (viewer?.profile?.role as ViewerRole | undefined) ?? "anon";
   let organizerVenues: { id: string; name: string }[] = [];
+  // Telefono del profilo organizzatore: precompila il campo (facoltativo) del
+  // modulo di richiesta.
+  let organizerPhone: string | null = null;
   // La chat si apre solo dopo che l'artista ha avviato la trattativa, e solo
   // con artisti Pro/Max: dal profilo si raggiunge una conversazione già
   // esistente, non se ne crea una. Il primo contatto è la richiesta.
@@ -289,12 +295,14 @@ export default async function ArtistDetailPage({
     viewer && viewerRole === "organizer" ? await leggiStatoOrganizzatore(viewer.id) : "approved";
   const organizzatoreBloccato = statoOrganizzatore !== "approved";
   if (viewer && (viewerRole === "organizer" || viewerRole === "superadmin")) {
-    const { data: org } = await supabase
+    const { data: org, error: orgErr } = await supabase
       .from("organizers")
-      .select("id")
+      .select("id, phone")
       .eq("user_id", viewer.id)
       .maybeSingle();
+    if (orgErr) logger.error("ArtistDetailPage", "organizzatore non letto:", orgErr.message);
     if (org) {
+      organizerPhone = org.phone?.trim() || null;
       if (viewerRole === "organizer") {
         const { data: conv, error: convErr } = await supabase
           .from("conversations")
@@ -396,6 +404,18 @@ export default async function ArtistDetailPage({
   // ripristina all'istante. `slice` su un limite Infinity restituisce l'array
   // intero, quindi Pro/Max non sono toccati.
   const ent = entitlementsFor(artist.tier ?? "free");
+
+  // Percorso artistico: funzione Pro/Max. Dopo un passaggio a Free il valore
+  // resta in colonna (0040) ma non si mostra.
+  const percorso =
+    ent.canSetPercorso && isPercorso(artist.percorso_artistico) ? artist.percorso_artistico : null;
+
+  // La fascia di prezzo è per gli organizzatori (come nel catalogo e come dice
+  // il centro assistenza); la vede anche l'artista sul proprio profilo.
+  const puoVederePrezzo =
+    viewerRole === "organizer" ||
+    viewerRole === "superadmin" ||
+    (!!viewer && !!artist.user_id && viewer.id === artist.user_id);
 
   // Le recensioni sono una funzione dei piani Pro e Max: si raccolgono sempre
   // (vedi il commento in dashboard/feedback), ma si mostrano solo se il piano
@@ -574,6 +594,14 @@ export default async function ArtistDetailPage({
                 {artist.stage_name}
               </h1>
             </Reveal>
+            {percorso && (
+              <Reveal delay={0.15}>
+                <p className="mt-3 text-sm font-medium text-muted-foreground">
+                  Percorso artistico:{" "}
+                  <span className="text-foreground">{PERCORSO_LABEL[percorso]}</span>
+                </p>
+              </Reveal>
+            )}
             {genres.length > 0 && (
               <Reveal delay={0.2}>
                 <ul className="mt-5 flex flex-wrap gap-2">
@@ -676,6 +704,7 @@ export default async function ArtistDetailPage({
                       viewerRole={viewerRole}
                       viewerEmail={viewer?.email ?? null}
                       viewerName={viewer?.profile?.full_name ?? null}
+                      viewerPhone={organizerPhone}
                       organizerVenues={organizerVenues}
                       confirmedBookings={confirmedBookings}
                     />
@@ -700,7 +729,7 @@ export default async function ArtistDetailPage({
             <div className="mt-10">
               <BookingInformation
                 bio={bio}
-                priceRange={artist.price_range ?? null}
+                priceRange={puoVederePrezzo ? artist.price_range ?? null : null}
                 gigMinMinutes={artist.gig_min_minutes ?? null}
                 gigMaxMinutes={artist.gig_max_minutes ?? null}
                 languages={languages}

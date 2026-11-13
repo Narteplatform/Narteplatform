@@ -444,6 +444,39 @@ const MIGRATION = [
       ["funzione inviti_conteggi_visite", () => funzione("inviti_conteggi_visite")],
     ],
   },
+  {
+    file: "0081_hardening_db.sql",
+    cosa: "Hardening: privilegi su 12 tabelle, indici sulle chiavi esterne, limiti dei bucket",
+    controlli: [
+      ["privilegi anonimi revocati su admin_page_permissions", () => privilegioAnonRevocato("admin_page_permissions")],
+      ["privilegi anonimi revocati su artist_media_submissions", () => privilegioAnonRevocato("artist_media_submissions")],
+      ["privilegi anonimi revocati su billing_customers", () => privilegioAnonRevocato("billing_customers")],
+      ["privilegi anonimi revocati su consultant_slots", () => privilegioAnonRevocato("consultant_slots")],
+      ["privilegi anonimi revocati su conversation_blocks", () => privilegioAnonRevocato("conversation_blocks")],
+      ["privilegi anonimi revocati su media_assets", () => privilegioAnonRevocato("media_assets")],
+      ["privilegi anonimi revocati su platform_feedback", () => privilegioAnonRevocato("platform_feedback")],
+      ["privilegi anonimi revocati su rate_limits", () => privilegioAnonRevocato("rate_limits")],
+      ["privilegi anonimi revocati su stripe_webhook_events", () => privilegioAnonRevocato("stripe_webhook_events")],
+      ["privilegi anonimi revocati su subscriptions", () => privilegioAnonRevocato("subscriptions")],
+    ],
+  },
+  {
+    file: "0082_abbonamenti_scadenze.sql",
+    cosa: "Abbonamenti: presa in carico atomica degli eventi Stripe, ricalcolo piani scaduti, data del piano corrente",
+    controlli: [
+      ["colonna stripe_webhook_events.claimed_at", () => colonna("stripe_webhook_events", "claimed_at")],
+      ["colonna subscriptions.piano_corrente_dal", () => colonna("subscriptions", "piano_corrente_dal")],
+      ["funzione abbonamenti_ricalcola_piani", () => funzione("abbonamenti_ricalcola_piani")],
+      ["funzione stripe_evento_prendi", () => funzione("stripe_evento_prendi")],
+    ],
+  },
+  {
+    file: "0083_account_auth.sql",
+    cosa: "Account: candidatura collegata all'utente, avatar Google nel profilo",
+    controlli: [
+      ["colonna artist_applications.user_id", () => colonna("artist_applications", "user_id")],
+    ],
+  },
 ];
 
 const SIMBOLO = { si: "✅", no: "❌", dubbio: "❔" };

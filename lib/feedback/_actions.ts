@@ -6,6 +6,8 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { getOwnedArtists, resolveActiveArtist } from "@/lib/artist/current";
 import { avvisaTeam } from "@/lib/notifications/team";
+import { creaNotifichePerArtista } from "@/lib/notifications";
+import { formatDateLongIt } from "@/lib/emails/format";
 import { feedbackSchema, platformFeedbackSchema } from "@/lib/validators/schemas";
 import {
   applicaModerazione,
@@ -92,6 +94,16 @@ export async function submitFeedback(input: {
     }
     return { ok: false, error: error.message };
   }
+
+  // Campanella dell'artista. Best-effort: non lancia e non blocca l'invio.
+  // L'artista legge le recensioni su ogni piano (il piano decide solo se
+  // compaiono sul profilo pubblico) e può rispondere da /dashboard/feedback.
+  await creaNotifichePerArtista(booking.artist_id, {
+    kind: "recensione_ricevuta",
+    title: "Hai ricevuto una nuova recensione",
+    body: `Per l'evento di ${formatDateLongIt(booking.event_date)}. La trovi in Feedback, dove puoi anche rispondere.`,
+    href: "/dashboard/feedback",
+  });
 
   revalidatePath("/organizzatore/feedback");
   revalidatePath("/dashboard/feedback");

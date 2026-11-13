@@ -98,10 +98,21 @@ I template React Email vivono in `lib/emails/`. Brevo usa template gestiti nella
 
 ## 7. Hosting e ambienti
 
-- **Production**: deploy automatico Vercel dal branch `main`.
-- **Preview**: deploy automatico per ogni PR.
-- **Supabase**: progetto managed, backup automatici.
-- **Variabili d'ambiente**: gestite via `vercel env` (production / preview / development).
+> Corretto il 13/11/2026: la versione precedente dichiarava «Preview per ogni PR» e «backup
+> automatici». Nessuna delle due cose è vera oggi.
+
+- **Production**: deploy automatico Vercel a ogni push sul branch `main`. Il flusso di lavoro
+  attuale committa direttamente su `main`: **non ci sono PR né CI** (nessun `.github/workflows`).
+  Typecheck, lint e build si eseguono a mano (`npm run typecheck`, `npm run lint`, `npm run build`).
+  Vercel crea un deploy di anteprima solo per eventuali branch diversi da `main`.
+- **Supabase**: progetto managed sul **piano Free**. Il piano Free **non offre backup
+  ripristinabili** dal pannello (né Point-in-Time Recovery) e mette il progetto in pausa dopo
+  ~7 giorni di inattività (lo evita il cron `/api/keepalive`). Il DB è quello di produzione e
+  non esiste staging. Come mettere in piedi backup e ripristino: `docs/OPERATIVITA.md`.
+- **Monitoraggio**: `/api/health` per un monitor esterno, avviso al root quando un cron fallisce,
+  registro strutturato degli errori (`instrumentation.ts`). Dettagli in `docs/OPERATIVITA.md`.
+- **Variabili d'ambiente**: gestite dal pannello Vercel / `vercel env` (production / preview /
+  development). Elenco completo e commentato: `.env.local.example`.
 
 ### Variabili principali
 
@@ -110,12 +121,11 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 SUPERADMIN_EMAIL=
-RESEND_API_KEY=
-ADMIN_NOTIFICATION_EMAIL=
-BREVO_API_KEY=                  # da aggiungere
-STRIPE_SECRET_KEY=              # da aggiungere
-STRIPE_WEBHOOK_SECRET=          # da aggiungere
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=  # da aggiungere
+BREVO_API_KEY=                  # unico provider email dal 05/11/2026 (Resend rimosso)
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+CRON_SECRET=                    # autenticazione dei cron e di /api/health?deep=1
 ```
 
 ---

@@ -17,6 +17,10 @@ import type { PublicReviews } from "@/lib/feedback/queries";
  * di quello che il profilo deve fare.
  */
 
+/** Regolamento delle recensioni (v2) finché spento: si rimanda ai Termini pubblicati. */
+const LEGAL_V2 = process.env.NEXT_PUBLIC_LEGAL_V2_PUBBLICATO === "1";
+const URL_REGOLE_RECENSIONI = LEGAL_V2 ? "/regolamento-recensioni" : "/termini";
+
 function dataBreve(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT", {
     month: "long",
@@ -84,11 +88,8 @@ export function ArtistReviews({
               tutte le recensioni visibili. Nessuna recensione è a pagamento e
               l&rsquo;artista non può scegliere quali mostrare: sono visibili
               tutte, sui profili con piano Pro o Max.{" "}
-              <Link
-                href="/regolamento-recensioni"
-                className="underline underline-offset-2"
-              >
-                Leggi il regolamento
+              <Link href={URL_REGOLE_RECENSIONI} className="underline underline-offset-2">
+                {LEGAL_V2 ? "Leggi il regolamento" : "Leggi le regole nei Termini d’uso"}
               </Link>
             </p>
           </div>

@@ -1,4 +1,5 @@
 import { getSiteUrl } from "@/lib/site-url";
+import { serializeJsonForScript } from "@/lib/security/json-script";
 
 /**
  * Dati strutturati per i motori di ricerca (schema.org).
@@ -35,9 +36,10 @@ export function JsonLd({ data }: { data: Json | Json[] }) {
   return (
     <script
       type="application/ld+json"
-      // Il contenuto è costruito da noi a partire da dati del nostro database,
-      // mai da input dell'utente non filtrato.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      // I dati vengono anche da campi scritti dagli utenti (la bio di un
+      // artista): `serializeJsonForScript` impedisce che un `</script>` nel
+      // testo chiuda il tag e faccia eseguire ciò che segue.
+      dangerouslySetInnerHTML={{ __html: serializeJsonForScript(data) }}
     />
   );
 }

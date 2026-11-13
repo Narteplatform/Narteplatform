@@ -2,6 +2,7 @@ import { after } from "next/server";
 import { z } from "zod";
 import { invitiVisibili } from "@/lib/inviti/modalita";
 import { registraAperturaInvito } from "@/lib/inviti/visite";
+import { checkRateLimit, clientFingerprint, LIMITI } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs"; // serve node:crypto
 export const dynamic = "force-dynamic";
@@ -35,6 +36,13 @@ export async function POST(request: Request) {
   if (!parsed.success) return NO_CONTENT();
 
   const headers = new Headers(request.headers);
-  after(() => registraAperturaInvito({ codice: parsed.data.codice, kind: "visita", headers }));
+  // L'impronta si calcola ORA, mentre la richiesta è viva; il controllo e la
+  // registrazione vanno dopo la risposta, come prima. Oltre la soglia la visita
+  // semplicemente non si conta: la risposta resta 204 (a un bot non si dice).
+  const impronta = await clientFingerprint();
+  after(async () => {
+    if (!(await checkRateLimit(LIMITI.invitoVisita, impronta))) return;
+    await registraAperturaInvito({ codice: parsed.data.codice, kind: "visita", headers });
+  });
   return NO_CONTENT();
 }

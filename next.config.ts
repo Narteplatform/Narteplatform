@@ -1,5 +1,47 @@
 import type { NextConfig } from "next";
 
+/**
+ * Host esatti dei nostri media, dalle variabili d'ambiente già esistenti
+ * (stessa logica di lib/security/media-hosts.ts, che questo file non può
+ * importare). Prima `remotePatterns` accettava QUALUNQUE `*.supabase.co` e
+ * `*.b-cdn.net`: l'ottimizzatore di immagini di Vercel lavorava (a nostre
+ * spese) per i bucket e le pull zone di chiunque.
+ *
+ * Se una variabile manca al momento del build si ripiega sul pattern largo di
+ * prima, per famiglia: un'immagine rotta in produzione costa più di un
+ * controllo meno stretto.
+ */
+function hostDa(valore: string | undefined): string | null {
+  const v = valore?.trim();
+  if (!v) return null;
+  try {
+    return new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`).hostname.toLowerCase() || null;
+  } catch {
+    return null;
+  }
+}
+
+function mediaRemotePatterns(): { protocol: "https"; hostname: string }[] {
+  // Supabase RESTA anche a interruttore Bunny acceso: è la convivenza. I
+  // contenuti già caricati hanno un URL Supabase assoluto in colonna.
+  const supabase = hostDa(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  // bunny.net: la pull zone dello storage (immagini, audio) e quella di Stream
+  // (poster e anteprime dei video). Si restringono solo se note entrambe.
+  const storage = hostDa(process.env.NEXT_PUBLIC_BUNNY_STORAGE_CDN);
+  const stream = hostDa(process.env.NEXT_PUBLIC_BUNNY_STREAM_CDN);
+
+  const hosts = [
+    supabase ?? "*.supabase.co",
+    ...(storage && stream ? [storage, stream] : ["*.b-cdn.net"]),
+  ];
+  return Array.from(new Set(hosts)).map((hostname) => ({ protocol: "https" as const, hostname }));
+}
+
+// 'unsafe-eval' serve solo al server di sviluppo (React Refresh e la
+// ricostruzione degli stack). In produzione Next non lo usa: tenerlo
+// significherebbe autorizzare `eval` per chiunque riesca a iniettare script.
+const scriptEval = process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'";
+
 const nextConfig: NextConfig = {
   // Skew protection: lega le richieste (Server Action comprese) al deploy che
   // ha servito la pagina, così un deploy nuovo non rompe i moduli già aperti.
@@ -8,15 +50,8 @@ const nextConfig: NextConfig = {
     ? { deploymentId: process.env.VERCEL_DEPLOYMENT_ID }
     : {}),
   images: {
-    remotePatterns: [
-      // *.supabase.co RESTA: è la convivenza. I contenuti già caricati hanno un
-      // URL Supabase assoluto in colonna e continuano a passare di lì anche
-      // dopo il passaggio a bunny.net. Rimuoverlo li renderebbe invisibili.
-      { protocol: "https", hostname: "*.supabase.co" },
-      // bunny.net: sia la pull zone dello storage (immagini, audio) sia quella
-      // di Stream (poster e anteprime dei video).
-      { protocol: "https", hostname: "*.b-cdn.net" },
-    ],
+    // Vedi mediaRemotePatterns() in cima al file.
+    remotePatterns: mediaRemotePatterns(),
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion", "date-fns"],
@@ -67,15 +102,16 @@ const nextConfig: NextConfig = {
   async headers() {
     const csp = [
       "default-src 'self'",
-      // 'unsafe-inline' e 'unsafe-eval' servono a Next in sviluppo e agli
-      // script JSON-LD inline. Da stringere quando si passerà ai nonce.
+      // 'unsafe-inline' serve agli script inline di Next e al JSON-LD; da
+      // stringere quando si passerà ai nonce. 'unsafe-eval' solo in sviluppo
+      // (vedi `scriptEval` in cima al file).
       // embeds.iubenda.com → il widget della Cookie Solution, che porta con sé
       //   configurazione, blocco automatico e modalità consenso di Google
       // cdn.iubenda.com    → il nucleo che il widget carica, e lo script che
       //   mostra i documenti nelle pagine legali
       // googletagmanager   → gtag.js di GA4 (sta lì anche senza Tag Manager)
       // connect.facebook   → il pixel di Meta
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com " +
+      `script-src 'self' 'unsafe-inline'${scriptEval} https://js.stripe.com ` +
         "https://embeds.iubenda.com https://cdn.iubenda.com https://cs.iubenda.com " +
         "https://www.googletagmanager.com https://connect.facebook.net",
       // fonts.googleapis.com e fonts.gstatic.com RIMOSSI: `next/font/google` in

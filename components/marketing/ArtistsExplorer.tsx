@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { Search, ChevronDown, RotateCcw, Check } from "lucide-react";
-import { ArtistCard } from "@/components/marketing/ArtistCard";
+import { Search, ChevronDown, RotateCcw, Check, CalendarDays, X } from "lucide-react";
+import { ArtistCard, PERCORSO_LABEL } from "@/components/marketing/ArtistCard";
 import { TopArtistBadge } from "@/components/marketing/ArtistBadges";
-import type { ArtistFormation, ArtistTier, PriceBand } from "@/lib/supabase/types";
+import type { FasciaPrezzo } from "@/components/marketing/PriceBandBadge";
+import type { ArtistFormation, ArtistPath, ArtistTier } from "@/lib/supabase/types";
 import { urlCriteriPosizionamento } from "@/lib/legal/v2/link";
+import { artistiOccupatiIl } from "@/app/(user)/artisti/_actions";
 
 export type ExplorerArtist = {
   id: string;
@@ -22,11 +24,50 @@ export type ExplorerArtist = {
   instruments: string[];
   /** Solista o band. Null se non indicato (profili precedenti alla 0075). */
   formazione?: ArtistFormation | null;
-  price_band?: PriceBand;
+  /** Fascia di prezzo (da `price_range`): presente solo per chi può vederla. */
+  fascia?: FasciaPrezzo | null;
+  /** L'artista ha indicato una fascia (anche se il visitatore non può vederla). */
+  haFascia?: boolean;
+  /** Percorso artistico, già filtrato per piano dalla pagina. */
+  percorso?: ArtistPath | null;
   tier?: ArtistTier | null;
   /** Media dei voti ricevuti. `null` quando l'artista non ha recensioni. */
   rating?: { average: number; count: number } | null;
 };
+
+/** Filtri iniziali letti dall'URL dalla pagina server (es. ricerca dalla home). */
+export type FiltriIniziali = {
+  q: string;
+  genre: string[];
+  categoria: string[];
+  formazione: string[];
+  city: string[];
+  percorso: string[];
+  /** YYYY-MM-DD, già verificata dal server; null se assente o illeggibile. */
+  data: string | null;
+};
+
+/** Confronto senza maiuscole né accenti: «Elettronica» = «elettronica». */
+function norm(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Chiave della città: «Napoli», «napoli », «Napoli (NA)» e «Napoli, Campania»
+ * finiscono nella stessa voce del filtro. `artists.city` è testo libero.
+ */
+function chiaveCitta(s: string): string {
+  return norm(s.replace(/\(.*?\)/g, "").split(",")[0] ?? "");
+}
+
+function dataLeggibile(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+}
 
 const ROLE_GROUPS: { key: string; label: string; match: (instr: string) => boolean }[] = [
   { key: "bassista", label: "Bassista", match: (i) => /\bbass(o|ist)|contrabbasso/i.test(i) },
@@ -178,15 +219,91 @@ export function ArtistsExplorer({
   artists,
   canSeePrice = false,
   isGuest = false,
+  filtriIniziali,
+  occupatiIniziali = null,
+  oggi,
 }: {
   artists: ExplorerArtist[];
   canSeePrice?: boolean;
   isGuest?: boolean;
+  filtriIniziali?: FiltriIniziali;
+  /** Artisti occupati nella data di `filtriIniziali.data`, letti dal server. */
+  occupatiIniziali?: string[] | null;
+  /** Oggi (fuso di Roma), dal server: minimo selezionabile nel filtro data. */
+  oggi?: string;
 }) {
-  const [genreFilters, setGenreFilters] = useState<string[]>([]);
-  const [roleFilters, setRoleFilters] = useState<string[]>([]);
-  const [formazioneFilters, setFormazioneFilters] = useState<string[]>([]);
-  const [query, setQuery] = useState("");
+  // Stato iniziale dall'URL. I valori sconosciuti si scartano (ruoli,
+  // formazione, percorso) o si allineano a quelli del roster (generi e città,
+  // senza maiuscole né accenti: la home manda «rock», il profilo dice «Rock»).
+  const [genreFilters, setGenreFilters] = useState<string[]>(() => {
+    const generi = new Map<string, string>();
+    for (const a of artists) for (const g of a.genre ?? []) if (!generi.has(norm(g))) generi.set(norm(g), g);
+    return [...new Set((filtriIniziali?.genre ?? []).map((g) => generi.get(norm(g)) ?? g))];
+  });
+  const [roleFilters, setRoleFilters] = useState<string[]>(() =>
+    (filtriIniziali?.categoria ?? []).filter((k) => ROLE_GROUPS.some((r) => r.key === k))
+  );
+  const [formazioneFilters, setFormazioneFilters] = useState<string[]>(() =>
+    (filtriIniziali?.formazione ?? []).filter((k) => k === "solista" || k === "band")
+  );
+  const [percorsoFilters, setPercorsoFilters] = useState<string[]>(() =>
+    (filtriIniziali?.percorso ?? []).filter((k) => k in PERCORSO_LABEL)
+  );
+  // Le città si tengono per chiave normalizzata; l'etichetta di una città
+  // chiesta dall'URL ma assente dal roster resta quella scritta nell'URL.
+  const [cityFilters, setCityFilters] = useState<string[]>(() => [
+    ...new Set((filtriIniziali?.city ?? []).map(chiaveCitta).filter(Boolean)),
+  ]);
+  const [cittaDaUrl] = useState<Map<string, string>>(
+    () => new Map((filtriIniziali?.city ?? []).map((c) => [chiaveCitta(c), c.trim()]))
+  );
+  const [query, setQuery] = useState(filtriIniziali?.q ?? "");
+
+  // Filtro «Libero il»: chi è occupato in quella data esce dai risultati.
+  const [dataLibera, setDataLibera] = useState<string | null>(filtriIniziali?.data ?? null);
+  const [occupati, setOccupati] = useState<Set<string> | null>(() =>
+    filtriIniziali?.data && occupatiIniziali ? new Set(occupatiIniziali) : null
+  );
+  const [erroreData, setErroreData] = useState<string | null>(null);
+  const [caricaData, startCaricaData] = useTransition();
+  const ultimaDataChiesta = useRef<string | null>(filtriIniziali?.data ?? null);
+
+  function cambiaData(valore: string) {
+    setErroreData(null);
+    ultimaDataChiesta.current = valore || null;
+    if (!valore) {
+      setDataLibera(null);
+      setOccupati(null);
+      return;
+    }
+    setDataLibera(valore);
+    setOccupati(null);
+    startCaricaData(async () => {
+      const esito = await artistiOccupatiIl(valore);
+      // Una risposta arrivata dopo un cambio di data non vale più.
+      if (ultimaDataChiesta.current !== valore) return;
+      if (esito.ok) setOccupati(new Set(esito.ids));
+      else setErroreData(esito.error);
+    });
+  }
+
+  // L'URL segue i filtri, senza ricaricare la pagina: un link copiato o il
+  // tasto Indietro riportano agli stessi risultati.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    const q = query.trim();
+    if (q) params.set("q", q);
+    if (genreFilters.length) params.set("genre", genreFilters.join(","));
+    if (roleFilters.length) params.set("categoria", roleFilters.join(","));
+    if (formazioneFilters.length) params.set("formazione", formazioneFilters.join(","));
+    if (percorsoFilters.length) params.set("percorso", percorsoFilters.join(","));
+    if (cityFilters.length) params.set("city", cityFilters.join(","));
+    if (dataLibera) params.set("data", dataLibera);
+    const qs = params.toString();
+    const attuale = window.location.search.replace(/^\?/, "");
+    if (qs === attuale) return;
+    window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+  }, [query, genreFilters, roleFilters, formazioneFilters, percorsoFilters, cityFilters, dataLibera]);
 
   // Il filtro compare solo se almeno un profilo ha indicato la formazione.
   const formazioneOptions = useMemo(() => {
@@ -196,6 +313,38 @@ export function ArtistsExplorer({
       .filter((k) => (m.get(k) ?? 0) > 0)
       .map((k) => ({ key: k, label: FORMAZIONE_LABEL[k], count: m.get(k) ?? 0 }));
   }, [artists]);
+
+  // Percorso artistico: solo i profili il cui piano lo include (la pagina
+  // passa `percorso` già filtrato).
+  const percorsoOptions = useMemo(() => {
+    const m = new Map<ArtistPath, number>();
+    for (const a of artists) if (a.percorso) m.set(a.percorso, (m.get(a.percorso) ?? 0) + 1);
+    return (Object.keys(PERCORSO_LABEL) as ArtistPath[])
+      .filter((k) => (m.get(k) ?? 0) > 0)
+      .map((k) => ({ key: k, label: PERCORSO_LABEL[k], count: m.get(k) ?? 0 }));
+  }, [artists]);
+
+  // Città dal roster (testo libero in `artists.city`), raggruppate per chiave.
+  const cityOptions = useMemo(() => {
+    const m = new Map<string, { label: string; count: number }>();
+    for (const a of artists) {
+      const c = a.city?.trim();
+      if (!c) continue;
+      const k = chiaveCitta(c);
+      if (!k) continue;
+      const voce = m.get(k);
+      if (voce) voce.count += 1;
+      else m.set(k, { label: c.replace(/\s*\(.*?\)\s*/g, " ").split(",")[0].trim() || c, count: 1 });
+    }
+    // Una città chiesta dall'URL (es. dalla home) senza artisti resta visibile,
+    // con 0: meglio che ignorarla in silenzio.
+    for (const k of cityFilters) {
+      if (!m.has(k)) m.set(k, { label: cittaDaUrl.get(k) ?? k, count: 0 });
+    }
+    return [...m.entries()]
+      .map(([key, v]) => ({ key, label: v.label, count: v.count }))
+      .sort((a, b) => a.label.localeCompare(b.label, "it"));
+  }, [artists, cityFilters, cittaDaUrl]);
 
   const genreCounts = useMemo(() => {
     const m = new Map<string, number>();
@@ -239,30 +388,47 @@ export function ArtistsExplorer({
     [availableRoles, roleCounts]
   );
 
-  const genreOptions = useMemo(
-    () =>
-      allGenres.map((g) => ({
-        key: g,
-        label: g,
-        count: genreCounts.get(g) ?? 0,
-      })),
-    [allGenres, genreCounts]
-  );
+  const genreOptions = useMemo(() => {
+    const opts = allGenres.map((g) => ({
+      key: g,
+      label: g,
+      count: genreCounts.get(g) ?? 0,
+    }));
+    // Genere chiesto dall'URL ma assente dal roster: visibile con 0.
+    for (const g of genreFilters) {
+      if (!opts.some((o) => o.key === g)) opts.push({ key: g, label: g, count: 0 });
+    }
+    return opts;
+  }, [allGenres, genreCounts, genreFilters]);
 
   const hasFilters =
     genreFilters.length > 0 ||
     roleFilters.length > 0 ||
     formazioneFilters.length > 0 ||
+    percorsoFilters.length > 0 ||
+    cityFilters.length > 0 ||
+    dataLibera !== null ||
     query.length > 0;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const generiScelti = new Set(genreFilters.map(norm));
     return artists.filter((a) => {
       if (formazioneFilters.length > 0 && !(a.formazione && formazioneFilters.includes(a.formazione))) {
         return false;
       }
-      if (genreFilters.length > 0) {
-        const has = (a.genre ?? []).some((g) => genreFilters.includes(g));
+      if (percorsoFilters.length > 0 && !(a.percorso && percorsoFilters.includes(a.percorso))) {
+        return false;
+      }
+      if (cityFilters.length > 0) {
+        const k = a.city ? chiaveCitta(a.city) : "";
+        if (!k || !cityFilters.includes(k)) return false;
+      }
+      // Finché la lettura non è arrivata (o se è fallita) non si esclude
+      // nessuno: un elenco di occupati mancante non vuol dire «tutti liberi».
+      if (dataLibera && occupati && occupati.has(a.id)) return false;
+      if (generiScelti.size > 0) {
+        const has = (a.genre ?? []).some((g) => generiScelti.has(norm(g)));
         if (!has) return false;
       }
       if (roleFilters.length > 0) {
@@ -281,7 +447,18 @@ export function ArtistsExplorer({
       }
       return true;
     });
-  }, [artists, genreFilters, roleFilters, formazioneFilters, query, isGuest]);
+  }, [
+    artists,
+    genreFilters,
+    roleFilters,
+    formazioneFilters,
+    percorsoFilters,
+    cityFilters,
+    dataLibera,
+    occupati,
+    query,
+    isGuest,
+  ]);
 
   // Top artists: tier='max', shown as a dedicated section when no filters active
   const topArtists = useMemo(
@@ -325,7 +502,9 @@ export function ArtistsExplorer({
         city={a.city}
         coverImage={a.cover_image}
         genres={a.genre}
-        priceBand={a.price_band}
+        fascia={a.fascia ?? null}
+        haFascia={a.haFascia ?? false}
+        percorso={a.percorso ?? null}
         canSeePrice={canSeePrice}
         tier={a.tier}
         artistId={a.id}
@@ -338,6 +517,9 @@ export function ArtistsExplorer({
     setGenreFilters([]);
     setRoleFilters([]);
     setFormazioneFilters([]);
+    setPercorsoFilters([]);
+    setCityFilters([]);
+    cambiaData("");
     setQuery("");
   }
 
@@ -387,6 +569,59 @@ export function ArtistsExplorer({
               onClear={() => setGenreFilters([])}
             />
           )}
+          {!isGuest && cityOptions.length > 0 && (
+            <FilterDropdown
+              label="Città"
+              options={cityOptions}
+              selected={cityFilters}
+              onToggle={(key) => toggle(cityFilters, setCityFilters, key)}
+              onClear={() => setCityFilters([])}
+            />
+          )}
+          {!isGuest && percorsoOptions.length > 0 && (
+            <FilterDropdown
+              label="Percorso"
+              options={percorsoOptions}
+              selected={percorsoFilters}
+              onToggle={(key) => toggle(percorsoFilters, setPercorsoFilters, key)}
+              onClear={() => setPercorsoFilters([])}
+            />
+          )}
+          {/* Data libera: solo con un account, come il calendario del profilo. */}
+          {!isGuest && (
+            <div
+              className={[
+                "inline-flex h-10 items-center gap-2 rounded-full border pl-4 pr-2 text-xs font-semibold uppercase tracking-wider transition-colors",
+                dataLibera
+                  ? "border-azzurro bg-azzurro text-white"
+                  : "border-notte/30 bg-white text-notte hover:border-notte",
+              ].join(" ")}
+            >
+              <CalendarDays className="size-3.5 shrink-0" aria-hidden="true" />
+              <label htmlFor="filtro-data-libera" className="whitespace-nowrap">
+                Libero il
+              </label>
+              <input
+                id="filtro-data-libera"
+                type="date"
+                min={oggi}
+                value={dataLibera ?? ""}
+                onChange={(e) => cambiaData(e.target.value)}
+                className="h-8 w-[8.5rem] rounded-full bg-transparent px-1 text-xs normal-case tracking-normal focus:outline-none focus-visible:ring-2 focus-visible:ring-azzurro"
+                aria-describedby={erroreData ? "filtro-data-errore" : undefined}
+              />
+              {dataLibera && (
+                <button
+                  type="button"
+                  onClick={() => cambiaData("")}
+                  className="inline-flex size-6 items-center justify-center rounded-full hover:bg-white/20"
+                  aria-label="Togli il filtro per data"
+                >
+                  <X className="size-3" />
+                </button>
+              )}
+            </div>
+          )}
           {hasFilters && (
             <button
               type="button"
@@ -401,7 +636,7 @@ export function ArtistsExplorer({
         </div>
 
         {/* Counter */}
-        <span className="hidden shrink-0 text-xs text-palco/50 sm:block">
+        <span className="hidden shrink-0 text-xs text-palco/50 sm:block" aria-live="polite">
           {filtered.length} {filtered.length === 1 ? "artista" : "artisti"}
           {hasFilters ? " trovati" : ""}
         </span>
@@ -412,6 +647,18 @@ export function ArtistsExplorer({
         {filtered.length} {filtered.length === 1 ? "artista" : "artisti"}
         {hasFilters ? " trovati" : ""}
       </p>
+
+      {dataLibera && (caricaData || erroreData) && (
+        <p
+          id="filtro-data-errore"
+          role="status"
+          className={`mt-2 text-xs ${erroreData ? "text-corallo" : "text-notte/60"}`}
+        >
+          {erroreData
+            ? `${erroreData} Per ora vedi tutti gli artisti, anche quelli già impegnati il ${dataLeggibile(dataLibera)}.`
+            : `Controllo chi è libero il ${dataLeggibile(dataLibera)}…`}
+        </p>
+      )}
 
       {/* Trasparenza sull'ordine (art. 22 c. 4-bis Cod. consumo): sempre
           visibile, anche da telefono, sopra i risultati. */}

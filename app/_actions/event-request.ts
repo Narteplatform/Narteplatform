@@ -118,8 +118,23 @@ export async function submitEventRequest(input: EventRequestInput) {
         adminUrl: `${getSiteUrl()}/admin/leads`,
       },
       subjectPreview: `Richiesta evento: ${data.name}`,
-    }).catch((e) => console.error("[email] richiesta evento:", e));
+    }).catch((e) => logger.error("email", "richiesta evento:", e));
   }
+
+  // Ricevuta a chi ha scritto, con il template già usato dal modulo contatti
+  // (stessi parametri). Best-effort: la richiesta è già salvata.
+  await dispatchEmail({
+    key: "contact_receipt",
+    to: data.email,
+    params: {
+      name: data.name,
+      email: "",
+      subject: oggetto,
+      message: lines.replace(/\*\*/g, ""),
+      adminUrl: "",
+    },
+    subjectPreview: "Abbiamo ricevuto il tuo messaggio — N'arte",
+  }).catch((e) => logger.error("email", "ricevuta richiesta evento:", e));
 
   return { ok: true as const };
 }

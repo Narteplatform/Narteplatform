@@ -1,3 +1,7 @@
+// Questo modulo crea anche il client service-role (createAdminClient), che
+// bypassa la RLS: se un Client Component lo importasse, anche solo di
+// rimbalzo, il build deve fallire invece di provare a spedirlo al browser.
+import "server-only";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createClient as createServiceClient } from "@supabase/supabase-js";

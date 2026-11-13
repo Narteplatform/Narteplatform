@@ -1,6 +1,6 @@
 import type { HelpCategory } from "@/lib/help/types";
 
-const UPDATED = "2026-11-12";
+const UPDATED = "2026-11-13";
 
 export const BOOKING: HelpCategory = {
   slug: "booking",
@@ -196,12 +196,12 @@ export const BOOKING: HelpCategory = {
 <p>Scrivetelo <strong>in chat</strong> (o via email, se l'artista ha il piano Free), così resta traccia e potete rileggerlo entrambi.</p>
 
 <h2>Nei giorni precedenti</h2>
-<p>Tenete presente che <strong>la piattaforma non invia avvisi automatici prima dell'evento</strong>. Nessuno vi scriverà "domani suoni", quindi segnatevi la data in agenda.</p>
+<p>La mattina del <strong>giorno prima dell'evento</strong> N'arte manda un <strong>promemoria via email</strong> sia all'artista sia all'organizzatore, con data e riepilogo. È un aiuto, non una garanzia (un'email può finire nello spam): segnatevi comunque la data in agenda.</p>
 <p>Sentirsi 48 ore prima per confermare orario di arrivo, referente sul posto e numero di telefono evita il 90% degli imprevisti.</p>
 
 <h2>Dopo la serata</h2>
 <p>La data passa nello storico. Da quel momento l'organizzatore può <a href="/help/organizzatori/lasciare-recensione">lasciare una recensione</a>, una sola per evento, che compare sul profilo pubblico dell'artista.</p>
-<p>Anche in questo caso <strong>non parte nessuna email automatica che inviti a recensire</strong>. Se sei un artista e ci tieni alla recensione, un messaggio di ringraziamento il giorno dopo funziona meglio di qualsiasi automatismo.</p>
+<p>Il giorno dopo la data l'organizzatore riceve <strong>un'email che lo invita a lasciare la recensione</strong>. Scriverla resta una sua scelta: se sei un artista e ci tieni, un messaggio di ringraziamento il giorno dopo aiuta.</p>
 
 <h2>Il pagamento</h2>
 <p>Avviene <strong>fuori dalla piattaforma</strong>, direttamente fra voi e nei modi che avete concordato. N'arte non incassa, non anticipa e non trattiene nulla: vedi <a href="/help/pagamenti/modalita-pagamento">come viene pagato il compenso</a>.</p>

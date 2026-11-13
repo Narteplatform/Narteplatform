@@ -1,4 +1,5 @@
 import { Reveal } from "@/components/animations/Reveal";
+import { percorsoSicuro } from "@/lib/auth/percorso";
 import { PageHero } from "@/components/marketing/PageHero";
 import { ContentReportForm } from "@/components/forms/ContentReportForm";
 import { PuntoDiContatto } from "@/components/legal/PuntoDiContatto";
@@ -28,7 +29,7 @@ export default async function SegnalazioniPage({
   // Solo percorsi interni: un indirizzo esterno arrivato dalla querystring non
   // viene precompilato, per non trasformare la pagina in un veicolo di link.
   const urlGrezzo = first(sp.url);
-  const url = urlGrezzo.startsWith("/") && !urlGrezzo.startsWith("//") ? urlGrezzo.slice(0, 500) : "";
+  const url = (percorsoSicuro(urlGrezzo) ?? "").slice(0, 500);
 
   const reclamoGrezzo = first(sp.reclamo).trim();
   const reclamo = REPORT_REFERENCE_RE.test(reclamoGrezzo) ? reclamoGrezzo.toUpperCase() : "";

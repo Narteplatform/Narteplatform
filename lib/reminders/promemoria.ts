@@ -13,6 +13,22 @@ import type { Json } from "@/lib/supabase/types";
  * Promemoria che partono dal passare del tempo: evento di domani, invito a
  * recensire il giorno dopo, consulenza di domani.
  *
+ * FINESTRA DI RECUPERO. Prima si cercavano «domani» e «ieri» esatti: se il cron
+ * saltava un giorno (deploy, Supabase in pausa, errore) quei promemoria erano
+ * persi per sempre. Ora:
+ *  - promemoria evento: date confermate di OGGI e DOMANI (a Roma), cioè le
+ *    prossime ~36-40 ore dall'esecuzione delle 07:00 UTC. Una data di oggi
+ *    riceve il promemoria con «oggi» solo se ieri non è partito (vedi sotto);
+ *  - invito a recensire: eventi degli ultimi GIORNI_RECUPERO_RECENSIONI giorni
+ *    (da ieri a 3 giorni fa), sempre se non c'è già una recensione;
+ *  - consulenza: resta SOLO domani. Il template Brevo `consultation_reminder`
+ *    dice «domani» nel testo, senza parametro: recuperare una consulenza di oggi
+ *    manderebbe un'email che indica il giorno sbagliato. Peggio di nessuna.
+ * Non si invia mai due volte: la finestra allarga la ricerca, ma ogni invio
+ * passa ancora da `giaInviato` con lo stesso `meta` di prima (bookingId +
+ * ruolo, senza la data), quindi una data già avvisata ieri come «domani» non
+ * riceve oggi un secondo promemoria.
+ *
  * ⛔ REGOLE DI QUESTO FILE
  *  - Solo letture sul DB. L'unica scrittura è quella che fa già `dispatchEmail`
  *    (una riga in `email_log`), e solo fuori dalla modalità `dry`.
@@ -26,6 +42,9 @@ import type { Json } from "@/lib/supabase/types";
  */
 
 export const MAX_INVII_PER_ESECUZIONE = 200;
+
+/** Inviti a recensire: eventi da ieri fino a questo numero di giorni fa. */
+export const GIORNI_RECUPERO_RECENSIONI = 3;
 
 type Admin = ReturnType<typeof createAdminClient>;
 type Tipo = Extract<EmailKey, "event_reminder" | "feedback_request" | "consultation_reminder">;
@@ -44,6 +63,8 @@ export interface RiepilogoPromemoria {
   oggiRoma: string;
   domaniRoma: string;
   ieriRoma: string;
+  /** Primo giorno (incluso) della finestra degli inviti a recensire. */
+  recensioniDalRoma: string;
   inviati: number;
   daInviare: number;
   giaInviati: number;
@@ -65,12 +86,14 @@ export async function inviaPromemoria(opts: { dry: boolean; now?: Date }): Promi
   const oggi = dataRoma(now);
   const domani = spostaGiorni(oggi, 1);
   const ieri = spostaGiorni(oggi, -1);
+  const recensioniDal = spostaGiorni(oggi, -GIORNI_RECUPERO_RECENSIONI);
 
   const r: RiepilogoPromemoria = {
     dry: opts.dry,
     oggiRoma: oggi,
     domaniRoma: domani,
     ieriRoma: ieri,
+    recensioniDalRoma: recensioniDal,
     inviati: 0,
     daInviare: 0,
     giaInviati: 0,
@@ -180,14 +203,15 @@ export async function inviaPromemoria(opts: { dry: boolean; now?: Date }): Promi
 
   const base = getSiteUrl();
 
-  // ── 1 e 2. Date confermate: evento di domani, evento di ieri ──────────────
+  // ── 1 e 2. Date confermate: evento di oggi/domani, eventi degli ultimi giorni ──
   const { data: bookings, error: bErr } = await admin
     .from("booking_requests")
     .select(
       "id, event_date, time_slot, status, artist_id, organizer_id, venue_id, final_price, final_price_confirmed_at"
     )
     .eq("status", "confermata")
-    .in("event_date", [domani, ieri]);
+    .gte("event_date", recensioniDal)
+    .lte("event_date", domani);
   if (bErr) {
     logger.error("promemoria", `booking_requests non leggibile: ${bErr.message}`);
     r.errori.push(`booking_requests: ${bErr.message}`);
@@ -213,8 +237,11 @@ export async function inviaPromemoria(opts: { dry: boolean; now?: Date }): Promi
       const organizzatori = new Map((orgR.data ?? []).map((o) => [o.id, o]));
       const locali = new Map((venR.data ?? []).map((v) => [v.id, v]));
 
+      // Data futura (oggi o domani) → promemoria; data passata → invito a recensire.
+      const prossimo = (d: string) => d >= oggi;
+
       // Recensioni già lasciate (anche nascoste: la riga esiste, l'invito no).
-      const ieriIds = rows.filter((b) => b.event_date === ieri).map((b) => b.id);
+      const ieriIds = rows.filter((b) => !prossimo(b.event_date)).map((b) => b.id);
       let conRecensione = new Set<string>();
       let recensioniLeggibili = true;
       if (ieriIds.length) {
@@ -237,7 +264,7 @@ export async function inviaPromemoria(opts: { dry: boolean; now?: Date }): Promi
         if (!art || !org) {
           r.saltati++;
           r.dettaglio.push({
-            tipo: b.event_date === domani ? "event_reminder" : "feedback_request",
+            tipo: prossimo(b.event_date) ? "event_reminder" : "feedback_request",
             oggetto: `booking ${b.id}`,
             ruolo: "-",
             destinatario: "-",
@@ -249,10 +276,12 @@ export async function inviaPromemoria(opts: { dry: boolean; now?: Date }): Promi
         const artName = art.stage_name;
         const orgName = org.display_name;
 
-        if (b.event_date === domani) {
+        if (prossimo(b.event_date)) {
           const ven = b.venue_id ? locali.get(b.venue_id) : undefined;
           const comuni = {
-            whenLabel: "domani",
+            // «oggi» solo nel recupero: la data di oggi riceve il promemoria
+            // solo se ieri (quando era «domani») non è partito.
+            whenLabel: b.event_date === domani ? "domani" : "oggi",
             eventDate: formatDateIt(b.event_date),
             eventTime: b.time_slot ?? "",
             city: ven?.city ?? "",
@@ -291,6 +320,9 @@ export async function inviaPromemoria(opts: { dry: boolean; now?: Date }): Promi
             },
           });
         } else if (recensioniLeggibili && !conRecensione.has(b.id)) {
+          // Nota: il testo del template Brevo dice «ieri … ha suonato da voi».
+          // Nel recupero (evento di 2-3 giorni fa) è impreciso ma innocuo; la
+          // data esatta è in `eventDate`. Da sistemare nel template, non qui.
           await processa({
             tipo: "feedback_request",
             oggetto: `booking ${b.id}`,

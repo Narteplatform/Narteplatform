@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 export default function GlobalError({
   error,
@@ -10,7 +11,9 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[global error boundary]", error);
+    // Nel browser: il dettaglio lato server è già nei log di Vercel, registrato
+    // da instrumentation.ts con lo stesso `digest` mostrato qui sotto.
+    logger.error("global-error", { digest: error?.digest, nome: error?.name, messaggio: error?.message });
   }, [error]);
 
   return (

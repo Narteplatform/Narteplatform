@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database, Role } from "@/lib/supabase/types";
 import { isUtenteSospeso, queryLoginBloccato } from "@/lib/auth/sospeso";
+import { HEADER_PERCORSO, PERCORSO_MFA, PERCORSO_SICUREZZA } from "@/lib/auth/costanti";
+import { livelloSessione } from "@/lib/auth/aal";
 import { ADMIN_PAGES_SEMPRE_VISIBILI, adminSectionForPath } from "@/lib/admin/sections";
 import {
   LEGAL_COOKIE,
@@ -15,6 +17,12 @@ import {
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
 export async function middleware(request: NextRequest) {
+  // Percorso richiesto, per `requireUser()` nei Server Component (rientro dopo
+  // il login con `?next=`). Sempre sovrascritto: un valore mandato dal client
+  // non arriva mai al server. È solo una destinazione, ripulita comunque da
+  // `percorsoSicuro` prima dell'uso.
+  request.headers.set(HEADER_PERCORSO, `${request.nextUrl.pathname}${request.nextUrl.search}`);
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient<Database>(
@@ -198,6 +206,28 @@ export async function middleware(request: NextRequest) {
   if (serveRuolo && admin && user) {
     const role = profile?.role;
     if (path.startsWith("/admin")) {
+      // ── VERIFICA IN DUE PASSAGGI ────────────────────────────────────────
+      // Solo per chi in /admin ci resta (superadmin e consulenti). Con un
+      // fattore TOTP attivo la sessione deve essere aal2; con
+      // MFA_ADMIN_OBBLIGATORIA=1 il fattore è obbligatorio. Ogni errore di
+      // lettura lascia passare: in dubbio non si chiude fuori nessuno.
+      if (role === "superadmin" || role === "consultant") {
+        const passo = await passoMfa(supabase, user);
+        if (passo) {
+          const dest = request.nextUrl.clone();
+          dest.search = "";
+          if (passo === "verifica") {
+            dest.pathname = PERCORSO_MFA;
+            dest.searchParams.set("next", `${path}${request.nextUrl.search}`);
+          } else {
+            dest.pathname = PERCORSO_SICUREZZA;
+            dest.searchParams.set("obbligatoria", "1");
+          }
+          const redirect = NextResponse.redirect(dest);
+          response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+          return redirect;
+        }
+      }
       if (role === "superadmin") {
         // Gate impostazioni: solo root superadmin
         const rootEmail = (process.env.SUPERADMIN_EMAIL ?? "").trim().toLowerCase();
@@ -267,6 +297,27 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+/**
+ * Che cosa manca, quanto al secondo fattore, per entrare in /admin:
+ *  - "verifica": c'è un fattore verificato ma la sessione è ancora aal1;
+ *  - "attiva": nessun fattore e MFA_ADMIN_OBBLIGATORIA=1;
+ *  - null: niente da fare (anche in caso di errore: in dubbio non si blocca).
+ * I fattori vengono dall'utente di `getUser()`, il livello dal token: vedi
+ * lib/auth/aal.ts. Nessuna chiamata di rete in più.
+ */
+async function passoMfa(
+  supabase: Parameters<typeof livelloSessione>[0],
+  utente: Parameters<typeof livelloSessione>[1]
+): Promise<"verifica" | "attiva" | null> {
+  const livello = await livelloSessione(supabase, utente);
+  if (!livello) return null;
+  if (livello.prossimo === "aal2" && livello.attuale !== "aal2") return "verifica";
+  if (process.env.MFA_ADMIN_OBBLIGATORIA === "1" && livello.prossimo === "aal1" && livello.attuale === "aal1") {
+    return "attiva";
+  }
+  return null;
+}
+
 export const config = {
   matcher: [
     // `api/stripe` escluso: il webhook non ha cookie di sessione, quindi il
@@ -290,11 +341,9 @@ export const config = {
     // pagina che ne genera dieci pagherebbe dieci getUser() per niente.
     // `api/calendario` escluso: lo leggono Google/Apple Calendar ogni qualche
     // ora, senza cookie; l'accesso è il token nel percorso.
-    // Rimossa l'esclusione di `api/health`: quella rotta non è mai esistita
-    // (le uniche sotto app/api sono artists, booking, booking-request, cron,
-    // keepalive, search, stripe, upload, upload-application-video). La pagina
-    // di diagnostica è `/__health`, che deve invece PASSARE dal middleware per
-    // essere protetta.
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/keepalive|api/cron|api/stripe|api/csp-report|api/artists/view|api/calendario|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|webmanifest)$).*)",
+    // `api/health` escluso: lo interroga un monitor esterno senza cookie (la
+    // pagina di diagnostica `/__health` invece passa dal middleware, è protetta).
+    // `blog/rss.xml` escluso: lo leggono i lettori di feed, senza sessione.
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/keepalive|api/health|blog/rss\\.xml|api/cron|api/stripe|api/csp-report|api/artists/view|api/calendario|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|webmanifest)$).*)",
   ],
 };

@@ -6,10 +6,15 @@ import { Button } from "@/components/ui/Button";
 import { logger } from "@/lib/logger";
 import { ArtistsExplorer, type ExplorerArtist } from "@/components/marketing/ArtistsExplorer";
 import { heroImageConContenuti } from "@/lib/content/hero-images";
-import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
+import type { ArtistTier } from "@/lib/supabase/types";
 import { getRatingsForArtists } from "@/lib/feedback/queries";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { isFormazione } from "@/lib/constants/formazione";
+import { entitlementsFor } from "@/lib/billing/plans";
+import { fasciaDaPriceRange } from "@/components/marketing/PriceBandBadge";
+import { isPercorso } from "@/components/marketing/ArtistCard";
+import { artistiOccupatiIl } from "./_actions";
+import { oggiRoma } from "@/lib/date/roma";
 
 export const metadata = { title: "Artisti — N'arte" };
 
@@ -22,9 +27,23 @@ type ArtistRow = {
   genre: string[] | null;
   instruments?: string[] | null;
   formazione?: string | null;
-  price_band?: PriceBand | null;
+  price_range?: string | null;
+  percorso_artistico?: string | null;
   tier?: ArtistTier | null;
 };
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+/** Valori di un parametro: ripetuto (`?genre=a&genre=b`) o separato da virgole. */
+function valori(sp: SearchParams, chiave: string): string[] {
+  const v = sp[chiave];
+  const lista = Array.isArray(v) ? v : v ? [v] : [];
+  return lista
+    .flatMap((x) => x.split(","))
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0 && x.length <= 80)
+    .slice(0, 20);
+}
 
 /**
  * Catalogo per chi non ha una sessione. Legge SOLO le colonne che anche la
@@ -67,7 +86,12 @@ async function loadGuestArtists() {
   }));
 }
 
-export default async function ArtistiPage() {
+export default async function ArtistiPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const sp = await searchParams;
   const viewer = await getCurrentUser();
   const isGuest = !viewer;
   const canSeePrice =
@@ -92,18 +116,22 @@ export default async function ArtistiPage() {
         .order("tier", { ascending: false })
         .order("stage_name", { ascending: true })
         .returns<ArtistRow[]>();
-    const COLONNE = "id, slug, stage_name, city, genre, instruments, cover_image, price_band, tier";
+    // `price_range` è la fascia che l'artista compila davvero; `price_band`
+    // non lo scrive nessuno e non si legge più. `percorso_artistico` (0022) si
+    // mostra solo se il piano lo include, vedi sotto.
+    const COLONNE =
+      "id, slug, stage_name, city, genre, instruments, cover_image, price_range, percorso_artistico, tier";
     let full = await leggi(`${COLONNE}, formazione`);
     // Migration 0075 non ancora applicata: si legge senza la formazione.
     if (colonnaAssente(full.error, "formazione")) full = await leggi(COLONNE);
     if (full.error) {
-      console.error("[ArtistiPage] full select error", full.error);
+      logger.error("ArtistiPage", "lettura completa fallita", full.error);
       const minimal = await supabase
         .from("artists")
         .select("id, slug, stage_name, city, genre, cover_image")
         .eq("is_public", true)
         .order("stage_name", { ascending: true });
-      if (minimal.error) console.error("[ArtistiPage] minimal select error", minimal.error);
+      if (minimal.error) logger.error("ArtistiPage", "lettura minima fallita", minimal.error);
       rows = ((minimal.data ?? []) as unknown) as ArtistRow[];
     } else {
       rows = ((full.data ?? []) as unknown) as ArtistRow[];
@@ -114,21 +142,55 @@ export default async function ArtistiPage() {
     // mostrano il voto — il catalogo non deve rompersi per questo.
     const ratings = await getRatingsForArtists(rows.map((a) => a.id));
 
-    artists = rows.map((a) => ({
-      id: a.id,
-      slug: a.slug,
-      stage_name: a.stage_name,
-      city: a.city,
-      cover_image: a.cover_image,
-      genre: (a.genre ?? []) as string[],
-      instruments: (a.instruments ?? []) as string[],
-      formazione: isFormazione(a.formazione) ? a.formazione : null,
-      price_band: (a.price_band ?? "standard") as PriceBand,
-      // `free` e non `"standard"`: quello è un valore di price_band_enum.
-      tier: (a.tier ?? "free") as ArtistTier,
-      rating: ratings.get(a.id) ?? null,
-    }));
+    artists = rows.map((a) => {
+      const tier = (a.tier ?? "free") as ArtistTier;
+      const fascia = fasciaDaPriceRange(a.price_range);
+      return {
+        id: a.id,
+        slug: a.slug,
+        stage_name: a.stage_name,
+        city: a.city,
+        cover_image: a.cover_image,
+        genre: (a.genre ?? []) as string[],
+        instruments: (a.instruments ?? []) as string[],
+        formazione: isFormazione(a.formazione) ? a.formazione : null,
+        // La cifra arriva al browser solo per chi può vederla (organizzatori e
+        // superadmin); agli altri basta sapere che una fascia c'è.
+        fascia: canSeePrice ? fascia : null,
+        haFascia: fascia !== null,
+        // Dopo un passaggio a Free il valore resta in colonna (0040): si nasconde.
+        percorso:
+          entitlementsFor(tier).canSetPercorso && isPercorso(a.percorso_artistico)
+            ? a.percorso_artistico
+            : null,
+        tier,
+        rating: ratings.get(a.id) ?? null,
+      };
+    });
   }
+
+  // Filtri arrivati nell'URL (ricerca della home, link condivisi). Città e data
+  // valgono solo per chi ha un account: agli ospiti non arrivano né la città
+  // né il calendario degli artisti.
+  const dataRichiesta = !isGuest ? valori(sp, "data")[0] ?? null : null;
+  let occupatiIniziali: string[] | null = null;
+  let dataIniziale: string | null = null;
+  if (dataRichiesta) {
+    const esito = await artistiOccupatiIl(dataRichiesta);
+    if (esito.ok) {
+      dataIniziale = dataRichiesta;
+      occupatiIniziali = esito.ids;
+    }
+  }
+  const filtriIniziali = {
+    q: valori(sp, "q")[0] ?? "",
+    genre: valori(sp, "genre"),
+    categoria: valori(sp, "categoria"),
+    formazione: valori(sp, "formazione"),
+    city: isGuest ? [] : valori(sp, "city"),
+    percorso: isGuest ? [] : valori(sp, "percorso"),
+    data: dataIniziale,
+  };
 
   return (
     <>
@@ -144,8 +206,9 @@ export default async function ArtistiPage() {
             </>
           ) : (
             <>
-              Sfoglia il roster di artisti emergenti N&apos;arte: filtra per tipologia
-              e genere, scopri le copertine e contatta direttamente l&apos;artista.
+              Sfoglia il roster di artisti emergenti N&apos;arte: filtra per tipologia,
+              genere, città e data libera, scopri le copertine e contatta direttamente
+              l&apos;artista.
             </>
           )
         }
@@ -172,6 +235,9 @@ export default async function ArtistiPage() {
               artists={artists}
               canSeePrice={canSeePrice}
               isGuest={isGuest}
+              filtriIniziali={filtriIniziali}
+              occupatiIniziali={occupatiIniziali}
+              oggi={oggiRoma()}
             />
           )}
         </div>

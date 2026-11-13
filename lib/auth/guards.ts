@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import type { Role } from "@/lib/supabase/types";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { normalizzaStato, PERCORSO_IN_ATTESA } from "@/lib/organizers/stato";
 import { isUtenteSospeso, queryLoginBloccato } from "@/lib/auth/sospeso";
+import { percorsoSicuro } from "@/lib/auth/percorso";
+import { HEADER_PERCORSO } from "@/lib/auth/costanti";
 
 export async function getCurrentUser() {
   const supabase = await createClient();
@@ -33,9 +36,27 @@ export async function getCurrentUser() {
   return profile ? { ...user, profile } : { ...user, profile: null };
 }
 
-export async function requireUser() {
+/**
+ * Percorso da cui rientrare dopo il login. Se il chiamante non lo indica si
+ * usa quello che il middleware scrive sulla richiesta (HEADER_PERCORSO); in
+ * ogni caso passa da `percorsoSicuro`. In dubbio, nessun `next`.
+ */
+async function percorsoDiRientro(esplicito?: string): Promise<string | null> {
+  if (esplicito) return percorsoSicuro(esplicito);
+  try {
+    const h = await headers();
+    return percorsoSicuro(h.get(HEADER_PERCORSO));
+  } catch {
+    return null;
+  }
+}
+
+export async function requireUser(opts?: { next?: string }) {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) {
+    const next = await percorsoDiRientro(opts?.next);
+    redirect(next && next !== "/login" ? `/login?next=${encodeURIComponent(next)}` : "/login");
+  }
   return user;
 }
 

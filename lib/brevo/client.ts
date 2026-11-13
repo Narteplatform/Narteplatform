@@ -6,7 +6,16 @@
  * senza portarci dietro l'SDK generato.
  */
 
+import { logger } from "@/lib/logger";
+
 const BREVO_BASE_URL = "https://api.brevo.com/v3";
+
+/**
+ * Tetto di attesa per una singola chiamata. Senza, una Brevo lenta teneva
+ * appesa la Server Action (o il cron) fino al timeout della funzione Vercel:
+ * l'utente vedeva un caricamento infinito per un'email di cortesia.
+ */
+const BREVO_TIMEOUT_MS = 10_000;
 
 // Lazy init: la chiave va letta solo quando serve davvero, non a livello di
 // modulo. Stessa logica di `getResend()` in lib/emails/send.ts — durante la
@@ -49,7 +58,7 @@ export async function brevoRequest<T = unknown>(
 ): Promise<BrevoRequestResult<T>> {
   const apiKey = getBrevoApiKey();
   if (!apiKey) {
-    console.warn(`[brevo] BREVO_API_KEY mancante — richiesta a "${path}" non eseguita`);
+    logger.warn("brevo", `BREVO_API_KEY mancante — richiesta a "${path}" non eseguita`);
     return { ok: false, skipped: true };
   }
 
@@ -64,6 +73,7 @@ export async function brevoRequest<T = unknown>(
         accept: "application/json",
       },
       body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+      signal: AbortSignal.timeout(BREVO_TIMEOUT_MS),
     });
 
     // Alcuni endpoint Brevo (es. DELETE) rispondono 204 senza body.
@@ -81,7 +91,7 @@ export async function brevoRequest<T = unknown>(
     if (!res.ok) {
       const errBody = (parsed ?? null) as BrevoErrorBody | null;
       const message = errBody?.message || `Richiesta Brevo fallita (HTTP ${res.status})`;
-      console.error(`[brevo] errore su "${path}"`, {
+      logger.error("brevo", `errore su "${path}"`, {
         status: res.status,
         code: errBody?.code,
         message,
@@ -91,8 +101,16 @@ export async function brevoRequest<T = unknown>(
 
     return { ok: true, data: (parsed ?? undefined) as T };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`[brevo] eccezione durante la richiesta a "${path}"`, err);
-    return { ok: false, error: message };
+    // AbortSignal.timeout rifiuta con un DOMException "TimeoutError": si
+    // traduce in un esito leggibile, senza lanciare (il contratto di questa
+    // funzione è non lanciare mai).
+    const scaduto = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+    const message = scaduto
+      ? `Brevo non ha risposto entro ${BREVO_TIMEOUT_MS / 1000} secondi`
+      : err instanceof Error
+      ? err.message
+      : String(err);
+    logger.error("brevo", `eccezione durante la richiesta a "${path}"`, scaduto ? message : err);
+    return { ok: false, error: message, code: scaduto ? "timeout" : undefined };
   }
 }

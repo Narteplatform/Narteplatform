@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
+import { funzioneAssente, rpcSenzaTipi } from "@/lib/billing/rpc";
 
 /**
  * Shooting fotografico del piano Max annuale (decisione del 05/11/2026).
@@ -13,8 +14,10 @@ import { logger } from "@/lib/logger";
  *  - richiedibile solo dal 15° giorno: così non cade mai nei 14 giorni di
  *    recesso e non serve detrarne il valore dal rimborso.
  *
- * Il «primo anno» si conta dalla prima riga di abbonamento Max annuale
- * dell'account (`subscriptions.created_at`).
+ * Il «primo anno» si conta dal primo momento in cui l'account ha avuto un Max
+ * annuale: con la 0082 è `piano_corrente_dal` (un Pro mensile passato al Max
+ * annuale dal Portal resta la stessa riga, e `created_at` è la data del Pro).
+ * Prima della 0082 si ripiega su `subscriptions.created_at`.
  */
 
 export const SHOOTING = { durata: "1 ora", luogo: "Hangarram (Napoli)", foto: 5 } as const;
@@ -79,7 +82,17 @@ export async function statoShooting(userId: string): Promise<StatoShooting> {
   const attiva = tutte.find((s) => s.status === "active" || s.status === "trialing" || s.status === "past_due");
   if (!attiva) return { stato: "non_incluso" };
 
-  const inizio = new Date(tutte[0].created_at).getTime();
+  let inizio = new Date(tutte[0].created_at).getTime();
+  const { data: dalPiano, error: dalErr } = await rpcSenzaTipi<string>("abbonamento_shooting_dal", { p_user_id: userId });
+  if (dalErr) {
+    if (!funzioneAssente(dalErr)) {
+      logger.error("shooting", "inizio del Max annuale non letto:", dalErr.message);
+      return { stato: "errore" };
+    }
+  } else if (dalPiano) {
+    const t = new Date(dalPiano).getTime();
+    if (Number.isFinite(t)) inizio = t;
+  }
   const dal = inizio + (GIORNO_MINIMO_SHOOTING - 1) * GIORNO_MS;
   const entro = inizio + 365 * GIORNO_MS;
   const ora = Date.now();

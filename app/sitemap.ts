@@ -93,12 +93,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const admin = createAdminClient();
 
     const [eventi, format, articoli] = await Promise.all([
+      // Eventi: stesso insieme delle pagine pubbliche. `events` non ha una
+      // colonna di stato o di pubblicazione: lib/data/events.ts e
+      // /eventi/[slug] mostrano ogni riga (passati e futuri) e la policy RLS è
+      // `using (true)`. Se un giorno nascerà un flag di visibilità, il filtro
+      // va aggiunto lì E qui.
       admin.from("events").select("slug, created_at"),
       admin.from("formats").select("slug, updated_at").eq("published", true),
+      // Articoli: solo quelli già usciti. Con `published_at` nel futuro
+      // l'articolo è programmato e la sua pagina risponde 404.
       admin
         .from("blog_posts")
         .select("slug, updated_at, published_at")
-        .not("published_at", "is", null),
+        .not("published_at", "is", null)
+        .lte("published_at", new Date().toISOString()),
     ]);
 
     // Un solo errore basta a rendere inaffidabile l'intera sitemap: meglio

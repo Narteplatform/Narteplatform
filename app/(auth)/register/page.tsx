@@ -1,21 +1,17 @@
 import Link from "next/link";
 import { RegisterForm } from "@/components/forms/RegisterForm";
 import { AuthSplit } from "@/components/layout/AuthSplit";
+import { percorsoSicuro } from "@/lib/auth/percorso";
 
 export const metadata = { title: "Iscriviti — N'arte" };
 
-/** Vedi la nota gemella in /login: solo percorsi interni. */
-function safeNext(value?: string | string[]) {
-  const v = Array.isArray(value) ? value[0] : value;
-  return v && v.startsWith("/") && !v.startsWith("//") ? v : null;
-}
-
+/** Vedi la nota gemella in /login: solo percorsi interni (lib/auth/percorso.ts). */
 export default async function RegisterPage({
   searchParams,
 }: {
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
-  const next = safeNext((await searchParams).next);
+  const next = percorsoSicuro((await searchParams).next);
 
   return (
     <AuthSplit

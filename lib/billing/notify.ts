@@ -6,7 +6,7 @@ import { dispatchEmail } from "@/lib/emails/dispatch";
 import NoticeEmail from "@/lib/emails/templates/NoticeEmail";
 import { getSiteUrl } from "@/lib/site-url";
 import { logger } from "@/lib/logger";
-import { formatPrice } from "@/lib/billing/plans";
+import { formatPrice, PLAN_PRICES_CENTS } from "@/lib/billing/plans";
 import { TITOLARE } from "@/lib/legal/titolare";
 import { getStripe } from "@/lib/stripe/client";
 
@@ -73,14 +73,20 @@ export async function notificaEventoAbbonamento(
   event: Stripe.Event,
   sub: Stripe.Subscription,
   tier: string | null,
+  /** Utente risolto dal ledger: copre gli abbonamenti senza metadata.user_id. */
+  userId?: string | null,
 ): Promise<void> {
   try {
-    const d = await destinatario(sub.metadata?.user_id);
+    const d = await destinatario(userId ?? sub.metadata?.user_id);
     if (!d) return;
     const piano = PIANI[tier ?? ""] ?? "Abbonamento N'arte";
     const item = sub.items.data[0];
     const intervallo = item?.price?.recurring?.interval === "year" ? "anno" : "mese";
-    const importo = formatPrice(item?.price?.unit_amount ?? 0);
+    // Importo REALE del price su Stripe; il listino solo se Stripe non lo dà
+    // (price a scaglioni), così l'email non mostra mai un prezzo inventato.
+    const importo = formatPrice(
+      item?.price?.unit_amount ?? PLAN_PRICES_CENTS[tier === "max" ? "max" : "pro"][intervallo === "anno" ? "year" : "month"],
+    );
     const billingUrl = `${getSiteUrl()}/dashboard/abbonamento`;
     const condizioniUrl = `${getSiteUrl()}/condizioni-abbonamento`;
 
@@ -140,14 +146,26 @@ export async function notificaEventoAbbonamento(
       }
 
       case "invoice.payment_failed": {
+        // Rilettura della fattura: l'evento può arrivare in ritardo (retry,
+        // cron di ripresa) e nel frattempo il pagamento può essere riuscito.
+        let fattura = event.data.object as Stripe.Invoice;
+        try {
+          if (fattura.id) fattura = await getStripe().invoices.retrieve(fattura.id);
+        } catch (e) {
+          logger.warn("billing/notify", "fattura non riletta:", e instanceof Error ? e.message : String(e));
+        }
+        if (fattura.status === "paid" || fattura.status === "void") return;
+        const prossimo = fattura.next_payment_attempt;
         await dispatchEmail({
           key: "payment_failed",
           to: d.email,
           params: {
             artistName: d.nome,
             planName: piano,
-            amountLabel: importo,
-            retryDate: "nei prossimi giorni",
+            amountLabel: formatPrice(fattura.amount_due ?? item?.price?.unit_amount ?? 0),
+            // Data del prossimo tentativo di Stripe. Vuota quando non ce ne
+            // sono altri: il modello nasconde il riquadro.
+            retryDate: typeof prossimo === "number" ? dataIt(prossimo) : "",
             billingUrl,
           },
           fallback: {
@@ -157,7 +175,7 @@ export async function notificaEventoAbbonamento(
               preview: "Aggiorna il metodo di pagamento per non perdere il piano.",
               heading: "Il pagamento non è andato a buon fine",
               paragraphs: [
-                `Ciao ${d.nome}, non siamo riusciti ad addebitare il rinnovo di ${piano}. Riproveremo automaticamente nei prossimi giorni.`,
+                `Ciao ${d.nome}, non siamo riusciti ad addebitare il rinnovo di ${piano}. ${typeof prossimo === "number" ? `Riproveremo automaticamente il ${dataIt(prossimo)}.` : "Riproveremo automaticamente nei prossimi giorni."}`,
                 "Se anche l'ultimo tentativo non va a buon fine, l'abbonamento cessa e l'account torna al piano Free. Nessun contenuto viene cancellato.",
               ],
               button: { label: "Aggiorna il metodo di pagamento", href: billingUrl },

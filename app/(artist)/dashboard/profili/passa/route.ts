@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { percorsoSicuro } from "@/lib/auth/percorso";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_ARTIST_COOKIE, getOwnedArtists } from "@/lib/artist/current";
 
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   const to = url.searchParams.get("to") ?? "";
   const rawNext = url.searchParams.get("next") ?? "/dashboard/overview";
   const next =
-    rawNext.startsWith("/dashboard") && !rawNext.startsWith("//") ? rawNext : "/dashboard/overview";
+    rawNext.startsWith("/dashboard") && percorsoSicuro(rawNext) ? rawNext : "/dashboard/overview";
 
   const supabase = await createClient();
   const {

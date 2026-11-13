@@ -21,7 +21,7 @@ export async function openChatAndRedirect(formData: FormData): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    redirect(`/auth/login?next=${encodeURIComponent(basePath)}`);
+    redirect(`/login?next=${encodeURIComponent(basePath)}`);
   }
 
   let organizerId: string | undefined =

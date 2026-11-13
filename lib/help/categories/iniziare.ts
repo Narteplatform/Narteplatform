@@ -1,6 +1,6 @@
 import type { HelpCategory } from "@/lib/help/types";
 
-const UPDATED = "2026-11-12";
+const UPDATED = "2026-11-13";
 
 export const INIZIARE: HelpCategory = {
   slug: "iniziare",
@@ -23,7 +23,7 @@ export const INIZIARE: HelpCategory = {
 
 <h2>Cosa puoi fare</h2>
 <ul>
-  <li><strong>Sfogliare il roster</strong> degli artisti approvati dal team, cercando per nome o città e filtrando per categoria e genere su <a href="/artisti">/artisti</a>.</li>
+  <li><strong>Sfogliare il roster</strong> degli artisti approvati dal team, cercando per nome o città e filtrando per categoria, genere, città e data libera su <a href="/artisti">/artisti</a>.</li>
   <li><strong>Inviare una richiesta di booking</strong> direttamente all'artista, indicando data, fascia oraria, budget e che tipo di serata hai in mente.</li>
   <li><strong>Trattare con l'artista</strong> quando lui avvia la trattativa: in chat, con offerte tracciate, se ha il piano Pro o Max; via email, vedendo ciascuno l'indirizzo dell'altro, se ha il piano Free. La trattativa resta fra voi due e N'arte non vi partecipa.</li>
   <li><strong>Candidarti come artista</strong> da <a href="/candidatura-artista">/candidatura-artista</a> per entrare nel roster pubblico.</li>
@@ -132,7 +132,7 @@ export const INIZIARE: HelpCategory = {
 <p>Accessibili a chiunque, anche senza account.</p>
 <ul>
   <li><strong><a href="/">Home</a></strong> — eventi in evidenza, come funziona la piattaforma, artisti, collaborazioni e un modulo per raccontarci l'evento che hai in mente.</li>
-  <li><strong><a href="/artisti">Artisti</a></strong> — il catalogo, con filtri per tipologia e generi. Senza account le schede sono anonime (genere, strumenti e piano): per scoprire chi sono gli artisti serve l'accesso.</li>
+  <li><strong><a href="/artisti">Artisti</a></strong> — il catalogo, con filtri per tipologia e generi (dopo l'accesso anche per città e data libera). Senza account le schede sono anonime (genere, strumenti e piano): per scoprire chi sono gli artisti serve l'accesso.</li>
   <li><strong><a href="/eventi">Eventi</a></strong> — le date in arrivo e l'archivio di quelle passate, filtrabili per categoria.</li>
   <li><strong><a href="/format">Format</a></strong> — i quattro contenitori live curati da N'arte: NuLive, NaJam, NaBand, NaCena.</li>
   <li><strong><a href="/blog">Blog</a></strong> — guide e approfondimenti su booking e musica dal vivo.</li>

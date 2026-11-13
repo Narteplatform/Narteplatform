@@ -1,0 +1,23 @@
+# Controlli minimi su ogni push e pull request: dipendenze, tipi, lint.
+# Non esegue la build (richiede le variabili d'ambiente di produzione) e non
+# tocca il database: è solo una rete di sicurezza sul codice.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint

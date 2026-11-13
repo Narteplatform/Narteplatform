@@ -5,6 +5,7 @@ import { bunnyUploadsEnabled } from "@/lib/storage/bunny/config";
 import { putObject } from "@/lib/storage/bunny/storage";
 import { videoPosterKey, videoPosterUrl } from "@/lib/storage/bunny/urls";
 import { logger } from "@/lib/logger";
+import { SIGNATURE_BYTES, detectImageMime } from "@/lib/security/file-signature";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -80,10 +81,17 @@ export async function POST(request: Request) {
     }
   }
 
+  // Il tipo dichiarato non basta: il file viene servito come image/jpeg, quindi
+  // deve esserlo davvero.
+  const body = await file.arrayBuffer();
+  if (detectImageMime(new Uint8Array(body, 0, Math.min(SIGNATURE_BYTES, body.byteLength))) !== "image/jpeg") {
+    return NextResponse.json({ error: "Formato poster non valido" }, { status: 415 });
+  }
+
   try {
     await putObject({
       key: videoPosterKey(guid),
-      body: await file.arrayBuffer(),
+      body,
       contentType: "image/jpeg",
     });
   } catch (e) {

@@ -35,6 +35,9 @@ const MESSAGGIO_ORGANIZZATORE_IN_ATTESA =
 const MESSAGGIO_ORGANIZZATORE_RIFIUTATO =
   "Il tuo account organizzatore non è stato approvato, quindi non puoi inviare richieste. Per chiarimenti scrivi a info@narteofficial.it.";
 
+/** Documenti legali v2 pubblicati (stesso interruttore di BookingCalendar e RegisterForm). */
+const LEGAL_V2 = process.env.NEXT_PUBLIC_LEGAL_V2_PUBBLICATO === "1";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -151,7 +154,13 @@ export async function POST(req: Request) {
       // Diventare organizzatore significa assumere gli adempimenti dell'evento
       // (doc. 04): serve un'accettazione esplicita, e va registrata.
       if (data.acceptedOrganizerTerms !== true) {
-        return fail(rid, "organizer-terms", "Devi accettare le Condizioni per gli organizzatori.");
+        return fail(
+          rid,
+          "organizer-terms",
+          LEGAL_V2
+            ? "Devi accettare le Condizioni per gli organizzatori."
+            : "Devi accettare i Termini e condizioni d'uso."
+        );
       }
       // Dalla migration 0071 diventare organizzatore richiede l'approvazione del
       // team: la richiesta di accesso la crea (con la service role) questa
@@ -182,8 +191,11 @@ export async function POST(req: Request) {
         documenti: ["terms"],
         preferenze: { terms: true, condizioni_organizzatori: true },
         modulo: "Prima richiesta di booking — condizioni organizzatori",
-        testoCasella:
-          "Inviando la richiesta diventi organizzatore su N'arte. Ho letto e accetto le Condizioni per gli organizzatori, in particolare gli obblighi su SIAE, agibilità, permessi e sicurezza dell'evento, che restano a mio carico.",
+        // Lo stesso testo che l'utente ha visto (BookingCalendar): con i
+        // documenti v2 spenti la casella rimanda ai Termini pubblicati.
+        testoCasella: `Inviando la richiesta diventi organizzatore su N'arte. Ho letto e accetto ${
+          LEGAL_V2 ? "le Condizioni per gli organizzatori" : "i Termini e condizioni d'uso"
+        }, in particolare gli obblighi su SIAE, agibilità, permessi e sicurezza dell'evento, che restano a mio carico.`,
       });
 
       if (richiestaAccesso.stato === "pending") {
@@ -194,8 +206,11 @@ export async function POST(req: Request) {
             ok: true,
             pending: true,
             rid,
+            // Detto chiaramente: la richiesta all'artista NON è salvata. Va
+            // reinviata dopo l'approvazione (non esiste ancora una tabella di
+            // bozze in cui parcheggiarla).
             message:
-              "Richiesta inviata al team: ti avvisiamo appena il tuo account è approvato, poi potrai inviare la richiesta.",
+              "Abbiamo chiesto al team di verificare il tuo account organizzatore e ti avvisiamo via email appena è approvato. La richiesta per l'artista non è ancora partita: dopo l'approvazione torna su questo profilo e inviala di nuovo.",
           },
           { status: 202 }
         );
@@ -218,10 +233,12 @@ export async function POST(req: Request) {
     // --- Ensure organizer row
     let { data: organizer, error: orgLookupErr } = await admin
       .from("organizers")
-      .select("id, display_name")
+      .select("id, display_name, phone")
       .eq("user_id", userId)
       .maybeSingle();
-    if (orgLookupErr) console.warn("[booking-request]", rid, "org-lookup-warn", orgLookupErr);
+    // Lettura fallita: ci si ferma. Proseguire vorrebbe dire creare (o
+    // aggiornare) un profilo organizzatore decidendo al buio.
+    if (orgLookupErr) return fail(rid, "org-lookup", "Non riesco a leggere il tuo profilo. Riprova.", 500);
 
     if (!organizer) {
       const display =
@@ -231,7 +248,7 @@ export async function POST(req: Request) {
       const { data: createdOrg, error: createOrgErr } = await admin
         .from("organizers")
         .insert({ user_id: userId, display_name: display, phone: data.phone ?? null })
-        .select("id, display_name")
+        .select("id, display_name, phone")
         .single();
       if (createOrgErr || !createdOrg) {
         return fail(
@@ -242,9 +259,18 @@ export async function POST(req: Request) {
         );
       }
       organizer = createdOrg;
-    } else if (data.phone) {
-      await admin.from("organizers").update({ phone: data.phone }).eq("id", organizer.id);
+    } else if (data.phone && data.phone !== organizer.phone) {
+      // Solo se ne è arrivato uno nuovo: un campo vuoto non cancella mai il
+      // telefono già salvato.
+      const { error: phoneErr } = await admin
+        .from("organizers")
+        .update({ phone: data.phone })
+        .eq("id", organizer.id);
+      if (phoneErr) logger.warn("booking-request", rid, "telefono non salvato:", phoneErr.message);
     }
+    // Telefono per le email: quello scritto nel modulo o, se vuoto, quello del
+    // profilo organizzatore.
+    const telefonoContatto = data.phone ?? (organizer.phone?.trim() || null);
 
     // --- Resolve venue
     let venueId: string | null = data.venueId ?? null;
@@ -346,7 +372,7 @@ export async function POST(req: Request) {
         budget: data.budgetOffer ?? null,
         message: composedMessage,
         contactEmail: requesterEmail,
-        contactPhone: data.phone ?? null,
+        contactPhone: telefonoContatto,
         baseUrl: getSiteUrl(),
         // Richiesta vera (booking_requests): link alla riga, non alla lista generica.
         requestPath: `/dashboard/leads?highlight=${encodeURIComponent(bookingReq.id)}`,
@@ -408,7 +434,7 @@ export async function POST(req: Request) {
                   budget: data.budgetOffer ?? null,
                   message: composedMessage,
                   contactEmail: requesterEmail,
-                  contactPhone: data.phone ?? null,
+                  contactPhone: telefonoContatto,
                 }),
               },
             })
@@ -430,7 +456,7 @@ export async function POST(req: Request) {
                   budget: data.budgetOffer ?? null,
                   message: composedMessage,
                   contactEmail: requesterEmail,
-                  contactPhone: data.phone ?? null,
+                  contactPhone: telefonoContatto,
                   isAdminCopy: true,
                 }),
               },

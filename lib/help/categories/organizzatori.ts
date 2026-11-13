@@ -1,6 +1,6 @@
 import type { HelpCategory } from "@/lib/help/types";
 
-const UPDATED = "2026-11-12";
+const UPDATED = "2026-11-13";
 
 export const ORGANIZZATORI: HelpCategory = {
   slug: "organizzatori",
@@ -19,13 +19,17 @@ export const ORGANIZZATORI: HelpCategory = {
       related: ["richiedere-booking", "guida-rider-tecnico", "iniziare/cos-e-narte"],
       content: `
 <h2>Si parte da /artisti</h2>
-<p>La pagina <a href="/artisti">/artisti</a> raccoglie tutto il roster approvato. Puoi combinare tre filtri:</p>
+<p>La pagina <a href="/artisti">/artisti</a> raccoglie tutto il roster approvato. Puoi combinare questi filtri:</p>
 <ul>
-  <li><strong>Tipologia</strong> — cantante, chitarrista, batterista, dj, sassofonista e così via, in base agli strumenti che l'artista dichiara di portare sul palco.</li>
-  <li><strong>Generi musicali</strong> — pop, rock, jazz, elettronica, cantautorato.</li>
+  <li><strong>Formazione</strong> — solista o band, se l'artista l'ha indicata.</li>
+  <li><strong>Categoria</strong> — cantante, chitarrista, batterista, dj, sassofonista e così via, in base agli strumenti che l'artista dichiara di portare sul palco.</li>
+  <li><strong>Genere</strong> — pop, rock, jazz, elettronica, cantautorato.</li>
+  <li><strong>Città</strong> — quella scritta nel profilo dell'artista.</li>
+  <li><strong>Percorso</strong> — cover artist, tribute band o progetto inedito, per gli artisti con piano Pro o Max che l'hanno indicato.</li>
+  <li><strong>Libero il</strong> — scegli una data e restano solo gli artisti che non l'hanno segnata come occupata nel loro calendario. Prima di scrivere conviene comunque aprire il calendario sul profilo.</li>
   <li><strong>Ricerca testuale</strong> — per nome d'arte o città.</li>
 </ul>
-<p>Il contatore si aggiorna mentre filtri; per ripartire da zero c'è "Reset filtri".</p>
+<p>Il contatore si aggiorna mentre filtri; per ripartire da zero c'è "Reset". I filtri restano nell'indirizzo della pagina, quindi puoi salvare o condividere una ricerca. Città e data sono disponibili dopo l'accesso.</p>
 
 <h2>Serve l'accesso per vedere la scheda completa</h2>
 <p>Senza account vedi solo schede anonime, con genere, strumenti e piano: nome d'arte, copertina, città, biografia, galleria, tracce audio, video, formazione, requisiti tecnici e calendario sono riservati agli utenti registrati.</p>
@@ -164,7 +168,7 @@ export const ORGANIZZATORI: HelpCategory = {
 <h2>Perché conviene registrarla</h2>
 <ul>
   <li><strong>Compili una volta sola.</strong> Nelle richieste selezioni la struttura invece di riscrivere nome e città ogni volta.</li>
-  <li><strong>L'artista capisce dove suonerà.</strong> Vede il luogo con foto, capienza e indirizzo: una richiesta con una struttura vera dietro riceve più risposte di una con un nome generico.</li>
+  <li><strong>L'artista capisce dove suonerà.</strong> Sulla richiesta vede nome, copertina, indirizzo, città e capienza della struttura: una richiesta con una struttura vera dietro riceve più risposte di una con un nome generico.</li>
   <li><strong>Filtri il calendario</strong> per struttura, se ne gestisci più d'una.</li>
 </ul>
 
@@ -175,7 +179,7 @@ export const ORGANIZZATORI: HelpCategory = {
   <li><strong>Indirizzo, città, regione e CAP</strong> — servono all'artista per valutare la trasferta.</li>
   <li><strong>Capienza</strong> — cambia la scelta della formazione e dell'impianto.</li>
   <li><strong>Descrizione</strong> — che tipo di serate fate, che pubblico avete.</li>
-  <li><strong>Copertina</strong> (formato 16:9) e <strong>galleria</strong> fino a 6 foto. Le foto del palco e della sala sono le più utili.</li>
+  <li><strong>Copertina</strong> (formato 16:9) e <strong>galleria</strong> fino a 6 foto. La copertina è ciò che l'artista vede sulla richiesta, quindi scegli una foto del palco o della sala; la galleria per ora resta nella tua scheda e l'artista non la vede.</li>
   <li><strong>Sito, Instagram, telefono ed email</strong> della struttura.</li>
 </ul>
 

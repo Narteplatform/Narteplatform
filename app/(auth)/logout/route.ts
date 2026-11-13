@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
 import { LEGAL_COOKIE } from "@/lib/legal/gate";
+import { COOKIE_BENVENUTO } from "@/lib/auth/costanti";
+import { ACTIVE_ARTIST_COOKIE } from "@/lib/artist/current";
 
 export async function POST() {
   const supabase = await createClient();
@@ -17,6 +19,11 @@ export async function POST() {
   // e salterebbe la schermata di accettazione — risultando, per il middleware,
   // come se avesse accettato qualcosa che non ha mai visto.
   response.cookies.delete(LEGAL_COOKIE);
+  // Stessa ragione per gli altri cookie legati alla persona: il «benvenuto già
+  // visto» (chi entra dopo deve vederlo, se è nuovo) e il profilo artista
+  // attivo (è l'id di un profilo di chi è uscito).
+  response.cookies.delete(COOKIE_BENVENUTO);
+  response.cookies.delete(ACTIVE_ARTIST_COOKIE);
 
   return response;
 }

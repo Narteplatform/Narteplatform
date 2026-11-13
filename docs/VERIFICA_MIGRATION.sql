@@ -342,3 +342,34 @@ select
        else 'DA APPLICARE — accept_offer_v2 precedente (0070)' end as stato
 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public' and p.proname = 'accept_offer_v2';
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 0081 — hardening
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Privilegi. Atteso SOLO: collaborations anon SELECT, collaborations authenticated SELECT,
+-- consultant_slots authenticated SELECT, conversation_blocks authenticated SELECT.
+select table_name, grantee, privilege_type
+  from information_schema.role_table_grants
+ where table_schema = 'public' and grantee in ('anon','authenticated')
+   and table_name in ('admin_page_permissions','artist_media_submissions','billing_customers',
+                      'booking_messages','collaborations','consultant_slots','conversation_blocks',
+                      'media_assets','platform_feedback','rate_limits','stripe_webhook_events','subscriptions')
+ order by table_name, grantee, privilege_type;
+
+-- Indici (attese 9 righe)
+select tablename, indexname from pg_indexes
+ where schemaname = 'public'
+   and indexname in ('booking_requests_venue_idx','profile_referrals_venue_idx','content_reports_reporter_idx',
+                     'media_assets_owner_idx','leads_requester_idx','artists_user_idx','consultations_user_idx',
+                     'messages_offer_booking_idx','notifications_artist_idx')
+ order by tablename;
+
+-- Bucket (valori attesi nel file della migration)
+select id, public, file_size_limit, allowed_mime_types from storage.buckets order by id;
+
+-- 0083 — handle_new_user con l'avatar di Google
+select case when prosrc like '%picture%' then 'OK — handle_new_user della 0083'
+            else 'DA APPLICARE — handle_new_user precedente' end as stato
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname = 'public' and p.proname = 'handle_new_user';

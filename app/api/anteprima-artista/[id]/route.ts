@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { createAdminClient } from "@/lib/supabase/server";
+import { allowByIp, LIMITI } from "@/lib/security/rate-limit";
+import { hostMediaAmmesso } from "@/lib/security/media-hosts";
 
 export const runtime = "nodejs";
 
@@ -18,10 +20,6 @@ export const runtime = "nodejs";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_BYTES = 15 * 1024 * 1024;
 
-/** Host dei media degli artisti (Supabase e bunny.net). */
-function hostAmmesso(host: string): boolean {
-  return host.endsWith(".supabase.co") || host.endsWith(".b-cdn.net");
-}
 
 function nonTrovato() {
   return new NextResponse(null, {
@@ -63,6 +61,14 @@ export async function GET(
     const { id } = await params;
     if (!UUID_RE.test(id)) return nonTrovato();
 
+    // Dopo la validazione dell'id (gratuita) e prima di database e download.
+    if (!(await allowByIp(LIMITI.anteprimaArtista))) {
+      return new NextResponse(null, {
+        status: 429,
+        headers: { "Retry-After": "600", "Cache-Control": "no-store", "X-Robots-Tag": "noindex" },
+      });
+    }
+
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("artists")
@@ -78,7 +84,10 @@ export async function GET(
     } catch {
       return nonTrovato();
     }
-    if (url.protocol !== "https:" || !hostAmmesso(url.hostname)) return nonTrovato();
+    // Solo gli host dei NOSTRI media (progetto Supabase e pull zone Bunny), non
+    // qualunque *.supabase.co / *.b-cdn.net: questa rotta scarica dal server
+    // l'URL in colonna, e un host altrui la renderebbe un proxy.
+    if (url.protocol !== "https:" || !hostMediaAmmesso(url.hostname)) return nonTrovato();
 
     const originale = await scarica(url);
     if (!originale) return nonTrovato();

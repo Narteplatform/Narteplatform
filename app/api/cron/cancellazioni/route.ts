@@ -5,6 +5,7 @@ import { anteprimaCompletamento, eseguiCompletamento } from "@/lib/legal/complet
 import { GIORNI_RIPENSAMENTO } from "@/lib/legal/cancellazione";
 import { registraAzione } from "@/lib/moderation/decisioni";
 import { avvisaRoot, trovaRoot } from "@/lib/admin/root";
+import { eseguiCron } from "@/lib/cron/esegui";
 import type { Json } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
@@ -28,10 +29,17 @@ export const maxDuration = 300;
  *  3. elimina i vecchi profili rimasti nascosti dopo uno sblocco «profilo
  *     nuovo» (restore_state.profili_vecchi_da_eliminare), allo stesso termine.
  *
- * ⛔ INTERRUTTORE. Acceso di default dal 05/11/2026; con
- * `AUTO_CANCELLAZIONE_ENFORCE=0` non cancella nulla: elenca cosa farebbe e lo
- * manda al root. Al massimo MAX_PER_ESECUZIONE account a
- * esecuzione: un errore di logica non può svuotare il database in una notte.
+ * ⛔ INTERRUTTORE. Cancella SOLO con `AUTO_CANCELLAZIONE_ENFORCE=1`. Con la
+ * variabile vuota, assente o con qualsiasi altro valore è in SOLA CONTA: non
+ * cancella nulla, elenca cosa farebbe e lo manda al root. (Fino al 13/11/2026
+ * cancellava di default salvo `=0`: invertito per la regola numero uno di
+ * CLAUDE.md, mai distruggere di default. Una variabile dimenticata su Vercel
+ * deve fermare le cancellazioni, non attivarle.) Al massimo MAX_PER_ESECUZIONE
+ * account a esecuzione: un errore di logica non può svuotare il database in
+ * una notte.
+ *
+ * Un fallimento (eccezione o risposta non 2xx) avvisa il root tramite
+ * `eseguiCron` (lib/cron/esegui.ts), al massimo una volta al giorno.
  *
  * Una lettura fallita ferma tutto (CLAUDE.md, regola 4): nessuna scrittura
  * deriva da una lettura di cui non si è controllato l'errore.
@@ -53,13 +61,17 @@ function giorniDa(iso: string): number {
 }
 
 export async function GET(req: Request) {
+  return eseguiCron("cancellazioni", () => gestisci(req));
+}
+
+async function gestisci(req: Request): Promise<Response> {
   if (!autorizzato(req)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  // ACCESA dal 05/11/2026 (approvazione del cliente). Per tornare in sola
-  // conta: AUTO_CANCELLAZIONE_ENFORCE=0 su Vercel e redeploy.
-  const esegui = process.env.AUTO_CANCELLAZIONE_ENFORCE !== "0";
+  // Cancella solo con AUTO_CANCELLAZIONE_ENFORCE=1 su Vercel (e redeploy).
+  // Qualsiasi altro valore, o la variabile assente: sola conta.
+  const esegui = process.env.AUTO_CANCELLAZIONE_ENFORCE === "1";
   const admin = createAdminClient();
 
   const root = await trovaRoot();
@@ -207,7 +219,7 @@ export async function GET(req: Request) {
       testo: [
         esegui
           ? "Esito della cancellazione automatica al 30° giorno."
-          : "La cancellazione automatica è in SOLA CONTA (AUTO_CANCELLAZIONE_ENFORCE=0): non è stato cancellato nulla. Ecco cosa farebbe.",
+          : "La cancellazione automatica è in SOLA CONTA (AUTO_CANCELLAZIONE_ENFORCE non è «1»): non è stato cancellato nulla. Ecco cosa farebbe. Per cancellare davvero: AUTO_CANCELLAZIONE_ENFORCE=1 su Vercel e redeploy.",
         "",
         ...righe,
       ].join("\n"),

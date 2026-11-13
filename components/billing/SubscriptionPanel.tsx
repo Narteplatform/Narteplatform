@@ -1,5 +1,8 @@
 "use client";
 
+// Con i documenti v2 spenti /condizioni-abbonamento risponde 404: si rimanda ai Termini in vigore.
+const LEGAL_V2 = process.env.NEXT_PUBLIC_LEGAL_V2_PUBBLICATO === "1";
+
 import { useState, useTransition } from "react";
 import { CreditCard, Undo2 } from "lucide-react";
 import {
@@ -26,10 +29,13 @@ type Acquirente = "consumatore" | "professionista";
 export function SubscriptionPanel({
   currentTier,
   hasSubscription,
+  hasBillingCustomer = false,
   recesso = { disponibile: false },
 }: {
   currentTier: ArtistTier;
   hasSubscription: boolean;
+  /** Ha un customer Stripe: anche senza abbonamento vivo può scaricare le fatture. */
+  hasBillingCustomer?: boolean;
   recesso?: StatoRecesso;
 }) {
   const [pending, start] = useTransition();
@@ -64,6 +70,23 @@ export function SubscriptionPanel({
             <Button variant="outline" onClick={onPortal} disabled={pending}>
               <CreditCard className="size-4" />
               {pending ? "Apertura…" : "Gestisci fatturazione"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {!hasSubscription && hasBillingCustomer && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+            <div>
+              <p className="font-medium">Fatture</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Scarica le ricevute e le fatture dei tuoi abbonamenti precedenti.
+              </p>
+            </div>
+            <Button variant="outline" onClick={onPortal} disabled={pending}>
+              <CreditCard className="size-4" />
+              {pending ? "Apertura…" : "Vedi le fatture"}
             </Button>
           </CardContent>
         </Card>
@@ -172,7 +195,7 @@ function ConfermaAbbonamento({ scelta, onIndietro }: { scelta: Scelta; onIndietr
           <Casella checked={condizioni} onChange={setCondizioni}>
             Ho letto e accetto le{" "}
             <a
-              href="/condizioni-abbonamento"
+              href={LEGAL_V2 ? "/condizioni-abbonamento" : "/termini"}
               target="_blank"
               rel="noopener noreferrer"
               className="underline underline-offset-2"

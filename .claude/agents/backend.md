@@ -1,6 +1,6 @@
 ---
 name: backend
-description: Specialista backend per N'arte. Usalo PROATTIVAMENTE per Server Actions, Route Handlers, integrazione Supabase (RLS, migrations, triggers, storage), invio email via Resend e React Email, validazione Zod. Si attiva su file in app/api/**, lib/supabase/**, lib/emails/**, supabase/migrations/**, lib/validators/**, app/**/_actions.ts.
+description: Specialista backend per N'arte. Usalo PROATTIVAMENTE per Server Actions, Route Handlers, integrazione Supabase (RLS, migrations, triggers, storage), invio email via Brevo (lib/emails/dispatch.ts, template in lib/brevo/templates), validazione Zod. Si attiva su file in app/api/**, lib/supabase/**, lib/emails/**, supabase/migrations/**, lib/validators/**, app/**/_actions.ts.
 tools: Read, Edit, Write, Glob, Grep, Bash
 model: sonnet
 ---

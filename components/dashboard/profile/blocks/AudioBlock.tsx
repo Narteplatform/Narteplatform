@@ -16,6 +16,7 @@ import {
   type AudioSectionValues,
 } from "@/lib/validators/artist-profile";
 import type { ArtistProfileData, MediaSubmissionNotice } from "@/components/dashboard/profile/types";
+import { entitlementsFor, isUnlimited, PLAN_LABELS } from "@/lib/billing/plans";
 
 export function AudioBlock({
   artist,
@@ -41,6 +42,12 @@ export function AudioBlock({
 
   const diritti = useDirittiContenuti();
   const tracks = useWatch({ control: form.control, name: "audio_files" }) ?? [];
+  // Tetto del piano attuale: sul profilo pubblico si vedono solo le prime
+  // `tetto` tracce (0 su Free). Le altre restano qui, non cancellate.
+  const piano = artist.tier ?? "free";
+  const tetto = entitlementsFor(piano).audioMax;
+  const conTetto = !isUnlimited(tetto);
+  const oltre = conTetto ? Math.max(tracks.length - tetto, 0) : 0;
 
   return (
     <ProfileSection
@@ -50,12 +57,30 @@ export function AudioBlock({
       icon={<Music className="size-4" />}
       status={
         tracks.length > 0
-          ? { tone: "count", label: tracks.length === 1 ? "1 traccia" : `${tracks.length} tracce` }
+          ? {
+              tone: "count",
+              label:
+                conTetto && tetto > 0
+                  ? `${tracks.length} di ${tetto} ${tetto === 1 ? "traccia" : "tracce"}`
+                  : tracks.length === 1
+                    ? "1 traccia"
+                    : `${tracks.length} tracce`,
+            }
           : { tone: "todo", label: "Nessuna traccia" }
       }
       dirty={isDirty}
     >
       <PendingMediaNotice items={pendingMedia} />
+      {oltre > 0 && (
+        <p role="status" className="mb-3 rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          {tetto === 0
+            ? `Con il piano ${PLAN_LABELS[piano]} le tracce audio non sono visibili sul profilo pubblico. `
+            : oltre === 1
+              ? `L'ultima traccia (la ${tetto + 1}ª) non è visibile sul profilo pubblico: il piano ${PLAN_LABELS[piano]} ne mostra ${tetto}. `
+              : `Le ultime ${oltre} tracce (dalla ${tetto + 1}ª in poi) non sono visibili sul profilo pubblico: il piano ${PLAN_LABELS[piano]} ne mostra ${tetto}. `}
+          Non sono cancellate e tornano visibili con un piano che le include.
+        </p>
+      )}
       <ProfileSectionForm
         onSubmit={onSubmit}
         isDirty={isDirty}

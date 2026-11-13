@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Reveal } from "@/components/animations/Reveal";
 import { createAdminClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 import Image from "next/image";
 
 type Post = {
@@ -21,11 +22,13 @@ async function getPosts(limit = 4): Promise<Post[]> {
       .from("blog_posts")
       .select("id, slug, title, excerpt, cover_image, author_name, published_at")
       .not("published_at", "is", null)
+      // Gli articoli programmati non escono prima della loro data.
+      .lte("published_at", new Date().toISOString())
       .order("published_at", { ascending: false })
       .limit(limit);
     return (data ?? []) as unknown as Post[];
   } catch (err) {
-    console.error("[BlogSection] blog_posts fetch error", err);
+    logger.error("blog", "sezione blog in home:", err instanceof Error ? err.message : String(err));
     return [];
   }
 }

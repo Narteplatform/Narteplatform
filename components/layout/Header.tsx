@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogIn, UserPlus, User, LayoutDashboard, LogOut } from "lucide-react";
+import { LogIn, UserPlus, User, LayoutDashboard, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { SearchMenu } from "@/components/layout/SearchMenu";
@@ -102,6 +102,13 @@ export async function Header() {
                       <User className="size-4" />
                     )}
                     <span className="hidden sm:inline">{dashLabel}</span>
+                  </Link>
+                </Button>
+                {/* Account: nome, password, email, sicurezza e dati, per tutti i ruoli. */}
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/account" aria-label="Il mio account" title="Il mio account">
+                    <Settings className="size-4" />
+                    <span className="hidden lg:inline">Account</span>
                   </Link>
                 </Button>
                 <form action="/logout" method="post">

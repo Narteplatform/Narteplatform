@@ -10,11 +10,47 @@
  *   node --env-file=.env.local scripts/stripe-setup-prices.mjs           # crea
  *   node --env-file=.env.local scripts/stripe-setup-prices.mjs --dry-run # mostra e basta
  *
- * Gli importi sono la fonte PLAN_PRICES_CENTS di lib/billing/plans.ts: se
- * cambiano lì, vanno ricreati i price qui (su Stripe un price è immutabile
- * nell'importo — si crea il nuovo e si archivia il vecchio).
+ * Gli importi si leggono da PLAN_PRICES_CENTS in lib/billing/plans.ts, l'unica
+ * fonte del listino: lo script non ha numeri suoi. Se il file non è leggibile
+ * o l'oggetto non ha la forma attesa, lo script si ferma PRIMA di contattare
+ * Stripe. Se cambiano lì, vanno ricreati i price qui (su Stripe un price è
+ * immutabile nell'importo — si crea il nuovo e si archivia il vecchio).
+ *
+ * (Novembre 2026: lo script creava il Max mensile a 99,99 € mentre il listino
+ * dice 49,99 €. Da qui la lettura diretta da plans.ts.)
  */
 import Stripe from "stripe";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+/**
+ * PLAN_PRICES_CENTS letto dal sorgente TypeScript (lo script è .mjs e non può
+ * importarlo). Forma attesa:
+ *   pro: { month: 999, year: 4999 },
+ *   max: { month: 4999, year: 49999 },
+ */
+function listinoDaPlans() {
+  const percorso = fileURLToPath(new URL("../lib/billing/plans.ts", import.meta.url));
+  const sorgente = readFileSync(percorso, "utf8");
+  const blocco = /PLAN_PRICES_CENTS[^=]*=\s*\{([\s\S]*?)\n\};/.exec(sorgente)?.[1];
+  if (!blocco) throw new Error("PLAN_PRICES_CENTS non trovato in lib/billing/plans.ts");
+  const listino = {};
+  for (const tier of ["pro", "max"]) {
+    const riga = new RegExp(`\\b${tier}\\s*:\\s*\\{\\s*month\\s*:\\s*(\\d+)\\s*,\\s*year\\s*:\\s*(\\d+)\\s*\\}`).exec(blocco);
+    if (!riga) throw new Error(`Prezzi di "${tier}" non leggibili in PLAN_PRICES_CENTS`);
+    listino[tier] = { month: Number(riga[1]), year: Number(riga[2]) };
+    if (!(listino[tier].month > 0 && listino[tier].year > 0)) throw new Error(`Prezzi di "${tier}" non validi`);
+  }
+  return listino;
+}
+
+let LISTINO;
+try {
+  LISTINO = listinoDaPlans();
+} catch (e) {
+  console.error("❌ Listino non leggibile:", e instanceof Error ? e.message : e);
+  process.exit(1);
+}
 
 const dryRun = process.argv.includes("--dry-run");
 const key = process.env.STRIPE_SECRET_KEY;
@@ -45,24 +81,53 @@ const PLANS = [
     description:
       "Chat con locali e organizzatori, recensioni, badge Artista Pro, 10 foto, 3 video, 1 file audio, 2 profili artista, priorità nei risultati.",
     prices: [
-      { interval: "month", amount: 999, lookup: "narte_pro_month", env: "STRIPE_PRICE_PRO_MONTH" },
-      { interval: "year", amount: 4999, lookup: "narte_pro_year", env: "STRIPE_PRICE_PRO_YEAR" },
+      { interval: "month", amount: LISTINO.pro.month, lookup: "narte_pro_month", env: "STRIPE_PRICE_PRO_MONTH" },
+      { interval: "year", amount: LISTINO.pro.year, lookup: "narte_pro_year", env: "STRIPE_PRICE_PRO_YEAR" },
     ],
   },
   {
     tier: "max",
     name: "N'arte Max",
     description:
-      "Tutto di Pro, più: top artist in evidenza, segnalazione del profilo alle strutture, 30 foto, 5 profili artista, consulenza illimitata. Shooting fotografico incluso nell'abbonamento annuale.",
+      "Tutto di Pro, più: top artist in evidenza, promozione del profilo presso le strutture, 30 foto, 5 profili artista, consulenza senza limite mensile (in base agli slot). Shooting fotografico incluso nel primo anno dell'abbonamento annuale.",
     prices: [
-      { interval: "month", amount: 9999, lookup: "narte_max_month", env: "STRIPE_PRICE_MAX_MONTH" },
-      { interval: "year", amount: 49999, lookup: "narte_max_year", env: "STRIPE_PRICE_MAX_YEAR" },
+      { interval: "month", amount: LISTINO.max.month, lookup: "narte_max_month", env: "STRIPE_PRICE_MAX_MONTH" },
+      { interval: "year", amount: LISTINO.max.year, lookup: "narte_max_year", env: "STRIPE_PRICE_MAX_YEAR" },
     ],
   },
 ];
 
 const eur = (c) => (c / 100).toFixed(2).replace(".", ",") + " €";
 const envOut = {};
+
+console.log("Listino da lib/billing/plans.ts:");
+for (const plan of PLANS) for (const p of plan.prices) console.log(`  ${p.lookup}: ${eur(p.amount)}/${p.interval}`);
+console.log("");
+
+// Controllo di coerenza sulle env già configurate: un price id in env con un
+// importo diverso dal listino è esattamente il problema che si vuole evitare.
+let incoerenze = 0;
+for (const plan of PLANS) {
+  for (const p of plan.prices) {
+    const id = process.env[p.env];
+    if (!id) continue;
+    try {
+      const price = await stripe.prices.retrieve(id);
+      if (price.unit_amount !== p.amount || price.recurring?.interval !== p.interval) {
+        incoerenze++;
+        console.log(
+          `⚠️  ${p.env}=${id}: su Stripe ${eur(price.unit_amount ?? 0)}/${price.recurring?.interval ?? "?"}, listino ${eur(p.amount)}/${p.interval}.`
+        );
+      }
+    } catch (e) {
+      incoerenze++;
+      console.log(`⚠️  ${p.env}=${id}: non leggibile su Stripe (${e instanceof Error ? e.message : e}).`);
+    }
+  }
+}
+if (incoerenze > 0) {
+  console.log(`\n⚠️  ${incoerenze} price in env non coerenti con il listino: il checkout addebiterebbe un importo diverso da quello mostrato.\n`);
+}
 
 // `products.list` invece di `products.search`.
 //

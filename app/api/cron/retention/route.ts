@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { inviaPromemoriaRinnovi } from "@/lib/billing/promemoria-rinnovo";
 import { deleteStreamVideo } from "@/lib/storage/bunny/stream";
 import { REPORT_BUCKET } from "@/lib/security/report-attachments";
+import { eseguiCron } from "@/lib/cron/esegui";
 import type { Database } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
@@ -21,9 +22,12 @@ export const dynamic = "force-dynamic";
  * nessuno. L'informativa promette periodi di conservazione che nella pratica
  * non esistono: tutto è «per sempre».
  *
- * ⛔ È PARTITA IN SOLA CONTA, E NON ERA UNA PRUDENZA DI FACCIATA. Dal
- * 05/11/2026 cancella di default; con `RETENTION_ENFORCE=0` torna a **leggere e basta**:
- * conta quante righe supererebbero il periodo previsto e le scrive nei log.
+ * ⛔ È PARTITA IN SOLA CONTA, E NON ERA UNA PRUDENZA DI FACCIATA. Cancella
+ * SOLO con `RETENTION_ENFORCE=1`; con la variabile assente o qualsiasi altro
+ * valore **legge e basta**: conta quante righe supererebbero il periodo
+ * previsto e le scrive nei log. (Dal 05/11 al 13/11/2026 cancellava di default
+ * salvo `=0`: invertito per la regola numero uno di CLAUDE.md, mai distruggere
+ * di default. Una variabile dimenticata deve fermare, non attivare.)
  * Nient'altro. Serve a rispondere a una domanda che nessuno può rispondere a
  * priori — «quanto stiamo per cancellare?» — prima di autorizzare una
  * cancellazione su dati di produzione che non esiste modo di annullare.
@@ -161,15 +165,23 @@ function autorizzato(req: Request): boolean {
   return req.headers.get("authorization") === `Bearer ${secret}`;
 }
 
+/**
+ * Un fallimento (eccezione, risposta non 2xx, o `ok: false` perché una regola
+ * ha dato errore) avvisa il root tramite `eseguiCron`, max una volta al giorno.
+ */
 export async function GET(req: Request) {
+  return eseguiCron("retention", () => gestisci(req));
+}
+
+async function gestisci(req: Request): Promise<Response> {
   if (!autorizzato(req)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  // ACCESA dal 05/11/2026 (approvazione del cliente, dopo i conteggi in sola
-  // lettura: nessuna riga oltre i periodi). Per tornare in sola conta:
-  // RETENTION_ENFORCE=0 su Vercel e redeploy.
-  const cancella = process.env.RETENTION_ENFORCE !== "0";
+  // Cancella solo con RETENTION_ENFORCE=1 su Vercel (e redeploy). Il cliente
+  // l'ha approvata il 05/11/2026 dopo i conteggi in sola lettura; resta però
+  // un interruttore da accendere esplicitamente, non uno da spegnere.
+  const cancella = process.env.RETENTION_ENFORCE === "1";
   const admin = createAdminClient();
   const esiti: Array<Record<string, unknown>> = [];
 
@@ -277,9 +289,16 @@ export async function GET(req: Request) {
     `${cancella ? "CANCELLAZIONE ATTIVA" : "sola conta"} — ${totale} righe complessive oltre i periodi previsti`
   );
 
+  // Una regola fallita non ferma le altre, ma il lavoro non è riuscito: `ok`
+  // falso fa partire l'avviso al root (eseguiCron). Lo status resta 200.
+  const errori = esiti
+    .filter((e) => typeof e.errore === "string")
+    .map((e) => `${String(e.tabella ?? e.lavoro ?? "?")}: ${String(e.errore)}`);
+
   return NextResponse.json(
     {
-      ok: true,
+      ok: errori.length === 0,
+      ...(errori.length > 0 ? { errori } : {}),
       modalita: cancella ? "cancellazione" : "sola-conta",
       eseguitoIl: new Date().toISOString(),
       totale,

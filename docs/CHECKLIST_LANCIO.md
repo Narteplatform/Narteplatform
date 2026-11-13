@@ -3,6 +3,13 @@
 > Analisi del 28 agosto 2026. Ogni voce è stata verificata nel codice o con una
 > lettura in sola lettura del database di produzione. Nessun dato è stato
 > modificato durante l'analisi.
+>
+> **Aggiornamento del 13/11/2026.** Alcune voci erano superate dal codice e sono
+> state allineate (segnate «aggiornato 13/11/2026»): Brevo unico provider e
+> `BREVO_ENABLED_KEYS` eliminata, cron dei promemoria attivo, header di sicurezza,
+> `/__health` chiusa, anti-spam, sitemap/robots/404/anteprima social, marcatura
+> JSON-LD. Il resto del documento riflette lo stato di agosto: le tabelle di
+> riepilogo e il piano settimanale non sono stati ricalcolati.
 
 ## Come leggere la checklist
 
@@ -188,14 +195,14 @@ motivo *"RESEND_API_KEY mancante"*. L'ultima è del 18 luglio 2026.
 
 | Problema | Valore attuale | Conseguenza |
 |---|---|---|
-| `BREVO_ENABLED_KEYS` non è impostata | assente | I 37 template Brevo pubblicati non vengono **mai** usati: tutto ricade su Resend |
-| `RESEND_FROM_EMAIL` | `onboarding@resend.dev` | Dominio di prova di Resend: consegna **solo al tuo indirizzo**, a nessun altro |
+| ~~`BREVO_ENABLED_KEYS` non è impostata~~ | — | **Superato:** dal 05/11/2026 Brevo è l'unico provider e la variabile non esiste più (`lib/emails/dispatch.ts`). Ogni chiave ha il suo template con id predefinito in `lib/brevo/registry.ts`. *(aggiornato 13/11/2026)* |
+| ~~`RESEND_FROM_EMAIL`~~ | — | **Superato:** Resend rimosso dal 05/11/2026. *(aggiornato 13/11/2026)* |
 | `BREVO_SENDER_EMAIL` | `info@narteofficial.it` | Casella Libero gratuita: niente SPF/DKIM/DMARC, finisce in spam o viene rifiutata |
 | `BREVO_ASSET_BASE_URL` non è impostata | assente | Logo e immagini rotti dentro le email |
 
 - [ ] 🔴 **B** — **Sbloccare la verifica del dominio su Brevo.** È il punto fermo reale: la verifica spettava al partner che detiene il dominio e **non è stata completata correttamente**. Luigi sta sollecitando formalmente. Finché non è chiusa, nessuna email può partire da un indirizzo N'arte — qualunque cosa faccia il codice.
 - [ ] 🔴 **B** — Impostare il mittente su `noreply@narte.it` (o simile) al posto di libero.it e resend.dev
-- [ ] 🔴 **B** — Impostare `BREVO_ENABLED_KEYS=*` su Vercel per attivare davvero Brevo
+- [x] ~~🔴 **B** — Impostare `BREVO_ENABLED_KEYS=*` su Vercel per attivare davvero Brevo~~ — superato: la variabile non esiste più, Brevo invia sempre. *(aggiornato 13/11/2026)*
 - [ ] 🔴 **B** — Impostare `BREVO_ASSET_BASE_URL` sul dominio finale
 - [ ] 🔴 **A+B** — Test end-to-end di **ogni** email: io preparo lo scenario, tu confermi la ricezione su Gmail, Outlook e Libero
 
@@ -204,11 +211,11 @@ motivo *"RESEND_API_KEY mancante"*. L'ultima è del 18 luglio 2026.
 Tre template esistono e sono pubblicati su Brevo, ma **nessuno li invia mai**
 perché manca il processo pianificato che dovrebbe farlo partire:
 
-- [ ] 🔴 **A** — Promemoria evento (`event_reminder`): nessun cron lo attiva
-- [ ] 🔴 **A** — Promemoria consulenza (`consultation_reminder`): nessun cron lo attiva
-- [ ] 🔴 **A** — Invito a recensire dopo l'evento (`feedback_request`): nessun cron lo attiva → **il flusso recensioni non parte mai** (vedi sezione 6)
+- [x] 🔴 **A** — Promemoria evento (`event_reminder`): fatto, cron `/api/cron/promemoria` (ogni giorno 07:00 UTC, `lib/reminders/promemoria.ts`), con recupero se un giorno salta. *(aggiornato 13/11/2026)*
+- [x] 🔴 **A** — Promemoria consulenza (`consultation_reminder`): fatto, stesso cron. *(aggiornato 13/11/2026)*
+- [x] 🔴 **A** — Invito a recensire dopo l'evento (`feedback_request`): fatto, stesso cron, recupero sugli ultimi 3 giorni. *(aggiornato 13/11/2026)*
 - [ ] 🟡 **B** — Verificare i template di Supabase per conferma email e recupero password: se non sono stati personalizzati sono in **inglese** con il marchio Supabase
-- [ ] 🟡 **A** — 5 punti del codice inviano ancora direttamente via Resend saltando il sistema Brevo: consulenze, lead da profilo artista, approvazione candidatura, richieste booking. Vanno uniformati.
+- [x] 🟡 **A** — ~~5 punti del codice inviano ancora direttamente via Resend~~ — superato: tutte le email passano da `dispatchEmail`, solo Brevo. *(aggiornato 13/11/2026)*
 
 ### 2.3 Revisione del design
 
@@ -269,17 +276,17 @@ leggero e la conformità è alla portata.
 
 ### 3.3 Diritti degli utenti
 
-- [ ] 🔴 **A** — Cancellazione dell'account dall'area personale: oggi può farlo **solo l'amministratore**, l'utente non ha alcun modo
+- [x] 🔴 **A** — Cancellazione dell'account dall'area personale: fatto, richiesta da `/account/i-miei-dati` con 30 giorni di ripensamento e completamento automatico (`/api/cron/cancellazioni`, attivo solo con `AUTO_CANCELLAZIONE_ENFORCE=1`). *(aggiornato 13/11/2026)*
 - [ ] 🟡 **A** — Esportazione dei propri dati
-- [ ] 🟡 **C** — Politica di conservazione: per quanto si tengono chat, allegati, messaggi vocali e registro email? *Serve una decisione, poi la implemento.*
+- [x] 🟡 **C** — Politica di conservazione: implementata in `/api/cron/retention` con i periodi di `docs/REGISTRO_TRATTAMENTI.md`; cancella solo con `RETENTION_ENFORCE=1`, altrimenti conta. *(aggiornato 13/11/2026)*
 
 ---
 
 ## 4. Sicurezza 🔴
 
-- [ ] 🔴 **A** — Nessuna intestazione di sicurezza configurata: mancano CSP, HSTS e protezione contro l'inclusione in iframe
-- [ ] 🔴 **A** — La pagina `/__health` è **pubblica**: mostra a chiunque lo stato del database, quali variabili d'ambiente sono configurate e il commit in produzione
-- [ ] 🔴 **A** — Nessuna protezione anti-spam sui form pubblici (candidatura artista, contatti, richiesta booking): niente captcha, niente limite di invii. Un bot può riempire il database.
+- [x] 🔴 **A** — Intestazioni di sicurezza: fatto in `next.config.ts` (HSTS, `X-Frame-Options: DENY`, `frame-ancestors 'none'`). **Resta aperto:** la CSP è in sola segnalazione (`Content-Security-Policy-Report-Only`), va verificata in console e poi attivata. *(aggiornato 13/11/2026)*
+- [x] 🔴 **A** — `/__health` chiusa: solo superadmin root. Per un monitor esterno c'è ora `/api/health`, pubblica e minimale (vedi `docs/OPERATIVITA.md`). *(aggiornato 13/11/2026)*
+- [x] 🔴 **A** — Anti-spam sui form pubblici: fatto, honeypot + limite di frequenza (`guardPublicForm`, `lib/security/`). *(aggiornato 13/11/2026)*
 - [ ] 🟡 **A** — Limitare la frequenza delle richieste sulle rotte di caricamento file
 - [ ] 🟢 **B** — Far fare una revisione di sicurezza indipendente prima del lancio
 
@@ -309,7 +316,7 @@ A metà strada. La tabella esiste, il form esiste, la moderazione admin esiste.
 Mancano i due pezzi che la rendono utile:
 
 - [ ] 🔴 **A** — Le recensioni **non compaiono sul profilo pubblico dell'artista**. Oggi si vedono solo nella dashboard artista e nel pannello admin: nessun organizzatore le vedrà mai.
-- [ ] 🟡 **A** — Nessun invito automatico a recensire dopo l'evento (serve il cron della sezione 2.2)
+- [x] 🟡 **A** — Invito automatico a recensire dopo l'evento: fatto (cron della sezione 2.2). *(aggiornato 13/11/2026)*
 - [ ] 🟡 **C** — L'artista può rispondere a una recensione? Il documento di scope dice di sì, il database non ha il campo. *Da decidere.*
 
 ---
@@ -333,11 +340,11 @@ Quello che manca è il **collaudo su dispositivi veri**, non la costruzione.
 
 ## 8. SEO e prestazioni 🟡
 
-- [ ] 🔴 **A** — Mancano `sitemap.xml` e `robots.txt`: Google non sa cosa indicizzare
+- [x] 🔴 **A** — `sitemap.xml` e `robots.txt`: fatto (`app/sitemap.ts`, `app/robots.ts`). *(aggiornato 13/11/2026)*
 - [ ] 🔴 **A** — **Ogni pagina del sito manda al browser l'istruzione di non memorizzare nulla in cache.** Era una soluzione tampone per un vecchio problema, ma oggi rallenta l'intero sito per tutti i visitatori.
-- [ ] 🟡 **A** — Manca la pagina 404 personalizzata
-- [ ] 🟡 **A** — Manca l'immagine di anteprima social predefinita: i link condivisi su WhatsApp e Instagram appaiono spogli
-- [ ] 🟡 **A** — Manca la marcatura strutturata per Google (eventi, artisti, articoli): senza, gli eventi non compaiono nei risultati arricchiti
+- [x] 🟡 **A** — Pagina 404 personalizzata: fatto (`app/not-found.tsx`). *(aggiornato 13/11/2026)*
+- [x] 🟡 **A** — Immagine di anteprima social predefinita: fatto (`app/opengraph-image.tsx`). *(aggiornato 13/11/2026)*
+- [x] 🟡 **A** — Marcatura strutturata JSON-LD: fatto (`components/seo/JsonLd.tsx`, usata su layout pubblico, profilo artista, eventi, blog, centro assistenza, candidatura). *(aggiornato 13/11/2026)*
 - [ ] 🟡 **B** — Confermare il dominio finale e impostarlo su Vercel: oggi le configurazioni puntano a `narteplatform.vercel.app` e a `localhost`
 - [ ] 🟢 **A** — Rimuovere lo script di pulizia della vecchia app installabile, che gira su ogni caricamento di pagina
 
@@ -346,7 +353,7 @@ Quello che manca è il **collaudo su dispositivi veri**, non la costruzione.
 ## 9. Infrastruttura e operatività 🟡
 
 - [ ] 🟡 **C** — **Supabase è sul piano gratuito.** Con bunny.net che si prende foto, video e audio (sezione 0), il vincolo di archiviazione smette di essere urgente e il piano gratuito regge più a lungo. Restano però due questioni: **nessun backup ripristinabile a piacere** e **pausa del progetto dopo 7 giorni di inattività** (oggi mitigata dal risveglio automatico giornaliero). *Il passaggio a Pro diventa una scelta di sicurezza, non più di capienza.*
-- [ ] 🔴 **B** — Nessun backup del database configurato oltre a quello base del piano gratuito
+- [ ] 🔴 **B** — Nessun backup del database ripristinabile: il piano Free non ne offre. Opzioni (Supabase Pro + PITR, oppure `pg_dump` programmato) e procedura di ripristino in `docs/OPERATIVITA.md`. *(aggiornato 13/11/2026)*
 - [ ] 🟡 **C** — **Non esiste un ambiente di prova: `main` è la produzione.** Ogni modifica va online subito. Vale la pena creare un ambiente separato?
 - [ ] 🟡 **A/B** — Nessun sistema di monitoraggio degli errori: se un utente incontra un errore, nessuno lo viene a sapere
 - [ ] 🟡 **B** — `VISIT_HASH_SALT` non è impostata: **le statistiche del profilo, vendute col piano Max, sono spente**

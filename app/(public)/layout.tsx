@@ -22,7 +22,7 @@ export default async function PublicLayout({ children }: { children: React.React
           (che ospita i cuori sulle card): sono rami fratelli. */}
       <FavoritesRoot>
         <Header />
-        <main>{children}</main>
+        <main id="contenuto">{children}</main>
       </FavoritesRoot>
       <Footer />
       {/* Banner provvisorio: informa e prende atto, non gestisce nulla, perché

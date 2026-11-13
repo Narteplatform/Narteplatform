@@ -11,7 +11,7 @@ import {
   MAX_VIDEO_PER_ARTIST,
 } from "@/lib/upload/video-limits";
 
-const UPDATED = "2026-11-12";
+const UPDATED = "2026-11-13";
 
 /** Megabyte leggibili a partire dai byte della fonte unica. */
 const MB = (bytes: number) => `${Math.round(bytes / 1024 / 1024)} MB`;
@@ -74,7 +74,8 @@ export const ARTISTI: HelpCategory = {
 
 <h2>Se la candidatura non viene accolta</h2>
 <p>Può succedere se mancano informazioni essenziali, se i link non funzionano o se il progetto non rientra negli standard editoriali del roster.</p>
-<p><strong>Al momento il rifiuto non genera un'email automatica</strong>: se sono passate più di due settimane senza notizie, <a href="/contatti">scrivici</a> con il nome d'arte con cui ti sei candidato e ti diciamo a che punto siamo. Una volta sistemati i punti deboli, puoi ricandidarti.</p>
+<p>In quel caso ricevi <strong>un'email all'indirizzo della candidatura</strong>, con la motivazione della decisione e il link per contestarla se pensi che ci sia un errore. Una volta sistemati i punti deboli, puoi ricandidarti.</p>
+<p>Se sono passate più di due settimane senza nessuna email (controlla anche Spam e Promozioni), <a href="/contatti">scrivici</a> con il nome d'arte con cui ti sei candidato e ti diciamo a che punto siamo.</p>
 
 <h2>Serve un account a testa se siamo una band?</h2>
 <p>No. Una band si candida come <strong>un solo progetto</strong>, con un nome d'arte e un referente. I nomi dei componenti li aggiungi poi nel profilo, nel campo formazione.</p>
@@ -122,7 +123,7 @@ export const ARTISTI: HelpCategory = {
 
 <h2>Strumenti e percorso artistico</h2>
 <p>Gli <strong>strumenti</strong> che indichi decidono la tipologia con cui compari nei filtri (cantante, chitarrista, batterista, dj), quindi segna quelli che porti effettivamente sul palco.</p>
-<p>Il <strong>percorso artistico</strong> (cover artist, tribute band o progetto inedito) è incluso nei piani ${PLAN_LABELS.pro} e ${PLAN_LABELS.max} e aiuta gli organizzatori a capire al volo che tipo di serata proponi.</p>
+<p>Il <strong>percorso artistico</strong> (cover artist, tribute band o progetto inedito) è incluso nei piani ${PLAN_LABELS.pro} e ${PLAN_LABELS.max} e aiuta gli organizzatori a capire al volo che tipo di serata proponi: compare sul profilo pubblico e sulla scheda del catalogo, dove si può anche filtrare per percorso. Se torni a ${PLAN_LABELS.free} resta salvato ma non si vede più.</p>
 
 <h2>Social</h2>
 <p>Puoi collegare Instagram, Facebook, TikTok, YouTube, Spotify e il tuo sito. I link compaiono sulla pagina pubblica e sono il modo più immediato per mostrare che il progetto è attivo.</p>
@@ -313,19 +314,23 @@ export const ARTISTI: HelpCategory = {
 <h2>Cosa contiene</h2>
 <p>Un voto da <strong>1 a 5 stelle</strong> e un commento scritto obbligatorio. Sul tuo profilo pubblico compaiono la media, il numero di recensioni e i singoli commenti con il nome dell'organizzatore.</p>
 
-<h2>Servono un piano ${PLAN_LABELS.pro} o ${PLAN_LABELS.max}</h2>
-<p>Le recensioni <strong>si raccolgono sempre</strong>, anche con ${PLAN_LABELS.free}, quindi non se ne perde nessuna. Per <strong>leggerle e mostrarle</strong> sul profilo pubblico, però, serve un piano a pagamento.</p>
-<p>Se hai ${PLAN_LABELS.free} e qualcuno ti ha recensito, in dashboard vedi quante recensioni ti aspettano, senza il contenuto. Passando a ${PLAN_LABELS.pro} compaiono tutte insieme, comprese quelle ricevute prima.</p>
+<h2>Sul profilo pubblico servono ${PLAN_LABELS.pro} o ${PLAN_LABELS.max}</h2>
+<p>Le recensioni <strong>si raccolgono sempre</strong>, anche con ${PLAN_LABELS.free}, quindi non se ne perde nessuna, e <strong>le leggi sempre</strong> nella tua area, su qualunque piano. Il piano decide solo se compaiono sul <strong>profilo pubblico</strong>: lì si vedono con ${PLAN_LABELS.pro} e ${PLAN_LABELS.max}.</p>
+<p>Se hai ${PLAN_LABELS.free} e passi a ${PLAN_LABELS.pro}, sul profilo compaiono tutte insieme, comprese quelle ricevute prima.</p>
 
 <h2>Dove le trovi</h2>
-<p>In <strong>/dashboard/feedback</strong>, con il totale, la media dei voti e l'ultima ricevuta.</p>
+<p>In <strong>/dashboard/feedback</strong>, con il totale, la media dei voti e l'ultima ricevuta. Quando ne arriva una nuova te lo segnala anche la campanella delle notifiche.</p>
+
+<h2>Rispondere a una recensione</h2>
+<p>Sotto ogni recensione, in <strong>/dashboard/feedback</strong>, trovi <strong>«Rispondi pubblicamente»</strong>: una risposta per recensione, da 2 a 1.000 caratteri, che puoi modificare o togliere quando vuoi.</p>
+<p>La risposta compare sul profilo pubblico <strong>accanto alla recensione</strong>, quindi solo dove la recensione stessa è visibile (piani ${PLAN_LABELS.pro} e ${PLAN_LABELS.max}). Rispondi con misura: è la prima cosa che legge il prossimo organizzatore. Ringraziare per una recensione positiva o chiarire con calma un punto contestato funziona meglio di una replica polemica.</p>
 
 <h2>Una recensione ingiusta</h2>
 <p>Non puoi cancellarla da solo. Se chi viene recensito potesse farlo, le recensioni perderebbero valore, a cominciare dalle tue.</p>
 <p>Se una recensione è offensiva, falsa o parla di fatti estranei alla serata, <a href="/segnalazioni?tipo=recensione">segnalala</a> spiegando cosa contesti. Il team può <strong>nasconderla</strong>: a quel punto non compare più e <strong>non pesa sulla media</strong>. Vedi <a href="/help/policy/contestazioni">come gestiamo le contestazioni</a>.</p>
 
 <h2>Come farne arrivare di buone</h2>
-<p>Le recensioni non partono in automatico: è l'organizzatore a decidere se scriverle. Un messaggio di ringraziamento in chat il giorno dopo la serata, con l'invito a lasciare una valutazione, funziona meglio di qualsiasi promemoria automatico.</p>
+<p>Il giorno dopo la data N'arte manda all'organizzatore un'email che lo invita a recensire, ma scriverla resta una sua scelta. Un messaggio di ringraziamento il giorno dopo la serata (in chat, o via email se hai il piano ${PLAN_LABELS.free}) fa spesso la differenza.</p>
 `,
     },
 
@@ -393,10 +398,11 @@ export const ARTISTI: HelpCategory = {
 <p>Lo diciamo apertamente: <strong>il piano influisce sulla visibilità</strong>, perché è così che la piattaforma si sostiene.</p>
 
 <h2>Cosa conta comunque, su ogni piano</h2>
-<p>L'ordine però non è tutto. Quando un organizzatore filtra per categoria e genere (per esempio "jazz") o cerca per testo un nome o una città, vede prima di tutto <strong>chi corrisponde a quella ricerca</strong>. Non c'è un filtro dedicato alla città: la si trova con la ricerca per testo. Ed è qui che il profilo fa la differenza:</p>
+<p>L'ordine però non è tutto. Quando un organizzatore filtra per categoria, genere (per esempio "jazz"), città o data libera, o cerca per testo un nome, vede prima di tutto <strong>chi corrisponde a quella ricerca</strong>. Ed è qui che il profilo fa la differenza:</p>
 <ul>
   <li><strong>Generi e strumenti precisi</strong> ti fanno comparire nelle ricerche giuste.</li>
-  <li><strong>La città</strong> scritta nel profilo conta: molti la cercano per testo, per contenere i costi di trasferta.</li>
+  <li><strong>La città</strong> scritta nel profilo conta: c'è un filtro dedicato, che molti usano per contenere i costi di trasferta. Scrivi solo il nome del comune (per esempio "Napoli"), così finisci nella voce giusta.</li>
+  <li><strong>Un calendario aggiornato</strong>: chi filtra per data non vede gli artisti che hanno segnato quel giorno come occupato.</li>
   <li><strong>Una copertina forte</strong> decide se la scheda viene aperta o scorsa.</li>
   <li><strong>Un video</strong> è spesso ciò che convince a mandarti una richiesta.</li>
 </ul>

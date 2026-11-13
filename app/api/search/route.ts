@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import type { ArtistTier } from "@/lib/supabase/types";
 import { logger } from "@/lib/logger";
+import { allowByIp, LIMITI } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,17 @@ export async function GET(request: Request) {
   const qRaw = url.searchParams.get("q") ?? "";
   const q = qRaw.trim();
   if (q.length < 2) return NextResponse.json({ hits: [] });
+
+  // Freno di frequenza DOPO lo scarto delle ricerche troppo corte (che non
+  // toccano il database) e prima delle query: ogni richiesta ne fa fino a
+  // cinque con service role. La forma della risposta resta `{ hits }`, così la
+  // tendina mostra semplicemente «nessun risultato» invece di rompersi.
+  if (!(await allowByIp(LIMITI.ricerca))) {
+    return NextResponse.json(
+      { hits: [], error: "Troppe ricerche ravvicinate. Attendi qualche secondo." },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
 
   const needle = q.slice(0, 60).toLowerCase();
   // Per `.or()` degli eventi: fuori i caratteri che ne rompono la sintassi.

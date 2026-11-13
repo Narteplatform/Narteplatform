@@ -20,6 +20,7 @@ import { SubscriptionPanel } from "@/components/billing/SubscriptionPanel";
 import { ShootingCard } from "@/components/billing/ShootingCard";
 import { statoShooting } from "@/lib/billing/shooting";
 import { statoRecesso } from "./_actions";
+import { sincronizzaRitornoCheckout } from "@/lib/billing/ritorno-checkout";
 import type { ArtistTier } from "@/lib/supabase/types";
 import { Button } from "@/components/ui/Button";
 import { invitiVisibili } from "@/lib/inviti/modalita";
@@ -54,13 +55,20 @@ const dt = (s: string | null) =>
 export default async function AbbonamentoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{ checkout?: string; session_id?: string }>;
 }) {
   const user = await requireRole(["artist", "superadmin"]);
   const sp = await searchParams;
 
+  // Ritorno dal checkout: si sincronizza subito l'abbonamento dalla sessione
+  // Stripe (verificata come appartenente a questo account), senza aspettare il
+  // webhook. Se non riesce, resta il messaggio di attesa qui sotto.
+  if (sp?.checkout === "success" && typeof sp.session_id === "string") {
+    await sincronizzaRitornoCheckout(sp.session_id, user.id);
+  }
+
   const admin = createAdminClient();
-  const { data } = await admin
+  const { data, error: subErr } = await admin
     .from("subscriptions")
     .select("tier, status, billing_interval, current_period_end, cancel_at_period_end")
     .eq("user_id", user.id)
@@ -69,6 +77,15 @@ export default async function AbbonamentoPage({
     .limit(1);
   const sub = ((data ?? []) as unknown as SubRow[])[0] ?? null;
 
+  // Customer Stripe anche senza abbonamento vivo: un ex abbonato deve poter
+  // scaricare le sue fatture dal Portal.
+  const { data: cliente, error: clienteErr } = await admin
+    .from("billing_customers")
+    .select("stripe_customer_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const hasBillingCustomer = !clienteErr && Boolean(cliente?.stripe_customer_id);
+
   const ent = await getAccountEntitlements(user.id);
   const owned = await getOwnedArtists(user.id);
   const suspended = owned.filter((a) => a.plan_suspended);
@@ -76,11 +93,15 @@ export default async function AbbonamentoPage({
   // Un piano può arrivare da Stripe oppure da un omaggio del superadmin (0044).
   // Senza questa distinzione la pagina mostrerebbe "N'arte Max" e, subito sotto,
   // "stai usando il piano gratuito" a chi ha ricevuto un omaggio.
+  // Solo omaggi NON scaduti: senza il filtro, un Max scaduto «vinceva»
+  // sull'ordinamento e nascondeva un Pro ancora valido.
+  const adesso = new Date().toISOString();
   const { data: overrideRows } = await admin
     .from("artists")
     .select("tier_override, tier_override_expires_at")
     .eq("user_id", user.id)
     .not("tier_override", "is", null)
+    .or(`tier_override_expires_at.is.null,tier_override_expires_at.gt.${adesso}`)
     .order("tier_override", { ascending: false })
     .limit(1);
   const override = ((overrideRows ?? []) as unknown as {
@@ -106,8 +127,9 @@ export default async function AbbonamentoPage({
   // mai che il piano sia già attivo. Se torniamo dal checkout e il ledger non
   // ha ancora la riga, si mostra un'attesa esplicita invece di dire "Free" a
   // chi ha appena pagato.
+  // Con un errore di lettura non si dice «stiamo attivando»: si dice di riprovare.
   const justPaid = sp?.checkout === "success";
-  const awaitingWebhook = justPaid && !sub;
+  const awaitingWebhook = justPaid && !sub && !subErr;
 
   return (
     <div className="space-y-6">
@@ -130,6 +152,15 @@ export default async function AbbonamentoPage({
                 ricarica la pagina fra poco. Se non cambia nulla entro qualche minuto, scrivici.
               </p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {subErr && (
+        <Card className="border-destructive/40">
+          <CardContent className="py-4 text-sm text-destructive">
+            Non riusciamo a leggere il tuo abbonamento in questo momento. Ricarica la pagina fra
+            poco: i dati qui sotto potrebbero non essere aggiornati.
           </CardContent>
         </Card>
       )}
@@ -200,17 +231,13 @@ export default async function AbbonamentoPage({
               )}
             </>
           ) : isGifted ? (
-            <>
-              <p className="flex items-center gap-2 text-sm text-accent">
-                <Gift className="size-4" />
-                Piano assegnato dal team N&apos;arte.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {activeOverride?.tier_override_expires_at
-                  ? `Resta attivo fino al ${dt(activeOverride.tier_override_expires_at)}.`
-                  : "Non ha scadenza e non prevede alcun addebito."}
-              </p>
-            </>
+            // Testo neutro: un omaggio non si presenta mai all'artista come tale
+            // (parere legale, novembre 2026).
+            <p className="text-sm text-muted-foreground">
+              {activeOverride?.tier_override_expires_at
+                ? `Piano attivo fino al ${dt(activeOverride.tier_override_expires_at)}.`
+                : "Piano attivo."}
+            </p>
           ) : daInviti && inviti?.proFinoAl ? (
             <>
               <p className="flex items-center gap-2 text-sm text-accent">
@@ -287,6 +314,7 @@ export default async function AbbonamentoPage({
         <SubscriptionPanel
           currentTier={ent.tier}
           hasSubscription={Boolean(sub)}
+          hasBillingCustomer={hasBillingCustomer}
           recesso={sub ? await statoRecesso() : { disponibile: false }}
         />
       )}

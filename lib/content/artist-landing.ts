@@ -58,7 +58,7 @@ export const BENEFITS: Benefit[] = [
   {
     icon: "search",
     title: "Ti cercano loro",
-    desc: "Locali e organizzatori filtrano per genere, città e data. Quando corrispondi, la richiesta arriva a te — senza che tu abbia mandato niente a nessuno.",
+    desc: "Locali e organizzatori filtrano il catalogo per genere, città e data libera nel tuo calendario. Quando corrispondi, la richiesta arriva a te — senza che tu abbia mandato niente a nessuno.",
   },
   {
     icon: "profile",
@@ -112,7 +112,7 @@ export const COMPARISON: ComparisonRow[] = [
   {
     label: "Trovare le date",
     alone: "Scrivi ai locali uno per uno e speri che qualcuno apra il messaggio.",
-    withNarte: "Gli organizzatori cercano per genere, città e data. Se corrispondi, ti trovano.",
+    withNarte: "Gli organizzatori filtrano per genere, città e data libera. Se corrispondi, ti trovano.",
   },
   {
     label: "Presentarti",
@@ -211,9 +211,9 @@ export const FAQ: FaqItem[] = [
   },
   {
     id: "commissioni",
-    // TODO Eduardo: confermare. Nel codice non esiste alcuna logica di
-    // trattenuta sui cachet — il modello è l’abbonamento — ma è un’affermazione
-    // commerciale e va confermata da te prima di andare online.
+    // Coerente con il modello (CLAUDE.md, Termini «Il ruolo di N'arte»): il
+    // compenso non passa dalla piattaforma e non c'è trattenuta; l'unica somma
+    // incassata è l'abbonamento dell'artista.
     question: "N’arte prende una percentuale sul mio cachet?",
     answer:
       "No. Quello che concordi con l’organizzatore resta tuo per intero. N’arte si sostiene con gli abbonamenti, non con una trattenuta sui tuoi ingaggi.",

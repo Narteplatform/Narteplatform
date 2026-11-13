@@ -10,6 +10,14 @@ import { Label, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { submitFeedback } from "@/lib/feedback/_actions";
 
+/**
+ * Il Regolamento delle recensioni è un documento v2, spento finché il legale non
+ * lo approva: fino ad allora si rimanda ai Termini pubblicati, che hanno già una
+ * sezione «Recensioni». Stesso interruttore di RegisterForm e lib/legal/v2/link.ts.
+ */
+const LEGAL_V2 = process.env.NEXT_PUBLIC_LEGAL_V2_PUBBLICATO === "1";
+const URL_REGOLE_RECENSIONI = LEGAL_V2 ? "/regolamento-recensioni" : "/termini";
+
 export function FeedbackForm({ bookingId, artistName }: { bookingId: string; artistName: string }) {
   const [rating, setRating] = useState<number>(0);
   const [hover, setHover] = useState<number>(0);
@@ -122,13 +130,9 @@ export function FeedbackForm({ bookingId, artistName }: { bookingId: string; art
         />
         <span>
           Confermo che la recensione riguarda un evento reale con questo artista, che è la mia
-          opinione sincera e che non ho ricevuto nulla in cambio. Rispetta il{" "}
-          <Link
-            href="/regolamento-recensioni"
-            target="_blank"
-            className="underline underline-offset-2"
-          >
-            Regolamento delle recensioni
+          opinione sincera e che non ho ricevuto nulla in cambio. Rispetta{" "}
+          <Link href={URL_REGOLE_RECENSIONI} target="_blank" className="underline underline-offset-2">
+            {LEGAL_V2 ? "il Regolamento delle recensioni" : "le regole sulle recensioni dei Termini d’uso"}
           </Link>
           .
         </span>

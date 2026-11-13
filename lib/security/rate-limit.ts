@@ -141,4 +141,19 @@ export const LIMITI = {
   provaIubenda: { scope: "prova-iubenda", windowSeconds: 3600, max: 20 },
   /** Caricamenti da utente autenticato. */
   uploadAutenticato: { scope: "upload", windowSeconds: 3600, max: 60 },
+  /**
+   * Ricerca rapida dell'header (/api/search): parte mentre si digita e fa fino
+   * a cinque query con service role. 60 al minuto bastano a chi scrive in
+   * fretta e fermano chi la usa per scorrere il roster.
+   */
+  ricerca: { scope: "ricerca", windowSeconds: 60, max: 60 },
+  /**
+   * Anteprime sfocate della vetrina ospiti (/api/anteprima-artista/[id]): una
+   * pagina di catalogo ne chiede decine, ma le risposte sono in cache sul CDN
+   * e qui arrivano solo i primi accessi. Ogni richiesta scarica e ridimensiona
+   * un'immagine: è lavoro che non si regala a uno script.
+   */
+  anteprimaArtista: { scope: "anteprima-artista", windowSeconds: 600, max: 300 },
+  /** Beacon dell'atterraggio /invito/{codice}: uno per visita, soglia larga. */
+  invitoVisita: { scope: "invito-visita", windowSeconds: 3600, max: 30 },
 } as const satisfies Record<string, RateLimitRule>;

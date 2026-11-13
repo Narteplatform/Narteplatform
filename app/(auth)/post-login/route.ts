@@ -3,6 +3,8 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
+import { percorsoSicuro } from "@/lib/auth/percorso";
+import { COOKIE_BENVENUTO, isAccountNuovo } from "@/lib/auth/costanti";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,8 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   const url = new URL(request.url);
-  const next = url.searchParams.get("next");
+  // Solo percorsi interni (lib/auth/percorso.ts): barre rovesciate, `//host` e simili portano fuori sito.
+  const next = percorsoSicuro(url.searchParams.get("next"));
   const base = getSiteUrl();
 
   if (!user) {
@@ -29,7 +32,7 @@ export async function GET(request: Request) {
     .maybeSingle();
   if (profileErr) {
     // Ruolo sconosciuto: non si indovina. Home, senza deviazioni.
-    return NextResponse.redirect(new URL(next && next.startsWith("/") && !next.startsWith("//") ? next : "/", base));
+    return NextResponse.redirect(new URL(next ?? "/", base));
   }
 
   const role = profile?.role ?? "user";
@@ -42,8 +45,7 @@ export async function GET(request: Request) {
   //     controllato: se una fallisce NON si devia, si prosegue come sempre);
   //   - account creato da poco e cookie «già visto» assente: altrimenti ogni
   //     utente semplice, a ogni accesso, verrebbe rimandato qui.
-  const COOKIE_BENVENUTO = "narte-benvenuto";
-  const nuovo = Date.now() - Date.parse(user.created_at) < 14 * 24 * 60 * 60 * 1000;
+  const nuovo = isAccountNuovo(user.created_at);
   if (role === "user" && !next && nuovo && !request.headers.get("cookie")?.includes(`${COOKIE_BENVENUTO}=`)) {
     const [art, org] = await Promise.all([
       admin.from("artists").select("id").eq("user_id", user.id).limit(1),
@@ -63,7 +65,7 @@ export async function GET(request: Request) {
   }
 
   const dest =
-    next && next.startsWith("/") && !next.startsWith("//")
+    next
       ? next
       : role === "superadmin"
         ? "/admin"

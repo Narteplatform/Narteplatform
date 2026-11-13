@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
-import { incassiDelMese } from "@/lib/billing/incassi";
+import { incassiDelMese, tipoMovimentoLabel } from "@/lib/billing/incassi";
 import { formatPrice } from "@/lib/billing/plans";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { createAdminClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
-import { aggiornaShooting } from "./_actions";
+import { aggiornaShooting, registraRecessoManuale, segnaRimborsoEseguito } from "./_actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Abbonamenti — N'arte Admin" };
@@ -109,14 +109,16 @@ async function leggiOmaggi(): Promise<{ ok: true; omaggi: Omaggio[]; avviso: str
 export default async function AdminAbbonamentiPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mese?: string }>;
+  searchParams: Promise<{ mese?: string; recesso?: string }>;
 }) {
   await requireAdminPageAccess("abbonamenti");
-  const richiesto = (await searchParams).mese;
+  const sp = await searchParams;
+  const richiesto = sp.mese;
   const mese = richiesto && /^\d{4}-\d{2}$/.test(richiesto) ? richiesto : meseCorrente();
   const esito = await incassiDelMese(mese);
   const totale = esito.ok ? esito.incassi.reduce((s, i) => s + i.importoCent, 0) : 0;
   const bolli = esito.ok ? esito.incassi.filter((i) => i.bolloDovuto).length : 0;
+  const negativi = esito.ok ? esito.incassi.filter((i) => i.importoCent < 0).length : 0;
   const omaggi = await leggiOmaggi();
 
   return (
@@ -157,7 +159,9 @@ export default async function AdminAbbonamentiPage({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
-              {esito.incassi.length} incassi · totale {formatPrice(totale)} · bollo dovuto su {bolli}
+              {esito.incassi.length - negativi} incassi
+              {negativi > 0 ? ` · ${negativi} rimborsi/note di credito` : ""} · totale netto {formatPrice(totale)} ·
+              bollo dovuto su {bolli}
             </CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
@@ -168,6 +172,7 @@ export default async function AdminAbbonamentiPage({
                 <thead className="text-left text-xs text-muted-foreground">
                   <tr>
                     <th className="py-2 pr-4">Data</th>
+                    <th className="py-2 pr-4">Tipo</th>
                     <th className="py-2 pr-4">Cliente</th>
                     <th className="py-2 pr-4">CF / P.IVA</th>
                     <th className="py-2 pr-4">Descrizione</th>
@@ -176,9 +181,13 @@ export default async function AdminAbbonamentiPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {esito.incassi.map((i) => (
-                    <tr key={i.idFattura} className="border-t border-border align-top">
+                  {esito.incassi.map((i, n) => (
+                    <tr key={`${i.tipo}-${i.idFattura}-${n}`} className="border-t border-border align-top">
                       <td className="py-2 pr-4 whitespace-nowrap">{i.data}</td>
+                      <td className="py-2 pr-4 whitespace-nowrap">
+                        {tipoMovimentoLabel(i.tipo)}
+                        {i.acquirente && <div className="text-xs text-muted-foreground">{i.acquirente}</div>}
+                      </td>
                       <td className="py-2 pr-4">
                         <div className="font-medium">{i.cliente || "—"}</div>
                         <div className="text-xs text-muted-foreground">{i.email}</div>
@@ -246,6 +255,8 @@ export default async function AdminAbbonamentiPage({
           )}
         </CardContent>
       </Card>
+
+      <RegistroRecessi esito={sp.recesso ?? null} />
 
       <ShootingRichiesti />
 
@@ -346,6 +357,191 @@ async function ShootingRichiesti() {
               ))}
             </tbody>
           </table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const CANALE: Record<string, string> = { online: "Online", email: "Email", pec: "PEC", modulo: "Modulo" };
+const STATO_RIMBORSO: Record<string, string> = {
+  non_dovuto: "Non dovuto",
+  eseguito: "Eseguito",
+  da_eseguire: "Da eseguire",
+  fallito: "Fallito",
+};
+
+function messaggioEsito(codice: string | null): { tono: "ok" | "errore"; testo: string } | null {
+  if (!codice) return null;
+  if (codice === "registrato") return { tono: "ok", testo: "Recesso registrato." };
+  if (codice === "registrato_senza_account") {
+    return {
+      tono: "ok",
+      testo: "Recesso registrato. L'abbonamento non è nel ledger: l'account non è stato collegato, controlla l'id.",
+    };
+  }
+  if (codice === "rimborso_eseguito") return { tono: "ok", testo: "Rimborso segnato come eseguito." };
+  if (codice.startsWith("errore:")) return { tono: "errore", testo: codice.slice("errore:".length) };
+  return null;
+}
+
+/**
+ * Registro dei recessi (0070): quelli online si registrano da soli; qui si
+ * aggiungono quelli arrivati per email o PEC e si segnano i rimborsi eseguiti a
+ * mano. Annullamento e rimborso si fanno nel pannello Stripe.
+ */
+async function RegistroRecessi({ esito }: { esito: string | null }) {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("subscription_withdrawals")
+    .select("id, created_at, user_email, stripe_subscription_id, canale, ricevuto_il, rimborso_cent, stato_rimborso, note")
+    .order("ricevuto_il", { ascending: false })
+    .limit(100);
+  const mancante = error?.code === "42P01" || error?.code === "PGRST205";
+  if (error && !mancante) logger.error("admin/abbonamenti", "recessi non letti:", error.message);
+  const righe = data ?? [];
+  const daEseguire = righe.filter((r) => r.stato_rimborso === "da_eseguire").length;
+  const avviso = messaggioEsito(esito);
+
+  return (
+    <Card id="recessi">
+      <CardHeader>
+        <CardTitle className="text-base">
+          Recessi{daEseguire > 0 ? ` · ${daEseguire} rimborsi da eseguire` : ""}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-sm">
+        <p className="text-muted-foreground">
+          I recessi fatti dalla pagina Abbonamento si registrano da soli. Qui registri quelli arrivati
+          per email o PEC. Registrare non annulla l&apos;abbonamento e non rimborsa: entrambe le cose
+          vanno fatte nel pannello Stripe, entro 14 giorni dal recesso.
+        </p>
+
+        {avviso && (
+          <p role={avviso.tono === "errore" ? "alert" : "status"} className={avviso.tono === "errore" ? "text-destructive" : "text-foreground"}>
+            {avviso.testo}
+          </p>
+        )}
+
+        {mancante ? (
+          <p className="text-muted-foreground">Registro non disponibile: applica la migration 0070.</p>
+        ) : error ? (
+          <p role="alert" className="text-destructive">
+            Non riesco a leggere il registro. L&apos;elenco non è vuoto, è non disponibile.
+          </p>
+        ) : righe.length === 0 ? (
+          <p className="text-muted-foreground">Nessun recesso registrato.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-xs text-muted-foreground">
+                <tr>
+                  <th className="py-2 pr-4">Ricevuto il</th>
+                  <th className="py-2 pr-4">Canale</th>
+                  <th className="py-2 pr-4">Account</th>
+                  <th className="py-2 pr-4">Abbonamento</th>
+                  <th className="py-2 pr-4 text-right">Rimborso</th>
+                  <th className="py-2 pr-4">Stato</th>
+                  <th className="py-2">Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {righe.map((r) => (
+                  <tr key={r.id} className="border-t border-border align-top">
+                    <td className="py-2 pr-4 whitespace-nowrap">{dataIt(r.ricevuto_il)}</td>
+                    <td className="py-2 pr-4">{CANALE[r.canale] ?? r.canale}</td>
+                    <td className="py-2 pr-4">{r.user_email ?? "—"}</td>
+                    <td className="py-2 pr-4 font-mono text-xs">{r.stripe_subscription_id}</td>
+                    <td className="py-2 pr-4 text-right whitespace-nowrap">{formatPrice(r.rimborso_cent)}</td>
+                    <td className="py-2 pr-4">
+                      <span className={r.stato_rimborso === "da_eseguire" || r.stato_rimborso === "fallito" ? "font-medium text-destructive" : ""}>
+                        {STATO_RIMBORSO[r.stato_rimborso] ?? r.stato_rimborso}
+                      </span>
+                      {r.stato_rimborso === "da_eseguire" && (
+                        <form action={segnaRimborsoEseguito} className="mt-1">
+                          <input type="hidden" name="id" value={r.id} />
+                          <button type="submit" className="text-xs underline underline-offset-2">
+                            Segna come eseguito
+                          </button>
+                        </form>
+                      )}
+                    </td>
+                    <td className="max-w-xs whitespace-pre-wrap py-2 text-xs text-muted-foreground">{r.note ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {!mancante && (
+          <details className="rounded-xl border border-border p-3">
+            <summary className="cursor-pointer font-medium">Registra un recesso arrivato per email o PEC</summary>
+            <form action={registraRecessoManuale} className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Id abbonamento Stripe (sub_…)</span>
+                <input
+                  name="stripe_subscription_id"
+                  required
+                  pattern="sub_[A-Za-z0-9]+"
+                  className="h-9 w-full rounded-md border border-border bg-surface px-2"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Email del mittente (facoltativa)</span>
+                <input name="user_email" type="email" className="h-9 w-full rounded-md border border-border bg-surface px-2" />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Canale</span>
+                <select name="canale" defaultValue="email" className="h-9 w-full rounded-md border border-border bg-surface px-2">
+                  <option value="email">Email</option>
+                  <option value="pec">PEC</option>
+                </select>
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Ricevuto il (ora italiana)</span>
+                <input
+                  name="ricevuto_il"
+                  type="datetime-local"
+                  required
+                  className="h-9 w-full rounded-md border border-border bg-surface px-2"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Importo da rimborsare (€)</span>
+                <input
+                  name="rimborso"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  className="h-9 w-full rounded-md border border-border bg-surface px-2"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Stato del rimborso</span>
+                <select
+                  name="stato_rimborso"
+                  defaultValue="da_eseguire"
+                  className="h-9 w-full rounded-md border border-border bg-surface px-2"
+                >
+                  <option value="da_eseguire">Da eseguire</option>
+                  <option value="eseguito">Già eseguito</option>
+                  <option value="non_dovuto">Non dovuto</option>
+                </select>
+              </label>
+              <label className="space-y-1 sm:col-span-2">
+                <span className="text-xs text-muted-foreground">Note (es. riferimento della PEC)</span>
+                <textarea name="note" rows={2} maxLength={2000} className="w-full rounded-md border border-border bg-surface px-2 py-1" />
+              </label>
+              <div className="sm:col-span-2">
+                <button
+                  type="submit"
+                  className="rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background"
+                >
+                  Registra il recesso
+                </button>
+              </div>
+            </form>
+          </details>
         )}
       </CardContent>
     </Card>

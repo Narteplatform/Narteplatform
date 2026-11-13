@@ -135,7 +135,8 @@ Verifica della configurazione: `npm run bunny:check` (non stampa segreti).
 
 - **Parere dell'Avv. Madonna (novembre 2026), adeguamenti nel codice:** registro email con testo solo per
   le comunicazioni legali e leggibile solo dal root; cancellazione automatica al 30° giorno
-  (`/api/cron/cancellazioni`, in sola conta finché `AUTO_CANCELLAZIONE_ENFORCE`≠`1`) e sblocco solo entro 30
+  (`/api/cron/cancellazioni`, in sola conta finché `AUTO_CANCELLAZIONE_ENFORCE`≠`1`: vale anche per una variabile
+  assente, dal 13/11/2026) e sblocco solo entro 30
   giorni; preavviso P2B di 30 giorni per sospendere/chiudere artisti con partita IVA
   (`lib/admin/preavviso.ts`, `/api/cron/misure-programmate`); preavviso di 15 giorni sulle modifiche ai
   termini (`lib/legal/avviso-modifiche.ts`); shooting Max annuale (`lib/billing/shooting.ts`); consulenze
@@ -162,17 +163,34 @@ Verifica della configurazione: `npm run bunny:check` (non stampa segreti).
   completamento): si usano solo su richiesta; mai eseguirli per prova.
 - Prove manuali dei flussi: `docs/CHECKLIST_VERIFICA_LEGALE.md`.
 
+## Monitoraggio e cron
+
+Runbook completo (backup, ripristino, cron falliti, interruttori): `docs/OPERATIVITA.md`.
+
+- **`/api/health`** pubblica e minimale (`{ ok, time, version }`, nessuna query) per un monitor
+  esterno; `?deep=1` + `Authorization: Bearer $CRON_SECRET` fa una lettura leggera sul DB e dà 503
+  se fallisce. Non confonderla con `/__health` (diagnostica, solo root).
+- **Avvisi sui cron:** `eseguiCron(nome, () => gestisci(req))` in `lib/cron/esegui.ts`. Eccezione,
+  risposta non 2xx (tranne 401) o JSON `ok: false` → notifica + email al root, max una al giorno per
+  cron (anti-spam su `email_log`). Ogni nuovo cron deve passarci.
+- **Cron distruttivi opt-in:** `RETENTION_ENFORCE` e `AUTO_CANCELLAZIONE_ENFORCE` cancellano SOLO
+  con `=1`; assenti o con altro valore sono in sola conta (dal 13/11/2026; prima era il contrario).
+- **Errori lato server:** `instrumentation.ts` (`onRequestError`) scrive una riga JSON
+  `[errore-richiesta]` per errore (rotta, metodo, digest; niente dati personali). Sentry predisposto,
+  non installato.
+- **Nessun backup ripristinabile** finché Supabase resta sul piano Free.
+
 ## Subagent dedicati
 
 In `.claude/agents/`:
 - **frontend** — UI/UX, design system, animazioni
-- **backend** — Supabase, Server Actions, email Resend
+- **backend** — Supabase, Server Actions, email Brevo (Resend è stato rimosso: il file dell'agente può citarlo ancora)
 - **qa** — test E2E, Lighthouse, accessibilità
 
 ## Migration
 
 Si applicano dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md).
-**Al 12/11/2026 sono applicate tutte fino alla 0078, tranne la 0077** (verificato con lo script qui sotto). La 0080 è stata applicata il 13/11/2026; la 0079 è nuova.
+**Al 12/11/2026 sono applicate tutte fino alla 0078, tranne la 0077** (verificato con lo script qui sotto). Le 0077 e 0080 sono state applicate il 13/11/2026; 0079, 0081, 0082 e 0083 sono nuove.
 Per ogni nuova migration: intestazione CONTESTO in italiano, additiva dove possibile, RLS +
 `revoke all … from anon, authenticated` sulle tabelle nuove, voce in
 `scripts/check-migrations.mjs` e in `docs/MIGRATION_DA_APPLICARE.md`, e una riga qui sotto
@@ -188,13 +206,18 @@ policy e pubblicazioni realtime — che PostgREST non espone — le query sono i
 
 **In attesa:**
 
+- `0081_hardening_db.sql` — revoke su 12 tabelle protette dalla sola RLS (restano in lettura
+  collaborations, conversation_blocks, consultant_slots), 9 indici su chiavi esterne, formati e
+  dimensioni ammessi sui bucket. **Indipendente.** Senza, tutto come prima.
+- `0082_abbonamenti_scadenze.sql` — presa in carico atomica degli eventi Stripe, ricalcolo dei piani
+  scaduti (omaggi) e delle sospensioni, data del passaggio al piano corrente. **Indipendente.** Senza,
+  il cron `abbonamenti` ripiega su `inviti_sync_scaduti`.
+- `0083_account_auth.sql` — `artist_applications.user_id`, avatar Google in `handle_new_user`.
+  **Indipendente.** Senza, candidatura senza collegamento all'account e nessuna foto da Google.
 - `0079_inviti_visite.sql` — aperture del link «Invita un artista» (visitatori unici pseudonimi,
   stesso schema della 0046) per `/admin/inviti`. **Richiede la 0078.** Senza, il pannello mostra
   «—» nelle colonne delle aperture.
-- `0077_parere_legale_novembre.sql` — parere legale di novembre: `email_log` chiuso ad
-  anon/authenticated (testo leggibile solo dal root, via server), `misure_programmate`
-  (preavviso di 30 giorni P2B per gli artisti con partita IVA), `photo_shoots` (shooting del
-  Max annuale). **Indipendente dalle altre.** Senza, preavviso e shooting chiedono la migration.
+
 
 ## Comandi
 
@@ -220,4 +243,4 @@ npm run lint
 6. `npm run db:seed-accounts` per creare/promuovere gli account fissi:
    - `boostcreativeai@gmail.com` → superadmin (`/admin`)
    - `luigimarzaticodigital@gmail.com` → artist (`/dashboard`, con record collegato in `artists`)
-7. Configurare Resend con dominio verificato
+7. Configurare Brevo (`BREVO_API_KEY`, mittente su dominio verificato)

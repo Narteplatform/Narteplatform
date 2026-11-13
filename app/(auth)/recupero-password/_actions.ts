@@ -5,6 +5,9 @@ import { sendTransactional } from "@/lib/brevo/send";
 import { passwordResetRequestSchema } from "@/lib/validators/schemas";
 import { getSiteUrl } from "@/lib/site-url";
 import { linkImpostaPassword } from "@/lib/auth/link-password";
+import { allowByIp } from "@/lib/security/rate-limit";
+import { LIMITI_AUTH } from "@/lib/auth/limiti";
+import { logger } from "@/lib/logger";
 
 /**
  * Invio del link di recupero password.
@@ -47,13 +50,20 @@ export async function requestPasswordReset(email: string): Promise<Result> {
   const address = parsed.data.email.trim().toLowerCase();
   const redirectTo = `${getSiteUrl()}/reset-password`;
 
+  // Freno per IP, prima di qualunque lavoro: senza, uno script può provare
+  // migliaia di indirizzi diversi e il freno per indirizzo qui sotto non lo
+  // vede mai. Il messaggio non dice nulla sull'esistenza degli account.
+  if (!(await allowByIp(LIMITI_AUTH.recuperoPassword))) {
+    return { ok: false, error: "Troppe richieste da questa connessione. Riprova fra un'ora." };
+  }
+
   let admin;
   try {
     admin = createAdminClient();
   } catch {
     // Senza service-role non si può generare il link: si prova comunque la
     // via di Supabase, che non ne ha bisogno.
-    return await fallback(address, redirectTo);
+    return await fallback(address, redirectTo, null);
   }
 
   // Freno per indirizzo, basato sulle righe già scritte in `email_log`: usa
@@ -116,19 +126,43 @@ export async function requestPasswordReset(email: string): Promise<Result> {
   // stato generato ma nessuno lo ha ricevuto, e senza ripiego la persona
   // resterebbe fuori senza capire perché.
   if (!sent.ok) {
-    return await fallback(address, redirectTo);
+    return await fallback(address, redirectTo, admin);
   }
 
   return { ok: true };
 }
 
-async function fallback(address: string, redirectTo: string): Promise<Result> {
+async function fallback(
+  address: string,
+  redirectTo: string,
+  admin: ReturnType<typeof createAdminClient> | null
+): Promise<Result> {
+  let inviata = false;
   try {
     const supabase = await createClient();
-    await supabase.auth.resetPasswordForEmail(address, { redirectTo });
+    const { error } = await supabase.auth.resetPasswordForEmail(address, { redirectTo });
+    inviata = !error;
+    if (error) logger.warn("recupero-password", "mailer Supabase:", error.message);
   } catch {
     // Anche qui si tace: l'esito visibile non deve dipendere dall'esistenza
     // dell'account né dallo stato del provider.
+  }
+  // Il freno per indirizzo legge `email_log`: anche l'invio dal mailer di
+  // Supabase va registrato lì, altrimenti nel ripiego il freno non scatta mai.
+  // Best effort: una riga non scritta non cambia l'esito per l'utente.
+  if (inviata && admin) {
+    try {
+      const { error } = await admin.from("email_log").insert({
+        to_addresses: [address],
+        subject: "Reimposta la tua password (mailer Supabase)",
+        template: "password_reset",
+        status: "sent",
+        meta: { provider: "supabase", key: "password_reset", ripiego: true },
+      });
+      if (error) logger.warn("recupero-password", "riga email_log non scritta:", error.message);
+    } catch {
+      // ignorata di proposito
+    }
   }
   return { ok: true };
 }

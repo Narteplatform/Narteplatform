@@ -13,6 +13,7 @@ import { formatInterestSchema, type FormatInterestInput } from "@/lib/validators
 import { dispatchEmail } from "@/lib/emails/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
 import { adminRecipients } from "@/lib/emails/admin-recipients";
+import { logger } from "@/lib/logger";
 
 export async function submitFormatInterest(input: FormatInterestInput) {
   const parsed = formatInterestSchema.safeParse(input);
@@ -79,8 +80,23 @@ export async function submitFormatInterest(input: FormatInterestInput) {
         adminUrl: `${getSiteUrl()}/admin/leads`,
       },
       subjectPreview: `Nuovo lead (Format): ${data.name}`,
-    }).catch((e) => console.error("[email] lead format:", e));
+    }).catch((e) => logger.error("email", "lead format:", e));
   }
+
+  // Ricevuta a chi ha scritto, con il template già usato dal modulo contatti
+  // (stessi parametri). Best-effort: il lead è già salvato.
+  await dispatchEmail({
+    key: "contact_receipt",
+    to: data.email,
+    params: {
+      name: data.name,
+      email: "",
+      subject: "Interesse per un format N'arte",
+      message: data.message,
+      adminUrl: "",
+    },
+    subjectPreview: "Abbiamo ricevuto il tuo messaggio — N'arte",
+  }).catch((e) => logger.error("email", "ricevuta format:", e));
 
   return { ok: true as const };
 }

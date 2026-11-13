@@ -2,7 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveActiveArtist } from "@/lib/artist/current";
 import type { ArtistTier } from "@/lib/supabase/types";
-import { entitlementsFor, isUnlimited, type Entitlements } from "@/lib/billing/plans";
+import { entitlementsFor, isUnlimited, PLAN_LABELS, type Entitlements } from "@/lib/billing/plans";
 
 /**
  * Lettura degli entitlement e enforcement dei limiti di piano, lato server.
@@ -115,14 +115,28 @@ export function checkCollectionLimit(
   if (limit === 0) {
     return {
       ok: false,
-      error: `I ${labels.plural} sono inclusi nei piani Pro e Max. Passa a Pro per caricarli.`,
+      error:
+        kind === "audio"
+          ? "Le tracce audio sono incluse nei piani Pro e Max. Passa a Pro per caricarle."
+          : `I ${labels.plural} sono inclusi nei piani Pro e Max. Passa a Pro per caricarli.`,
     };
   }
+  // Il suggerimento indica il primo piano che ne include DI PIÙ, con il suo
+  // tetto reale: nessun piano ha foto, video o audio illimitati.
+  const incluse = `${limit} ${limit === 1 ? labels.singular : labels.plural}`;
+  const superiore = (["pro", "max"] as const).find((t) => limitOf(entitlementsFor(t), kind) > limit);
+  const suggerimento = superiore
+    ? (() => {
+        const tetto = limitOf(entitlementsFor(superiore), kind);
+        const quanti = isUnlimited(tetto)
+          ? `${labels.plural} senza limite`
+          : `fino a ${tetto} ${tetto === 1 ? labels.singular : labels.plural}`;
+        return ` Passa a ${PLAN_LABELS[superiore]} per averne ${quanti}.`;
+      })()
+    : " È il massimo previsto dai piani: per aggiungerne, rimuovine prima qualcuno.";
   return {
     ok: false,
-    error: `Il piano ${ent.tier.toUpperCase()} include ${limit} ${
-      limit === 1 ? labels.singular : labels.plural
-    }. Passa a Pro per averne un numero illimitato.`,
+    error: `Il piano ${PLAN_LABELS[ent.tier]} include ${incluse}.${suggerimento}`,
   };
 }
 

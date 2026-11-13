@@ -10,17 +10,36 @@ import { findLegalDoc } from "@/lib/legal/content";
 import { iubendaDocUrl } from "@/lib/legal/iubenda";
 import { AcceptLegalForm } from "@/components/legal/AcceptLegalForm";
 import { NarteLogo } from "@/components/layout/NarteLogo";
+import { percorsoSicuro } from "@/lib/auth/percorso";
+import { isAccountNuovo } from "@/lib/auth/costanti";
+import { createAdminClient } from "@/lib/supabase/server";
+
+type CasoConsenso = "aggiornamento" | "nuovo" | "preesistente";
+
+/**
+ * Quale testo mostrare. La versione accettata si legge dal profilo con errore
+ * controllato: se la lettura fallisce si decide sulla sola data di creazione.
+ * È solo testo: nessuna scrittura dipende da qui.
+ */
+async function casoConsenso(userId: string, createdAt: string | undefined): Promise<CasoConsenso> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("profiles")
+      .select("legal_version_accepted")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!error && data?.legal_version_accepted) return "aggiornamento";
+  } catch {
+    // si prosegue con la data di creazione
+  }
+  return isAccountNuovo(createdAt) ? "nuovo" : "preesistente";
+}
 
 export const metadata = { title: "Termini e privacy — N'arte" };
 
 /** Dipende dall'utente: non deve finire in nessuna cache. */
 export const dynamic = "force-dynamic";
-
-/** Solo percorsi interni: `//host` è un indirizzo assoluto travestito. */
-function safeNext(value?: string | string[]) {
-  const v = Array.isArray(value) ? value[0] : value;
-  return v && v.startsWith("/") && !v.startsWith("//") ? v : null;
-}
 
 /**
  * Schermata di accettazione di termini e informativa.
@@ -28,7 +47,14 @@ function safeNext(value?: string | string[]) {
  * CHI CI FINISCE. Chiunque abbia un account e non risulti aver accettato la
  * versione in vigore: gli artisti, i consulenti e i superadmin — che sono stati
  * creati da un amministratore e non hanno mai visto una casella — e chi si era
- * iscritto prima che i documenti esistessero.
+ * iscritto prima che i documenti esistessero. E chi si è appena iscritto con
+ * Google: quel percorso non passa da `signUp`, quindi nessuna casella.
+ *
+ * IL TESTO DIPENDE DAL CASO. A un account appena creato non si dice che «è
+ * stato creato prima che i documenti esistessero»: è falso. Tre casi:
+ *  - ha accettato una versione precedente → i documenti sono stati aggiornati;
+ *  - account recente (isAccountNuovo) → si chiede il consenso prima di iniziare;
+ *  - altrimenti → il testo storico per gli utenti preesistenti.
  *
  * PERCHÉ NON USA `AuthSplit`. Quel guscio è costruito per invogliare a entrare:
  * porta con sé la colonna promozionale e il selettore «Accedi / Iscriviti».
@@ -41,7 +67,7 @@ export default async function AccettaCondizioniPage({
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
   const user = await requireUser();
-  const next = safeNext((await searchParams).next) ?? "/";
+  const next = percorsoSicuro((await searchParams).next) ?? "/";
 
   // RIMEDIO AL DISALLINEAMENTO — è ciò che rende impossibile restare chiusi
   // fuori. Se il registro dice che questa persona ha già accettato ma la
@@ -62,6 +88,8 @@ export default async function AccettaCondizioniPage({
     redirect(next);
   }
 
+  const caso = await casoConsenso(user.id, user.created_at);
+
   const privacy = findLegalDoc("privacy");
   const termini = findLegalDoc("termini");
   const urlPrivacy = iubendaDocUrl("privacy");
@@ -76,15 +104,37 @@ export default async function AccettaCondizioniPage({
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-6 md:p-8">
-          <p className="accent-label mb-3">prima di proseguire</p>
+          <p className="accent-label mb-3">
+            {caso === "nuovo" ? "prima di iniziare" : "prima di proseguire"}
+          </p>
           <h1 className="display-xl text-3xl md:text-4xl">
-            Abbiamo bisogno del tuo consenso
+            {caso === "aggiornamento"
+              ? "Abbiamo aggiornato i documenti"
+              : caso === "nuovo"
+                ? "Ancora un passo"
+                : "Abbiamo bisogno del tuo consenso"}
           </h1>
           <p className="mt-4 text-muted-foreground">
-            Abbiamo pubblicato i termini d&rsquo;uso e l&rsquo;informativa
-            privacy di N&rsquo;arte. Il tuo account è stato creato prima che
-            esistessero, quindi non ti è mai stato chiesto di accettarli: ci
-            serve farlo ora, una volta sola.
+            {caso === "aggiornamento" ? (
+              <>
+                Abbiamo aggiornato i termini d&rsquo;uso e l&rsquo;informativa
+                privacy di N&rsquo;arte. Per continuare a usare il tuo account
+                leggi la nuova versione e accettala.
+              </>
+            ) : caso === "nuovo" ? (
+              <>
+                Benvenuto su N&rsquo;arte. Prima di usare il tuo account leggi e
+                accetta i termini d&rsquo;uso e l&rsquo;informativa privacy: ti
+                chiediamo di farlo una volta sola.
+              </>
+            ) : (
+              <>
+                Abbiamo pubblicato i termini d&rsquo;uso e l&rsquo;informativa
+                privacy di N&rsquo;arte. Il tuo account è stato creato prima che
+                esistessero, quindi non ti è mai stato chiesto di accettarli: ci
+                serve farlo ora, una volta sola.
+              </>
+            )}
           </p>
 
           {/* I documenti in linea, non solo linkati: chi deve accettare deve

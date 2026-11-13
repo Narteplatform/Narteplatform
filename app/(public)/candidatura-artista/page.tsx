@@ -13,6 +13,7 @@ import { ArtistComparison } from "@/components/marketing/ArtistComparison";
 import { PricingSection } from "@/components/marketing/PricingSection";
 import { FaqAccordion } from "@/components/marketing/FaqAccordion";
 import { createAdminClient } from "@/lib/supabase/server";
+import { serializeJsonForScript } from "@/lib/security/json-script";
 import { FAQ } from "@/lib/content/artist-landing";
 import { NARTE_STATS } from "@/lib/content/stats";
 import { getContenuti } from "@/lib/content/site-settings-server";
@@ -71,8 +72,9 @@ export default async function CandidaturaPage() {
     <>
       <script
         type="application/ld+json"
-        // Contenuto nostro, non input utente: nessuna interpolazione esterna.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd()) }}
+        // Sempre dal serializzatore unico: anche testi nostri non devono poter
+        // chiudere il tag <script> (vedi lib/security/json-script.ts).
+        dangerouslySetInnerHTML={{ __html: serializeJsonForScript(faqJsonLd()) }}
       />
 
       {/* 1 — HERO */}

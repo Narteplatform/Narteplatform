@@ -38,6 +38,86 @@ async function leggi<T>(
   return { dati: data };
 }
 
+/**
+ * Tabella o colonna che non esiste ancora (migration non applicata): per
+ * PostgREST `42P01`/`PGRST205` (tabella), `42703`/`PGRST204` (colonna).
+ */
+function schemaAssente(error: { code?: string; message?: string } | null): boolean {
+  const code = error?.code ?? "";
+  return code === "42P01" || code === "PGRST205" || code === "42703" || code === "PGRST204";
+}
+
+/**
+ * Come `leggi`, per le sezioni di funzioni introdotte da migration che
+ * potrebbero non essere ancora applicate: tabella o colonna assente diventa
+ * una nota esplicita («non disponibile»), non un errore e non un elenco vuoto.
+ */
+async function leggiOpzionale<T>(
+  etichetta: string,
+  query: PromiseLike<{ data: T | null; error: { message: string; code?: string } | null }>
+): Promise<Esito<T | null> | { nonDisponibile: string }> {
+  const { data, error } = await query;
+  if (error && schemaAssente(error)) {
+    return { nonDisponibile: `Funzione non ancora attiva su questa installazione (${etichetta}).` };
+  }
+  if (error) {
+    logger.error("legal/export", `${etichetta}: ${error.message}`);
+    return { errore: `Non è stato possibile leggere questa sezione (${etichetta}).` };
+  }
+  return { dati: data };
+}
+
+/** Per `ilike` con un valore letterale: `%` e `_` sono jolly, `\` è l'escape. */
+function letterale(v: string): string {
+  return v.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/**
+ * Visite ai profili dell'utente, AGGREGATE per profilo, giorno e tipo di
+ * visitatore. Le righe grezze contengono l'impronta pseudonima di altre
+ * persone (`visitor_hash`): non sono dati di chi esporta e non ci entrano.
+ * Si legge a pagine (PostgREST restituisce al massimo 1000 righe per volta).
+ */
+async function visiteAggregate(
+  admin: ReturnType<typeof createAdminClient>,
+  artistIds: string[]
+): Promise<Esito<unknown> | { nonDisponibile: string }> {
+  const PAGINA = 1000;
+  const MAX_PAGINE = 200;
+  const conteggi = new Map<string, { profilo: string; giorno: string; tipo: string; visitatoriUnici: number }>();
+  for (let pagina = 0; pagina < MAX_PAGINE; pagina++) {
+    const { data, error } = await admin
+      .from("artist_profile_views")
+      .select("artist_id, viewed_on, viewer_kind")
+      .in("artist_id", artistIds)
+      .order("viewed_on", { ascending: true })
+      .order("artist_id", { ascending: true })
+      .order("visitor_hash", { ascending: true })
+      .range(pagina * PAGINA, pagina * PAGINA + PAGINA - 1);
+    if (error) {
+      if (schemaAssente(error)) return { nonDisponibile: "Statistiche di visita non attive su questa installazione." };
+      logger.error("legal/export", `statistiche di visita: ${error.message}`);
+      return { errore: "Non è stato possibile leggere questa sezione (statistiche di visita)." };
+    }
+    const righe = data ?? [];
+    for (const r of righe) {
+      const chiave = `${r.artist_id}|${r.viewed_on}|${r.viewer_kind}`;
+      const voce = conteggi.get(chiave) ?? {
+        profilo: r.artist_id,
+        giorno: r.viewed_on,
+        tipo: String(r.viewer_kind),
+        visitatoriUnici: 0,
+      };
+      voce.visitatoriUnici += 1;
+      conteggi.set(chiave, voce);
+    }
+    if (righe.length < PAGINA) return { dati: Array.from(conteggi.values()) };
+  }
+  return {
+    errore: "Statistiche di visita troppo numerose per l'export automatico: scrivici dalla pagina contatti per averle complete.",
+  };
+}
+
 export async function esportaDatiUtente(userId: string) {
   const admin = createAdminClient();
 
@@ -90,6 +170,14 @@ export async function esportaDatiUtente(userId: string) {
           ultimoAccesso: utenteAuth.user?.last_sign_in_at ?? null,
         },
       };
+
+  // Indirizzo dell'account: chiave delle righe legate all'email e non
+  // all'id (candidature, richieste di contatto, messaggi del modulo contatti).
+  // Se l'account non si è potuto leggere, quelle sezioni lo dicono.
+  const emailUtente = erroreAuth ? null : (utenteAuth.user?.email?.trim().toLowerCase() ?? null);
+  const dipendeDaAccount = (etichetta: string): Esito<unknown> => ({
+    errore: `Non è stato possibile leggere questa sezione (${etichetta}): dipende dall'account, che non si è potuto leggere.`,
+  });
 
   const [
     profilo,
@@ -236,6 +324,151 @@ export async function esportaDatiUtente(userId: string) {
     ),
   ]);
 
+  // ── Sezioni aggiunte (export completo) ────────────────────────────────────
+  // Ognuna tollera tabella o colonna assente (leggiOpzionale). Delle righe
+  // legate ad altre persone si esporta solo ciò che riguarda chi esporta.
+  const [
+    videoArtista,
+    notifiche,
+    calendarioPersonale,
+    calendariProfili,
+    segnalazioniInviate,
+    blocchiConversazione,
+    clienteFatturazione,
+    recessi,
+    invitiFatti,
+    codiceInvito,
+    premiInvito,
+    fileCaricati,
+    visiteProfili,
+    candidature,
+    richiesteDiContatto,
+    messaggiContatti,
+  ] = await Promise.all([
+    artistIds === null
+      ? Promise.resolve(dipendeDaArtisti("video"))
+      : artistIds.length === 0
+        ? Promise.resolve<Esito<unknown>>({ dati: [] })
+        : leggiOpzionale(
+            "video",
+            admin
+              .from("artist_videos")
+              .select("artist_id, url, title, duration_ms, size_bytes, mime_type, created_at")
+              .in("artist_id", artistIds)
+          ),
+    leggiOpzionale(
+      "notifiche",
+      admin
+        .from("notifications")
+        .select("kind, title, body, href, created_at, read_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+    ),
+    // Del collegamento al calendario si esporta che esiste e da quando, non
+    // il token: è la «password» del link, non un dato da far circolare in un file.
+    leggiOpzionale("calendario personale", admin.from("calendar_feeds").select("created_at").eq("user_id", userId)),
+    leggiOpzionale(
+      "calendari dei profili",
+      admin.from("artist_calendar_feeds").select("artist_id, created_at").eq("user_id", userId)
+    ),
+    leggiOpzionale(
+      "segnalazioni inviate",
+      admin
+        .from("content_reports")
+        .select(
+          "reference, kind, created_at, reporter_name, reporter_email, target_type, target_url, category, " +
+            "description, contested_reference, status, decision_note, decided_at"
+        )
+        .eq("reporter_user_id", userId)
+    ),
+    leggiOpzionale(
+      "blocchi nelle conversazioni",
+      admin
+        .from("conversation_blocks")
+        .select("conversation_id, blocked_role, reason, created_at, lifted_at, lift_note")
+        .eq("blocked_user_id", userId)
+    ),
+    leggiOpzionale(
+      "cliente di fatturazione",
+      admin.from("billing_customers").select("stripe_customer_id, created_at").eq("user_id", userId)
+    ),
+    leggiOpzionale(
+      "recessi dagli abbonamenti",
+      admin
+        .from("subscription_withdrawals")
+        .select("created_at, user_email, stripe_subscription_id, canale, ricevuto_il, rimborso_cent, stato_rimborso")
+        .eq("user_id", userId)
+    ),
+    // Inviti: dell'invitato solo il nome d'arte e lo stato, come li vede già
+    // chi invita nella sua pagina.
+    leggiOpzionale(
+      "inviti fatti",
+      admin
+        .from("artist_invites")
+        .select("invitee_stage_name, status, paid_at, confirmed_at, cancel_reason, created_at")
+        .eq("inviter_user_id", userId)
+    ),
+    leggiOpzionale(
+      "codice d'invito",
+      admin.from("invite_codes").select("code, created_at, disabled_at").eq("user_id", userId)
+    ),
+    leggiOpzionale(
+      "premi degli inviti",
+      admin
+        .from("invite_rewards")
+        .select("kind, pro_from, pro_until, amount_cents, converted_at, converted_cents, created_at")
+        .eq("user_id", userId)
+    ),
+    leggiOpzionale(
+      "file caricati",
+      admin
+        .from("media_assets")
+        .select("kind, public_url, artist_id, bytes, mime_type, created_at")
+        .eq("owner_user_id", userId)
+    ),
+    artistIds === null
+      ? Promise.resolve(dipendeDaArtisti("statistiche di visita"))
+      : artistIds.length === 0
+        ? Promise.resolve<Esito<unknown>>({ dati: [] })
+        : visiteAggregate(admin, artistIds),
+    emailUtente === null
+      ? Promise.resolve(dipendeDaAccount("candidature"))
+      : leggiOpzionale(
+          "candidature",
+          admin
+            .from("artist_applications")
+            .select("name, email, stage_name, genre, bio, links, status, created_at")
+            .ilike("email", letterale(emailUtente))
+        ),
+    // Richieste di contatto inviate da chi esporta (come richiedente), non
+    // quelle ricevute dai suoi profili: quelle sono dati di altri.
+    emailUtente === null
+      ? Promise.resolve(dipendeDaAccount("richieste di contatto"))
+      : leggiOpzionale(
+          "richieste di contatto inviate",
+          admin
+            .from("leads")
+            .select("artist_id, event_date, event_location, budget, message, contact_email, contact_phone, status, created_at")
+            // Un indirizzo con caratteri riservati della sintassi `or` di
+            // PostgREST (virgole, parentesi, virgolette) romperebbe il filtro:
+            // in quel caso si cerca solo per account.
+            .or(
+              /[,()"]/.test(emailUtente)
+                ? `requester_user_id.eq.${userId}`
+                : `requester_user_id.eq.${userId},contact_email.ilike.${letterale(emailUtente)}`
+            )
+        ),
+    emailUtente === null
+      ? Promise.resolve(dipendeDaAccount("messaggi dal modulo contatti"))
+      : leggiOpzionale(
+          "messaggi dal modulo contatti",
+          admin
+            .from("contact_messages")
+            .select("name, email, subject, message, created_at")
+            .ilike("email", letterale(emailUtente))
+        ),
+  ]);
+
   return {
     _informazioni: {
       generato: new Date().toISOString(),
@@ -265,5 +498,18 @@ export async function esportaDatiUtente(userId: string) {
     consulenze,
     abbonamenti: abbonamento,
     richiesteDiCancellazione: richiesteCancellazione,
+    videoCaricati: videoArtista,
+    fileCaricati,
+    notifiche,
+    collegamentoCalendario: { personale: calendarioPersonale, profili: calendariProfili },
+    segnalazioniInviate,
+    blocchiNelleConversazioni: blocchiConversazione,
+    clienteFatturazione,
+    recessiDagliAbbonamenti: recessi,
+    invitaUnArtista: { codice: codiceInvito, invitiFatti, premi: premiInvito },
+    statisticheDiVisita: visiteProfili,
+    candidatureArtista: candidature,
+    richiesteDiContattoInviate: richiesteDiContatto,
+    messaggiModuloContatti: messaggiContatti,
   };
 }

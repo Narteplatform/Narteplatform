@@ -1,6 +1,6 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { creaNotificheAdmin } from "@/lib/notifications";
 import { guardPublicForm } from "@/lib/security/form-guard";
 import { publicFormConsent } from "@/lib/legal/consents";
@@ -19,7 +19,9 @@ import ApplicationReceivedEmail from "@/lib/emails/templates/ApplicationReceived
 import { adminRecipients } from "@/lib/emails/admin-recipients";
 import { colonnaAssente } from "@/lib/admin/schema-compat";
 import { cookies } from "next/headers";
-import type { ArtistFormation } from "@/lib/supabase/types";
+import type { ArtistFormation, Database } from "@/lib/supabase/types";
+
+type RigaCandidatura = Database["public"]["Tables"]["artist_applications"]["Insert"];
 import { invitoDaCookie } from "@/lib/inviti/cookie";
 import { registraCandidatura } from "@/lib/inviti/ciclo";
 import { COOKIE_INVITO } from "@/lib/inviti/regole";
@@ -62,6 +64,25 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
   const chi = await invitoDaCookie();
   let applicationId: string | null = null;
 
+  // CANDIDATURA COLLEGATA ALL'ACCOUNT. Con una sessione aperta e la stessa
+  // email dell'account, la candidatura porta anche `user_id` (colonna della
+  // 0083): all'approvazione si sa a quale account appartiene. Con un'email
+  // diversa non si collega nulla — non si attribuisce a un account una
+  // candidatura fatta per un altro indirizzo. Un errore di lettura della
+  // sessione vale «nessuna sessione»: la candidatura si salva come prima.
+  let collegamento: { user_id?: string } = {};
+  try {
+    const supabaseSessione = await createClient();
+    const {
+      data: { user: utente },
+    } = await supabaseSessione.auth.getUser();
+    if (utente?.email && utente.email.trim().toLowerCase() === data.email.trim().toLowerCase()) {
+      collegamento = { user_id: utente.id };
+    }
+  } catch {
+    // nessuna sessione leggibile: candidatura anonima, come prima
+  }
+
   try {
     const supabase = createAdminClient();
 
@@ -91,13 +112,15 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
     let invito: { invite_code?: string } = chi ? { invite_code: chi.code } : {};
 
     let salvata: { id: string } | null = null;
-    // Al massimo tre giri: ogni giro toglie una colonna di una migration non
-    // ancora applicata (0075 formazione, 0078 codice d'invito). La candidatura
-    // si salva comunque.
-    for (let giro = 0; giro < 3; giro++) {
+    // Al massimo quattro giri: ogni giro toglie una colonna di una migration
+    // non ancora applicata (0075 formazione, 0078 codice d'invito, 0083
+    // account). La candidatura si salva comunque.
+    for (let giro = 0; giro < 4; giro++) {
       const { data: riga_, error } = await supabase
         .from("artist_applications")
-        .insert({ ...riga, ...formazione, ...invito })
+        // `user_id` (0083) non è ancora nei tipi generati: l'asserzione lo
+        // ammette come proprietà in più, la colonna la verifica il DB.
+        .insert({ ...riga, ...formazione, ...invito, ...collegamento } as RigaCandidatura)
         .select("id")
         .single();
       if (!error) {
@@ -110,6 +133,10 @@ export async function submitArtistApplication(input: ArtistApplicationInput) {
       }
       if (colonnaAssente(error, "invite_code")) {
         invito = {};
+        continue;
+      }
+      if (colonnaAssente(error, "user_id")) {
+        collegamento = {};
         continue;
       }
       return { ok: false as const, error: "Errore salvataggio candidatura" };

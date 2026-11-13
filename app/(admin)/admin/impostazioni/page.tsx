@@ -80,8 +80,9 @@ export default async function ImpostazioniPage() {
         <CardHeader>
           <CardTitle className="text-base">Invita un nuovo superadmin</CardTitle>
           <CardDescription>
-            Riceverà un'email con magic link. Al primo login verrà promosso automaticamente. Dopo
-            l'invito imposta i permessi pagina qui sotto.
+            Riceverà un&apos;email con il link per scegliere la password. Il ruolo di superadmin viene
+            assegnato subito, all&apos;invio dell&apos;invito. Dopo l&apos;invito imposta i permessi pagina
+            qui sotto.
           </CardDescription>
         </CardHeader>
         <CardContent>

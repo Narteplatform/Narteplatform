@@ -1,17 +1,27 @@
 import Link from "next/link";
 import { Lock, MapPin, Music2 } from "lucide-react";
-import type { ArtistTier, PriceBand } from "@/lib/supabase/types";
+import type { ArtistPath, ArtistTier } from "@/lib/supabase/types";
 import { FavoriteToggle } from "@/components/marketing/FavoriteToggle";
 import { ArtistTierBadges } from "@/components/marketing/ArtistBadges";
 import { BlurredPreview } from "@/components/marketing/BlurredPreview";
 import { StarRating } from "@/components/feedback/StarRating";
+import { PriceBandBadge, type FasciaPrezzo } from "@/components/marketing/PriceBandBadge";
 
-const PRICE_SYMBOL: Record<PriceBand, string> = {
-  budget: "€",
-  standard: "€€",
-  premium: "€€€",
-  luxury: "€€€€",
+/**
+ * Percorso artistico (0022): funzione dei piani Pro e Max. Chi passa il valore
+ * al catalogo o al profilo deve aver già verificato il piano
+ * (`entitlementsFor(tier).canSetPercorso`): dopo un passaggio a Free il valore
+ * resta in colonna ma non si mostra.
+ */
+export const PERCORSO_LABEL: Record<ArtistPath, string> = {
+  cover_artist: "Cover artist",
+  tribute_band: "Tribute band",
+  progetto_inedito: "Progetto inedito",
 };
+
+export function isPercorso(v: unknown): v is ArtistPath {
+  return v === "cover_artist" || v === "tribute_band" || v === "progetto_inedito";
+}
 
 const GENRE_BADGE: Record<string, string> = {
   jazz: "bg-azzurro/15 text-azzurro",
@@ -37,8 +47,16 @@ export type ArtistCardProps = {
   city?: string | null;
   coverImage?: string | null;
   genres?: string[];
-  priceBand?: PriceBand;
+  /**
+   * Fascia indicata dall'artista (`price_range`), già interpretata. Arriva solo
+   * a chi può vederla (`canSeePrice`); agli altri basta `haFascia`.
+   */
+  fascia?: FasciaPrezzo | null;
+  /** L'artista ha indicato una fascia: mostra il riquadro bloccato a chi non può vederla. */
+  haFascia?: boolean;
   canSeePrice?: boolean;
+  /** Percorso artistico, solo se il piano dell'artista lo include. */
+  percorso?: ArtistPath | null;
   /**
    * Variante anonima, per chi non ha una sessione. La scheda mostra solo
    * un'anteprima sfocata della copertina (generata dal server a partire da
@@ -132,8 +150,10 @@ function FullArtistCard({
   city = null,
   coverImage = null,
   genres = [],
-  priceBand = "standard",
+  fascia = null,
+  haFascia = false,
   canSeePrice = false,
+  percorso = null,
   tier = null,
   artistId,
   rating,
@@ -202,11 +222,22 @@ function FullArtistCard({
       </div>
 
       <div className="flex flex-col gap-2.5 px-4 py-4">
-        <PriceRow priceBand={priceBand} canSeePrice={canSeePrice} />
+        {/* Nessuna riga se l'artista non ha indicato una fascia: niente cifre inventate. */}
+        {(canSeePrice ? fascia !== null : haFascia) && (
+          <div className="flex items-center justify-between gap-2">
+            <span className="narte-label">Fascia di prezzo</span>
+            <PriceBandBadge fascia={fascia} canSee={canSeePrice} />
+          </div>
+        )}
         <p className="inline-flex items-center gap-1.5 text-xs text-palco-20">
           <MapPin className="size-3" />
           {city || "Italia"}
         </p>
+        {percorso && (
+          <p className="text-xs font-semibold uppercase tracking-[0.06em] text-palco-20">
+            {PERCORSO_LABEL[percorso]}
+          </p>
+        )}
 
         {rating && rating.count > 0 && (
           <StarRating
@@ -219,38 +250,5 @@ function FullArtistCard({
         )}
       </div>
     </Link>
-  );
-}
-
-function PriceRow({
-  priceBand,
-  canSeePrice,
-}: {
-  priceBand: PriceBand;
-  canSeePrice: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="narte-label">Range di prezzo</span>
-      {canSeePrice ? (
-        <span className="inline-flex items-center gap-1 rounded-full bg-azzurro/10 px-2.5 py-1 text-xs font-semibold text-azzurro">
-          <span className="font-display tracking-tight">{PRICE_SYMBOL[priceBand]}</span>
-        </span>
-      ) : (
-        <span
-          className="relative inline-flex items-center gap-2 rounded-full border border-border bg-muted px-2.5 py-1 text-xs"
-          title="Accedi come organizzatore per vedere il range"
-          aria-label="Range di prezzo bloccato"
-        >
-          <span
-            aria-hidden="true"
-            className="select-none font-display tracking-tight text-foreground/80 blur-[3.5px]"
-          >
-            €€ - €€€€
-          </span>
-          <Lock className="size-3 text-palco-20" />
-        </span>
-      )}
-    </div>
   );
 }

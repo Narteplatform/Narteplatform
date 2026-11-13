@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
+import { percorsoSicuro } from "@/lib/auth/percorso";
 
 type Provider = "google";
 
@@ -60,7 +61,8 @@ export function OAuthButtons({
     try {
       const supabase = createClient();
       const params = new URLSearchParams();
-      if (next) params.set("next", next);
+      const destinazione = percorsoSicuro(next ?? null);
+      if (destinazione) params.set("next", destinazione);
       if (intent === "organizer") params.set("ruolo", "organizer");
       const query = params.toString();
       const { error } = await supabase.auth.signInWithOAuth({

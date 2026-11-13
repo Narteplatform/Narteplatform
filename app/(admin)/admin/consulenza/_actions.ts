@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { requireAdminPageAccess, getAllowedAdminPages } from "@/lib/admin/permissions";
 import { registraAzione } from "@/lib/moderation/decisioni";
+import { creaNotifica } from "@/lib/notifications";
 
 // Una Server Action è un endpoint HTTP raggiungibile direttamente: il solo
 // controllo del ruolo superadmin non bastava, perché un superadmin delegato
@@ -615,6 +616,14 @@ export async function updateConsultationStatus(
     return { ok: false as const, error: "Status non valido" };
   }
   const admin = createAdminClient();
+  // Stato precedente e destinatario, solo per la notifica: se la lettura
+  // fallisce l'aggiornamento procede, ma senza avvisare (non si decide al buio
+  // se lo stato è cambiato davvero).
+  const { data: prima, error: primaErr } = await admin
+    .from("consultations")
+    .select("status, user_id, slot_id")
+    .eq("id", consultationId)
+    .maybeSingle();
   const { error } = await admin
     .from("consultations")
     .update({ status })
@@ -627,8 +636,59 @@ export async function updateConsultationStatus(
     action: "consulenza_stato",
     descrizione: `Stato della consulenza ${consultationId} impostato su «${status}».`,
   });
+  if (!primaErr && prima?.user_id && prima.status !== status) {
+    await notificaStatoConsulenza(admin, prima.user_id, prima.slot_id, status);
+  }
   revalidatePath("/admin/consulenza");
+  revalidatePath("/dashboard/consulenza");
   return { ok: true as const };
+}
+
+/**
+ * Campanella di chi ha prenotato la consulenza quando il team la annulla o la
+ * segna come svolta. Best-effort: `creaNotifica` non lancia mai.
+ */
+async function notificaStatoConsulenza(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  slotId: string | null,
+  status: z.infer<typeof statusSchema>
+) {
+  if (status !== "cancelled" && status !== "completed") return;
+  let quando = "";
+  if (slotId) {
+    const { data: slot, error: slotErr } = await admin
+      .from("consultant_slots")
+      .select("slot_at")
+      .eq("id", slotId)
+      .maybeSingle();
+    if (!slotErr && slot?.slot_at) {
+      quando = ` del ${new Date(slot.slot_at).toLocaleString("it-IT", {
+        timeZone: "Europe/Rome",
+        day: "numeric",
+        month: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+    }
+  }
+  await creaNotifica(
+    status === "cancelled"
+      ? {
+          userId,
+          kind: "consulenza_annullata",
+          title: "Consulenza annullata",
+          body: `Il team ha annullato la consulenza${quando}. Se ti serve ancora, puoi prenotare un altro slot.`,
+          href: "/dashboard/consulenza",
+        }
+      : {
+          userId,
+          kind: "consulenza_completata",
+          title: "Consulenza svolta",
+          body: `Il team ha segnato come svolta la consulenza${quando}.`,
+          href: "/dashboard/consulenza",
+        }
+  );
 }
 
 export async function updateConsultationNotes(consultationId: string, notes: string) {

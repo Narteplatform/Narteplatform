@@ -10,8 +10,11 @@ import { logger } from "@/lib/logger";
  *
  * Brevo non firma i webhook marketing: l'autenticazione è un segreto condiviso
  * (`BREVO_WEBHOOK_SECRET`) che si mette nell'URL registrato su Brevo
- * (`?secret=…`) oppure in un header (`x-brevo-webhook-secret` o
- * `Authorization: Bearer …`). Il confronto è a tempo costante.
+ * (`?secret=…`, mantenuto per compatibilità con i webhook già registrati)
+ * oppure, preferibilmente, in un header (`x-narte-webhook-secret`,
+ * `x-brevo-webhook-secret` o `Authorization: Bearer …`): nell'header il
+ * segreto non finisce nei log di accesso come accade alla query string.
+ * Il confronto è a tempo costante.
  *
  * Risposte: 503 se il segreto non è configurato (senza non si può verificare),
  * 401 se non coincide, poi SEMPRE 200 — anche se l'utente non si trova o la
@@ -42,11 +45,14 @@ function segretoValido(request: Request): boolean {
 
   const url = new URL(request.url);
   const auth = request.headers.get("authorization");
-  const ricevuto =
-    request.headers.get("x-brevo-webhook-secret") ??
-    (auth?.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : null) ??
-    url.searchParams.get("secret") ??
-    "";
+  // Prima gli header, poi la query string. Un valore vuoto conta come assente.
+  const candidati = [
+    request.headers.get("x-narte-webhook-secret"),
+    request.headers.get("x-brevo-webhook-secret"),
+    auth?.toLowerCase().startsWith("bearer ") ? auth.slice(7) : null,
+    url.searchParams.get("secret"),
+  ];
+  const ricevuto = candidati.map((v) => v?.trim() ?? "").find((v) => v.length > 0) ?? "";
 
   // Si confrontano gli hash: stessa lunghezza sempre, nessuna fuga sul formato.
   const a = createHash("sha256").update(ricevuto).digest();

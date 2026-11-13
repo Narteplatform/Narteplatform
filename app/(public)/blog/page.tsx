@@ -10,7 +10,12 @@ export const metadata: Metadata = {
   title: "Blog — N'arte",
   description:
     "Approfondimenti, guide e storie dalla scena musicale live italiana. Booking, format, artisti emergenti.",
-  alternates: { canonical: "/blog" },
+  alternates: {
+    canonical: "/blog",
+    // <link rel="alternate" type="application/rss+xml"> nel <head>: è così che
+    // lettori di feed e aggregatori trovano il feed senza conoscerne l'URL.
+    types: { "application/rss+xml": [{ url: "/blog/rss.xml", title: "Blog N'arte" }] },
+  },
   openGraph: {
     title: "Blog N'arte",
     description: "Storie e guide sulla scena musicale live emergente in Italia.",
@@ -32,11 +37,17 @@ type Post = {
 
 export default async function BlogIndexPage() {
   const admin = createAdminClient();
-  const { data } = await admin
+  // `published_at` nel futuro = articolo programmato: non è ancora uscito. Prima
+  // bastava che la data ci fosse, e un articolo programmato compariva subito.
+  const { data, error } = await admin
     .from("blog_posts")
     .select("id, slug, title, excerpt, cover_image, author_name, published_at")
     .not("published_at", "is", null)
+    .lte("published_at", new Date().toISOString())
     .order("published_at", { ascending: false });
+  // Una lettura fallita non è «nessun articolo»: la pagina d'errore lo dice,
+  // il messaggio «Nessun articolo pubblicato» mentirebbe.
+  if (error) throw new Error("Impossibile leggere gli articoli del blog");
   const posts = (data ?? []) as unknown as Post[];
 
   return (

@@ -1047,6 +1047,11 @@ async function loadOrganizerShell(userId: string): Promise<{
       icon: <Megaphone className="size-4" />,
     },
     {
+      href: "/account",
+      label: "Account",
+      icon: <Settings className="size-4" />,
+    },
+    {
       href: "/help",
       label: "Aiuto",
       icon: <LifeBuoy className="size-4" />,

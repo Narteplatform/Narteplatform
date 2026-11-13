@@ -17,6 +17,60 @@ funzionalità nuove restano spente finché non si arriva in fondo.
 
 ---
 
+## `0081_hardening_db.sql` — Hardening: privilegi, indici sulle chiavi esterne, limiti dei bucket
+
+Indipendente dalle altre. Additiva e idempotente; non modifica né cancella righe (gli unici UPDATE
+sono sulla configurazione di `storage.buckets`).
+
+- **Privilegi**: `revoke` su 12 tabelle che avevano solo la RLS. Revoca totale ad anon/authenticated
+  su admin_page_permissions, artist_media_submissions, billing_customers, booking_messages (se esiste),
+  media_assets, platform_feedback, rate_limits, stripe_webhook_events, subscriptions. Restano in
+  lettura: `collaborations` (anon + authenticated, nastro dei loghi), `conversation_blocks`
+  (authenticated, realtime della chat), `consultant_slots` (authenticated, usata dalle policy di
+  `consultations`); su queste tre si revocano solo le scritture.
+- **Indici**: 9 indici su chiavi esterne senza indice (tra cui `artists.user_id`).
+- **Storage**: formati ammessi e dimensione massima sui bucket immagine (no SVG, 5 MB), audio (25 MB),
+  video di eventi e candidature (mp4/webm/mov, 50 MB); solo la dimensione (25 MB) su chat-attachments.
+  Vale per i caricamenti nuovi, i file esistenti restano.
+
+Senza la 0081: tutto funziona come oggi; a proteggere queste tabelle resta la sola RLS.
+Verifica: `npm run db:check-migrations` + query «0081» in `docs/VERIFICA_MIGRATION.sql`. Controprova:
+nastro loghi in home, blocco chat in tempo reale, caricamento di una foto e di una traccia audio.
+
+---
+
+## `0082_abbonamenti_scadenze.sql` — Abbonamenti: eventi Stripe, piani scaduti, data del piano
+
+Indipendente. Additiva e idempotente; funzioni eseguibili solo dal server.
+
+- `stripe_webhook_events.claimed_at` + `stripe_evento_prendi` / `stripe_evento_rilascia`: un evento
+  consegnato due volte in contemporanea viene eseguito una volta sola.
+- `subscriptions.piano_corrente_dal` (riempita con `created_at`) e `stripe_mancante_dal`, con trigger;
+  `abbonamenti_segna_mancante`, `abbonamento_shooting_dal` (shooting dal passaggio al Max annuale).
+- `abbonamenti_ricalcola_piani(p_limite)`: riallinea la cache `artists.tier` e le sospensioni dei
+  profili quando un omaggio scade (prima succedeva solo con gli inviti accesi).
+- Il riempimento iniziale aggiorna ogni riga di `subscriptions` una volta: scatta il trigger di
+  sincronizzazione esistente, che riallinea eventuali piani già sbagliati.
+
+Senza la 0082: il cron `/api/cron/abbonamenti` ripiega su `inviti_sync_scaduti`, la presa in carico
+degli eventi resta quella di prima, lo shooting conta dal `created_at` dell'abbonamento.
+
+---
+
+## `0083_account_auth.sql` — Account: candidatura collegata, avatar Google
+
+Indipendente. Additiva e idempotente.
+
+- `artist_applications.user_id` (nullable, `on delete set null`) con indice parziale: la candidatura
+  inviata da un utente loggato resta collegata al suo account.
+- `handle_new_user()` identica alla 0071, più `avatar_url` preso da Google (`avatar_url`/`picture`,
+  solo https).
+
+Senza la 0083: la candidatura si salva senza `user_id` (il codice riprova senza la colonna), e chi
+entra con Google non ha la foto nel profilo.
+
+---
+
 ## `0080_offerta_conferma_diretta.sql` — Trattativa: l'offerta accettata conferma la data al prezzo
 
 > ✅ **Applicata il 13/11/2026.**

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
+import { logger } from "@/lib/logger";
+import { eseguiCron } from "@/lib/cron/esegui";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +21,11 @@ export const dynamic = "force-dynamic";
 // resta aperta di proposito — un 401 renderebbe il keep-alive inutile senza
 // che nessuno se ne accorga — ma usa la chiave anon sotto RLS, quindi non può
 // fare più di quanto faccia un visitatore anonimo.
+//
+// Avviso: se fallisce (503 con Supabase in pausa o giù, 500 per env mancanti,
+// eccezione) `eseguiCron` avvisa il root, max una volta al giorno. Con il DB
+// irraggiungibile l'avviso arriva solo per email (a SUPERADMIN_EMAIL): la
+// notifica in-app vive nel DB. Un 401 non avvisa (chiamata senza segreto).
 
 const TABLES = ["events", "artists", "formats"] as const;
 
@@ -29,6 +36,10 @@ function isAuthorized(req: Request): boolean {
 }
 
 export async function GET(req: Request) {
+  return eseguiCron("keepalive", () => gestisci(req));
+}
+
+async function gestisci(req: Request): Promise<Response> {
   if (!isAuthorized(req)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
@@ -69,7 +80,7 @@ export async function GET(req: Request) {
   if (!body.ok) {
     // Visibile nei log Vercel del cron: se Supabase è già in pausa (o giù),
     // il 503 fa comparire l'invocazione come fallita invece che verde.
-    console.error("[keepalive]", failures.join(" | "));
+    logger.error("keepalive", failures.join(" | "));
   }
 
   return NextResponse.json(body, {

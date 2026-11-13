@@ -6,6 +6,8 @@ import { ArrowLeft } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Reveal } from "@/components/animations/Reveal";
 import { ReadingProgress } from "@/components/blog/ReadingProgress";
+import { sanitizeBlogHtml } from "@/lib/blog/sanitize";
+import { serializeJsonForScript } from "@/lib/security/json-script";
 
 export const dynamic = "force-dynamic";
 
@@ -35,16 +37,26 @@ type PostCard = {
   published_at: string;
 };
 
+/**
+ * Solo articoli già usciti: con `published_at` nel futuro l'articolo è
+ * programmato e risponde 404 fino a quella data (non esiste un'anteprima
+ * pubblica; l'admin lo rilegge dall'editor).
+ *
+ * Una lettura fallita NON diventa 404: un 404 dice a Google che la pagina non
+ * esiste più. Si lancia, e risponde la pagina d'errore del gruppo.
+ */
 async function getPost(slug: string) {
   const admin = createAdminClient();
-  const { data } = await admin
+  const { data, error } = await admin
     .from("blog_posts")
     .select(
       "id, slug, title, excerpt, cover_image, content, seo_title, seo_description, keywords, og_image, author_name, published_at, updated_at"
     )
     .eq("slug", slug)
     .not("published_at", "is", null)
+    .lte("published_at", new Date().toISOString())
     .maybeSingle();
+  if (error) throw new Error("Impossibile leggere l'articolo");
   return data as unknown as Post | null;
 }
 
@@ -54,6 +66,7 @@ async function getRelatedPosts(currentId: string): Promise<PostCard[]> {
     .from("blog_posts")
     .select("id, slug, title, excerpt, cover_image, author_name, published_at")
     .not("published_at", "is", null)
+    .lte("published_at", new Date().toISOString())
     .neq("id", currentId)
     .order("published_at", { ascending: false })
     .limit(3);
@@ -76,7 +89,10 @@ export async function generateMetadata({
     title,
     description,
     keywords,
-    alternates: { canonical: `/blog/${post.slug}` },
+    alternates: {
+      canonical: `/blog/${post.slug}`,
+      types: { "application/rss+xml": [{ url: "/blog/rss.xml", title: "Blog N'arte" }] },
+    },
     openGraph: {
       title,
       description,
@@ -133,7 +149,7 @@ export default async function BlogPostPage({
 
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonForScript(jsonLd) }}
       />
 
       <header className="container-narte">
@@ -183,7 +199,10 @@ export default async function BlogPostPage({
         <div className="container-narte mt-16 max-w-3xl">
           <div
             className="blog-prose"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            // Ripulito anche qui, non solo al salvataggio: gli articoli scritti
+            // col vecchio filtro a espressioni regolari passano comunque dal
+            // sanitizer attuale (lib/blog/sanitize.ts).
+            dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(post.content) }}
           />
         </div>
       </Reveal>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, MailCheck } from "lucide-react";
 import { loginSchema, type LoginInput } from "@/lib/validators/schemas";
 import { authErrorMessage } from "@/lib/auth/error-messages";
 import { createClient } from "@/lib/supabase/client";
@@ -13,12 +13,24 @@ import { Input, Label } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { OAuthButtons, SeparatoreOppure } from "@/components/forms/OAuthButtons";
+import { percorsoSicuro } from "@/lib/auth/percorso";
+import { reinviaEmailConferma } from "@/app/(auth)/login/_actions";
+
+/** Pausa fra due invii dell'email di conferma, lato client (il server ha i suoi freni). */
+const ATTESA_REINVIO_MS = 60_000;
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next");
+  // Solo percorsi interni: lo ricontrolla comunque /post-login.
+  const next = percorsoSicuro(searchParams.get("next"));
   const [error, setError] = useState<string | null>(null);
+  // Email non confermata: si offre un nuovo invio del link.
+  const [nonConfermata, setNonConfermata] = useState<string | null>(null);
+  const [reinvio, setReinvio] = useState<{ stato: "idle" | "invio" | "inviata"; messaggio?: string }>({
+    stato: "idle",
+  });
+  const [ultimoReinvio, setUltimoReinvio] = useState(0);
   const {
     register,
     handleSubmit,
@@ -27,6 +39,8 @@ export function LoginForm() {
 
   async function onSubmit(values: LoginInput) {
     setError(null);
+    setNonConfermata(null);
+    setReinvio({ stato: "idle" });
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
       email: values.email,
@@ -34,6 +48,9 @@ export function LoginForm() {
     });
     if (error) {
       setError(authErrorMessage(error.message));
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        setNonConfermata(values.email);
+      }
       return;
     }
     // Instrada server-side in base al ruolo del profilo (admin → /admin,
@@ -41,6 +58,26 @@ export function LoginForm() {
     const dest = `/post-login${next ? `?next=${encodeURIComponent(next)}` : ""}`;
     router.push(dest);
     router.refresh();
+  }
+
+  async function reinvia() {
+    if (!nonConfermata) return;
+    if (Date.now() - ultimoReinvio < ATTESA_REINVIO_MS) {
+      setReinvio({ stato: "inviata", messaggio: "Ti abbiamo appena scritto: attendi un minuto prima di riprovare." });
+      return;
+    }
+    setReinvio({ stato: "invio" });
+    const res = await reinviaEmailConferma(nonConfermata, next).catch(() => null);
+    setUltimoReinvio(Date.now());
+    setReinvio(
+      res && !res.ok
+        ? { stato: "idle", messaggio: res.error }
+        : {
+            stato: "inviata",
+            messaggio:
+              "Se l'indirizzo è registrato e non ancora confermato, ti arriva un nuovo link fra qualche minuto. Controlla anche nello spam.",
+          }
+    );
   }
 
   return (
@@ -99,6 +136,27 @@ export function LoginForm() {
           <AlertCircle className="mt-0.5 size-4 shrink-0" />
           <span>{error}</span>
         </p>
+      )}
+
+      {nonConfermata && (
+        <div className="space-y-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="md"
+            className="w-full gap-2"
+            disabled={reinvio.stato === "invio"}
+            onClick={reinvia}
+          >
+            <MailCheck className="size-4" />
+            {reinvio.stato === "invio" ? "Invio in corso…" : "Invia di nuovo l'email di conferma"}
+          </Button>
+          {reinvio.messaggio && (
+            <p role="status" className="text-xs text-muted-foreground">
+              {reinvio.messaggio}
+            </p>
+          )}
+        </div>
       )}
 
       <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>

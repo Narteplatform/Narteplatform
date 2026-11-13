@@ -129,10 +129,16 @@ export async function POST(request: Request) {
   // questo controllo il file finirebbe comunque nello storage a nostre spese.
   // Il gate deve precedere l'upload, non seguirlo.
   const ent = await getEntitlements(artistId);
-  const { count } = await admin
+  const { count, error: countErr } = await admin
     .from("artist_videos")
     .select("id", { count: "exact", head: true })
     .eq("artist_id", artistId);
+  // Senza questo controllo un conteggio fallito valeva «zero video» (`?? 0`)
+  // e apriva il tetto del piano.
+  if (countErr) {
+    logger.error("api/upload/video", "conteggio video fallito", countErr);
+    return NextResponse.json({ error: "Caricamento non riuscito, riprova" }, { status: 503 });
+  }
   const videoCheck = checkCollectionLimit(ent, "video", count ?? 0, (count ?? 0) + 1);
   if (!videoCheck.ok) {
     return NextResponse.json({ error: videoCheck.error }, { status: 409 });

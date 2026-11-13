@@ -81,11 +81,17 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
 
-  const { data: artist } = await admin
+  const { data: artist, error: artistErr } = await admin
     .from("artists")
     .select("id, user_id, audio_files")
     .eq("id", artistId)
     .maybeSingle();
+  // Una lettura fallita non è «artista inesistente»: 503, così il client
+  // mostra un errore temporaneo invece di un 404 fuorviante.
+  if (artistErr) {
+    logger.error("api/upload/audio/sign", "lettura artista fallita", artistErr);
+    return NextResponse.json({ error: "Caricamento non riuscito, riprova" }, { status: 503 });
+  }
   if (!artist) {
     return NextResponse.json({ error: "Artista non trovato" }, { status: 404 });
   }

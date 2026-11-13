@@ -6,6 +6,8 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireRootSuperadmin } from "@/lib/admin/permissions";
 import { registraAzione } from "@/lib/moderation/decisioni";
+import { getSiteUrl } from "@/lib/site-url";
+import { logger } from "@/lib/logger";
 import {
   inviteSuperadminSchema,
   pagePermissionsSchema,
@@ -55,27 +57,67 @@ export async function inviteSuperadmin(formData: FormData): Promise<Result> {
   const { email, full_name } = parsed.data;
   const admin = createAdminClient();
 
-  // Magic link invite. Imposta role=superadmin in raw_user_meta_data:
-  // il trigger handle_new_user() già legge questo campo (vedi 0008).
+  // Invito con il mailer di Supabase. Il link porta a /reset-password, dove si
+  // sceglie la password (vedi lib/auth/link-password.ts per il formato con
+  // token_hash, consigliato nel template «Invite user» di Supabase).
+  //
+  // Il ruolo NON si passa più nei metadati: `handle_new_user` (0071) accetta
+  // dal metadata solo 'organizer', quindi `role: "superadmin"` veniva ignorato
+  // e l'invitato restava `user`. Lo si imposta qui sotto con la service role,
+  // che il trigger `guard_profile_role` (0056) consente (auth.uid() è null).
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: {
-      role: "superadmin",
-      full_name: full_name ?? null,
-    },
+    data: { full_name: full_name ?? null },
+    redirectTo: `${getSiteUrl()}/reset-password`,
   });
   if (error) return { ok: false, error: error.message };
 
-  // Pre-imposta permessi default per il nuovo admin (overview + profilo).
   const newUserId = data.user?.id;
-  if (newUserId) {
+  if (!newUserId) {
+    return { ok: false, error: "Invito inviato, ma l'account non risulta creato: controlla in Supabase prima di riprovare." };
+  }
+
+  // Il profilo lo crea il trigger alla creazione dell'utente. Si promuove solo
+  // da 'user' (un account appena invitato): mai sovrascrivere un ruolo diverso.
+  const promozione = await admin
+    .from("profiles")
+    .update({ role: "superadmin" })
+    .eq("id", newUserId)
+    .eq("role", "user")
+    .select("id");
+  if (promozione.error) {
+    return {
+      ok: false,
+      error: `Invito inviato, ma il ruolo superadmin non è stato impostato: ${promozione.error.message}`,
+    };
+  }
+  if ((promozione.data?.length ?? 0) === 0) {
+    const { data: prof, error: profErr } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", newUserId)
+      .maybeSingle();
+    if (profErr || prof?.role !== "superadmin") {
+      return {
+        ok: false,
+        error: `Invito inviato, ma il ruolo superadmin non è stato impostato (ruolo attuale: ${
+          profErr ? "non leggibile" : (prof?.role ?? "profilo assente")
+        }).`,
+      };
+    }
+  }
+
+  // Pre-imposta permessi default per il nuovo admin (overview + profilo).
+  {
     const defaultPages: AdminPageKey[] = ["overview", "profilo"];
-    await admin.from("admin_page_permissions").upsert(
+    const { error: permErr } = await admin.from("admin_page_permissions").upsert(
       defaultPages.map((p) => ({
         user_id: newUserId,
         page_key: p,
         can_view: true,
       }))
     );
+    // Non blocca: i permessi si impostano comunque qui sotto, a mano.
+    if (permErr) logger.warn("impostazioni/invito", "permessi predefiniti non salvati:", permErr.message);
     // Logga invito
     await admin.from("email_log").insert({
       to_addresses: [email],
@@ -89,10 +131,10 @@ export async function inviteSuperadmin(formData: FormData): Promise<Result> {
   await registraAzione({
     actorId: attore.id,
     targetType: "account",
-    targetId: newUserId ?? null,
+    targetId: newUserId,
     action: "superadmin_invitato",
     descrizione: `Invitato come superadmin: ${email}.`,
-    affectedUserId: newUserId ?? null,
+    affectedUserId: newUserId,
   });
 
   revalidatePath("/admin/impostazioni");

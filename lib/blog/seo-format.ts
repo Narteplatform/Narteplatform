@@ -255,16 +255,8 @@ export function deriveFullSeo(
   };
 }
 
-/**
- * Difesa in profondità lato server: rimuove blocchi <script>/<style>, attributi
- * on*= e URL javascript:. Il contenuto è comunque scritto solo dai superadmin e
- * Tiptap non emette script; questa è una rete di sicurezza dependency-free.
+/*
+ * La pulizia dell'HTML (prima `stripUnsafe`, a espressioni regolari) è stata
+ * spostata in lib/blog/sanitize.ts e affidata a sanitize-html: questo file è
+ * importato anche dal client (BlogPostForm) e deve restare senza dipendenze.
  */
-export function stripUnsafe(html: string): string {
-  return html
-    .replace(/<\s*(script|style)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
-    .replace(/\son\w+\s*=\s*"[^"]*"/gi, "")
-    .replace(/\son\w+\s*=\s*'[^']*'/gi, "")
-    .replace(/\son\w+\s*=\s*[^\s>]+/gi, "")
-    .replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"');
-}

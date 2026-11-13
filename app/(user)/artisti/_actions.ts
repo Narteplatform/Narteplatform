@@ -16,6 +16,7 @@ import { buildConsultationParams } from "@/lib/emails/consultation-params";
 import ConsultationRequestEmail from "@/lib/emails/templates/ConsultationRequestEmail";
 import { createElement } from "react";
 import { adminRecipients } from "@/lib/emails/admin-recipients";
+import { logger } from "@/lib/logger";
 
 // Notifiche al team: la casella interna configurata, altrimenti il recapito unico.
 const ADMIN_EMAIL = adminRecipients({ fallback: true });
@@ -154,4 +155,59 @@ export async function requestConsultation(input: ConsultationInput) {
   revalidatePath("/artisti");
   revalidatePath("/admin/consulenza");
   return { ok: true as const };
+}
+
+// =========================================
+// Catalogo: filtro «Libero il»
+// =========================================
+
+const DATA_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export type EsitoOccupati = { ok: true; ids: string[] } | { ok: false; error: string };
+
+/**
+ * Artisti con la data segnata come occupata (`artist_availability.status =
+ * 'busy'`): il filtro «Libero il» del catalogo li esclude.
+ *
+ * Solo lettura. Il calendario degli artisti è riservato a chi ha un account
+ * (come sulla pagina profilo), quindi serve una sessione. In caso di errore si
+ * restituisce un errore e il catalogo NON filtra: un elenco vuoto farebbe
+ * passare per liberi anche gli artisti occupati.
+ *
+ * La pagina del catalogo la chiama anche lato server, per la data arrivata
+ * nell'URL.
+ */
+export async function artistiOccupatiIl(data: string): Promise<EsitoOccupati> {
+  if (typeof data !== "string" || !DATA_RE.test(data)) {
+    return { ok: false, error: "Data non valida" };
+  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Accedi per filtrare per data" };
+
+  return leggiOccupati(data);
+}
+
+// Non esportata: in un file "use server" ogni export è un endpoint pubblico,
+// e questa non controlla la sessione.
+async function leggiOccupati(data: string): Promise<EsitoOccupati> {
+  if (!DATA_RE.test(data)) return { ok: false, error: "Data non valida" };
+  try {
+    const admin = createAdminClient();
+    const { data: righe, error } = await admin
+      .from("artist_availability")
+      .select("artist_id")
+      .eq("date", data)
+      .eq("status", "busy");
+    if (error) {
+      logger.error("catalogo", "disponibilità non lette:", error.message);
+      return { ok: false, error: "Non riesco a leggere le disponibilità. Riprova." };
+    }
+    return { ok: true, ids: [...new Set((righe ?? []).map((r) => r.artist_id))] };
+  } catch (e) {
+    logger.error("catalogo", "disponibilità:", e instanceof Error ? e.message : String(e));
+    return { ok: false, error: "Non riesco a leggere le disponibilità. Riprova." };
+  }
 }

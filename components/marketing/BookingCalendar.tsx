@@ -30,6 +30,18 @@ type DateSlot = {
   end_time: string;
 };
 
+/**
+ * Documenti v2 (condizioni per gli organizzatori) spenti finché il legale non li
+ * approva: fino ad allora la casella rimanda ai Termini pubblicati oggi, che
+ * contengono già gli adempimenti dell'evento. Stesso interruttore di
+ * RegisterForm e lib/legal/v2/link.ts: nessun link porta a una 404.
+ */
+const LEGAL_V2 = process.env.NEXT_PUBLIC_LEGAL_V2_PUBBLICATO === "1";
+const URL_CONDIZIONI_ORGANIZZATORI = LEGAL_V2 ? "/condizioni-organizzatori" : "/termini";
+const NOME_CONDIZIONI_ORGANIZZATORI = LEGAL_V2
+  ? "Condizioni per gli organizzatori"
+  : "Termini e condizioni d’uso";
+
 export type ViewerRole = "anon" | "user" | "organizer" | "artist" | "superadmin";
 
 export type ConfirmedBookingInfo = {
@@ -50,6 +62,8 @@ type Props = {
   viewerRole?: ViewerRole;
   viewerEmail?: string | null;
   viewerName?: string | null;
+  /** Telefono del profilo organizzatore, per precompilare il campo. */
+  viewerPhone?: string | null;
   organizerVenues?: { id: string; name: string }[];
   confirmedBookings?: ConfirmedBookingInfo[];
 };
@@ -93,6 +107,7 @@ export function BookingCalendar({
   viewerRole = "anon",
   viewerEmail = null,
   viewerName = null,
+  viewerPhone = null,
   organizerVenues = [],
   confirmedBookings = [],
 }: Props) {
@@ -149,7 +164,7 @@ export function BookingCalendar({
 
   const { register, handleSubmit, reset, control, formState: { isSubmitting, errors } } = useForm<FormValues>({
     defaultValues: {
-      phone: "",
+      phone: viewerPhone ?? "",
       venueName: "",
       venueCity: "",
       message: "",
@@ -187,7 +202,9 @@ export function BookingCalendar({
     if (!selectedISO) return;
     setError(null);
     if (isUserToPromote && !values.acceptedOrganizerTerms) {
-      setError("Per inviare la richiesta devi accettare le Condizioni per gli organizzatori.");
+      setError(
+        `Per inviare la richiesta devi accettare ${LEGAL_V2 ? "le" : "i"} ${NOME_CONDIZIONI_ORGANIZZATORI}.`
+      );
       return;
     }
     const budgetMin = rangeToMin(values.budgetRange);
@@ -205,7 +222,8 @@ export function BookingCalendar({
       payload.venueName = values.venueName;
       payload.venueCity = values.venueCity || undefined;
     }
-    if (values.phone) payload.phone = values.phone;
+    const telefono = values.phone.trim();
+    if (telefono) payload.phone = telefono;
     try {
       const r = await fetch("/api/booking-request", {
         method: "POST",
@@ -232,7 +250,7 @@ export function BookingCalendar({
         // 202: il team deve approvare l'account, la richiesta di booking non è partita.
         const msg =
           json.message ??
-          "Richiesta inviata al team: ti avvisiamo appena il tuo account è approvato, poi potrai inviare la richiesta.";
+          "Abbiamo chiesto al team di verificare il tuo account organizzatore e ti avvisiamo via email appena è approvato. La richiesta per l'artista non è ancora partita: dopo l'approvazione torna su questo profilo e inviala di nuovo.";
         setPendingMessage(msg);
         toast.success(msg);
         setSubmitted(true);
@@ -462,9 +480,9 @@ export function BookingCalendar({
                     pendingMessage
                   ) : (
                     <>
-                      Abbiamo ricevuto la tua richiesta per <strong>{artistName}</strong> il{" "}
-                      {formatHuman(selectedISO)}. L&rsquo;artista e il nostro team la valutano e ti
-                      rispondono via email entro 48h.
+                      La tua richiesta per <strong>{artistName}</strong> il{" "}
+                      {formatHuman(selectedISO)} è arrivata all&rsquo;artista. La trovi nelle tue
+                      Richieste: lì vedi quando avvia la trattativa o se la rifiuta.
                     </>
                   )}
                 </p>
@@ -549,6 +567,22 @@ export function BookingCalendar({
                     </select>
                   </Field>
                   <Field
+                    label="Telefono (facoltativo)"
+                    error={errors.phone && "Numero troppo lungo"}
+                  >
+                    <Input
+                      type="tel"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      placeholder="Es. 333 123 4567"
+                      {...register("phone", { maxLength: 40 })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Lo riceve l&rsquo;artista insieme alla richiesta e resta nel tuo profilo
+                      organizzatore.
+                    </p>
+                  </Field>
+                  <Field
                     label="Messaggio per l'artista *"
                     error={errors.message && "Almeno 20 caratteri con i dettagli dell'evento"}
                   >
@@ -578,14 +612,14 @@ export function BookingCalendar({
                       />
                       <span>
                         Inviando la richiesta diventi organizzatore su N&rsquo;arte. Ho letto e
-                        accetto le{" "}
+                        accetto {LEGAL_V2 ? "le" : "i"}{" "}
                         <a
-                          href="/condizioni-organizzatori"
+                          href={URL_CONDIZIONI_ORGANIZZATORI}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="underline underline-offset-2"
                         >
-                          Condizioni per gli organizzatori
+                          {NOME_CONDIZIONI_ORGANIZZATORI}
                         </a>
                         , in particolare gli obblighi su SIAE, agibilità, permessi e sicurezza
                         dell&rsquo;evento, che restano a mio carico.

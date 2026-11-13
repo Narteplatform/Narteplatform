@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
-import { formatContentToSeoHtml, deriveFullSeo, stripUnsafe } from "@/lib/blog/seo-format";
+import { formatContentToSeoHtml, deriveFullSeo } from "@/lib/blog/seo-format";
+import { sanitizeBlogHtml } from "@/lib/blog/sanitize";
 import { requireAdminPageAccess } from "@/lib/admin/permissions";
 import { registraAzione } from "@/lib/moderation/decisioni";
 
@@ -74,7 +75,7 @@ function buildSeoFields(d: {
   keywords: string[];
   ogImage: string | null;
 } {
-  const content = stripUnsafe(formatContentToSeoHtml(d.content));
+  const content = sanitizeBlogHtml(formatContentToSeoHtml(d.content));
   const full = deriveFullSeo(d.title, content, d.coverImage);
   return {
     content,

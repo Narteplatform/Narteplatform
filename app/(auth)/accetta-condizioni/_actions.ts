@@ -17,6 +17,8 @@ import {
 } from "@/lib/legal/iubenda-consent";
 import { LEGAL_COOKIE, LEGAL_COOKIE_MAX_AGE } from "@/lib/legal/gate";
 import { LEGAL_CONSENT_VERSION, LEGAL_VERSION } from "@/lib/legal/content";
+import { isAccountNuovo } from "@/lib/auth/costanti";
+import { inviaBenvenutoSeNuovo } from "@/lib/auth/benvenuto-email";
 
 const schema = z.object({
   acceptedTerms: z.literal(true, {
@@ -173,7 +175,12 @@ export async function acceptCurrentLegal(input: AcceptLegalInput) {
         : {}),
       ...(documentoRuolo === "organizzatori" ? { condizioni_organizzatori: true } : {}),
     },
-    modulo: "Schermata di accettazione (utenti preesistenti)",
+    // Il modulo dice da dove viene il consenso: un account appena creato (per
+    // esempio con Google) non è un «utente preesistente». Deciso sul server,
+    // dalla data di creazione dell'account.
+    modulo: isAccountNuovo(utente.created_at)
+      ? "Schermata di accettazione (nuovo account)"
+      : "Schermata di accettazione (utenti preesistenti)",
     testoCasella: [`${TESTO_CASELLA.termini} — ${TESTO_CASELLA.eta}`, ...dichiarazioni].join(" — "),
   });
 
@@ -188,6 +195,17 @@ export async function acceptCurrentLegal(input: AcceptLegalInput) {
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: LEGAL_COOKIE_MAX_AGE,
+  });
+
+  // Benvenuto a chi ha appena creato l'account (una volta sola, solo
+  // utenti e organizzatori approvati): vedi lib/auth/benvenuto-email.ts.
+  // Non solleva e non cambia l'esito dell'accettazione.
+  await inviaBenvenutoSeNuovo({
+    id: utente.id,
+    email: utente.email,
+    created_at: utente.created_at,
+    ruolo: utente.profile?.role ?? null,
+    nome: utente.profile?.full_name ?? null,
   });
 
   return { ok: true as const };

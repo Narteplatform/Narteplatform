@@ -195,13 +195,31 @@ export async function createCheckoutSession(input: {
       billing_address_collection: "required",
       customer_update: { name: "auto", address: "auto" },
       tax_id_collection: { enabled: acquirente === "professionista" },
+      // Codice fiscale facoltativo per chi si abbona da privato: serve alla
+      // fattura elettronica verso il consumatore. Il webhook lo salva nei
+      // metadata del customer e l'export incassi lo riporta.
+      ...(acquirente === "consumatore"
+        ? {
+            custom_fields: [
+              {
+                key: "codice_fiscale",
+                label: { type: "custom" as const, custom: "Codice fiscale" },
+                type: "text" as const,
+                optional: true,
+                text: { minimum_length: 11, maximum_length: 16 },
+              },
+            ],
+          }
+        : {}),
       custom_text: {
         submit: {
           message:
             "Abbonandoti accetti le Condizioni di abbonamento N'arte. Si rinnova automaticamente finché non disdici; puoi disdire quando vuoi dalla pagina Abbonamento.",
         },
       },
-      success_url: `${site}/dashboard/abbonamento?checkout=success`,
+      // {CHECKOUT_SESSION_ID} lo sostituisce Stripe: al ritorno la pagina
+      // sincronizza subito l'abbonamento, senza aspettare il webhook.
+      success_url: `${site}/dashboard/abbonamento?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${site}/dashboard/abbonamento?checkout=cancelled`,
     });
     if (!session.url) return { ok: false as const, error: "Stripe non ha restituito un URL" };
@@ -266,21 +284,29 @@ export async function createBillingPortalSession() {
   let url: string;
   try {
     const admin = createAdminClient();
-    const { data } = await admin
+    const { data, error: readErr } = await admin
       .from("billing_customers")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
-    const customer = (data as { stripe_customer_id: string } | null)?.stripe_customer_id;
+    if (readErr) {
+      logger.error("abbonamento", "lettura billing_customers per il Portal:", readErr.message);
+      return { ok: false as const, error: "Non riusciamo a leggere la tua fatturazione. Riprova tra poco." };
+    }
+    const customer = data?.stripe_customer_id;
     if (!customer) {
       return { ok: false as const, error: "Nessun abbonamento da gestire." };
     }
     // Cambio piano, disdetta, metodo di pagamento e fatture: tutto delegato al
     // Portal. Meno codice nostro, meno superficie su cui sbagliare con i soldi.
+    // Con STRIPE_PORTAL_CONFIGURATION_ID si usa una configurazione precisa del
+    // Portal (piani cambiabili, disdetta), invece di quella predefinita.
+    const configurazione = process.env.STRIPE_PORTAL_CONFIGURATION_ID?.trim();
     const session = await getStripe().billingPortal.sessions.create({
       customer,
       return_url: `${getSiteUrl()}/dashboard/abbonamento`,
       locale: "it",
+      ...(configurazione ? { configuration: configurazione } : {}),
     });
     url = session.url;
   } catch (e) {

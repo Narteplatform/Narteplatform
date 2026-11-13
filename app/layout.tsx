@@ -3,6 +3,7 @@ import { Open_Sans, Space_Grotesk } from "next/font/google";
 import { getSiteUrl } from "@/lib/site-url";
 import { IubendaCs } from "@/components/legal/IubendaCs";
 import { TrackingScripts } from "@/components/analytics/TrackingScripts";
+import { SkipLink } from "@/components/a11y/SkipLink";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -67,6 +68,10 @@ export default function RootLayout({
   return (
     <html lang="it" className={`${openSans.variable} ${spaceGrotesk.variable}`}>
       <body>
+        {/* Primo elemento raggiungibile da tastiera: salta il menu e porta al
+            <main> (id «contenuto» nei layout pubblici, altrimenti il primo
+            <main> della pagina). */}
+        <SkipLink />
         {/* Gestione del consenso e tracciamento stanno QUI e non nel layout
             pubblico, per tre ragioni che convergono: `beforeInteractive` è
             onorato solo dal layout radice; il banner deve comparire anche nelle
