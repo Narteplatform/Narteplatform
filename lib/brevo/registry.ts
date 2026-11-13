@@ -630,6 +630,7 @@ const ID_PREDEFINITI = {
   BREVO_TEMPLATE_EVENT_REMINDER: 35,
   BREVO_TEMPLATE_FEEDBACK_REQUEST: 36,
   BREVO_TEMPLATE_INVITE_REWARD_GRANTED: 53,
+  BREVO_TEMPLATE_BOOKING_AGREEMENT_PROPOSED: 54,
 } as const;
 
 function parseTemplateId(raw: string | undefined): number | null {
@@ -753,11 +754,9 @@ export const BREVO_REGISTRY: Record<EmailKey, RegistryEntry> = {
     templateId: parseTemplateId(process.env.BREVO_TEMPLATE_PRICE_CONFIRMED || String(ID_PREDEFINITI.BREVO_TEMPLATE_PRICE_CONFIRMED)),
     label: "Prezzo finale confermato",
   },
-  // Nuovo (novembre 2026): nessun id predefinito finché `npm run email:sync`
-  // non crea il template su Brevo. Fino ad allora l'invio risulta «skipped» in
-  // /admin/email e all'artista resta la notifica in campanella.
+  // Creato con `email:sync` il 13/11/2026 (id 54).
   booking_agreement_proposed: {
-    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_AGREEMENT_PROPOSED),
+    templateId: parseTemplateId(process.env.BREVO_TEMPLATE_BOOKING_AGREEMENT_PROPOSED || String(ID_PREDEFINITI.BREVO_TEMPLATE_BOOKING_AGREEMENT_PROPOSED)),
     label: "Accordo registrato — da confermare",
   },
   consultation_reminder: {
