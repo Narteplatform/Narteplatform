@@ -147,7 +147,9 @@ export async function updateVenue(venueId: string, input: VenueInput) {
       capacity: parsed.data.capacity ?? null,
       description: parsed.data.description ?? null,
       cover_image: parsed.data.cover_image ?? null,
-      gallery: parsed.data.gallery ?? [],
+      // Un payload senza galleria NON la svuota (CLAUDE.md, regola 3): si
+      // scrive solo se il form l'ha inviata.
+      ...(parsed.data.gallery !== undefined ? { gallery: parsed.data.gallery } : {}),
       website: parsed.data.website ?? null,
       instagram: parsed.data.instagram ?? null,
       phone: parsed.data.phone ?? null,

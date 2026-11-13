@@ -11,6 +11,7 @@
 //
 // Prima la registrazione mandava a /login, che il `code` lo ignorava: l'utente
 // confermava e si ritrovava davanti al modulo senza sapere se fosse andata.
+import { allineaEmailCliente } from "@/lib/billing/email-cliente";
 import { NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -76,7 +77,7 @@ export async function GET(request: Request) {
 
   async function esito(
     t: EmailOtpType | null,
-    utente: { banned_until?: string | null; app_metadata?: unknown } | null,
+    utente: { id?: string; email?: string | null; banned_until?: string | null; app_metadata?: unknown } | null,
     conSessione: boolean
   ) {
     if (utente && isUtenteSospeso(utente)) {
@@ -89,7 +90,9 @@ export async function GET(request: Request) {
     }
     if (t === "email_change") {
       // Con il «cambio email sicuro» di Supabase servono DUE conferme (vecchio e
-      // nuovo indirizzo): la prima non completa il cambio.
+      // nuovo indirizzo): la prima non completa il cambio. Quando l'indirizzo è
+      // cambiato davvero, lo si allinea sul customer Stripe (ricevute).
+      if (utente?.id && utente.email) await allineaEmailCliente(utente.id, utente.email);
       return vai(conSessione ? "/account?email=confermata" : "/login?confermata=1");
     }
     if (!conSessione) return vai(conNext("/login?confermata=1"));

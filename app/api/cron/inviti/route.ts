@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { eseguiCron } from "@/lib/cron/esegui";
 import { logger } from "@/lib/logger";
 import { createAdminClient } from "@/lib/supabase/server";
 import { avvisaRoot, trovaRoot } from "@/lib/admin/root";
@@ -27,6 +28,11 @@ function autorizzato(req: Request): boolean {
 }
 
 export async function GET(req: Request) {
+  // Avviso al root se il cron fallisce (stesso helper degli altri cron).
+  return eseguiCron("inviti", () => gestisci(req));
+}
+
+async function gestisci(req: Request): Promise<Response> {
   if (!autorizzato(req)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }

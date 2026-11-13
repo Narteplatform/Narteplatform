@@ -190,7 +190,7 @@ In `.claude/agents/`:
 ## Migration
 
 Si applicano dal SQL editor Supabase (`db:apply` non funziona, vedi AGENTS.md).
-**Al 12/11/2026 sono applicate tutte fino alla 0078, tranne la 0077** (verificato con lo script qui sotto). Le 0077 e 0080 sono state applicate il 13/11/2026; 0079, 0081, 0082 e 0083 sono nuove.
+**Al 13/11/2026 sono applicate tutte fino alla 0083** (verificato con lo script qui sotto).
 Per ogni nuova migration: intestazione CONTESTO in italiano, additiva dove possibile, RLS +
 `revoke all … from anon, authenticated` sulle tabelle nuove, voce in
 `scripts/check-migrations.mjs` e in `docs/MIGRATION_DA_APPLICARE.md`, e una riga qui sotto
@@ -204,20 +204,7 @@ Copre tabelle, colonne, funzioni, bucket e privilegi anonimi. Per indici, vincol
 policy e pubblicazioni realtime — che PostgREST non espone — le query sono in
 `docs/VERIFICA_MIGRATION.sql`.
 
-**In attesa:**
-
-- `0081_hardening_db.sql` — revoke su 12 tabelle protette dalla sola RLS (restano in lettura
-  collaborations, conversation_blocks, consultant_slots), 9 indici su chiavi esterne, formati e
-  dimensioni ammessi sui bucket. **Indipendente.** Senza, tutto come prima.
-- `0082_abbonamenti_scadenze.sql` — presa in carico atomica degli eventi Stripe, ricalcolo dei piani
-  scaduti (omaggi) e delle sospensioni, data del passaggio al piano corrente. **Indipendente.** Senza,
-  il cron `abbonamenti` ripiega su `inviti_sync_scaduti`.
-- `0083_account_auth.sql` — `artist_applications.user_id`, avatar Google in `handle_new_user`.
-  **Indipendente.** Senza, candidatura senza collegamento all'account e nessuna foto da Google.
-- `0079_inviti_visite.sql` — aperture del link «Invita un artista» (visitatori unici pseudonimi,
-  stesso schema della 0046) per `/admin/inviti`. **Richiede la 0078.** Senza, il pannello mostra
-  «—» nelle colonne delle aperture.
-
+**In attesa:** nessuna. Al 13/11/2026 sono applicate tutte fino alla 0083 (verificato con `npm run db:check-migrations`).
 
 ## Comandi
 
