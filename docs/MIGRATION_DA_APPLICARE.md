@@ -19,6 +19,8 @@ funzionalità nuove restano spente finché non si arriva in fondo.
 
 ## `0080_offerta_conferma_diretta.sql` — Trattativa: l'offerta accettata conferma la data al prezzo
 
+> ✅ **Applicata il 13/11/2026.**
+
 Indipendente dalle altre (ridefinisce solo `accept_offer_v2`, come la 0070). Non modifica né
 cancella righe; idempotente.
 
