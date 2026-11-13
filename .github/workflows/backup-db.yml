@@ -1,0 +1,91 @@
+# Backup notturno del database di produzione (gratuito: GitHub Actions).
+#
+# Cosa fa, ogni notte alle 02:30 UTC (e a richiesta da «Run workflow»):
+#   1. pg_dump di public, auth (utenti) e storage (elenco dei file) in formato
+#      «custom» compresso, ripristinabile con pg_restore;
+#   2. controllo d'integrità del file (pg_restore --list);
+#   3. cifratura con age verso la CHIAVE PUBBLICA qui sotto: senza la chiave
+#      privata (che sta solo da Luigi, mai nel repository) il file è illeggibile;
+#   4. caricamento come artifact, conservato 30 giorni (uno per notte).
+#
+# Il repository è PUBBLICO: gli artifact sono scaricabili da utenti GitHub, per
+# questo il file in chiaro non lascia mai il runner (viene cifrato e cancellato
+# prima del caricamento). Non tocca il database in scrittura: pg_dump legge.
+#
+# Segreto richiesto: SUPABASE_DB_URL (Settings → Secrets → Actions), stringa
+# del «session pooler»: postgresql://postgres.<ref>:<password>@aws-1-eu-central-1.pooler.supabase.com:5432/postgres
+# (la connessione diretta db.<ref>.supabase.co è solo IPv6 e i runner GitHub non la raggiungono).
+#
+# Se il backup fallisce GitHub manda un'email all'account del repository.
+# Ripristino: docs/OPERATIVITA.md, sezione «Backup del database».
+# I file caricati (foto, audio) non sono qui: stanno su Supabase Storage / Bunny.
+
+name: Backup database
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-db
+  cancel-in-progress: false
+
+env:
+  AGE_PUBLIC_KEY: age1juqynetygna0ucpw8emv6qswy2flawehjjv28s7u8pkud329ku8slsh00p
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Strumenti (client PostgreSQL 17, age)
+        run: |
+          set -euo pipefail
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17 age
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
+      - name: Dump cifrato
+        id: dump
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::Segreto SUPABASE_DB_URL mancante"; exit 1
+          fi
+          PG=/usr/lib/postgresql/17/bin
+          nome="narte-db-$(date -u +%Y%m%d-%H%M)"
+          "$PG/pg_dump" "$SUPABASE_DB_URL" \
+            --format=custom --compress=9 \
+            --no-owner --no-privileges \
+            --schema=public --schema=auth --schema=storage \
+            --file="$nome.dump"
+          # Integrità: il file deve essere leggibile da pg_restore e non vuoto.
+          voci=$("$PG/pg_restore" --list "$nome.dump" | grep -c "TABLE DATA" || true)
+          echo "Tabelle con dati nel dump: $voci"
+          if [ "$voci" -lt 20 ]; then
+            echo "::error::Dump sospetto: solo $voci tabelle con dati"; exit 1
+          fi
+          age --recipient "$AGE_PUBLIC_KEY" --output "$nome.dump.age" "$nome.dump"
+          shred -u "$nome.dump"
+          ls -l "$nome.dump.age"
+          echo "nome=$nome" >> "$GITHUB_OUTPUT"
+
+      - name: Carica il backup cifrato
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.dump.outputs.nome }}
+          path: ${{ steps.dump.outputs.nome }}.dump.age
+          retention-days: 30
+          if-no-files-found: error
+          compression-level: 0

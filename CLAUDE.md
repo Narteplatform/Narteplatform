@@ -178,7 +178,8 @@ Runbook completo (backup, ripristino, cron falliti, interruttori): `docs/OPERATI
 - **Errori lato server:** `instrumentation.ts` (`onRequestError`) scrive una riga JSON
   `[errore-richiesta]` per errore (rotta, metodo, digest; niente dati personali). Sentry predisposto,
   non installato.
-- **Nessun backup ripristinabile** finché Supabase resta sul piano Free.
+- **Backup notturno cifrato** del DB via GitHub Actions (`.github/workflows/backup-db.yml`, 30 giorni,
+  chiave privata age solo da Luigi). Non copre i file di Storage/Bunny. Ripristino in `docs/OPERATIVITA.md`.
 
 ## Subagent dedicati
 

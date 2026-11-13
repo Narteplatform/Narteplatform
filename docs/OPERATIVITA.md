@@ -7,80 +7,50 @@
 
 ## 1. Backup del database
 
-**Stato oggi: nessun backup ripristinabile.** Il progetto Supabase è sul piano
-Free, che non offre backup scaricabili/ripristinabili dal pannello né il
-Point-in-Time Recovery. Se il DB si corrompe o una cancellazione sbagliata va a
-segno, oggi non c'è un punto da cui tornare. I file dei media sono su Supabase
-Storage e su bunny.net: un dump di Postgres **non** li contiene (contiene solo gli
-URL in colonna).
+**Attivo dal 13/11/2026, gratuito:** workflow GitHub Actions
+[`.github/workflows/backup-db.yml`](../.github/workflows/backup-db.yml).
 
-Due strade, non alternative fra loro:
+- Ogni notte alle 02:30 UTC (e a mano da GitHub → Actions → «Backup database» → *Run workflow*).
+- `pg_dump` di `public`, `auth` (utenti) e `storage` (elenco dei file), formato *custom*
+  compresso, con controllo d'integrità (`pg_restore --list`, almeno 20 tabelle con dati).
+- **Cifrato con [age](https://age-encryption.org)** verso la chiave pubblica scritta nel workflow.
+  La **chiave privata** è solo sul Mac di Luigi: `~/NARTE-backup-CHIAVE-PRIVATA.txt`. Va copiata
+  nel gestore di password e in un secondo posto offline: **senza, i backup non si aprono**.
+- Conservato come *artifact* per **30 giorni** (uno per notte). Il repository è pubblico: per questo
+  il file in chiaro non lascia mai il runner.
+- Segreto GitHub `SUPABASE_DB_URL`: stringa del **session pooler**
+  `postgresql://postgres.nppzchkgzltcokvxcpji:<password>@aws-1-eu-central-1.pooler.supabase.com:5432/postgres`
+  (la connessione diretta `db.<ref>.supabase.co` è solo IPv6, irraggiungibile dai runner).
+  Se si cambia la password del database su Supabase, va aggiornato anche questo segreto.
+- Se il backup fallisce, GitHub manda un'email all'account del repository.
 
-### A. Supabase Pro (consigliata)
+**Cosa NON copre:** i file caricati (foto, audio, video) stanno su Supabase Storage e Bunny; il
+dump contiene solo l'elenco dei file di Storage, non i file. Né le impostazioni del pannello
+Supabase (auth, SMTP, redirect).
 
-- Pro include backup giornalieri conservati 7 giorni, ripristinabili dal pannello
-  (Database → Backups). Il PITR (ripristino a un istante qualsiasi) è un add-on a
-  pagamento sopra Pro.
-- Toglie anche la pausa dopo 7 giorni di inattività (oggi tamponata dal cron
-  `/api/keepalive`).
-- Nessuna modifica al codice: è una scelta di piano. Decisione del cliente.
-
-### B. `pg_dump` programmato (anche col piano Free)
-
-Un dump logico notturno conservato fuori da Supabase. Da preparare, **non è
-attivo**. Schema della procedura:
-
-1. Stringa di connessione: Supabase → Project Settings → Database → Connection
-   string, modalità **Session pooler** (porta 5432; il Transaction pooler non va
-   bene per `pg_dump`). La password del DB è un segreto: mai nel repo.
-2. Dump in formato custom, senza proprietari e privilegi (ripristinabili su un
-   progetto nuovo), includendo `public` e `auth` (gli utenti):
-   ```bash
-   pg_dump "$DATABASE_URL" -Fc --no-owner --no-privileges \
-     --schema=public --schema=auth --schema=storage \
-     -f narte-$(date +%F).dump
-   ```
-   In alternativa `supabase db dump --db-url "$DATABASE_URL" -f schema.sql` e
-   `supabase db dump --db-url "$DATABASE_URL" --data-only -f dati.sql`.
-   Versione di `pg_dump` ≥ a quella del server (Supabase usa Postgres 15+).
-3. Dove farlo girare: un job pianificato fuori da Vercel (GitHub Actions con
-   `schedule:` e il segreto `DATABASE_URL` nei secret del repository, oppure un
-   cron su una macchina del team). Vercel non è adatto: niente `pg_dump` nel
-   runtime e limiti di durata.
-4. Dove conservarlo: storage privato e cifrato (es. bucket S3/Backblaze con
-   cifratura lato server, o il dump cifrato con `age`/`gpg` prima del caricamento).
-   **Il dump contiene dati personali**: va dichiarato nel registro dei trattamenti
-   (`docs/REGISTRO_TRATTAMENTI.md`) con un periodo di conservazione (es. 30 giorni a
-   rotazione) e l'accesso limitato al root.
-5. Verifica: un backup mai ripristinato non è un backup. Una volta al mese
-   ripristinarlo su un progetto Supabase **di prova, separato** (vedi §2).
-
-Lo `storage` di Supabase nel dump contiene solo i metadati dei file. Per i file
-veri: `supabase storage` / script di copia dei bucket, e il pannello bunny.net per
-le zone Bunny (replica geografica o copia periodica).
+Alternativa a pagamento: Supabase Pro (backup giornalieri gestiti, PITR opzionale).
 
 ## 2. Ripristino
 
-**Mai ripristinare sopra la produzione senza una decisione esplicita del
-cliente.** Un ripristino sovrascrive tutto ciò che è successo dopo il backup
-(iscrizioni, pagamenti registrati, messaggi).
-
-- **Con Supabase Pro:** Database → Backups → scegliere il giorno → Restore. Il
-  progetto resta irraggiungibile per qualche minuto; poi verificare login,
-  catalogo artisti, `/api/health?deep=1`.
-- **Da un dump (`pg_dump`):**
-  1. creare un progetto Supabase nuovo (o usare quello di prova);
-  2. `pg_restore --no-owner --no-privileges -d "$DATABASE_URL_NUOVO" narte-AAAA-MM-GG.dump`;
-  3. applicare eventuali migration successive al dump (`docs/MIGRATION_DA_APPLICARE.md`);
-  4. controllare i conteggi con `npm run db:check-migrations` puntato al nuovo progetto;
-  5. solo allora, se si decide di passare, aggiornare su Vercel
-     `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
-     `SUPABASE_SERVICE_ROLE_KEY` e fare redeploy. Gli URL OAuth di Google e i
-     redirect di Supabase Auth vanno riconfigurati sul nuovo progetto.
-- **Ripristino parziale** (es. una galleria svuotata): si legge il valore dal dump
-  ripristinato sul progetto di prova e lo si riscrive sul singolo record di
-  produzione, dopo averlo mostrato e fatto approvare. Mai un ripristino totale per
-  recuperare un record.
+1. GitHub → Actions → «Backup database» → esecuzione della data voluta → scarica l'artifact
+   (zip con dentro `narte-db-AAAAMMGG-HHMM.dump.age`).
+2. Decifra (serve `age`, `brew install age libpq`):
+   ```bash
+   age --decrypt -i ~/NARTE-backup-CHIAVE-PRIVATA.txt -o narte.dump narte-db-....dump.age
+   /opt/homebrew/opt/libpq/bin/pg_restore --list narte.dump | head   # controllo
+   ```
+3. **Mai ripristinare sopra la produzione per provare.** Si ripristina in un progetto Supabase
+   NUOVO (o locale), poi si verifica e solo allora si decide:
+   ```bash
+   # schema e dati di public (gli schemi auth/storage esistono già in un progetto nuovo:
+   # se ne ripristinano solo i dati)
+   pg_restore --no-owner --no-privileges --schema=public -d "<URL del progetto NUOVO>" narte.dump
+   pg_restore --no-owner --no-privileges --data-only --schema=auth -d "<URL del progetto NUOVO>" narte.dump
+   pg_restore --no-owner --no-privileges --data-only --schema=storage -d "<URL del progetto NUOVO>" narte.dump
+   ```
+4. Recuperare un singolo dato perso (es. una galleria svuotata): ripristinare in un progetto di
+   appoggio, leggere la riga e riscriverla in produzione con una scrittura mirata e verificata.
+5. Cancellare i file decifrati quando non servono più: contengono dati personali.
 
 ## 3. Se un cron fallisce
 
