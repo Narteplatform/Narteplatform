@@ -3,6 +3,8 @@ import { requireUser } from "@/lib/auth/guards";
 import { BenvenutoForm } from "@/components/forms/BenvenutoForm";
 import { NarteLogo } from "@/components/layout/NarteLogo";
 import { OrganizzatoreForm } from "./OrganizzatoreForm";
+import { getGenreOptions } from "@/lib/content/generi";
+import { invitoDaCookie } from "@/lib/inviti/cookie";
 
 export const metadata = { title: "Benvenuto — N'arte" };
 export const dynamic = "force-dynamic";
@@ -25,6 +27,11 @@ export default async function BenvenutoPage({
   const user = await requireUser();
   if (user.profile?.role !== "user") redirect("/post-login");
   const organizzatore = (await searchParams).ruolo === "organizer";
+  // Per «Sono un artista»: il modulo di candidatura si compila qui, senza
+  // passare dalla pagina lunga di /candidatura-artista.
+  const [genreOptions, invito] = organizzatore
+    ? [[], null]
+    : await Promise.all([getGenreOptions(), invitoDaCookie()]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
@@ -48,7 +55,14 @@ export default async function BenvenutoPage({
               <p className="mt-3 mb-6 text-muted-foreground">
                 Dicci come vuoi usare N&rsquo;arte, così ti portiamo nel posto giusto.
               </p>
-              <BenvenutoForm />
+              <BenvenutoForm
+                candidatura={{
+                  genreOptions,
+                  invitatoDa: invito?.stageName ?? null,
+                  nomeIniziale: user.profile?.full_name ?? "",
+                  emailAccount: user.email ?? null,
+                }}
+              />
             </>
           )}
         </div>

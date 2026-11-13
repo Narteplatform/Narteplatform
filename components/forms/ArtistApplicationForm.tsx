@@ -43,10 +43,19 @@ const DRAFT_FIELDS = [
 export function ArtistApplicationForm({
   genreOptions = [],
   invitatoDa = null,
+  nomeIniziale = "",
+  emailAccount = null,
 }: {
   genreOptions?: string[];
   /** Nome d'arte di chi ha invitato («Invita un artista»), se si arriva dal suo link. */
   invitatoDa?: string | null;
+  /** Nome dell'account, se chi si candida ha già effettuato l'accesso. */
+  nomeIniziale?: string;
+  /**
+   * Email dell'account loggato: precompilata e bloccata, così la candidatura
+   * resta collegata all'account (il server salva user_id solo se coincidono).
+   */
+  emailAccount?: string | null;
 }) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +70,8 @@ export function ArtistApplicationForm({
   } = useForm<ArtistApplicationInput>({
     resolver: zodResolver(artistApplicationSchema),
     defaultValues: {
+      name: nomeIniziale,
+      email: emailAccount ?? "",
       genres: [],
       instruments: [],
       video_url: "",
@@ -82,6 +93,8 @@ export function ArtistApplicationForm({
         setValue(key, draft[key] as never, { shouldDirty: true });
       }
     }
+    // La bozza non può cambiare l'email dell'account loggato.
+    if (emailAccount) setValue("email", emailAccount);
     toast.info(MSG_BOZZA_RECUPERATA);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -132,7 +145,14 @@ export function ArtistApplicationForm({
           <Input {...register("name")} autoComplete="name" />
         </Field>
         <Field label="Email" error={errors.email?.message}>
-          <Input type="email" {...register("email")} autoComplete="email" />
+          <Input
+            type="email"
+            {...register("email")}
+            autoComplete="email"
+            readOnly={Boolean(emailAccount)}
+            aria-readonly={Boolean(emailAccount)}
+            className={emailAccount ? "bg-muted text-muted-foreground" : undefined}
+          />
         </Field>
         <Field label="Ti candidi come" error={errors.formazione?.message}>
           <select

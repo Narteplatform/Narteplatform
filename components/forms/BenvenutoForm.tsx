@@ -6,6 +6,7 @@ import { CalendarCheck, Mic2 } from "lucide-react";
 import { Input, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { richiediOrganizzatoreAction, type BenvenutoState } from "@/app/(auth)/benvenuto/_actions";
+import { ArtistApplicationForm } from "@/components/forms/ArtistApplicationForm";
 
 type Scelta = "artist" | "organizer";
 
@@ -24,7 +25,17 @@ const SCELTE: { key: Scelta; label: string; hint: string; icon: React.ReactNode 
   },
 ];
 
-export function BenvenutoForm() {
+export function BenvenutoForm({
+  candidatura,
+}: {
+  /** Dati per il modulo di candidatura mostrato quando si sceglie «Sono un artista». */
+  candidatura: {
+    genreOptions: string[];
+    invitatoDa: string | null;
+    nomeIniziale: string;
+    emailAccount: string | null;
+  };
+}) {
   const [scelta, setScelta] = useState<Scelta | null>(null);
   const [state, action, pending] = useActionState<BenvenutoState, FormData>(
     richiediOrganizzatoreAction,
@@ -67,14 +78,26 @@ export function BenvenutoForm() {
       </div>
 
       {scelta === "artist" && (
-        <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-4 text-sm">
-          <p>
-            Il profilo artista non si crea da qui: passa da una candidatura che il team valuta prima di
-            pubblicarlo.
-          </p>
-          <Button asChild size="lg" className="w-full">
-            <Link href="/candidatura-artista">Vai alla candidatura</Link>
-          </Button>
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-muted/40 p-4 text-sm">
+            <p>
+              Compila la candidatura qui sotto: il team la valuta e ti scrive via email. Dopo
+              l&rsquo;approvazione completi il profilo e gestisci le disponibilità.{" "}
+              <Link
+                href="/candidatura-artista"
+                target="_blank"
+                className="font-medium text-azzurro underline-offset-4 hover:underline"
+              >
+                Come funziona
+              </Link>
+            </p>
+          </div>
+          <ArtistApplicationForm
+            genreOptions={candidatura.genreOptions}
+            invitatoDa={candidatura.invitatoDa}
+            nomeIniziale={candidatura.nomeIniziale}
+            emailAccount={candidatura.emailAccount}
+          />
         </div>
       )}
 

@@ -18,6 +18,7 @@ import { FAQ } from "@/lib/content/artist-landing";
 import { NARTE_STATS } from "@/lib/content/stats";
 import { getContenuti } from "@/lib/content/site-settings-server";
 import { invitoDaCookie } from "@/lib/inviti/cookie";
+import { getGenreOptions } from "@/lib/content/generi";
 import { BannerInvito } from "@/components/inviti/BannerInvito";
 
 export const metadata = {
@@ -31,19 +32,6 @@ export const metadata = {
     type: "website",
   },
 };
-
-async function getGenreOptions(): Promise<string[]> {
-  try {
-    const admin = createAdminClient();
-    const { data } = await admin
-      .from("genres")
-      .select("name")
-      .order("order_index", { ascending: true });
-    return ((data ?? []) as unknown as { name: string }[]).map((g) => g.name);
-  } catch {
-    return [];
-  }
-}
 
 /**
  * Dati strutturati delle FAQ.
